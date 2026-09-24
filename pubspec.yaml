@@ -1,0 +1,58 @@
+name: al_markaz_al_islami
+description: "Al Markaz al Islami Kasur - A unified ERP for Islamic Educational Institutions"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.5.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  
+  # UI & Typography
+  google_fonts: ^6.1.0
+  
+  # State Management
+  flutter_riverpod: ^2.4.9
+  
+  # Local Storage
+  shared_preferences: ^2.2.2
+  
+  # Network & Connectivity
+  connectivity_plus: ^5.0.2
+  
+  # Utilities
+  intl: ^0.19.0
+
+  # ── Supabase Backend ──────────────────────────────────────────
+  supabase_flutter: ^2.5.0        # Supabase client + Auth + Realtime
+  flutter_dotenv: ^5.1.0          # Env variable management (.env file)
+  cached_network_image: ^3.3.1    # Student/staff photo caching
+  image_picker: ^1.1.2            # Pick photos for upload
+  uuid: ^4.4.0                    # Local UUID generation
+  url_launcher: ^6.3.0            # Open email / phone / web links
+  http: ^1.2.2                    # Direct REST calls to Supabase Admin Auth API
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+  
+  # Assets
+  assets:
+    - assets/
+  
+  # Fonts
+  fonts:
+    - family: JameelNooriNastaleeq
+      fonts:
+        - asset: assets/Jameel Noori Nastaleeq Regular - [UrduFonts.com].ttf
+          weight: 400
+        - asset: assets/Jameel Noori Nastaleeq Kasheeda - [UrduFonts.com].ttf
+          weight: 700

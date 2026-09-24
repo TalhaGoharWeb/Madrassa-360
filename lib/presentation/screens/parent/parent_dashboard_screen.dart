@@ -1,0 +1,526 @@
+import 'package:flutter/material.dart';
+import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_strings.dart';
+import '../../../core/constants/app_typography.dart';
+import '../../widgets/common/app_widgets.dart';
+
+/// والدین ڈیش بورڈ
+/// Parent Dashboard Screen with Child Overview
+class ParentDashboardScreen extends StatelessWidget {
+  const ParentDashboardScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(AppStrings.home),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.notifications_outlined),
+            onPressed: () {},
+          ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Child Profile Card
+            _buildChildProfileCard(),
+            
+            // Quick Stats
+            _buildQuickStats(),
+            
+            // Today's Update Section
+            const SectionHeader(
+              title: 'آج کی اپ ڈیٹ',
+            ),
+            _buildTodayUpdate(),
+            
+            // Recent Activities / Timeline
+            const SectionHeader(
+              title: 'حالیہ سرگرمیاں',
+              actionText: 'مزید دیکھیں',
+            ),
+            _buildActivityTimeline(),
+            
+            // Upcoming Events
+            const SectionHeader(
+              title: 'آئندہ امتحانات',
+            ),
+            _buildUpcomingExams(),
+            
+            const SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildChildProfileCard() {
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [AppColors.primary, AppColors.primaryDark],
+          begin: Alignment.topRight,
+          end: Alignment.bottomLeft,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Child Avatar
+          Container(
+            width: 70,
+            height: 70,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white30, width: 2),
+            ),
+            child: Center(
+              child: Text(
+                'م',
+                style: AppTypography.headingLarge.copyWith(
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          
+          // Child Info
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'محمد احمد',
+                  style: AppTypography.headingSmall.copyWith(
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    'درجہ اولیٰ (اول سال) -  رول نمبر 1',
+                    style: AppTypography.labelMedium.copyWith(
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    _buildChildStat(Icons.calendar_today, 'حاضری 95%'),
+                    const SizedBox(width: 16),
+                    _buildChildStat(Icons.star, 'گریڈ الف'),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          
+          // More Options
+          IconButton(
+            onPressed: () {},
+            icon: const Icon(Icons.more_vert, color: Colors.white),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChildStat(IconData icon, String text) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, color: Colors.white70, size: 14),
+        const SizedBox(width: 4),
+        Text(
+          text,
+          style: AppTypography.labelSmall.copyWith(
+            color: Colors.white70,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildQuickStats() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildStatCard(
+              icon: Icons.fact_check,
+              label: 'اس ماہ حاضری',
+              value: '95%',
+              color: AppColors.success,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _buildStatCard(
+              icon: Icons.assessment,
+              label: 'امتحانی نمبر',
+              value: '85%',
+              color: AppColors.primary,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _buildStatCard(
+              icon: Icons.payments,
+              label: 'فیس کی حالت',
+              value: 'مکمل',
+              color: AppColors.info,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatCard({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: AppTypography.titleMedium.copyWith(color: color),
+          ),
+          Text(
+            label,
+            style: AppTypography.labelSmall,
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTodayUpdate() {
+    return AppCard(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.success.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.check_circle,
+                  color: AppColors.success,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'آج کی حاضری',
+                      style: AppTypography.titleMedium,
+                    ),
+                    Text(
+                      'حاضر - 8:00 بجے',
+                      style: AppTypography.bodySmall.copyWith(
+                        color: AppColors.success,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              StatusBadge.present(),
+            ],
+          ),
+          const Divider(height: 24),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.menu_book,
+                  color: AppColors.primary,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'آج کا سبق',
+                      style: AppTypography.titleMedium,
+                    ),
+                    Text(
+                      'سورۃ البقرۃ - آیت 125 سے 130',
+                      style: AppTypography.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActivityTimeline() {
+    final activities = [
+      {
+        'icon': Icons.fact_check,
+        'color': AppColors.success,
+        'title': 'حاضری',
+        'subtitle': 'حاضر',
+        'time': 'آج 8:00',
+      },
+      {
+        'icon': Icons.menu_book,
+        'color': AppColors.primary,
+        'title': 'سبق مکمل',
+        'subtitle': 'قرآن - سورۃ البقرۃ',
+        'time': 'آج 10:00',
+      },
+      {
+        'icon': Icons.assignment,
+        'color': AppColors.info,
+        'title': 'ٹیسٹ',
+        'subtitle': 'ناظرہ امتحان - 90%',
+        'time': 'کل',
+      },
+      {
+        'icon': Icons.payments,
+        'color': AppColors.success,
+        'title': 'فیس',
+        'subtitle': 'جنوری کی فیس ادا شدہ',
+        'time': '5 دن پہلے',
+      },
+    ];
+
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      itemCount: activities.length,
+      itemBuilder: (context, index) {
+        final activity = activities[index];
+        final isLast = index == activities.length - 1;
+        
+        return IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Timeline indicator
+              Column(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: (activity['color'] as Color).withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      activity['icon'] as IconData,
+                      color: activity['color'] as Color,
+                      size: 20,
+                    ),
+                  ),
+                  if (!isLast)
+                    Expanded(
+                      child: Container(
+                        width: 2,
+                        color: AppColors.divider,
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(width: 12),
+              
+              // Content
+              Expanded(
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              activity['title'] as String,
+                              style: AppTypography.titleSmall,
+                            ),
+                            Text(
+                              activity['subtitle'] as String,
+                              style: AppTypography.bodySmall,
+                            ),
+                          ],
+                        ),
+                      ),
+                      Text(
+                        activity['time'] as String,
+                        style: AppTypography.labelSmall.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildUpcomingExams() {
+    final exams = [
+      {
+        'subject': 'قرآن کریم',
+        'type': 'ماہانہ امتحان',
+        'date': '15 جنوری',
+        'daysLeft': 6,
+      },
+      {
+        'subject': 'حدیث شریف',
+        'type': 'ہفتہ وار ٹیسٹ',
+        'date': '12 جنوری',
+        'daysLeft': 3,
+      },
+    ];
+
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      itemCount: exams.length,
+      itemBuilder: (context, index) {
+        final exam = exams[index];
+        return AppCard(
+          margin: const EdgeInsets.only(bottom: 8),
+          child: Row(
+            children: [
+              Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: AppColors.warning.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      '${exam['daysLeft']}',
+                      style: AppTypography.titleMedium.copyWith(
+                        color: AppColors.warning,
+                      ),
+                    ),
+                    Text(
+                      'دن',
+                      style: AppTypography.labelSmall.copyWith(
+                        color: AppColors.warning,
+                        fontSize: 9,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      exam['subject'] as String,
+                      style: AppTypography.titleMedium,
+                    ),
+                    Text(
+                      exam['type'] as String,
+                      style: AppTypography.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    exam['date'] as String,
+                    style: AppTypography.labelMedium.copyWith(
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  const Icon(
+                    Icons.chevron_left,
+                    color: AppColors.textSecondary,
+                    size: 20,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
