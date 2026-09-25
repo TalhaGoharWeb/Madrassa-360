@@ -7,29 +7,41 @@ enum FeeStatus { paid, partial, pending, pastDue }
 extension FeeStatusX on FeeStatus {
   String get urduLabel {
     switch (this) {
-      case FeeStatus.paid:    return 'ادا شدہ';
-      case FeeStatus.partial: return 'جزوی';
-      case FeeStatus.pending: return 'زیر التواء';
-      case FeeStatus.pastDue: return 'واجب الادا';
+      case FeeStatus.paid:
+        return 'ادا شدہ';
+      case FeeStatus.partial:
+        return 'جزوی';
+      case FeeStatus.pending:
+        return 'زیر التواء';
+      case FeeStatus.pastDue:
+        return 'واجب الادا';
     }
   }
 
   /// Maps Supabase snake_case value to enum.
   static FeeStatus fromString(String? s) {
     switch (s) {
-      case 'paid':     return FeeStatus.paid;
-      case 'partial':  return FeeStatus.partial;
-      case 'past_due': return FeeStatus.pastDue;
-      default:         return FeeStatus.pending;
+      case 'paid':
+        return FeeStatus.paid;
+      case 'partial':
+        return FeeStatus.partial;
+      case 'past_due':
+        return FeeStatus.pastDue;
+      default:
+        return FeeStatus.pending;
     }
   }
 
   String get dbValue {
     switch (this) {
-      case FeeStatus.paid:    return 'paid';
-      case FeeStatus.partial: return 'partial';
-      case FeeStatus.pending: return 'pending';
-      case FeeStatus.pastDue: return 'past_due';
+      case FeeStatus.paid:
+        return 'paid';
+      case FeeStatus.partial:
+        return 'partial';
+      case FeeStatus.pending:
+        return 'pending';
+      case FeeStatus.pastDue:
+        return 'past_due';
     }
   }
 }
@@ -41,14 +53,14 @@ class Fee {
   final String id;
   final String tenantId;
   final String studentId;
-  final String studentName;   // joined from students
-  final String studentClass;  // joined from students → classes
-  final String month;         // 'YYYY-MM'
+  final String studentName; // joined from students
+  final String studentClass; // joined from students → classes
+  final String month; // 'YYYY-MM'
   final double amountDue;
   final double amountPaid;
-  final String dueDate;       // ISO date 'YYYY-MM-DD'
+  final String dueDate; // ISO date 'YYYY-MM-DD'
   final String? paidDate;
-  final FeeStatus status;     // GENERATED ALWAYS in DB; read-only
+  final FeeStatus status; // GENERATED ALWAYS in DB; read-only
 
   const Fee({
     required this.id,
@@ -69,33 +81,34 @@ class Fee {
   factory Fee.fromJson(Map<String, dynamic> json) {
     final student = json['students'] as Map<String, dynamic>?;
     final studentClass =
-        (student?['classes'] as Map<String, dynamic>?)?['name'] as String? ?? '';
+        (student?['classes'] as Map<String, dynamic>?)?['name'] as String? ??
+            '';
 
     return Fee(
-      id:           json['id'] as String,
-      tenantId:     (json['tenant_id'] ?? json['madrasa_id'] ?? '') as String,
-      studentId:    json['student_id'] as String,
-      studentName:  student?['name'] as String? ?? '',
+      id: json['id'] as String,
+      tenantId: (json['tenant_id'] ?? json['madrasa_id'] ?? '') as String,
+      studentId: json['student_id'] as String,
+      studentName: student?['name'] as String? ?? '',
       studentClass: studentClass,
-      month:        json['month'] as String,
-      amountDue:    (json['amount_due'] as num).toDouble(),
-      amountPaid:   (json['amount_paid'] as num).toDouble(),
-      dueDate:      json['due_date'] as String,
-      paidDate:     json['paid_date'] as String?,
-      status:       FeeStatusX.fromString(json['status'] as String?),
+      month: json['month'] as String,
+      amountDue: (json['amount_due'] as num).toDouble(),
+      amountPaid: (json['amount_paid'] as num).toDouble(),
+      dueDate: json['due_date'] as String,
+      paidDate: json['paid_date'] as String?,
+      status: FeeStatusX.fromString(json['status'] as String?),
     );
   }
 
   /// For INSERT/UPDATE — only writable columns.
   Map<String, dynamic> toJson() => {
-    'tenant_id':  tenantId,
-    'student_id':  studentId,
-    'month':       month,
-    'amount_due':  amountDue,
-    'amount_paid': amountPaid,
-    'due_date':    dueDate,
-    'paid_date':   paidDate,
-  };
+        'tenant_id': tenantId,
+        'student_id': studentId,
+        'month': month,
+        'amount_due': amountDue,
+        'amount_paid': amountPaid,
+        'due_date': dueDate,
+        'paid_date': paidDate,
+      };
 
   Fee copyWith({double? amountPaid, String? paidDate}) {
     return Fee(

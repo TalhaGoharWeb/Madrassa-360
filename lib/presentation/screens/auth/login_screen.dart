@@ -50,7 +50,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, 0.3),
       end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeOut));
+    ).animate(
+        CurvedAnimation(parent: _animationController, curve: Curves.easeOut));
 
     _animationController.forward();
   }
@@ -175,7 +176,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.2),
+                color: Colors.black.withValues(alpha: 0.2),
                 blurRadius: 20,
                 offset: const Offset(0, 10),
               ),
@@ -218,7 +219,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -299,7 +300,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       decoration: InputDecoration(
         hintText: 'اپنا ای میل درج کریں',
         hintStyle: AppTypography.bodyMedium.copyWith(
-          color: AppColors.textSecondary.withOpacity(0.5),
+          color: AppColors.textSecondary.withValues(alpha: 0.5),
         ),
         prefixIcon: const Icon(Icons.email_outlined, color: AppColors.primary),
         filled: true,
@@ -334,7 +335,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       decoration: InputDecoration(
         hintText: 'اپنا پاس ورڈ درج کریں',
         hintStyle: AppTypography.bodyMedium.copyWith(
-          color: AppColors.textSecondary.withOpacity(0.5),
+          color: AppColors.textSecondary.withValues(alpha: 0.5),
         ),
         prefixIcon: const Icon(Icons.lock, color: AppColors.primary),
         filled: true,
@@ -373,7 +374,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
             borderRadius: BorderRadius.circular(16),
           ),
           elevation: 4,
-          shadowColor: AppColors.primary.withOpacity(0.4),
+          shadowColor: AppColors.primary.withValues(alpha: 0.4),
         ),
         child: _isLoading
             ? const SizedBox(

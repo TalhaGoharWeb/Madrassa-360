@@ -20,7 +20,7 @@ class ExcelExport {
     final excel = Excel.createExcel();
     final primary = branding?.primary ?? const Color(0xFF0E7C5B);
     final headerBg = ExcelColor.fromHexString(
-      '#${primary.value.toRadixString(16).padLeft(8, '0').substring(2)}',
+      '#${primary.toARGB32().toRadixString(16).padLeft(8, '0').substring(2)}',
     );
 
     for (var i = 0; i < tables.length; i++) {
@@ -32,12 +32,10 @@ class ExcelExport {
       final sheet = excel[sheetName];
 
       // Header row.
-      sheet.appendRow(
-          [for (final h in t.headers) TextCellValue(h)]);
+      sheet.appendRow([for (final h in t.headers) TextCellValue(h)]);
       for (var c = 0; c < t.headers.length; c++) {
         sheet
-            .cell(CellIndex.indexByColumnRow(
-                columnIndex: c, rowIndex: 0))
+            .cell(CellIndex.indexByColumnRow(columnIndex: c, rowIndex: 0))
             .cellStyle = CellStyle(
           bold: true,
           fontColorHex: ExcelColor.white,
@@ -48,8 +46,7 @@ class ExcelExport {
       }
       // Data rows.
       for (final row in t.rows) {
-        sheet.appendRow(
-            [for (final v in row) TextCellValue(v)]);
+        sheet.appendRow([for (final v in row) TextCellValue(v)]);
       }
       // Readable column widths for Urdu text.
       for (var c = 0; c < t.headers.length; c++) {

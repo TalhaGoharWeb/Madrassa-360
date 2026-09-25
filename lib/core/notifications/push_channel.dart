@@ -23,11 +23,10 @@
 /// app-bootstrap work deferred to the push-enablement task.
 ///
 /// SDK COMPATIBILITY (verified 2026-09-25 via the pub.dev API):
-/// * firebase_messaging 15.2.10 (latest 15.x, pin `^15.2.0`) documents
-///   Dart >= 3.2.0 (< 4.0.0) — intersects this app's `sdk: ^3.5.0`
-///   (>= 3.5.0 < 4.0.0) and the team's resolved toolchain
-///   (pubspec.lock: Dart >= 3.7.0). It depends on
-///   `firebase_core: ^3.15.2`, pinned to match.
+/// firebase_messaging 15.2.10 (latest 15.x, pin `^15.2.0`) requires a Dart
+/// SDK in the 3.2.0-4.0.0 range, which intersects this app's `sdk: ^3.5.0`
+/// constraint and the resolved toolchain (pubspec.lock: Dart >= 3.7.0).
+/// It depends on `firebase_core: ^3.15.2`, pinned to match.
 /// * The current 16.x line (firebase_core ^4.14.0, analysed with Dart
 ///   3.13.3) was deliberately NOT pinned: its exact Dart lower bound is
 ///   unverified and may exceed the team's Dart 3.7.
@@ -88,8 +87,7 @@ class PushChannel extends NotificationChannel {
     try {
       if (Firebase.apps.isEmpty) return false;
       final settings = await FirebaseMessaging.instance.requestPermission();
-      return settings.authorizationStatus ==
-          AuthorizationStatus.authorized;
+      return settings.authorizationStatus == AuthorizationStatus.authorized;
     } on MissingPluginException {
       return false; // defensive: unreachable behind supportsPlatform()
     } catch (_) {
@@ -98,15 +96,13 @@ class PushChannel extends NotificationChannel {
   }
 
   @override
-  Future<ChannelDispatchResult> send(
-      LocalNotificationRow notification) async {
+  Future<ChannelDispatchResult> send(LocalNotificationRow notification) async {
     if (!supportsPlatform()) {
       return const ChannelDispatchResult.skipped('unsupported_platform');
     }
     try {
       if (Firebase.apps.isEmpty) {
-        return const ChannelDispatchResult.failed(
-            'firebase_not_initialized');
+        return const ChannelDispatchResult.failed('firebase_not_initialized');
       }
       final messaging = FirebaseMessaging.instance;
 
@@ -115,9 +111,7 @@ class PushChannel extends NotificationChannel {
       if (token == null || token.isEmpty) {
         return const ChannelDispatchResult.failed('no_fcm_token');
       }
-      await SupabaseService.client
-          .from('notification_device_tokens')
-          .upsert(
+      await SupabaseService.client.from('notification_device_tokens').upsert(
         {
           'user_id': _userId,
           'tenant_id': _tenantId,
@@ -156,8 +150,7 @@ class PushChannel extends NotificationChannel {
   }
 
   @override
-  Future<void> queue(
-      AppDatabase db, LocalNotificationRow notification) {
+  Future<void> queue(AppDatabase db, LocalNotificationRow notification) {
     return NotificationOutboxStore.enqueue(
       db,
       tenantId: notification.tenantId,

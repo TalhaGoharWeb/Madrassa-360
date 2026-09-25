@@ -95,7 +95,8 @@ class _CrashScreenState extends State<CrashScreen> {
                       const SizedBox(height: 12),
                       const Text(
                         'ایپ کو ایک غیر متوقع خرابی کا سامنا کرنا پڑا۔\nآپ کا ڈیٹا محفوظ ہے — دوبارہ شروع کرنے کی کوشش کریں۔',
-                        style: TextStyle(fontSize: 14, color: Colors.black87, height: 1.6),
+                        style: TextStyle(
+                            fontSize: 14, color: Colors.black87, height: 1.6),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 4),
@@ -133,7 +134,9 @@ class _CrashScreenState extends State<CrashScreen> {
                           onPressed: _busy ? null : _restart,
                           icon: const Icon(Icons.refresh),
                           label: Text(
-                            _busy ? 'شروع ہو رہا ہے…' : 'دوبارہ شروع کریں  •  Restart',
+                            _busy
+                                ? 'شروع ہو رہا ہے…'
+                                : 'دوبارہ شروع کریں  •  Restart',
                             style: const TextStyle(fontSize: 16),
                           ),
                           style: ElevatedButton.styleFrom(

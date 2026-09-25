@@ -38,7 +38,7 @@ class NetworkService {
   /// Check connectivity and show dialog if offline
   static Future<bool> checkConnectivityWithDialog(BuildContext context) async {
     final isOnline = await isConnected();
-    
+
     if (!isOnline && context.mounted) {
       showDialog(
         context: context,
@@ -54,7 +54,7 @@ class NetworkService {
         ),
       );
     }
-    
+
     return isOnline;
   }
 
@@ -91,24 +91,24 @@ class NetworkService {
     Duration retryDelay = const Duration(seconds: 2),
   }) async {
     int attempts = 0;
-    
+
     while (attempts < maxRetries) {
       try {
         final isOnline = await isConnected();
         if (!isOnline) {
-          throw NetworkException('انٹرنیٹ دستیاب نہیں');
+          throw NetworkException(userMessageUr: 'انٹرنیٹ دستیاب نہیں');
         }
-        
+
         return await operation();
       } catch (e) {
         attempts++;
         if (attempts >= maxRetries) {
-          throw NetworkException('کنیکشن ناکام: $e');
+          throw NetworkException(userMessageUr: 'کنیکشن ناکام: $e');
         }
         await Future.delayed(retryDelay);
       }
     }
-    
+
     return null;
   }
 }

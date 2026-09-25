@@ -22,12 +22,12 @@ class ProfileScreen extends ConsumerStatefulWidget {
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   // Profile values — loaded from SharedPreferences; empty until user saves them
-  String _name  = '';
+  String _name = '';
   String _phone = '';
   String _email = '';
   String? _photoPath;
 
-  static const _kName  = 'profile_name';
+  static const _kName = 'profile_name';
   static const _kPhone = 'profile_phone';
   static const _kEmail = 'profile_email';
   static const _kPhoto = 'profile_photo_path';
@@ -42,24 +42,25 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final prefs = await SharedPreferences.getInstance();
     if (!mounted) return;
     setState(() {
-      _name      = prefs.getString(_kName)  ?? '';
-      _phone     = prefs.getString(_kPhone) ?? '';
-      _email     = prefs.getString(_kEmail) ?? '';
+      _name = prefs.getString(_kName) ?? '';
+      _phone = prefs.getString(_kPhone) ?? '';
+      _email = prefs.getString(_kEmail) ?? '';
       _photoPath = prefs.getString(_kPhoto);
     });
   }
 
-  Future<void> _saveProfile(String name, String phone, String email, String? photoPath) async {
+  Future<void> _saveProfile(
+      String name, String phone, String email, String? photoPath) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_kName,  name);
+    await prefs.setString(_kName, name);
     await prefs.setString(_kPhone, phone);
     await prefs.setString(_kEmail, email);
     if (photoPath != null) await prefs.setString(_kPhoto, photoPath);
     if (!mounted) return;
     setState(() {
-      _name      = name;
-      _phone     = phone;
-      _email     = email;
+      _name = name;
+      _phone = phone;
+      _email = email;
       if (photoPath != null) _photoPath = photoPath;
     });
   }
@@ -149,8 +150,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   Center(
                     child: Text(
                       'Madrasa 360',
-                      style: AppTypography.labelSmall.copyWith(
-                          color: AppColors.textSecondary),
+                      style: AppTypography.labelSmall
+                          .copyWith(color: AppColors.textSecondary),
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -208,11 +209,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       height: 96,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: Colors.white.withOpacity(0.2),
+                        color: Colors.white.withValues(alpha: 0.2),
                         border: Border.all(color: Colors.white54, width: 3),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.2),
+                            color: Colors.black.withValues(alpha: 0.2),
                             blurRadius: 16,
                             offset: const Offset(0, 6),
                           ),
@@ -258,14 +259,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: Colors.white30),
                 ),
                 child: Text(
                   'استاد',
-                  style: AppTypography.labelMedium
-                      .copyWith(color: Colors.white),
+                  style:
+                      AppTypography.labelMedium.copyWith(color: Colors.white),
                 ),
               ),
               const SizedBox(height: 12),
@@ -278,11 +279,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   alignment: WrapAlignment.center,
                   children: [
                     if (_phone.isNotEmpty)
-                      _ContactPill(
-                          icon: Icons.phone_outlined, label: _phone),
+                      _ContactPill(icon: Icons.phone_outlined, label: _phone),
                     if (_email.isNotEmpty)
-                      _ContactPill(
-                          icon: Icons.email_outlined, label: _email),
+                      _ContactPill(icon: Icons.email_outlined, label: _email),
                   ],
                 ),
             ],
@@ -293,7 +292,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   void _showEditProfileSheet(BuildContext context) {
-    final nameCtrl  = TextEditingController(text: _name);
+    final nameCtrl = TextEditingController(text: _name);
     final phoneCtrl = TextEditingController(text: _phone);
     final emailCtrl = TextEditingController(text: _email);
     String? tempPhotoPath = _photoPath;
@@ -309,7 +308,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         builder: (sheetContext, setSheetState) => Padding(
           padding: EdgeInsets.only(
             bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 16,
-            left: 24, right: 24, top: 24,
+            left: 24,
+            right: 24,
+            top: 24,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -331,19 +332,21 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   children: [
                     CircleAvatar(
                       radius: 50,
-                      backgroundColor: AppColors.primary.withOpacity(0.1),
+                      backgroundColor: AppColors.primary.withValues(alpha: 0.1),
                       backgroundImage: tempPhotoPath != null
                           ? FileImage(File(tempPhotoPath!)) as ImageProvider
                           : null,
                       child: tempPhotoPath == null
-                          ? const Icon(Icons.person, size: 45, color: AppColors.primary)
+                          ? const Icon(Icons.person,
+                              size: 45, color: AppColors.primary)
                           : null,
                     ),
                     Container(
                       padding: const EdgeInsets.all(6),
                       decoration: const BoxDecoration(
                           color: AppColors.primary, shape: BoxShape.circle),
-                      child: const Icon(Icons.camera_alt, color: Colors.white, size: 16),
+                      child: const Icon(Icons.camera_alt,
+                          color: Colors.white, size: 16),
                     ),
                   ],
                 ),
@@ -357,7 +360,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 decoration: InputDecoration(
                   labelText: 'نام',
                   prefixIcon: const Icon(Icons.person_outline),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12)),
                 ),
               ),
               const SizedBox(height: 12),
@@ -370,7 +374,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 decoration: InputDecoration(
                   labelText: 'فون نمبر',
                   prefixIcon: const Icon(Icons.phone_outlined),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12)),
                 ),
               ),
               const SizedBox(height: 12),
@@ -383,7 +388,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 decoration: InputDecoration(
                   labelText: 'ای میل',
                   prefixIcon: const Icon(Icons.email_outlined),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12)),
                 ),
               ),
               const SizedBox(height: 24),
@@ -400,7 +406,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         borderRadius: BorderRadius.circular(12)),
                   ),
                   onPressed: () async {
-                    final name  = nameCtrl.text.trim();
+                    final name = nameCtrl.text.trim();
                     final phone = phoneCtrl.text.trim();
                     final email = emailCtrl.text.trim();
                     final messenger = ScaffoldMessenger.of(context);
@@ -415,7 +421,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       );
                     }
                   },
-                  child: const Text('محفوظ کریں', style: TextStyle(fontSize: 16)),
+                  child:
+                      const Text('محفوظ کریں', style: TextStyle(fontSize: 16)),
                 ),
               ),
               const SizedBox(height: 8),
@@ -462,14 +469,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             _buildLanguageOption('انگریزی', false),
           ],
         ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('بند کریں'),
-              ),
-            ],
-          );
-        },
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('بند کریں'),
+          ),
+        ],
       ),
     );
   }
@@ -489,41 +494,45 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           return AlertDialog(
             title: Text('مدد اور معاونت', style: AppTypography.titleLarge),
             content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'استعمال کرنے کے طریقے:',
-                style: AppTypography.bodyLarge.copyWith(fontWeight: FontWeight.bold),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'استعمال کرنے کے طریقے:',
+                    style: AppTypography.bodyLarge
+                        .copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '• ڈیش بورڈ: اپنی کلاسوں اور طلباء کی معلومات دیکھیں\n'
+                    '• حاضری: طلباء کی حاضری مارک کریں\n'
+                    '• نتائج: امتحانات کے نتائج درج اور دیکھیں\n'
+                    '• پروفائل: اپنی معلومات دیکھیں اور ترتیبات تبدیل کریں',
+                    style: AppTypography.bodyMedium,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'رابطہ کریں:',
+                    style: AppTypography.bodyLarge
+                        .copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    contactLines.isNotEmpty ? contactLines.join('\n') : '—',
+                    style: AppTypography.bodyMedium,
+                  ),
+                ],
               ),
-              const SizedBox(height: 8),
-              Text(
-                '• ڈیش بورڈ: اپنی کلاسوں اور طلباء کی معلومات دیکھیں\n'
-                '• حاضری: طلباء کی حاضری مارک کریں\n'
-                '• نتائج: امتحانات کے نتائج درج اور دیکھیں\n'
-                '• پروفائل: اپنی معلومات دیکھیں اور ترتیبات تبدیل کریں',
-                style: AppTypography.bodyMedium,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'رابطہ کریں:',
-                style: AppTypography.bodyLarge.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                contactLines.isNotEmpty ? contactLines.join('\n') : '—',
-                style: AppTypography.bodyMedium,
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('بند کریں'),
               ),
             ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('بند کریں'),
-          ),
-        ],
+          );
+        },
       ),
     );
   }
@@ -573,7 +582,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           title: Text(label, style: AppTypography.bodyMedium),
           value: value,
           onChanged: (newValue) => setState(() => value = newValue),
-          activeColor: AppColors.primary,
+          activeThumbColor: AppColors.primary,
         );
       },
     );
@@ -625,7 +634,7 @@ class _SettingsGroup extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -670,7 +679,7 @@ class _SettingsTile extends StatelessWidget {
                   width: 38,
                   height: 38,
                   decoration: BoxDecoration(
-                    color: colour.withOpacity(0.1),
+                    color: colour.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(icon, color: colour, size: 20),
@@ -685,8 +694,8 @@ class _SettingsTile extends StatelessWidget {
                               .copyWith(color: textColour)),
                       if (subtitle != null)
                         Text(subtitle!,
-                            style: AppTypography.labelSmall.copyWith(
-                                color: AppColors.textSecondary)),
+                            style: AppTypography.labelSmall
+                                .copyWith(color: AppColors.textSecondary)),
                     ],
                   ),
                 ),
@@ -716,7 +725,7 @@ class _ContactPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.15),
+        color: Colors.white.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.white24),
       ),

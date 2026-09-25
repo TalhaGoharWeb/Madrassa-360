@@ -16,7 +16,8 @@ class ReportCatalog {
       id: 'admission_form',
       titleEn: 'Admission Form',
       titleUr: 'داخلہ فارم',
-      descriptionEn: 'Printable admission form pre-filled from the student record.',
+      descriptionEn:
+          'Printable admission form pre-filled from the student record.',
       descriptionUr: 'طالب علم کے ریکارڈ سے پُر شدہ داخلہ فارم۔',
       category: ReportCategory.student,
       needsStudent: true,
@@ -25,8 +26,10 @@ class ReportCatalog {
       id: 'student_id_card',
       titleEn: 'Student ID Card',
       titleUr: 'طالب علم کا شناختی کارڈ',
-      descriptionEn: 'CR80-size ID card with photo placeholder and tenant branding.',
-      descriptionUr: 'کرایہ سائز کا شناختی کارڈ بمعہ تصویر کی جگہ اور ادارے کی شناخت۔',
+      descriptionEn:
+          'CR80-size ID card with photo placeholder and tenant branding.',
+      descriptionUr:
+          'کرایہ سائز کا شناختی کارڈ بمعہ تصویر کی جگہ اور ادارے کی شناخت۔',
       category: ReportCategory.student,
       needsStudent: true,
     ),
@@ -34,7 +37,8 @@ class ReportCatalog {
       id: 'character_certificate',
       titleEn: 'Character Certificate',
       titleUr: 'کردار سرٹیفکیٹ',
-      descriptionEn: 'Character certificate. Conduct is left blank for the principal to fill by hand — the system never invents it.',
+      descriptionEn:
+          'Character certificate. Conduct is left blank for the principal to fill by hand — the system never invents it.',
       descriptionUr: 'کردار سرٹیفکیٹ۔ برتاؤ کا خانہ خالی رکھا جاتا ہے۔',
       category: ReportCategory.student,
       needsStudent: true,
@@ -43,7 +47,8 @@ class ReportCatalog {
       id: 'transfer_certificate',
       titleEn: 'Transfer / Leaving Certificate',
       titleUr: 'منتقلی سرٹیفکیٹ',
-      descriptionEn: 'School-leaving certificate with dues computed from local invoices and payments.',
+      descriptionEn:
+          'School-leaving certificate with dues computed from local invoices and payments.',
       descriptionUr: 'اسکول چھوڑنے کا سرٹیفکیٹ بمعہ واجبات کی تفصیل۔',
       category: ReportCategory.student,
       needsStudent: true,
@@ -52,8 +57,10 @@ class ReportCatalog {
       id: 'result_card',
       titleEn: 'Result Card',
       titleUr: 'رزلٹ کارڈ',
-      descriptionEn: 'Per-exam result card: subjects, marks, percentage, grade and class position.',
-      descriptionUr: 'امتحانی رزلٹ کارڈ: مضامین، نمبرات، فیصد، گریڈ اور پوزیشن۔',
+      descriptionEn:
+          'Per-exam result card: subjects, marks, percentage, grade and class position.',
+      descriptionUr:
+          'امتحانی رزلٹ کارڈ: مضامین، نمبرات، فیصد، گریڈ اور پوزیشن۔',
       category: ReportCategory.student,
       needsStudent: true,
       needsExam: true,
@@ -62,7 +69,8 @@ class ReportCatalog {
       id: 'attendance_report',
       titleEn: 'Attendance Report',
       titleUr: 'حاضری رپورٹ',
-      descriptionEn: 'Per-student attendance with present/absent/leave/late counts and percentage.',
+      descriptionEn:
+          'Per-student attendance with present/absent/leave/late counts and percentage.',
       descriptionUr: 'طالب علم کی حاضری بمعہ فیصد۔',
       category: ReportCategory.student,
       needsStudent: true,
@@ -73,7 +81,8 @@ class ReportCatalog {
       id: 'fee_statement',
       titleEn: 'Fee Statement',
       titleUr: 'فیس اسٹیٹمنٹ',
-      descriptionEn: 'Invoices, payments, discounts and the outstanding balance for one student.',
+      descriptionEn:
+          'Invoices, payments, discounts and the outstanding balance for one student.',
       descriptionUr: 'ایک طالب علم کے بل، ادائیگیاں اور واجب الادا رقم۔',
       category: ReportCategory.student,
       needsStudent: true,
@@ -84,7 +93,8 @@ class ReportCatalog {
       id: 'student_register',
       titleEn: 'Student Register',
       titleUr: 'طلبہ رجسٹر',
-      descriptionEn: 'Full student register, optionally filtered by class or darja.',
+      descriptionEn:
+          'Full student register, optionally filtered by class or darja.',
       descriptionUr: 'مکمل طلبہ رجسٹر (جماعت/درجہ کے فلٹر کے ساتھ)۔',
       category: ReportCategory.admin,
       needsClass: true,
@@ -104,7 +114,8 @@ class ReportCatalog {
       id: 'attendance_summary',
       titleEn: 'Attendance Summary',
       titleUr: 'حاضری خلاصہ',
-      descriptionEn: 'Per-student attendance summary for a class and date range.',
+      descriptionEn:
+          'Per-student attendance summary for a class and date range.',
       descriptionUr: 'جماعت کی حاضری کا خلاصہ (مدت کے حساب سے)۔',
       category: ReportCategory.admin,
       needsClass: true,
@@ -135,7 +146,8 @@ class ReportCatalog {
       id: 'income_expense',
       titleEn: 'Income & Expense Report',
       titleUr: 'آمدن و اخراجات رپورٹ',
-      descriptionEn: 'Income and expense entries for a period with the net balance.',
+      descriptionEn:
+          'Income and expense entries for a period with the net balance.',
       descriptionUr: 'مدت کی آمدن و اخراجات بمعہ خالص بیلنس۔',
       category: ReportCategory.admin,
       needsDateRange: true,
@@ -155,7 +167,8 @@ class ReportCatalog {
       id: 'academic_performance',
       titleEn: 'Academic Performance',
       titleUr: 'تعلیمی کارکردگی',
-      descriptionEn: 'Per-student average percentage across exams for a class or darja.',
+      descriptionEn:
+          'Per-student average percentage across exams for a class or darja.',
       descriptionUr: 'جماعت/درجہ کے طلبہ کی مجموعی تعلیمی کارکردگی۔',
       category: ReportCategory.admin,
       needsClass: true,

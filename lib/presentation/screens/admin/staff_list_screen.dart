@@ -34,60 +34,60 @@ class _StaffListScreenState extends State<StaffListScreen> {
   @override
   Widget build(BuildContext context) {
     return Consumer(builder: (context, ref, _) {
-    _ref = ref;
-    final staffAsync = ref.watch(allStaffProvider);
-    final staffList = staffAsync.valueOrNull ?? [];
+      _ref = ref;
+      final staffAsync = ref.watch(allStaffProvider);
+      final staffList = staffAsync.valueOrNull ?? [];
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(AppStrings.staff),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.filter_list),
-            onPressed: () {},
-          ),
-        ],
-      ),
-      body: staffAsync.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : staffAsync.hasError
-              ? Center(
-                  child: Text(
-                    'عملہ لوڈ کرنے میں خطا ہوئی',
-                    style: AppTypography.bodyMedium,
-                  ),
-                )
-              : Column(
-          children: [
-            // Search Bar
-            SearchField(
-              controller: _searchController,
-              hintText: 'عملہ تلاش کریں...',
-              onChanged: (value) => setState(() {}),
-            ),
-            
-            // Department Filter
-            _buildDepartmentFilter(),
-            
-            // Staff Stats
-            _buildStaffStats(staffList),
-            
-            // Staff List
-            Expanded(
-              child: _buildStaffList(staffList),
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(AppStrings.staff),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.filter_list),
+              onPressed: () {},
             ),
           ],
         ),
-      floatingActionButton: FloatingActionButton.extended(
-        heroTag: 'staff_list_add_fab',
-        onPressed: _showNewStaffDialog,
-        icon: const Icon(Icons.person_add),
-        label: Text(
-          'نیا عملہ',
-          style: AppTypography.buttonText,
+        body: staffAsync.isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : staffAsync.hasError
+                ? Center(
+                    child: Text(
+                      'عملہ لوڈ کرنے میں خطا ہوئی',
+                      style: AppTypography.bodyMedium,
+                    ),
+                  )
+                : Column(
+                    children: [
+                      // Search Bar
+                      SearchField(
+                        controller: _searchController,
+                        hintText: 'عملہ تلاش کریں...',
+                        onChanged: (value) => setState(() {}),
+                      ),
+
+                      // Department Filter
+                      _buildDepartmentFilter(),
+
+                      // Staff Stats
+                      _buildStaffStats(staffList),
+
+                      // Staff List
+                      Expanded(
+                        child: _buildStaffList(staffList),
+                      ),
+                    ],
+                  ),
+        floatingActionButton: FloatingActionButton.extended(
+          heroTag: 'staff_list_add_fab',
+          onPressed: _showNewStaffDialog,
+          icon: const Icon(Icons.person_add),
+          label: Text(
+            'نیا عملہ',
+            style: AppTypography.buttonText,
+          ),
         ),
-      ),
-    );
+      );
     });
   }
 
@@ -117,7 +117,7 @@ class _StaffListScreenState extends State<StaffListScreen> {
               onSelected: (selected) {
                 setState(() => _selectedDepartment = dept['id']!);
               },
-              selectedColor: AppColors.primary.withOpacity(0.2),
+              selectedColor: AppColors.primary.withValues(alpha: 0.2),
               checkmarkColor: AppColors.primary,
               labelStyle: AppTypography.labelMedium.copyWith(
                 color: isSelected ? AppColors.primary : AppColors.textSecondary,
@@ -131,13 +131,15 @@ class _StaffListScreenState extends State<StaffListScreen> {
 
   Widget _buildStaffStats(List<Staff> staffList) {
     final teachers = staffList.where((s) => s.department == 'تعلیمی').length;
-    final totalSalary = staffList.fold<double>(0, (sum, s) => sum + (s.salary ?? 0));
+    final totalSalary =
+        staffList.fold<double>(0, (sum, s) => sum + (s.salary ?? 0));
 
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Row(
         children: [
-          _buildStatChip(Icons.people, '${staffList.length}', 'کل عملہ', AppColors.primary),
+          _buildStatChip(Icons.people, '${staffList.length}', 'کل عملہ',
+              AppColors.primary),
           const SizedBox(width: 8),
           _buildStatChip(Icons.school, '$teachers', 'اساتذہ', AppColors.info),
           const SizedBox(width: 8),
@@ -152,12 +154,13 @@ class _StaffListScreenState extends State<StaffListScreen> {
     );
   }
 
-  Widget _buildStatChip(IconData icon, String value, String label, Color color) {
+  Widget _buildStatChip(
+      IconData icon, String value, String label, Color color) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
@@ -181,20 +184,20 @@ class _StaffListScreenState extends State<StaffListScreen> {
 
   Widget _buildStaffList(List<Staff> staffList) {
     var filteredStaff = staffList;
-    
+
     // Apply department filter
     if (_selectedDepartment != 'all') {
       filteredStaff = filteredStaff
           .where((s) => s.department == _selectedDepartment)
           .toList();
     }
-    
+
     // Apply search filter
     final searchQuery = _searchController.text;
     if (searchQuery.isNotEmpty) {
       filteredStaff = filteredStaff.where((s) {
         return s.name.contains(searchQuery) ||
-               s.designation.contains(searchQuery);
+            s.designation.contains(searchQuery);
       }).toList();
     }
 
@@ -229,7 +232,7 @@ class _StaffListScreenState extends State<StaffListScreen> {
             height: 55,
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [
+                colors: const [
                   AppColors.primary,
                   AppColors.primaryDark,
                 ],
@@ -248,7 +251,7 @@ class _StaffListScreenState extends State<StaffListScreen> {
             ),
           ),
           const SizedBox(width: 12),
-          
+
           // Info
           Expanded(
             child: Column(
@@ -276,17 +279,18 @@ class _StaffListScreenState extends State<StaffListScreen> {
               ],
             ),
           ),
-          
+
           // Status & Actions
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: staff.isActive
-                      ? AppColors.success.withOpacity(0.1)
-                      : AppColors.error.withOpacity(0.1),
+                      ? AppColors.success.withValues(alpha: 0.1)
+                      : AppColors.error.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
@@ -296,7 +300,9 @@ class _StaffListScreenState extends State<StaffListScreen> {
                       width: 6,
                       height: 6,
                       decoration: BoxDecoration(
-                        color: staff.isActive ? AppColors.success : AppColors.error,
+                        color: staff.isActive
+                            ? AppColors.success
+                            : AppColors.error,
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -304,7 +310,9 @@ class _StaffListScreenState extends State<StaffListScreen> {
                     Text(
                       staff.isActive ? 'فعال' : 'غیر فعال',
                       style: AppTypography.labelSmall.copyWith(
-                        color: staff.isActive ? AppColors.success : AppColors.error,
+                        color: staff.isActive
+                            ? AppColors.success
+                            : AppColors.error,
                       ),
                     ),
                   ],
@@ -316,7 +324,7 @@ class _StaffListScreenState extends State<StaffListScreen> {
                 icon: const Icon(Icons.phone, size: 20),
                 color: AppColors.primary,
                 style: IconButton.styleFrom(
-                  backgroundColor: AppColors.primary.withOpacity(0.1),
+                  backgroundColor: AppColors.primary.withValues(alpha: 0.1),
                   padding: const EdgeInsets.all(8),
                   minimumSize: const Size(36, 36),
                 ),
@@ -371,7 +379,7 @@ class _StaffListScreenState extends State<StaffListScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  
+
                   // Profile Header
                   Container(
                     width: 90,
@@ -385,7 +393,7 @@ class _StaffListScreenState extends State<StaffListScreen> {
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.primary.withOpacity(0.3),
+                          color: AppColors.primary.withValues(alpha: 0.3),
                           blurRadius: 15,
                           offset: const Offset(0, 5),
                         ),
@@ -404,9 +412,10 @@ class _StaffListScreenState extends State<StaffListScreen> {
                   Text(staff.name, style: AppTypography.headingSmall),
                   const SizedBox(height: 4),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.1),
+                      color: AppColors.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
@@ -416,10 +425,10 @@ class _StaffListScreenState extends State<StaffListScreen> {
                       ),
                     ),
                   ),
-                  
+
                   const SizedBox(height: 24),
                   const Divider(),
-                  
+
                   // Info Tiles
                   InfoTile(
                     icon: Icons.person,
@@ -447,9 +456,9 @@ class _StaffListScreenState extends State<StaffListScreen> {
                     value: '${(staff.salary ?? 0).toInt()} روپے',
                     iconColor: AppColors.success,
                   ),
-                  
+
                   const SizedBox(height: 24),
-                  
+
                   // Action Buttons
                   Row(
                     children: [
@@ -515,7 +524,7 @@ class _StaffListScreenState extends State<StaffListScreen> {
                     },
                     child: CircleAvatar(
                       radius: 40,
-                      backgroundColor: AppColors.primary.withOpacity(0.1),
+                      backgroundColor: AppColors.primary.withValues(alpha: 0.1),
                       backgroundImage: pickedPhoto != null
                           ? FileImage(File(pickedPhoto!.path))
                           : null,
@@ -527,185 +536,191 @@ class _StaffListScreenState extends State<StaffListScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-              // Name
-              TextFormField(
-                controller: nameController,
-                decoration: const InputDecoration(
-                  labelText: 'نام',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.person),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'نام درج کریں';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-
-              // Father Name
-              TextFormField(
-                controller: fatherNameController,
-                decoration: const InputDecoration(
-                  labelText: 'والد کا نام',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.family_restroom),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'والد کا نام درج کریں';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-
-              // Designation
-              TextFormField(
-                controller: designationController,
-                decoration: const InputDecoration(
-                  labelText: 'عہدہ',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.work),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'عہدہ درج کریں';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-
-              // Phone
-              TextFormField(
-                controller: phoneController,
-                keyboardType: TextInputType.phone,
-                decoration: const InputDecoration(
-                  labelText: 'فون نمبر',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.phone),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'فون نمبر درج کریں';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-
-              // Department
-              DropdownButtonFormField<String>(
-                value: selectedDepartment,
-                decoration: const InputDecoration(
-                  labelText: 'شعبہ',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.apartment),
-                ),
-                items: [
-                  'تعلیمی',
-                  'انتظامیہ',
-                  'مالیات',
-                ].map((String value) {
-                  return DropdownMenuItem<String>(
-                    value: value,
-                    child: Text(value),
-                  );
-                }).toList(),
-                onChanged: (value) => selectedDepartment = value!,
-              ),
-              const SizedBox(height: 16),
-
-              // Salary
-              TextFormField(
-                controller: salaryController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'ماہانہ تنخواہ',
-                  border: OutlineInputBorder(),
-                  prefixText: 'ر ',
-                  prefixIcon: Icon(Icons.payments),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'تنخواہ درج کریں';
-                  }
-                  final salary = double.tryParse(value);
-                  if (salary == null || salary <= 0) {
-                    return 'درست تنخواہ درج کریں';
-                  }
-                  return null;
-                },
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('منسوخ کریں'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (nameController.text.isNotEmpty &&
-                  fatherNameController.text.isNotEmpty &&
-                  designationController.text.isNotEmpty &&
-                  phoneController.text.isNotEmpty &&
-                  salaryController.text.isNotEmpty) {
-                final salary = double.tryParse(salaryController.text);
-                if (salary != null && salary > 0) {
-                  try {
-                    showDialog(
-                      context: context,
-                      barrierDismissible: false,
-                      builder: (_) => const Center(child: CircularProgressIndicator()),
-                    );
-                    final staff = Staff(
-                      id: const Uuid().v4(),
-                      tenantId: _ref!.read(currentTenantIdProvider) ?? '',
-                      name: nameController.text.trim(),
-                      fatherName: fatherNameController.text.trim(),
-                      designation: designationController.text.trim(),
-                      phone: phoneController.text.trim(),
-                      joiningDate: selectedJoiningDate,
-                      department: selectedDepartment,
-                      salary: salary,
-                    );
-                    final saved = await _ref!.read(staffNotifierProvider.notifier).save(staff);
-                    if (pickedPhoto != null) {
-                      await _ref!.read(staffNotifierProvider.notifier).uploadPhoto(saved.id, pickedPhoto!);
+                // Name
+                TextFormField(
+                  controller: nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'نام',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.person),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'نام درج کریں';
                     }
-                    if (context.mounted) {
-                      Navigator.pop(context); // close loader
-                      Navigator.pop(context); // close dialog
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                        content: Text('${nameController.text} کو عملہ میں شامل کر دیا گیا'),
-                        backgroundColor: Colors.green,
-                      ));
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+
+                // Father Name
+                TextFormField(
+                  controller: fatherNameController,
+                  decoration: const InputDecoration(
+                    labelText: 'والد کا نام',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.family_restroom),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'والد کا نام درج کریں';
                     }
-                  } catch (e) {
-                    if (context.mounted) {
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                        content: Text('خطا: $e'),
-                        backgroundColor: Colors.red,
-                      ));
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+
+                // Designation
+                TextFormField(
+                  controller: designationController,
+                  decoration: const InputDecoration(
+                    labelText: 'عہدہ',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.work),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'عہدہ درج کریں';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+
+                // Phone
+                TextFormField(
+                  controller: phoneController,
+                  keyboardType: TextInputType.phone,
+                  decoration: const InputDecoration(
+                    labelText: 'فون نمبر',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.phone),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'فون نمبر درج کریں';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+
+                // Department
+                DropdownButtonFormField<String>(
+                  initialValue: selectedDepartment,
+                  decoration: const InputDecoration(
+                    labelText: 'شعبہ',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.apartment),
+                  ),
+                  items: [
+                    'تعلیمی',
+                    'انتظامیہ',
+                    'مالیات',
+                  ].map((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(value),
+                    );
+                  }).toList(),
+                  onChanged: (value) => selectedDepartment = value!,
+                ),
+                const SizedBox(height: 16),
+
+                // Salary
+                TextFormField(
+                  controller: salaryController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'ماہانہ تنخواہ',
+                    border: OutlineInputBorder(),
+                    prefixText: 'ر ',
+                    prefixIcon: Icon(Icons.payments),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'تنخواہ درج کریں';
+                    }
+                    final salary = double.tryParse(value);
+                    if (salary == null || salary <= 0) {
+                      return 'درست تنخواہ درج کریں';
+                    }
+                    return null;
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('منسوخ کریں'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (nameController.text.isNotEmpty &&
+                    fatherNameController.text.isNotEmpty &&
+                    designationController.text.isNotEmpty &&
+                    phoneController.text.isNotEmpty &&
+                    salaryController.text.isNotEmpty) {
+                  final salary = double.tryParse(salaryController.text);
+                  if (salary != null && salary > 0) {
+                    try {
+                      showDialog(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (_) =>
+                            const Center(child: CircularProgressIndicator()),
+                      );
+                      final staff = Staff(
+                        id: const Uuid().v4(),
+                        tenantId: _ref!.read(currentTenantIdProvider) ?? '',
+                        name: nameController.text.trim(),
+                        fatherName: fatherNameController.text.trim(),
+                        designation: designationController.text.trim(),
+                        phone: phoneController.text.trim(),
+                        joiningDate: selectedJoiningDate,
+                        department: selectedDepartment,
+                        salary: salary,
+                      );
+                      final saved = await _ref!
+                          .read(staffNotifierProvider.notifier)
+                          .save(staff);
+                      if (pickedPhoto != null) {
+                        await _ref!
+                            .read(staffNotifierProvider.notifier)
+                            .uploadPhoto(saved.id, pickedPhoto!);
+                      }
+                      if (context.mounted) {
+                        Navigator.pop(context); // close loader
+                        Navigator.pop(context); // close dialog
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                          content: Text(
+                              '${nameController.text} کو عملہ میں شامل کر دیا گیا'),
+                          backgroundColor: Colors.green,
+                        ));
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                          content: Text('خطا: $e'),
+                          backgroundColor: Colors.red,
+                        ));
+                      }
                     }
                   }
                 }
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+              ),
+              child: const Text('شامل کریں'),
             ),
-            child: const Text('شامل کریں'),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
-  );
+    );
   }
 
   void _showEditStaffDialog(Staff staff) {
@@ -713,7 +728,8 @@ class _StaffListScreenState extends State<StaffListScreen> {
     final fatherCtrl = TextEditingController(text: staff.fatherName);
     final desigCtrl = TextEditingController(text: staff.designation);
     final phoneCtrl = TextEditingController(text: staff.phone);
-    final salaryCtrl = TextEditingController(text: staff.salary?.toInt().toString() ?? '');
+    final salaryCtrl =
+        TextEditingController(text: staff.salary?.toInt().toString() ?? '');
     String selectedDept = staff.department ?? 'تعلیمی';
     XFile? pickedPhoto;
 
@@ -721,8 +737,8 @@ class _StaffListScreenState extends State<StaffListScreen> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
-          title: Text('عملہ معلومات ترمیم کریں',
-              style: AppTypography.titleLarge),
+          title:
+              Text('عملہ معلومات ترمیم کریں', style: AppTypography.titleLarge),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -739,11 +755,13 @@ class _StaffListScreenState extends State<StaffListScreen> {
                       children: [
                         CircleAvatar(
                           radius: 40,
-                          backgroundColor: AppColors.primary.withOpacity(0.1),
+                          backgroundColor:
+                              AppColors.primary.withValues(alpha: 0.1),
                           backgroundImage: pickedPhoto != null
                               ? FileImage(File(pickedPhoto!.path))
                               : (staff.photoUrl != null
-                                  ? NetworkImage(staff.photoUrl!) as ImageProvider
+                                  ? NetworkImage(staff.photoUrl!)
+                                      as ImageProvider
                                   : null),
                           child: (pickedPhoto == null && staff.photoUrl == null)
                               ? Text(staff.name[0],
@@ -752,12 +770,14 @@ class _StaffListScreenState extends State<StaffListScreen> {
                               : null,
                         ),
                         Positioned(
-                          bottom: 0, right: 0,
+                          bottom: 0,
+                          right: 0,
                           child: Container(
                             decoration: const BoxDecoration(
                                 color: AppColors.primary,
                                 shape: BoxShape.circle),
-                            child: const Icon(Icons.edit, color: Colors.white, size: 16),
+                            child: const Icon(Icons.edit,
+                                color: Colors.white, size: 16),
                           ),
                         ),
                       ],
@@ -799,7 +819,7 @@ class _StaffListScreenState extends State<StaffListScreen> {
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  value: selectedDept,
+                  initialValue: selectedDept,
                   decoration: const InputDecoration(
                       labelText: 'شعبہ',
                       border: OutlineInputBorder(),
@@ -864,8 +884,8 @@ class _StaffListScreenState extends State<StaffListScreen> {
                       Navigator.pop(context);
                       Navigator.pop(context);
                       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                        content:
-                            Text('${nameCtrl.text} کی معلومات ترمیم کر دی گئیں'),
+                        content: Text(
+                            '${nameCtrl.text} کی معلومات ترمیم کر دی گئیں'),
                         backgroundColor: Colors.green,
                       ));
                     }
@@ -873,7 +893,8 @@ class _StaffListScreenState extends State<StaffListScreen> {
                     if (context.mounted) {
                       Navigator.pop(context);
                       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                        content: Text('خطا: $e'), backgroundColor: Colors.red));
+                          content: Text('خطا: $e'),
+                          backgroundColor: Colors.red));
                     }
                   }
                 }

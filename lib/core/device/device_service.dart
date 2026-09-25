@@ -29,7 +29,6 @@ import 'dart:io';
 
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
 import '../services/supabase_service.dart';
@@ -59,8 +58,9 @@ class DeviceService {
       final file = await _identityFile();
       if (await file.exists()) {
         final raw = await file.readAsString();
-        final id = ((jsonDecode(raw) as Map<String, dynamic>)['device_id'] as String?)
-            ?.trim();
+        final id =
+            ((jsonDecode(raw) as Map<String, dynamic>)['device_id'] as String?)
+                ?.trim();
         if (id != null && id.isNotEmpty) {
           return _cachedDeviceId = id;
         }
@@ -69,7 +69,10 @@ class DeviceService {
       try {
         await file.parent.create(recursive: true);
         await file.writeAsString(
-          jsonEncode({'device_id': fresh, 'created_at': DateTime.now().toIso8601String()}),
+          jsonEncode({
+            'device_id': fresh,
+            'created_at': DateTime.now().toIso8601String()
+          }),
           flush: true,
         );
       } catch (_) {
@@ -121,18 +124,22 @@ class DeviceService {
 
       String? deviceRowId;
       try {
-        final upserted = await client.from('devices').upsert(
-          {
-            'device_id': deviceId,
-            'user_id': userId,
-            'tenant_id': tenantId,
-            'os': Platform.operatingSystem,
-            'os_version': Platform.operatingSystemVersion,
-            'app_version': appVersion,
-            'last_active': now,
-          },
-          onConflict: 'device_id',
-        ).select('id').maybeSingle();
+        final upserted = await client
+            .from('devices')
+            .upsert(
+              {
+                'device_id': deviceId,
+                'user_id': userId,
+                'tenant_id': tenantId,
+                'os': Platform.operatingSystem,
+                'os_version': Platform.operatingSystemVersion,
+                'app_version': appVersion,
+                'last_active': now,
+              },
+              onConflict: 'device_id',
+            )
+            .select('id')
+            .maybeSingle();
         deviceRowId = upserted?['id'] as String?;
       } catch (_) {
         // Registration upsert failed (offline, RLS, …) — login continues.
@@ -210,9 +217,13 @@ class DeviceService {
       final deviceRowId = deviceRow?['id'] as String?;
       if (deviceRowId == null) return;
 
-      await client.from('device_sessions').update({
-        'revoked_at': DateTime.now().toUtc().toIso8601String(),
-      }).eq('device_id', deviceRowId).isFilter('revoked_at', null);
+      await client
+          .from('device_sessions')
+          .update({
+            'revoked_at': DateTime.now().toUtc().toIso8601String(),
+          })
+          .eq('device_id', deviceRowId)
+          .isFilter('revoked_at', null);
     } catch (_) {
       // Sign-out must never fail because of session bookkeeping.
     }

@@ -15,50 +15,51 @@ class FeeHistoryScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Consumer(builder: (context, ref, _) {
-    // Phase 4: parents see ONLY their own children's fees, via the
-    // student_guardians link + tenant scope (never the global fee list).
-    // Phase 6 (mock purge): the header card below renders the real child
-    // (first linked child) — never the old hard-coded name/class/roll.
-    final feesAsync = ref.watch(parentFeesProvider);
-    final childrenAsync = ref.watch(parentChildrenProvider);
+      // Phase 4: parents see ONLY their own children's fees, via the
+      // student_guardians link + tenant scope (never the global fee list).
+      // Phase 6 (mock purge): the header card below renders the real child
+      // (first linked child) — never the old hard-coded name/class/roll.
+      final feesAsync = ref.watch(parentFeesProvider);
+      final childrenAsync = ref.watch(parentChildrenProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(AppStrings.fees),
-      ),
-      body: feesAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(
-          child: Text('فیس لوڈ کرنے میں خطا', style: AppTypography.bodyMedium),
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(AppStrings.fees),
         ),
-        data: (fees) {
-          final children = childrenAsync.valueOrNull ?? const [];
-          // Totals aggregate across all linked children; the header names
-          // them honestly (never an invented single child).
-          final String? headerName = children.isEmpty
-              ? null
-              : (children.length == 1
-                  ? children.first.name
-                  : '${children.length} طلباء');
-          final String? headerClass =
-              children.length == 1 ? children.first.className : null;
-          final String? rollLine = children.length == 1
-              ? 'رول نمبر ${children.first.rollNo}'
-              : null;
-          return Column(
-            children: [
-              // Fee Summary Card
-              _buildFeeSummaryCard(fees, headerName, headerClass, rollLine),
+        body: feesAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, _) => Center(
+            child:
+                Text('فیس لوڈ کرنے میں خطا', style: AppTypography.bodyMedium),
+          ),
+          data: (fees) {
+            final children = childrenAsync.valueOrNull ?? const [];
+            // Totals aggregate across all linked children; the header names
+            // them honestly (never an invented single child).
+            final String? headerName = children.isEmpty
+                ? null
+                : (children.length == 1
+                    ? children.first.name
+                    : '${children.length} طلباء');
+            final String? headerClass =
+                children.length == 1 ? children.first.className : null;
+            final String? rollLine = children.length == 1
+                ? 'رول نمبر ${children.first.rollNo}'
+                : null;
+            return Column(
+              children: [
+                // Fee Summary Card
+                _buildFeeSummaryCard(fees, headerName, headerClass, rollLine),
 
-              // Fee History List
-              Expanded(
-                child: _buildFeeHistoryList(fees),
-              ),
-            ],
-          );
-        },
-      ),
-    );
+                // Fee History List
+                Expanded(
+                  child: _buildFeeHistoryList(fees),
+                ),
+              ],
+            );
+          },
+        ),
+      );
     });
   }
 
@@ -86,7 +87,7 @@ class FeeHistoryScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.3),
+            color: AppColors.primary.withValues(alpha: 0.3),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -116,15 +117,17 @@ class FeeHistoryScreen extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: AppColors.success.withOpacity(0.3),
+                  color: AppColors.success.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.check_circle, color: Colors.white, size: 16),
+                    const Icon(Icons.check_circle,
+                        color: Colors.white, size: 16),
                     const SizedBox(width: 4),
                     Text(
                       'فیس مکمل',
@@ -141,7 +144,7 @@ class FeeHistoryScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
+              color: Colors.white.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -206,7 +209,7 @@ class FeeHistoryScreen extends StatelessWidget {
 
   Widget _buildFeeHistoryTile(Fee fee) {
     final isPaid = fee.status == FeeStatus.paid;
-    
+
     return AppCard(
       margin: const EdgeInsets.only(bottom: 8),
       onTap: () {},
@@ -218,8 +221,8 @@ class FeeHistoryScreen extends StatelessWidget {
             height: 50,
             decoration: BoxDecoration(
               color: isPaid
-                  ? AppColors.success.withOpacity(0.1)
-                  : AppColors.warning.withOpacity(0.1),
+                  ? AppColors.success.withValues(alpha: 0.1)
+                  : AppColors.warning.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
@@ -228,7 +231,7 @@ class FeeHistoryScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          
+
           // Info
           Expanded(
             child: Column(
@@ -258,7 +261,7 @@ class FeeHistoryScreen extends StatelessWidget {
               ],
             ),
           ),
-          
+
           // Amount
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
@@ -273,8 +276,8 @@ class FeeHistoryScreen extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
                   color: isPaid
-                      ? AppColors.success.withOpacity(0.1)
-                      : AppColors.warning.withOpacity(0.1),
+                      ? AppColors.success.withValues(alpha: 0.1)
+                      : AppColors.warning.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(

@@ -26,6 +26,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:madrasa_360/core/constants/app_permissions.dart';
 import 'package:madrasa_360/core/reports/report_catalog.dart';
+import 'package:madrasa_360/core/reports/report_params.dart';
 import 'package:madrasa_360/core/services/tenant_context.dart';
 import 'package:madrasa_360/data/local/app_database.dart';
 import 'package:madrasa_360/data/local/database_provider.dart';
@@ -41,6 +42,7 @@ import 'fake_auth_repository.dart';
 
 void main() {
   setUpAll(() async {
+    SharedPreferences.setMockInitialValues({});
     await Supabase.initialize(
       url: 'http://127.0.0.1:54321',
       anonKey: 'widget-test-anon-key',
@@ -94,8 +96,7 @@ void main() {
     testWidgets('student tab lists the student report catalog', (tester) async {
       await pumpHub(tester, tenantId: 't1');
 
-      final studentReports =
-          ReportCatalog.byCategory(ReportCategory.student);
+      final studentReports = ReportCatalog.byCategory(ReportCategory.student);
       expect(studentReports, isNotEmpty);
       // First catalog entry renders with its Urdu title.
       expect(find.text(studentReports.first.titleUr), findsOneWidget);

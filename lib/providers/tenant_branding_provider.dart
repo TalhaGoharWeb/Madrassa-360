@@ -97,8 +97,9 @@ class TenantBranding {
           _parseColor(s['secondary_color'] as String?, const Color(0xFF14532D)),
       accentColor:
           _parseColor(s['accent_color'] as String?, const Color(0xFFF59E0B)),
-      fontFamily:
-          (s['font'] as String?)?.trim().isNotEmpty == true ? s['font'] as String : 'JameelNooriNastaleeq',
+      fontFamily: (s['font'] as String?)?.trim().isNotEmpty == true
+          ? s['font'] as String
+          : 'JameelNooriNastaleeq',
       darkModeEnabled: s['dark_mode_enabled'] as bool? ?? false,
       language: (s['language'] as String?) ?? 'ur',
     );
@@ -143,8 +144,7 @@ class TenantBranding {
 
 /// Branding for the active tenant. Falls back to neutral product defaults
 /// when logged out or when the rows cannot be read.
-final tenantBrandingProvider =
-    FutureProvider<TenantBranding>((ref) async {
+final tenantBrandingProvider = FutureProvider<TenantBranding>((ref) async {
   final tenantId = ref.watch(currentTenantIdProvider);
   if (tenantId == null) return TenantBranding.fallback();
 
@@ -164,10 +164,9 @@ final tenantBrandingProvider =
         .maybeSingle(),
   ]);
 
-  final tenantRow = results[0] as Map<String, dynamic>?;
+  final tenantRow = results[0];
   if (tenantRow == null) return TenantBranding.fallback();
-  return TenantBranding.fromRows(
-      tenantRow, results[1] as Map<String, dynamic>?);
+  return TenantBranding.fromRows(tenantRow, results[1]);
 });
 
 // ─────────────────────────────────────────────
@@ -190,7 +189,8 @@ final tenantModulesProvider = FutureProvider<Set<String>>((ref) async {
         .eq('tenant_id', tenantId)
         .eq('enabled', true);
     return <String>{
-      for (final r in (rows as List)) (r as Map<String, dynamic>)['module'] as String
+      for (final r in (rows as List))
+        (r as Map<String, dynamic>)['module'] as String
     };
   } catch (_) {
     // Offline / RLS hiccup: fail closed for gating decisions made
@@ -238,8 +238,7 @@ extension TenantBrandedTheme on ThemeData {
 /// logged out) so navigation does not flicker-hide during tenant
 /// resolution. Pass an explicitly loaded set to [buildNavTabs]-style
 /// helpers instead when a fail-closed decision is required.
-final isModuleEnabledProvider =
-    Provider.family<bool, String>((ref, module) {
+final isModuleEnabledProvider = Provider.family<bool, String>((ref, module) {
   final modules = ref.watch(tenantModulesProvider).valueOrNull;
   if (modules == null) return true; // still loading — don't hide yet
   return modules.contains(module);

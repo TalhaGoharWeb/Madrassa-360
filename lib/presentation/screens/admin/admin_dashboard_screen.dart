@@ -6,7 +6,6 @@ import '../../../core/constants/app_permissions.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/widgets/tenant_logo.dart';
-import '../../../data/repositories/auth_repository.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/admin_dashboard_provider.dart';
 import '../../../providers/tenant_branding_provider.dart';
@@ -38,81 +37,80 @@ class AdminDashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Consumer(builder: (context, ref, _) {
-    final authState  = ref.watch(authProvider);
-    final perms      = ref.watch(userPermissionsProvider);
-    final role       = authState.user?.role ?? UserRole.teacher;
-    final roleConfig = role.config;
+      final authState = ref.watch(authProvider);
+      final perms = ref.watch(userPermissionsProvider);
+      final role = authState.user?.role ?? UserRole.teacher;
+      final roleConfig = role.config;
 
-    final adminName  = authState.user?.name ?? 'اسٹاف';
+      final adminName = authState.user?.name ?? 'اسٹاف';
 
-    // Phase 4 — live tenant-scoped numbers (zeros while loading/offline).
-    final stats =
-        ref.watch(dashboardStatsProvider).valueOrNull ??
-        const DashboardStats.zero();
+      // Phase 4 — live tenant-scoped numbers (zeros while loading/offline).
+      final stats = ref.watch(dashboardStatsProvider).valueOrNull ??
+          const DashboardStats.zero();
 
-    // Phase 4 — module gating. Null = modules not loaded yet → do not
-    // filter, so cards don't flicker while the tenant resolves.
-    final enabledModules = ref.watch(tenantModulesProvider).valueOrNull;
-    bool moduleOk(String module) =>
-        enabledModules == null || enabledModules.contains(module);
+      // Phase 4 — module gating. Null = modules not loaded yet → do not
+      // filter, so cards don't flicker while the tenant resolves.
+      final enabledModules = ref.watch(tenantModulesProvider).valueOrNull;
+      bool moduleOk(String module) =>
+          enabledModules == null || enabledModules.contains(module);
 
-    final branding = ref.watch(tenantBrandingProvider).valueOrNull;
+      final branding = ref.watch(tenantBrandingProvider).valueOrNull;
 
-    return Scaffold(
-      appBar: AppBar(
-        // Phase 4 — the tenant's own name in the app bar.
-        title: branding == null
-            ? Text(AppStrings.dashboard)
-            : TenantNameText(
-                style: AppTypography.appBarTitle
-                    .copyWith(color: Colors.white),
-              ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            onPressed: () {},
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Role-aware welcome header (shows the tenant name)
-            _buildWelcomeHeader(
-                adminName, roleConfig, branding?.displayName()),
-
-            // Stats — shown only for permitted AND enabled modules
-            const SectionHeader(title: 'اہم اعداد و شمار'),
-            _buildPermissionFilteredStats(stats, perms, moduleOk),
-
-            // User Management card — only for managers
-            if (perms.contains(AppPermissions.viewUsers))
-              _buildUserManagementCard(context),
-
-            // Module shortcuts — filtered by permissions AND modules
-            _buildModulesSection(context, perms, moduleOk),
-
-            // Fee progress — only if user can view fees
-            if (perms.contains(AppPermissions.viewFees))
-              _buildFeeProgress(stats),
-
-            // Attendance overview — only if user can view attendance
-            if (perms.contains(AppPermissions.viewAttendance))
-              _buildAttendanceOverview(stats),
-
-            // Recent activities (real events from the tenant's data)
-            const SectionHeader(
-              title: 'حالیہ سرگرمیاں',
-              actionText: 'سب دیکھیں',
+      return Scaffold(
+        appBar: AppBar(
+          // Phase 4 — the tenant's own name in the app bar.
+          title: branding == null
+              ? Text(AppStrings.dashboard)
+              : TenantNameText(
+                  style:
+                      AppTypography.appBarTitle.copyWith(color: Colors.white),
+                ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.notifications_outlined),
+              onPressed: () {},
             ),
-            _buildRecentActivities(_filteredActivities(stats, perms)),
-
-            const SizedBox(height: 100),
           ],
         ),
-      ),
-    );
+        body: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Role-aware welcome header (shows the tenant name)
+              _buildWelcomeHeader(
+                  adminName, roleConfig, branding?.displayName()),
+
+              // Stats — shown only for permitted AND enabled modules
+              const SectionHeader(title: 'اہم اعداد و شمار'),
+              _buildPermissionFilteredStats(stats, perms, moduleOk),
+
+              // User Management card — only for managers
+              if (perms.contains(AppPermissions.viewUsers))
+                _buildUserManagementCard(context),
+
+              // Module shortcuts — filtered by permissions AND modules
+              _buildModulesSection(context, perms, moduleOk),
+
+              // Fee progress — only if user can view fees
+              if (perms.contains(AppPermissions.viewFees))
+                _buildFeeProgress(stats),
+
+              // Attendance overview — only if user can view attendance
+              if (perms.contains(AppPermissions.viewAttendance))
+                _buildAttendanceOverview(stats),
+
+              // Recent activities (real events from the tenant's data)
+              const SectionHeader(
+                title: 'حالیہ سرگرمیاں',
+                actionText: 'سب دیکھیں',
+              ),
+              _buildRecentActivities(_filteredActivities(stats, perms)),
+
+              const SizedBox(height: 100),
+            ],
+          ),
+        ),
+      );
     });
   }
 
@@ -130,7 +128,7 @@ class AdminDashboardScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: config.gradient.first.withOpacity(0.35),
+            color: config.gradient.first.withValues(alpha: 0.35),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -168,17 +166,16 @@ class AdminDashboardScreen extends StatelessWidget {
                 ],
                 const SizedBox(height: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: Colors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(config.icon,
-                          color: Colors.white, size: 14),
+                      Icon(config.icon, color: Colors.white, size: 14),
                       const SizedBox(width: 6),
                       Text(
                         config.urduTitle,
@@ -196,7 +193,7 @@ class AdminDashboardScreen extends StatelessWidget {
             width: 70,
             height: 70,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white.withValues(alpha: 0.2),
               shape: BoxShape.circle,
               border: Border.all(color: Colors.white30, width: 2),
             ),
@@ -237,8 +234,7 @@ class AdminDashboardScreen extends StatelessWidget {
   ) {
     final cards = <Widget>[];
 
-    if (perms.contains(AppPermissions.viewStudents) &&
-        moduleOk('students')) {
+    if (perms.contains(AppPermissions.viewStudents) && moduleOk('students')) {
       cards.add(StatCard(
         icon: Icons.people,
         label: 'کل طلباء',
@@ -255,8 +251,7 @@ class AdminDashboardScreen extends StatelessWidget {
         color: AppColors.info,
       ));
     }
-    if (perms.contains(AppPermissions.viewDarjas) &&
-        moduleOk('academics')) {
+    if (perms.contains(AppPermissions.viewDarjas) && moduleOk('academics')) {
       cards.add(StatCard(
         icon: Icons.class_,
         label: 'جماعتیں',
@@ -299,8 +294,7 @@ class AdminDashboardScreen extends StatelessWidget {
       rows.add(Row(children: [
         Expanded(child: cards[i]),
         const SizedBox(width: 12),
-        Expanded(
-            child: i + 1 < cards.length ? cards[i + 1] : const SizedBox()),
+        Expanded(child: i + 1 < cards.length ? cards[i + 1] : const SizedBox()),
       ]));
       if (i + 2 < cards.length) rows.add(const SizedBox(height: 12));
     }
@@ -439,13 +433,13 @@ class AdminDashboardScreen extends StatelessWidget {
           crossAxisSpacing: 12,
           childAspectRatio: 1.5,
           children: visible
-              .map((m) => _ModuleCard(
+              .map((m) => _moduleCard(
                     label: m.label,
                     subtitle: m.subtitle,
                     icon: m.icon,
                     color: m.color,
-                    onTap: () => Navigator.push(context,
-                        MaterialPageRoute(builder: (_) => m.screen)),
+                    onTap: () => Navigator.push(
+                        context, MaterialPageRoute(builder: (_) => m.screen)),
                   ))
               .toList(),
         ),
@@ -453,7 +447,7 @@ class AdminDashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _ModuleCard({
+  Widget _moduleCard({
     required String label,
     required String subtitle,
     required IconData icon,
@@ -468,19 +462,17 @@ class AdminDashboardScreen extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 8,
                 offset: const Offset(0, 2))
           ],
         ),
         padding: const EdgeInsets.all(14),
-        child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(icon, color: color, size: 22),
@@ -511,7 +503,7 @@ class AdminDashboardScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: AppColors.success.withOpacity(0.1),
+                  color: AppColors.success.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(
@@ -536,9 +528,10 @@ class AdminDashboardScreen extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: AppColors.success.withOpacity(0.1),
+                  color: AppColors.success.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -605,7 +598,7 @@ class AdminDashboardScreen extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF3949AB).withOpacity(0.3),
+              color: const Color(0xFF3949AB).withValues(alpha: 0.3),
               blurRadius: 12,
               offset: const Offset(0, 6),
             ),
@@ -616,10 +609,11 @@ class AdminDashboardScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
+                color: Colors.white.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: const Icon(Icons.manage_accounts, color: Colors.white, size: 28),
+              child: const Icon(Icons.manage_accounts,
+                  color: Colors.white, size: 28),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -628,12 +622,14 @@ class AdminDashboardScreen extends StatelessWidget {
                 children: [
                   Text(
                     'صارف انتظام',
-                    style: AppTypography.titleMedium.copyWith(color: Colors.white),
+                    style:
+                        AppTypography.titleMedium.copyWith(color: Colors.white),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     'صارفین بنائیں، کردار ترتیب دیں، اجازتیں دیں',
-                    style: AppTypography.bodySmall.copyWith(color: Colors.white70),
+                    style:
+                        AppTypography.bodySmall.copyWith(color: Colors.white70),
                   ),
                 ],
               ),
@@ -680,7 +676,7 @@ class AdminDashboardScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(
@@ -741,7 +737,7 @@ class AdminDashboardScreen extends StatelessWidget {
           Container(
             height: 80,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Stack(
@@ -785,8 +781,8 @@ class AdminDashboardScreen extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Text(
           'ابھی کوئی سرگرمی نہیں',
-          style: AppTypography.bodySmall
-              .copyWith(color: AppColors.textSecondary),
+          style:
+              AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
         ),
       );
     }
@@ -857,7 +853,7 @@ class AdminDashboardScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.1),
+              color: iconColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(icon, color: iconColor, size: 22),

@@ -117,8 +117,7 @@ class PermissionService {
       } else if (!code.contains('.')) {
         out.add(code); // already Dart vocabulary (e.g. legacy rows)
       } else {
-        AppLogger().warning(
-            '[Permissions] dropping unmapped server code: $code'
+        AppLogger().warning('[Permissions] dropping unmapped server code: $code'
             '${roleName == null ? '' : ' (role $roleName)'}');
       }
     }
@@ -142,7 +141,8 @@ class PermissionService {
       );
 
       if (response == null) {
-        AppLogger().warning('[Permissions] RPC returned null, using offline fallback');
+        AppLogger()
+            .warning('[Permissions] RPC returned null, using offline fallback');
         return AppPermissions.fallbackFor(roleName);
       }
 
@@ -153,13 +153,16 @@ class PermissionService {
           .whereType<String>()
           .toSet();
 
-      AppLogger().info('[Permissions] loaded ${perms.length} raw codes for $roleName');
+      AppLogger()
+          .info('[Permissions] loaded ${perms.length} raw codes for $roleName');
       final normalized = normalizeServerCodes(perms, roleName: roleName);
       AppLogger().info(
           '[Permissions] normalized to ${normalized.length} Dart permissions for $roleName');
       return normalized;
     } catch (e) {
-      AppLogger().warning('[Permissions] Error loading from DB — using offline fallback', error: e);
+      AppLogger().warning(
+          '[Permissions] Error loading from DB — using offline fallback',
+          error: e);
       return AppPermissions.fallbackFor(roleName);
     }
   }
@@ -189,12 +192,20 @@ class PermissionService {
       const {'madrasaAdmin', 'admin', 'editor', 'itManager'}.contains(roleName);
 
   /// Returns true for staff roles (can log in to madrasa admin panel).
-  static bool isStaffRole(String roleName) =>
-      const {
-        'madrasaAdmin', 'admin', 'editor', 'academicManager',
-        'teacher', 'attendanceOfficer', 'accountant', 'financeManager',
-        'libraryManager', 'hostelManager', 'announcementManager',
-        'admissionOfficer', 'itManager',
+  static bool isStaffRole(String roleName) => const {
+        'madrasaAdmin',
+        'admin',
+        'editor',
+        'academicManager',
+        'teacher',
+        'attendanceOfficer',
+        'accountant',
+        'financeManager',
+        'libraryManager',
+        'hostelManager',
+        'announcementManager',
+        'admissionOfficer',
+        'itManager',
       }.contains(roleName);
 
   /// Returns true for external/guardian roles.

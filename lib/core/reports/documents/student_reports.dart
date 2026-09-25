@@ -33,8 +33,8 @@ class StudentReports {
           await ctx.data.exams(ctx.params.tenantId, classId: student.classId);
       ReportExam? pick;
       for (final ex in exams) {
-        final r = await ctx.data.results(ctx.params.tenantId,
-            examId: ex.id, studentId: student.id);
+        final r = await ctx.data
+            .results(ctx.params.tenantId, examId: ex.id, studentId: student.id);
         if (r.isNotEmpty) {
           if (pick == null ||
               (ex.examDate ?? '').compareTo(pick.examDate ?? '') > 0) {
@@ -43,7 +43,10 @@ class StudentReports {
         }
       }
       if (pick == null) {
-        return _empty(ctx, 'رزلٹ کارڈ', 'Result Card',
+        return _empty(
+            ctx,
+            'رزلٹ کارڈ',
+            'Result Card',
             'اس طالب علم کا کوئی امتحانی نتیجہ مقامی ریکارڈ میں نہیں ملا۔',
             'No exam results found for this student in the local database.');
       }
@@ -65,15 +68,17 @@ class StudentReports {
       studentId: student.id,
     );
     if (results.isEmpty) {
-      return _empty(ctx, 'رزلٹ کارڈ', 'Result Card',
+      return _empty(
+          ctx,
+          'رزلٹ کارڈ',
+          'Result Card',
           'منتخب امتحان کا نتیجہ مقامی ریکارڈ میں نہیں ملا۔',
           'No results found for the selected exam in the local database.');
     }
 
     // Class position across the whole exam.
     var position = 0;
-    final outcomes =
-        await ctx.data.examOutcomes(ctx.params.tenantId, examId!);
+    final outcomes = await ctx.data.examOutcomes(ctx.params.tenantId, examId);
     for (final o in outcomes) {
       if (o.studentId == student.id) position = o.position;
     }
@@ -82,14 +87,15 @@ class StudentReports {
     // "not entered", never zeroes.
     final usable = results.where((r) => r.usable).toList();
     if (usable.isEmpty) {
-      return _empty(ctx, 'رزلٹ کارڈ', 'Result Card',
+      return _empty(
+          ctx,
+          'رزلٹ کارڈ',
+          'Result Card',
           'اس امتحان کے نمبرات مقامی ریکارڈ میں درج نہیں ہیں۔',
           'Marks for this exam have not been entered in the local database yet.');
     }
-    final obtained =
-        usable.fold<double>(0, (a, r) => a + r.obtained!);
-    final total =
-        usable.fold<double>(0, (a, r) => a + r.totalMarks!);
+    final obtained = usable.fold<double>(0, (a, r) => a + r.obtained!);
+    final total = usable.fold<double>(0, (a, r) => a + r.totalMarks!);
     final pct = total <= 0 ? null : obtained * 100.0 / total;
     final partial = usable.length < results.length;
 
@@ -104,19 +110,14 @@ class StudentReports {
         return [
           await s.sectionTitle('کوائف', 'Particulars'),
           pw.Row(children: [
-            pw.Expanded(
-                child: await fieldRow(s, 'نام', student.name)),
+            pw.Expanded(child: await fieldRow(s, 'نام', student.name)),
             pw.SizedBox(width: 16),
-            pw.Expanded(
-                child:
-                    await fieldRow(s, 'رول نمبر', student.rollNo)),
+            pw.Expanded(child: await fieldRow(s, 'رول نمبر', student.rollNo)),
           ]),
           pw.Row(children: [
-            pw.Expanded(
-                child: await fieldRow(s, 'جماعت', student.className)),
+            pw.Expanded(child: await fieldRow(s, 'جماعت', student.className)),
             pw.SizedBox(width: 16),
-            pw.Expanded(
-                child: await fieldRow(s, 'امتحان', examName)),
+            pw.Expanded(child: await fieldRow(s, 'امتحان', examName)),
           ]),
           pw.SizedBox(height: 8),
           await s.sectionTitle('نتائج', 'Results'),
@@ -128,9 +129,7 @@ class StudentReports {
                   r.subject,
                   r.totalMarks == null ? '—' : fmtMoney(r.totalMarks!),
                   r.obtained == null ? '—' : fmtMoney(r.obtained!),
-                  r.percent == null
-                      ? '—'
-                      : '${r.percent!.toStringAsFixed(1)}%',
+                  r.percent == null ? '—' : '${r.percent!.toStringAsFixed(1)}%',
                   gradeFor(r.percent),
                 ],
               [
@@ -154,8 +153,7 @@ class StudentReports {
           await s.statRow([
             StatBox('فیصد', pct == null ? '—' : '${pct.toStringAsFixed(1)}%'),
             StatBox('گریڈ', gradeFor(pct)),
-            StatBox('پوزیشن',
-                position == 0 ? '—' : '$position'),
+            StatBox('پوزیشن', position == 0 ? '—' : '$position'),
           ]),
           pw.SizedBox(height: 24),
           await s.signatureRow(['دستخط کلاس انچارج', 'دستخط پرنسپل']),
@@ -191,7 +189,8 @@ class StudentReports {
       urdu: ctx.urdu,
       titleUr: 'حاضری رپورٹ',
       titleEn: 'Attendance Report',
-      subtitleUr: rangeUr == null ? student.name : '${student.name}  |  $rangeUr',
+      subtitleUr:
+          rangeUr == null ? student.name : '${student.name}  |  $rangeUr',
       body: (s) async {
         if (marks.isEmpty) {
           return [
@@ -218,16 +217,15 @@ class StudentReports {
           }
         }
         final marked = present + absent + leave + late + unknown;
-        final pct =
-            marked == 0 ? null : (present + late) * 100.0 / marked;
+        final pct = marked == 0 ? null : (present + late) * 100.0 / marked;
         final boxes = <StatBox>[
           StatBox('حاضر', '$present'),
           StatBox('غیر حاضر', '$absent'),
           StatBox('چھٹی', '$leave'),
           StatBox('تاخیر', '$late'),
           if (unknown > 0) StatBox('نامعلوم', '$unknown'),
-          StatBox('حاضری فیصد',
-              pct == null ? '—' : '${pct.toStringAsFixed(1)}%'),
+          StatBox(
+              'حاضری فیصد', pct == null ? '—' : '${pct.toStringAsFixed(1)}%'),
         ];
         return [
           await s.statRow(boxes),
@@ -236,8 +234,7 @@ class StudentReports {
           await s.dataTable(
             headers: const ['تاریخ', 'حاضری'],
             rows: [
-              for (final m in marks)
-                [m.date, urduStatus[m.status] ?? m.status],
+              for (final m in marks) [m.date, urduStatus[m.status] ?? m.status],
             ],
           ),
           pw.SizedBox(height: 8),
@@ -278,10 +275,8 @@ class StudentReports {
         ],
       );
     }
-    final invoices =
-        await ctx.data.invoices(p.tenantId, studentId: student.id);
-    final payments =
-        await ctx.data.payments(p.tenantId, studentId: student.id);
+    final invoices = await ctx.data.invoices(p.tenantId, studentId: student.id);
+    final payments = await ctx.data.payments(p.tenantId, studentId: student.id);
     var billed = 0.0, paid = 0.0, discount = 0.0;
     for (final i in invoices) {
       billed += i.total;

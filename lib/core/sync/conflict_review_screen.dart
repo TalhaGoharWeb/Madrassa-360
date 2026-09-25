@@ -57,11 +57,10 @@ class ConflictReviewScreen extends ConsumerWidget {
         title: Text('سنک تنازعات', style: AppTypography.appBarTitle),
       ),
       body: conflictsAsync.when(
-        loading: () =>
-            const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(
-          child: Text('تنازعات لوڈ کرنے میں خطا',
-              style: AppTypography.bodyMedium),
+          child:
+              Text('تنازعات لوڈ کرنے میں خطا', style: AppTypography.bodyMedium),
         ),
         data: (conflicts) {
           if (conflicts.isEmpty) {
@@ -88,8 +87,7 @@ class ConflictReviewScreen extends ConsumerWidget {
     );
   }
 
-  static String entityLabel(String entity) =>
-      _entityLabels[entity] ?? entity;
+  static String entityLabel(String entity) => _entityLabels[entity] ?? entity;
 }
 
 class _ConflictCard extends ConsumerStatefulWidget {
@@ -120,20 +118,18 @@ class _ConflictCardState extends ConsumerState<_ConflictCard> {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: financial
-                        ? AppColors.warning.withOpacity(0.15)
-                        : AppColors.info.withOpacity(0.15),
+                        ? AppColors.warning.withValues(alpha: 0.15)
+                        : AppColors.info.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     ConflictReviewScreen.entityLabel(c.entity),
                     style: AppTypography.labelMedium.copyWith(
-                      color: financial
-                          ? AppColors.warning
-                          : AppColors.info,
+                      color: financial ? AppColors.warning : AppColors.info,
                     ),
                   ),
                 ),
@@ -163,18 +159,18 @@ class _ConflictCardState extends ConsumerState<_ConflictCard> {
             ),
             // ── local vs server summary ──
             TextButton.icon(
-              onPressed: () =>
-                  setState(() => _expanded = !_expanded),
-              icon: Icon(
-                  _expanded ? Icons.expand_less : Icons.expand_more),
-              label: Text(_expanded
-                  ? 'تفصیل چھپائیں'
-                  : 'مقامی بمقابلہ سرور دیکھیں'),
+              onPressed: () => setState(() => _expanded = !_expanded),
+              icon: Icon(_expanded ? Icons.expand_less : Icons.expand_more),
+              label: Text(
+                  _expanded ? 'تفصیل چھپائیں' : 'مقامی بمقابلہ سرور دیکھیں'),
             ),
             if (_expanded) _buildComparison(),
             const SizedBox(height: 8),
             // ── actions ──
-            if (financial) _buildFinancialNote(context) else _buildActions(context),
+            if (financial)
+              _buildFinancialNote(context)
+            else
+              _buildActions(context),
           ],
         ),
       ),
@@ -191,12 +187,13 @@ class _ConflictCardState extends ConsumerState<_ConflictCard> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(child: _payloadColumn('مقامی', c.localPayload,
-              AppColors.primary)),
+          Expanded(
+              child:
+                  _payloadColumn('مقامی', c.localPayload, AppColors.primary)),
           const SizedBox(width: 8),
           Expanded(
-              child: _payloadColumn('سرور',
-                  c.serverPayload ?? const {}, AppColors.info)),
+              child: _payloadColumn(
+                  'سرور', c.serverPayload ?? const {}, AppColors.info)),
         ],
       ),
     );
@@ -207,19 +204,15 @@ class _ConflictCardState extends ConsumerState<_ConflictCard> {
     final entries = payload.entries
         // Review metadata lives in `_`-prefixed keys (see SyncConflict);
         // never show it as data, and never send it back to the server.
-        .where((e) =>
-            !e.key.startsWith('_') && !_skippedKeys.contains(e.key))
+        .where((e) => !e.key.startsWith('_') && !_skippedKeys.contains(e.key))
         .take(8)
         .toList();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title,
-            style: AppTypography.labelLarge
-                .copyWith(color: accent)),
+        Text(title, style: AppTypography.labelLarge.copyWith(color: accent)),
         const SizedBox(height: 4),
-        if (entries.isEmpty)
-          Text('—', style: AppTypography.bodySmall),
+        if (entries.isEmpty) Text('—', style: AppTypography.bodySmall),
         for (final e in entries)
           Padding(
             padding: const EdgeInsets.only(bottom: 2),
@@ -281,9 +274,9 @@ class _ConflictCardState extends ConsumerState<_ConflictCard> {
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: AppColors.warning.withOpacity(0.12),
+        color: AppColors.warning.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.warning.withOpacity(0.4)),
+        border: Border.all(color: AppColors.warning.withValues(alpha: 0.4)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -365,8 +358,7 @@ class _ConflictCardState extends ConsumerState<_ConflictCard> {
     }
   }
 
-  String _shortId(String id) =>
-      id.length > 8 ? '${id.substring(0, 8)}…' : id;
+  String _shortId(String id) => id.length > 8 ? '${id.substring(0, 8)}…' : id;
 
   String _shortValue(dynamic v) {
     final s = '$v';
@@ -388,6 +380,5 @@ class _ConflictCardState extends ConsumerState<_ConflictCard> {
     }
   }
 
-  String _formatDate(DateTime d) =>
-      '${d.day}/${d.month}/${d.year}';
+  String _formatDate(DateTime d) => '${d.day}/${d.month}/${d.year}';
 }

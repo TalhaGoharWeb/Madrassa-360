@@ -65,8 +65,8 @@ class FinanceState {
 class FinanceNotifier extends StateNotifier<FinanceState> {
   FinanceNotifier(this._ref, [IFinanceRepository? repo])
       : _repo = repo ??
-            LocalFinanceRepository(_ref.read(appDatabaseProvider),
-                _ref.read(syncEngineProvider)),
+            LocalFinanceRepository(
+                _ref.read(appDatabaseProvider), _ref.read(syncEngineProvider)),
         super(const FinanceState());
 
   final Ref _ref;
@@ -231,6 +231,5 @@ class FinanceNotifier extends StateNotifier<FinanceState> {
       state.accounts.isNotEmpty ? state.accounts.first.id : null;
 }
 
-final financeProvider =
-    StateNotifierProvider<FinanceNotifier, FinanceState>(
-        (ref) => FinanceNotifier(ref));
+final financeProvider = StateNotifierProvider<FinanceNotifier, FinanceState>(
+    (ref) => FinanceNotifier(ref));

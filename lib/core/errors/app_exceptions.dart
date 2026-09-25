@@ -58,9 +58,7 @@ sealed class AppException implements Exception {
   /// The user-safe message in the requested locale. Defaults to Urdu —
   /// Madrasa-360 is an Urdu-first app.
   String userMessage({String localeCode = 'ur'}) =>
-      localeCode.toLowerCase().startsWith('en')
-          ? userMessageEn
-          : userMessageUr;
+      localeCode.toLowerCase().startsWith('en') ? userMessageEn : userMessageUr;
 
   /// Legacy accessor kept for pre-Phase-7 call sites (`e.message`).
   /// Returns the Urdu safe message — never the technical details.
@@ -145,7 +143,8 @@ sealed class AppException implements Exception {
     if (status == 429) {
       return NetworkException(
         userMessageEn: 'Too many requests. Please wait a moment and try again.',
-        userMessageUr: 'بہت زیادہ درخواستیں۔ تھوڑا انتظار کر کے دوبارہ کوشش کریں۔',
+        userMessageUr:
+            'بہت زیادہ درخواستیں۔ تھوڑا انتظار کر کے دوبارہ کوشش کریں۔',
         code: 'http_429',
         technicalDetails: tech,
       );
@@ -169,157 +168,143 @@ sealed class AppException implements Exception {
 
 // ── Concrete taxonomy ────────────────────────────────────────────
 //
-// Constructor shape (all subclasses): an optional POSITIONAL first argument
-// is a custom Urdu user message (keeps pre-Phase-7 call sites such as
-// `NetworkException('انٹرنیٹ دستیاب نہیں ہے')` compiling); everything else
-// is named.
+// Constructor shape (all subclasses): every parameter is named.
+// The custom Urdu user message goes in [userMessageUr], e.g.
+// `NetworkException(userMessageUr: 'انٹرنیٹ دستیاب نہیں ہے')`.
+// (Dart forbids mixing optional positional `[]` and named `{}` parameters
+// in one parameter list, so the legacy positional form is not expressible.)
 
 /// Sign-in / session / token failures.
 final class AuthException extends AppException {
-  const AuthException([
-    String? userMessageUr, {
+  const AuthException({
+    String? userMessageUr,
     String? userMessageEn,
     String? code,
-    String? technicalDetails,
-    Object? cause,
-  }]) : super(
+    super.technicalDetails,
+    super.cause,
+  }) : super(
           userMessageEn: userMessageEn ??
               'Sign-in failed. Please check your credentials and try again.',
           userMessageUr: userMessageUr ??
               'سائن ان ناکام ہوا۔ برا کرم اپنی معلومات چیک کر کے دوبارہ کوشش کریں۔',
           code: code ?? 'auth',
-          technicalDetails: technicalDetails,
-          cause: cause,
         );
 }
 
 /// No connectivity, timeouts, DNS/TLS failures, unreachable hosts.
 final class NetworkException extends AppException {
-  const NetworkException([
-    String? userMessageUr, {
+  const NetworkException({
+    String? userMessageUr,
     String? userMessageEn,
     String? code,
-    String? technicalDetails,
-    Object? cause,
-  }]) : super(
+    super.technicalDetails,
+    super.cause,
+  }) : super(
           userMessageEn: userMessageEn ?? 'No internet connection.',
           userMessageUr: userMessageUr ?? 'انٹرنیٹ دستیاب نہیں ہے۔',
           code: code ?? 'network',
-          technicalDetails: technicalDetails,
-          cause: cause,
         );
 }
 
 /// PostgREST / local-database failures (query errors, constraint
 /// violations, missing rows). RLS denials map to [PermissionException].
 final class DatabaseException extends AppException {
-  const DatabaseException([
-    String? userMessageUr, {
+  const DatabaseException({
+    String? userMessageUr,
     String? userMessageEn,
     String? code,
-    String? technicalDetails,
-    Object? cause,
-  }]) : super(
+    super.technicalDetails,
+    super.cause,
+  }) : super(
           userMessageEn:
               userMessageEn ?? 'Could not save or load data. Please try again.',
-          userMessageUr:
-              userMessageUr ?? 'ڈیٹا محفوظ یا لوڈ نہیں ہو سکا۔ برا کرم دوبارہ کوشش کریں۔',
+          userMessageUr: userMessageUr ??
+              'ڈیٹا محفوظ یا لوڈ نہیں ہو سکا۔ برا کرم دوبارہ کوشش کریں۔',
           code: code ?? 'database',
-          technicalDetails: technicalDetails,
-          cause: cause,
         );
 }
 
 /// Offline-sync pipeline failures (push/pull/apply). Local data is kept;
 /// the user message must always say the retry story.
 final class SyncException extends AppException {
-  const SyncException([
-    String? userMessageUr, {
+  const SyncException({
+    String? userMessageUr,
     String? userMessageEn,
     String? code,
-    String? technicalDetails,
-    Object? cause,
-  }]) : super(
+    super.technicalDetails,
+    super.cause,
+  }) : super(
           userMessageEn: userMessageEn ??
               'Sync failed. Your data is saved on this device and will be retried.',
           userMessageUr: userMessageUr ??
               'ہم آہنگی ناکام ہوئی۔ آپ کا ڈیٹا اس ڈیوائس میں محفوظ ہے، دوبارہ کوشش کی جائے گی۔',
           code: code ?? 'sync',
-          technicalDetails: technicalDetails,
-          cause: cause,
         );
 }
 
 /// RLS denials and permission-check failures.
 final class PermissionException extends AppException {
-  const PermissionException([
-    String? userMessageUr, {
+  const PermissionException({
+    String? userMessageUr,
     String? userMessageEn,
     String? code,
-    String? technicalDetails,
-    Object? cause,
-  }]) : super(
+    super.technicalDetails,
+    super.cause,
+  }) : super(
           userMessageEn:
               userMessageEn ?? 'You do not have permission to do this.',
           userMessageUr: userMessageUr ?? 'آپ کو یہ عمل کرنے کی اجازت نہیں ہے۔',
           code: code ?? 'permission',
-          technicalDetails: technicalDetails,
-          cause: cause,
         );
 }
 
 /// Cross-tenant access attempts and tenant-context problems.
 final class TenantException extends AppException {
-  const TenantException([
-    String? userMessageUr, {
+  const TenantException({
+    String? userMessageUr,
     String? userMessageEn,
     String? code,
-    String? technicalDetails,
-    Object? cause,
-  }]) : super(
+    super.technicalDetails,
+    super.cause,
+  }) : super(
           userMessageEn: userMessageEn ??
               'This action is not allowed for your institution.',
           userMessageUr:
               userMessageUr ?? 'آپ کے ادارے کے لیے یہ عمل مجاز نہیں ہے۔',
           code: code ?? 'tenant',
-          technicalDetails: technicalDetails,
-          cause: cause,
         );
 }
 
 /// Client-side input validation failures.
 final class ValidationException extends AppException {
-  const ValidationException([
-    String? userMessageUr, {
+  const ValidationException({
+    String? userMessageUr,
     String? userMessageEn,
     String? code,
-    String? technicalDetails,
-    Object? cause,
-  }]) : super(
+    super.technicalDetails,
+    super.cause,
+  }) : super(
           userMessageEn:
               userMessageEn ?? 'Please check the entered information.',
-          userMessageUr: userMessageUr ?? 'برا کرم درج کی گئی معلومات چیک کریں۔',
+          userMessageUr:
+              userMessageUr ?? 'برا کرم درج کی گئی معلومات چیک کریں۔',
           code: code ?? 'validation',
-          technicalDetails: technicalDetails,
-          cause: cause,
         );
 }
 
 /// Server demands a minimum app version (forced-upgrade path).
 final class UpdateRequiredException extends AppException {
-  const UpdateRequiredException([
-    String? userMessageUr, {
+  const UpdateRequiredException({
+    String? userMessageUr,
     String? userMessageEn,
     String? code,
-    String? technicalDetails,
-    Object? cause,
-  }]) : super(
+    super.technicalDetails,
+    super.cause,
+  }) : super(
           userMessageEn: userMessageEn ?? 'Please update the app to continue.',
           userMessageUr:
               userMessageUr ?? 'جاری رکھنے کے لیے برا کرم ایپ اپ ڈیٹ کریں۔',
           code: code ?? 'update_required',
-          technicalDetails: technicalDetails,
-          cause: cause,
         );
 }
 
@@ -340,34 +325,24 @@ final class _UnknownException extends AppException {
 
 /// Legacy alias — use [AuthException].
 @Deprecated('Use AuthException from core/errors/app_exceptions.dart')
-class AuthenticationException extends AuthException {
-  const AuthenticationException([
-    String? message, {
-    String? code,
-    String? technicalDetails,
-    Object? cause,
-  }]) : super(
-          message,
-          code: code,
-          technicalDetails: technicalDetails,
-          cause: cause,
-        );
+final class AuthenticationException extends AuthException {
+  const AuthenticationException({
+    super.userMessageUr,
+    super.code,
+    super.technicalDetails,
+    super.cause,
+  });
 }
 
 /// Legacy alias — use [DatabaseException].
 @Deprecated('Use DatabaseException from core/errors/app_exceptions.dart')
-class StorageException extends DatabaseException {
-  const StorageException([
-    String? message, {
-    String? code,
-    String? technicalDetails,
-    Object? cause,
-  }]) : super(
-          message,
-          code: code,
-          technicalDetails: technicalDetails,
-          cause: cause,
-        );
+final class StorageException extends DatabaseException {
+  const StorageException({
+    super.userMessageUr,
+    super.code,
+    super.technicalDetails,
+    super.cause,
+  });
 }
 
 // ── Classifier ───────────────────────────────────────────────────
@@ -382,7 +357,7 @@ AppException _classify(dynamic e) {
       case '42501': // insufficient_privilege — RLS denial
       case '42502':
         return PermissionException(
-          'آپ کو اس ڈیٹا تک رسائی کی اجازت نہیں ہے۔',
+          userMessageUr: 'آپ کو اس ڈیٹا تک رسائی کی اجازت نہیں ہے۔',
           userMessageEn: 'You do not have access to this data.',
           code: 'rls_denied',
           technicalDetails: tech,
@@ -390,7 +365,7 @@ AppException _classify(dynamic e) {
         );
       case '23505': // unique_violation
         return DatabaseException(
-          'یہ ریکارڈ پہلے سے موجود ہے۔',
+          userMessageUr: 'یہ ریکارڈ پہلے سے موجود ہے۔',
           userMessageEn: 'This record already exists.',
           code: 'unique_violation',
           technicalDetails: tech,
@@ -398,7 +373,8 @@ AppException _classify(dynamic e) {
         );
       case '23503': // foreign_key_violation
         return DatabaseException(
-          'یہ ریکارڈ کہیں اور استعمال ہو رہا ہے، اس لیے عمل مکمل نہیں ہو سکا۔',
+          userMessageUr:
+              'یہ ریکارڈ کہیں اور استعمال ہو رہا ہے، اس لیے عمل مکمل نہیں ہو سکا۔',
           userMessageEn:
               'This record is referenced elsewhere and cannot be changed.',
           code: 'fk_violation',
@@ -415,7 +391,7 @@ AppException _classify(dynamic e) {
         );
       case 'PGRST116': // 0 rows (or >1) for single()
         return DatabaseException(
-          'مطلوبہ ریکارڈ نہیں ملا۔',
+          userMessageUr: 'مطلوبہ ریکارڈ نہیں ملا۔',
           userMessageEn: 'The requested record was not found.',
           code: 'not_found',
           technicalDetails: tech,
@@ -436,7 +412,7 @@ AppException _classify(dynamic e) {
     final tech = 'AuthException status=${e.statusCode} message=${e.message}';
     if (msg.contains('invalid login credentials')) {
       return AuthException(
-        'ای میل یا پاس ورڈ غلط ہے۔',
+        userMessageUr: 'ای میل یا پاس ورڈ غلط ہے۔',
         userMessageEn: 'The email or password is incorrect.',
         code: 'invalid_credentials',
         technicalDetails: tech,
@@ -445,7 +421,8 @@ AppException _classify(dynamic e) {
     }
     if (msg.contains('email not confirmed')) {
       return AuthException(
-        'ای میل کی تصدیق نہیں ہوئی۔ برا کرم اپنا ان باکس چیک کریں۔',
+        userMessageUr:
+            'ای میل کی تصدیق نہیں ہوئی۔ برا کرم اپنا ان باکس چیک کریں۔',
         userMessageEn: 'Your email is not confirmed. Please check your inbox.',
         code: 'email_not_confirmed',
         technicalDetails: tech,
@@ -462,7 +439,7 @@ AppException _classify(dynamic e) {
     }
     if (msg.contains('too many requests') || e.statusCode == '429') {
       return AuthException(
-        'بہت زیادہ کوششیں۔ تھوڑا انتظار کر کے دوبارہ کوشش کریں۔',
+        userMessageUr: 'بہت زیادہ کوششیں۔ تھوڑا انتظار کر کے دوبارہ کوشش کریں۔',
         userMessageEn: 'Too many attempts. Please wait a moment and try again.',
         code: 'rate_limited',
         technicalDetails: tech,
@@ -479,10 +456,11 @@ AppException _classify(dynamic e) {
   // Supabase Storage errors.
   if (e is sb.StorageException) {
     return DatabaseException(
-      'فائل اپ لوڈ/ڈاؤن لوڈ نہیں ہو سکی۔',
+      userMessageUr: 'فائل اپ لوڈ/ڈاؤن لوڈ نہیں ہو سکی۔',
       userMessageEn: 'The file could not be uploaded or downloaded.',
       code: 'storage',
-      technicalDetails: 'StorageException status=${e.statusCode} message=${e.message}',
+      technicalDetails:
+          'StorageException status=${e.statusCode} message=${e.message}',
       cause: e,
     );
   }
@@ -497,7 +475,7 @@ AppException _classify(dynamic e) {
   }
   if (e is TimeoutException) {
     return NetworkException(
-      'درخواست کا وقت ختم ہو گیا۔ برا کرم دوبارہ کوشش کریں۔',
+      userMessageUr: 'درخواست کا وقت ختم ہو گیا۔ برا کرم دوبارہ کوشش کریں۔',
       userMessageEn: 'The request timed out. Please try again.',
       code: 'timeout',
       technicalDetails: 'TimeoutException after ${e.duration}',
@@ -513,7 +491,7 @@ AppException _classify(dynamic e) {
   }
   if (e is HandshakeException) {
     return NetworkException(
-      'محفوظ کنکشن قائم نہیں ہو سکا۔',
+      userMessageUr: 'محفوظ کنکشن قائم نہیں ہو سکا۔',
       userMessageEn: 'A secure connection could not be established.',
       code: 'tls',
       technicalDetails: 'HandshakeException: ${e.message}',
@@ -522,7 +500,7 @@ AppException _classify(dynamic e) {
   }
   if (e is TlsException) {
     return NetworkException(
-      'محفوظ کنکشن قائم نہیں ہو سکا۔',
+      userMessageUr: 'محفوظ کنکشن قائم نہیں ہو سکا۔',
       userMessageEn: 'A secure connection could not be established.',
       code: 'tls',
       technicalDetails: 'TlsException: ${e.message}',
@@ -533,7 +511,7 @@ AppException _classify(dynamic e) {
   // Data-shape problems (parity with the pre-Phase-7 ErrorHandler).
   if (e is FormatException) {
     return ValidationException(
-      'غلط ڈیٹا فارمیٹ۔',
+      userMessageUr: 'غلط ڈیٹا فارمیٹ۔',
       userMessageEn: 'Invalid data format.',
       code: 'format',
       technicalDetails: 'FormatException: ${e.message}',
@@ -542,7 +520,7 @@ AppException _classify(dynamic e) {
   }
   if (e is TypeError) {
     return DatabaseException(
-      'ڈیٹا ٹائپ کی خرابی۔',
+      userMessageUr: 'ڈیٹا ٹائپ کی خرابی۔',
       userMessageEn: 'A data-type error occurred.',
       code: 'type',
       technicalDetails: 'TypeError: $e',

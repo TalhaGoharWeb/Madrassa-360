@@ -18,7 +18,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:madrasa_360/core/constants/app_strings.dart';
 import 'package:madrasa_360/core/errors/app_exceptions.dart';
-import 'package:madrasa_360/data/repositories/auth_repository.dart';
 import 'package:madrasa_360/presentation/screens/auth/login_screen.dart';
 import 'package:madrasa_360/providers/auth_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -28,6 +27,7 @@ import 'fake_auth_repository.dart';
 
 void main() {
   setUpAll(() async {
+    SharedPreferences.setMockInitialValues({});
     // Dummy init: only needed so SupabaseService.client exists.
     // No HTTP request is ever issued.
     await Supabase.initialize(
@@ -57,7 +57,8 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  Finder emailField() => find.widgetWithText(TextFormField, 'اپنا ای میل درج کریں');
+  Finder emailField() =>
+      find.widgetWithText(TextFormField, 'اپنا ای میل درج کریں');
   Finder passwordField() =>
       find.widgetWithText(TextFormField, 'اپنا پاس ورڈ درج کریں');
   Finder loginButton() =>
@@ -67,6 +68,8 @@ void main() {
     testWidgets('empty fields show required-field errors', (tester) async {
       await pumpLogin(tester);
 
+      await tester.ensureVisible(loginButton());
+      await tester.pumpAndSettle();
       await tester.tap(loginButton());
       await tester.pump(); // validators run, no sign-in attempted
 
@@ -81,6 +84,8 @@ void main() {
 
       await tester.enterText(emailField(), 'not-an-email');
       await tester.enterText(passwordField(), 'secret123');
+      await tester.ensureVisible(loginButton());
+      await tester.pumpAndSettle();
       await tester.tap(loginButton());
       await tester.pump();
 
@@ -100,6 +105,8 @@ void main() {
 
       await tester.enterText(emailField(), 'teacher@test.local');
       await tester.enterText(passwordField(), 'secret123');
+      await tester.ensureVisible(loginButton());
+      await tester.pumpAndSettle();
       await tester.tap(loginButton());
       await tester.pump(); // _handleLogin: validate ok → _isLoading = true
 
@@ -113,7 +120,8 @@ void main() {
       );
 
       // Release the gate with a failure so the widget can settle.
-      gate.completeError(const AuthenticationException('غلط ای میل یا پاس ورڈ'));
+      gate.completeError(const AuthenticationException(
+          userMessageUr: 'غلط ای میل یا پاس ورڈ'));
       await tester.pumpAndSettle();
       expect(find.text('لاگ ان ہو رہا ہے...'), findsNothing);
     });
@@ -121,13 +129,15 @@ void main() {
     testWidgets('auth failure shows the provider error in a SnackBar',
         (tester) async {
       fakeAuth.signInHandler = (_, __) => throw const AuthenticationException(
-            'غلط ای میل یا پاس ورڈ',
+            userMessageUr: 'غلط ای میل یا پاس ورڈ',
           );
 
       await pumpLogin(tester);
 
       await tester.enterText(emailField(), 'teacher@test.local');
       await tester.enterText(passwordField(), 'wrong-password');
+      await tester.ensureVisible(loginButton());
+      await tester.pumpAndSettle();
       await tester.tap(loginButton());
       await tester.pumpAndSettle();
 

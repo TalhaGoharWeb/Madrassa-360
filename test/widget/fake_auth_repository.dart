@@ -36,7 +36,7 @@ class FakeAuthRepository extends AuthRepository {
     required String password,
   }) async {
     if (signInHandler != null) return signInHandler!(email, password);
-    throw const AuthenticationException('لاگ ان میں خرابی');
+    throw const AuthenticationException(userMessageUr: 'لاگ ان میں خرابی');
   }
 
   @override

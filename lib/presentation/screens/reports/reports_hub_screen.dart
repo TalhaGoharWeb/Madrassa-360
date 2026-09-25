@@ -7,6 +7,7 @@
 
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -29,8 +30,7 @@ class ReportsHubScreen extends ConsumerStatefulWidget {
   const ReportsHubScreen({super.key});
 
   @override
-  ConsumerState<ReportsHubScreen> createState() =>
-      _ReportsHubScreenState();
+  ConsumerState<ReportsHubScreen> createState() => _ReportsHubScreenState();
 }
 
 class _ReportsHubScreenState extends ConsumerState<ReportsHubScreen>
@@ -58,18 +58,18 @@ class _ReportsHubScreenState extends ConsumerState<ReportsHubScreen>
             style: TextStyle(fontFamily: 'JameelNooriNastaleeq')),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
-        bottom: const TabBar(
+        bottom: TabBar(
+          controller: _tabs,
           indicatorColor: Colors.white,
           labelStyle:
               TextStyle(fontFamily: 'JameelNooriNastaleeq', fontSize: 16),
-          tabs: [Tab(text: 'طلبہ'), Tab(text: 'انتظامیہ')],
+          tabs: const [Tab(text: 'طلبہ'), Tab(text: 'انتظامیہ')],
         ),
       ),
       body: tenantId == null
           ? const Center(
               child: Text('براہ کرم پہلے لاگ اِن کریں۔',
-                  style:
-                      TextStyle(fontFamily: 'JameelNooriNastaleeq')))
+                  style: TextStyle(fontFamily: 'JameelNooriNastaleeq')))
           : TabBarView(
               controller: _tabs,
               children: [
@@ -92,8 +92,7 @@ class _ReportsHubScreenState extends ConsumerState<ReportsHubScreen>
         return Card(
           child: ListTile(
             leading: CircleAvatar(
-              backgroundColor:
-                  AppColors.primary.withOpacity(0.12),
+              backgroundColor: AppColors.primary.withValues(alpha: 0.12),
               child: Icon(
                 r.tabular ? Icons.table_chart : Icons.description,
                 color: AppColors.primary,
@@ -101,13 +100,11 @@ class _ReportsHubScreenState extends ConsumerState<ReportsHubScreen>
             ),
             title: Text(r.titleUr,
                 style: const TextStyle(
-                    fontFamily: 'JameelNooriNastaleeq',
-                    fontSize: 17)),
+                    fontFamily: 'JameelNooriNastaleeq', fontSize: 17)),
             subtitle: Text('${r.titleEn}\n${r.descriptionUr}',
                 style: const TextStyle(fontSize: 12)),
             isThreeLine: true,
-            trailing:
-                const Icon(Icons.arrow_forward_ios, size: 16),
+            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
             onTap: () => _openFilters(context, tenantId, r),
           ),
         );
@@ -146,12 +143,10 @@ class _ReportFilterSheet extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<_ReportFilterSheet> createState() =>
-      _ReportFilterSheetState();
+  ConsumerState<_ReportFilterSheet> createState() => _ReportFilterSheetState();
 }
 
-class _ReportFilterSheetState
-    extends ConsumerState<_ReportFilterSheet> {
+class _ReportFilterSheetState extends ConsumerState<_ReportFilterSheet> {
   ReportStudent? _student;
   String? _classId;
   String? _darjaId;
@@ -193,8 +188,7 @@ class _ReportFilterSheetState
       setState(() => _searchHits = []);
       return;
     }
-    final hits =
-        await _data.students(widget.tenantId, search: q.trim());
+    final hits = await _data.students(widget.tenantId, search: q.trim());
     if (!mounted || q != _search) return;
     setState(() => _searchHits = hits.take(20).toList());
   }
@@ -247,8 +241,7 @@ class _ReportFilterSheetState
   }
 
   void _preview() => _run(() async {
-        final bytes =
-            await _service.generatePdf(_def.id, _params());
+        final bytes = await _service.generatePdf(_def.id, _params());
         if (!mounted) return;
         Navigator.of(context).push(
           MaterialPageRoute(
@@ -261,25 +254,19 @@ class _ReportFilterSheetState
       });
 
   void _print() => _run(() async {
-        final bytes =
-            await _service.generatePdf(_def.id, _params());
-        await Printing.layoutPdf(
-            onLayout: (_) async => bytes);
+        final bytes = await _service.generatePdf(_def.id, _params());
+        await Printing.layoutPdf(onLayout: (_) async => bytes);
       });
 
   void _sharePdf() => _run(() async {
-        final bytes =
-            await _service.generatePdf(_def.id, _params());
-        await Printing.sharePdf(
-            bytes: bytes, filename: _fileName('pdf'));
+        final bytes = await _service.generatePdf(_def.id, _params());
+        await Printing.sharePdf(bytes: bytes, filename: _fileName('pdf'));
       });
 
   void _savePdf() => _run(() async {
-        final bytes =
-            await _service.generatePdf(_def.id, _params());
+        final bytes = await _service.generatePdf(_def.id, _params());
         final dir = await getApplicationDocumentsDirectory();
-        final file = File(
-            '${dir.path}/${_fileName('pdf')}');
+        final file = File('${dir.path}/${_fileName('pdf')}');
         await file.writeAsBytes(bytes);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -298,10 +285,8 @@ class _ReportFilterSheetState
       });
 
   void _shareXlsx() => _run(() async {
-        final bytes =
-            await _service.generateXlsx(_def.id, _params());
-        await Printing.sharePdf(
-            bytes: bytes, filename: _fileName('xlsx'));
+        final bytes = await _service.generateXlsx(_def.id, _params());
+        await Printing.sharePdf(bytes: bytes, filename: _fileName('xlsx'));
       });
 
   @override
@@ -323,8 +308,7 @@ class _ReportFilterSheetState
                       fontWeight: FontWeight.bold)),
               Text(_def.titleEn,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                      fontSize: 12, color: Colors.grey)),
+                  style: const TextStyle(fontSize: 12, color: Colors.grey)),
               const SizedBox(height: 12),
               if (_def.needsStudent) ...[
                 _label('طالب علم'),
@@ -362,8 +346,7 @@ class _ReportFilterSheetState
                   items: {
                     for (final c in _classes) c.id: c.name,
                   },
-                  onChanged: (v) =>
-                      setState(() => _classId = v),
+                  onChanged: (v) => setState(() => _classId = v),
                 ),
               ],
               if (_def.needsDarja && _classId == null) ...[
@@ -374,8 +357,7 @@ class _ReportFilterSheetState
                   items: {
                     for (final d in _darjas) d.id: d.name,
                   },
-                  onChanged: (v) =>
-                      setState(() => _darjaId = v),
+                  onChanged: (v) => setState(() => _darjaId = v),
                 ),
               ],
               if (_def.needsExam) ...[
@@ -388,8 +370,7 @@ class _ReportFilterSheetState
                   items: {
                     for (final e in _exams) e.id: e.name,
                   },
-                  onChanged: (v) =>
-                      setState(() => _examId = v),
+                  onChanged: (v) => setState(() => _examId = v),
                 ),
               ],
               if (_def.needsDateRange) ...[
@@ -474,8 +455,7 @@ class _ReportFilterSheetState
                       const SizedBox(width: 8),
                       Expanded(
                         child: OutlinedButton.icon(
-                          icon:
-                              const Icon(Icons.table_chart),
+                          icon: const Icon(Icons.table_chart),
                           label: const Text('Excel'),
                           onPressed: _shareXlsx,
                         ),
@@ -511,19 +491,18 @@ class _ReportFilterSheetState
     required ValueChanged<T?> onChanged,
   }) =>
       DropdownButtonFormField<T>(
-        value: value,
-        decoration: const InputDecoration(
-            border: OutlineInputBorder(), isDense: true),
+        initialValue: value,
+        decoration:
+            const InputDecoration(border: OutlineInputBorder(), isDense: true),
         hint: Text(hint),
         items: [
           DropdownMenuItem<T>(
             value: null,
-            child: Text('— $hint —',
-                style: const TextStyle(color: Colors.grey)),
+            child:
+                Text('— $hint —', style: const TextStyle(color: Colors.grey)),
           ),
           for (final e in items.entries)
-            DropdownMenuItem<T>(
-                value: e.key, child: Text(e.value)),
+            DropdownMenuItem<T>(value: e.key, child: Text(e.value)),
         ],
         onChanged: onChanged,
       );
@@ -538,7 +517,7 @@ class _ReportFilterSheetState
 
 class _PdfPreviewScreen extends StatelessWidget {
   final String title;
-  final List<int> bytes;
+  final Uint8List bytes;
 
   const _PdfPreviewScreen({
     required this.title,
@@ -550,8 +529,7 @@ class _PdfPreviewScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(title,
-            style: const TextStyle(
-                fontFamily: 'JameelNooriNastaleeq')),
+            style: const TextStyle(fontFamily: 'JameelNooriNastaleeq')),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),

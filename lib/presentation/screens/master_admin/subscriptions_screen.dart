@@ -42,9 +42,10 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
         tenant_id, plan_id, status, started_at, expires_at,
         tenants ( name, tenant_code ),
         license_plans ( name )
-      ''').order('expires_at', ascending: true, nullsFirst: false);
+      ''');
       if (_status != 'all') q = q.eq('status', _status);
-      final rows = await q;
+      final rows =
+          await q.order('expires_at', ascending: true, nullsFirst: false);
       _rows = List<Map<String, dynamic>>.from(rows);
     } catch (e) {
       _error = e.toString();
@@ -80,7 +81,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
               return ChoiceChip(
                 label: Text(s == 'all' ? 'All' : s),
                 selected: selected,
-                selectedColor: AppColors.primary.withOpacity(0.15),
+                selectedColor: AppColors.primary.withValues(alpha: 0.15),
                 onSelected: (_) {
                   setState(() => _status = s);
                   _load();
@@ -132,7 +133,8 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
             child: ListTile(
               leading: Icon(Icons.autorenew, color: color, size: 32),
               title: Text(
-                (tenant?['name'] as String?) ?? (r['tenant_id'] as String? ?? '—'),
+                (tenant?['name'] as String?) ??
+                    (r['tenant_id'] as String? ?? '—'),
                 style: AppTypography.titleMedium
                     .copyWith(fontWeight: FontWeight.w600),
               ),

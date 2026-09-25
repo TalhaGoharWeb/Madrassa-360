@@ -16,7 +16,6 @@ import 'core/services/tenant_context.dart';
 import 'core/sync/sync_providers.dart';
 import 'core/widgets/master_admin_guard.dart';
 import 'data/local/app_database.dart';
-import 'data/local/database_provider.dart';
 import 'presentation/screens/crash_screen.dart';
 import 'providers/tenant_branding_provider.dart';
 import 'presentation/screens/auth/login_screen.dart';
@@ -224,51 +223,51 @@ class Madrasa360App extends StatelessWidget {
             ? AppTheme.darkTheme
             : AppTheme.darkTheme.withTenantBranding(branding);
         return MaterialApp(
-      // App Info
-      title: AppStrings.appName,
-      debugShowCheckedModeBanner: false,
+          // App Info
+          title: AppStrings.appName,
+          debugShowCheckedModeBanner: false,
 
-      // Theme — tenant-driven accents
-      theme: theme,
-      darkTheme: dark,
-      themeMode: (branding?.darkModeEnabled ?? false)
-          ? ThemeMode.dark
-          : ThemeMode.light,
+          // Theme — tenant-driven accents
+          theme: theme,
+          darkTheme: dark,
+          themeMode: (branding?.darkModeEnabled ?? false)
+              ? ThemeMode.dark
+              : ThemeMode.light,
 
-      // ⭐ FORCE RTL (Right-to-Left) for Urdu
-      locale: const Locale('ur', 'PK'),
+          // ⭐ FORCE RTL (Right-to-Left) for Urdu
+          locale: const Locale('ur', 'PK'),
 
-      // Localization Delegates
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
+          // Localization Delegates
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
 
-      // Supported Locales
-      supportedLocales: const [
-        Locale('ur', 'PK'),  // Urdu - Pakistan (Primary)
-        Locale('en', 'US'),  // English - US (Fallback)
-      ],
+          // Supported Locales
+          supportedLocales: const [
+            Locale('ur', 'PK'), // Urdu - Pakistan (Primary)
+            Locale('en', 'US'), // English - US (Fallback)
+          ],
 
-      // Force RTL Text Direction
-      builder: (context, child) {
-        return Directionality(
-          textDirection: TextDirection.rtl,
-          child: child!,
-        );
-      },
+          // Force RTL Text Direction
+          builder: (context, child) {
+            return Directionality(
+              textDirection: TextDirection.rtl,
+              child: child!,
+            );
+          },
 
-      // Home Screen - Start with Login
-      home: const LoginScreen(),
+          // Home Screen - Start with Login
+          home: const LoginScreen(),
 
-      // Named routes — '/master' is the platform-operator console, gated by
-      // MasterAdminGuard (platform_admins lookup; fails closed).
-      routes: {
-        '/master': (_) => const MasterAdminGuard(
-              child: MasterAdminShell(),
-            ),
-      },
+          // Named routes — '/master' is the platform-operator console, gated by
+          // MasterAdminGuard (platform_admins lookup; fails closed).
+          routes: {
+            '/master': (_) => const MasterAdminGuard(
+                  child: MasterAdminShell(),
+                ),
+          },
         );
       },
     );

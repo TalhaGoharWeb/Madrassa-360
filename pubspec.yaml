@@ -25,7 +25,7 @@ dependencies:
   connectivity_plus: ^5.0.2
   
   # Utilities
-  intl: ^0.19.0
+  intl: ^0.20.3
 
   # ── Supabase Backend ──────────────────────────────────────────
   supabase_flutter: ^2.5.0        # Supabase client + Auth + Realtime

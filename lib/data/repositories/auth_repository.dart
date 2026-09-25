@@ -52,8 +52,10 @@ class AppUser {
   final UserRole role;
   final String? phone;
   final String? photoUrl;
+
   /// Permission codes loaded from Supabase RBAC tables (or offline fallback).
   final Set<String> permissions;
+
   /// The madrasa this user is primarily associated with (null for platform roles).
   final String? madrasaId;
 
@@ -107,8 +109,7 @@ class AppUser {
       role == UserRole.superAdmin || role == UserRole.franchiseManager;
 
   /// True for madrasa staff (can access admin panel).
-  bool get isStaff =>
-      role != UserRole.parent && role != UserRole.student;
+  bool get isStaff => role != UserRole.parent && role != UserRole.student;
 
   AppUser copyWith({
     String? name,
@@ -147,7 +148,7 @@ class AuthRepository {
   }) async {
     final cleanEmail = email.trim();
     if (cleanEmail.isEmpty || password.isEmpty) {
-      throw ValidationException('ای میل اور پاس ورڈ ضروری ہیں');
+      throw ValidationException(userMessageUr: 'ای میل اور پاس ورڈ ضروری ہیں');
     }
     try {
       final response = await _client.auth.signInWithPassword(
@@ -156,25 +157,30 @@ class AuthRepository {
       );
 
       final user = response.user;
-      if (user == null) throw AuthenticationException('لاگ ان ناکام');
+      if (user == null) {
+        throw AuthenticationException(userMessageUr: 'لاگ ان ناکام');
+      }
 
       final profile = await _fetchProfile(user.id);
       return AppUser.fromSupabase(user, profile);
     } on sb.AuthException catch (e) {
-      throw AuthenticationException(_mapAuthError(e.message));
+      throw AuthenticationException(userMessageUr: _mapAuthError(e.message));
     } on AuthenticationException {
       rethrow;
     } on HandshakeException {
-      throw NetworkException('نیٹ ورک ہینڈشیک ناکام — برا کرم دوبارہ کوشش کریں');
+      throw NetworkException(
+          userMessageUr: 'نیٹ ورک ہینڈشیک ناکام — برا کرم دوبارہ کوشش کریں');
     } on TlsException {
-      throw NetworkException('SSL/TLS خرابی — سیکیورٹی کنکشن ناکام');
+      throw NetworkException(
+          userMessageUr: 'SSL/TLS خرابی — سیکیورٹی کنکشن ناکام');
     } on SocketException {
-      throw NetworkException('انٹرنیٹ کنکشن نہیں — برا کرم نیٹ ورک چیک کریں');
+      throw NetworkException(
+          userMessageUr: 'انٹرنیٹ کنکشن نہیں — برا کرم نیٹ ورک چیک کریں');
     } catch (e) {
       // Phase 7: ErrorHandler.logError now routes to AppLogger (file log +
       // redaction); the duplicate debugPrint is removed to avoid double logging.
       ErrorHandler.logError(e, null);
-      throw AuthenticationException('لاگ ان میں خرابی');
+      throw AuthenticationException(userMessageUr: 'لاگ ان میں خرابی');
     }
   }
 
@@ -185,7 +191,7 @@ class AuthRepository {
     try {
       await _client.auth.signOut();
     } on sb.AuthException catch (e) {
-      throw AuthenticationException(_mapAuthError(e.message));
+      throw AuthenticationException(userMessageUr: _mapAuthError(e.message));
     } catch (e) {
       ErrorHandler.logError(e, null);
       // Local session is cleared by the SDK even when the server call fails;
@@ -203,19 +209,21 @@ class AuthRepository {
   Future<void> sendPasswordReset({required String email}) async {
     final cleanEmail = email.trim();
     if (cleanEmail.isEmpty) {
-      throw ValidationException('ای میل ضروری ہے');
+      throw ValidationException(userMessageUr: 'ای میل ضروری ہے');
     }
     try {
       await _client.auth.resetPasswordForEmail(cleanEmail);
     } on sb.AuthException catch (e) {
-      throw AuthenticationException(_mapAuthError(e.message));
+      throw AuthenticationException(userMessageUr: _mapAuthError(e.message));
     } on SocketException {
-      throw NetworkException('انٹرنیٹ کنکشن نہیں — برا کرم نیٹ ورک چیک کریں');
+      throw NetworkException(
+          userMessageUr: 'انٹرنیٹ کنکشن نہیں — برا کرم نیٹ ورک چیک کریں');
     } catch (e) {
       // Phase 7: ErrorHandler.logError now routes to AppLogger (file log +
       // redaction); the duplicate debugPrint is removed to avoid double logging.
       ErrorHandler.logError(e, null);
-      throw AuthenticationException('پاس ورڈ ری سیٹ لنک بھیجنے میں خرابی');
+      throw AuthenticationException(
+          userMessageUr: 'پاس ورڈ ری سیٹ لنک بھیجنے میں خرابی');
     }
   }
 
@@ -237,10 +245,11 @@ class AuthRepository {
     try {
       await _client.auth.refreshSession();
     } on sb.AuthException catch (e) {
-      throw AuthenticationException(_mapAuthError(e.message));
+      throw AuthenticationException(userMessageUr: _mapAuthError(e.message));
     } catch (e) {
       ErrorHandler.logError(e, null);
-      throw AuthenticationException('سیشن ریفریش ناکام — دوبارہ لاگ ان کریں');
+      throw AuthenticationException(
+          userMessageUr: 'سیشن ریفریش ناکام — دوبارہ لاگ ان کریں');
     }
   }
 
@@ -261,18 +270,14 @@ class AuthRepository {
   /// Emits Supabase [AuthState] events.
   /// Relevant events: SIGNED_IN, SIGNED_OUT, TOKEN_REFRESHED, USER_UPDATED.
   /// A failed background refresh surfaces as SIGNED_OUT (session expired).
-  Stream<sb.AuthState> get authStateChanges =>
-      _client.auth.onAuthStateChange;
+  Stream<sb.AuthState> get authStateChanges => _client.auth.onAuthStateChange;
 
   // ── Helpers ──────────────────────────────────────────────────
 
   /// Fetch a single row from public.profiles by [userId].
   Future<Map<String, dynamic>> _fetchProfile(String userId) async {
-    final row = await _client
-        .from('profiles')
-        .select()
-        .eq('id', userId)
-        .maybeSingle();
+    final row =
+        await _client.from('profiles').select().eq('id', userId).maybeSingle();
 
     // Profile may not exist yet (e.g. trigger hasn't run) — return empty map
     return row ?? {};
@@ -288,12 +293,10 @@ class AuthRepository {
     if (lower.contains('email not confirmed')) {
       return 'ای میل کی تصدیق نہیں ہوئی';
     }
-    if (lower.contains('too many requests') ||
-        lower.contains('rate limit')) {
+    if (lower.contains('too many requests') || lower.contains('rate limit')) {
       return 'بہت زیادہ کوششیں — کچھ دیر بعد دوبارہ کوشش کریں';
     }
-    if (lower.contains('user not found') ||
-        lower.contains('no user found')) {
+    if (lower.contains('user not found') || lower.contains('no user found')) {
       return 'یہ اکاؤنٹ موجود نہیں';
     }
     if (lower.contains('expired') || lower.contains('invalid refresh')) {

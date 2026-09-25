@@ -199,9 +199,8 @@ class NotificationTriggers {
     String? classId,
     String? recipientUserId,
   }) {
-    final exam = (examName != null && examName.trim().isNotEmpty)
-        ? examName
-        : 'امتحان';
+    final exam =
+        (examName != null && examName.trim().isNotEmpty) ? examName : 'امتحان';
     return _record(
       db,
       tenantId: tenantId,

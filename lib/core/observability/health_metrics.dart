@@ -124,13 +124,11 @@ class HealthMetrics {
   }
 
   void _prune(List<int> buffer) {
-    final cutoff =
-        DateTime.now().subtract(_window).millisecondsSinceEpoch;
+    final cutoff = DateTime.now().subtract(_window).millisecondsSinceEpoch;
     buffer.removeWhere((ts) => ts < cutoff);
   }
 
-  void _readList(
-      SharedPreferences prefs, String key, List<int> buffer) {
+  void _readList(SharedPreferences prefs, String key, List<int> buffer) {
     final raw = prefs.getStringList(key);
     if (raw == null) return;
     for (final s in raw) {

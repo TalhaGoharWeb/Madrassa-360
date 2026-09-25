@@ -19,7 +19,8 @@ class NetworkService {
   }
 
   /// Get connection status stream
-  static Stream<bool>? get connectionStatus => _connectionStatusController?.stream;
+  static Stream<bool>? get connectionStatus =>
+      _connectionStatusController?.stream;
 
   /// Check if device is connected to internet
   static Future<bool> isConnected() async {
@@ -64,7 +65,7 @@ class NetworkService {
   static Future<void> requireConnection() async {
     final connected = await isConnected();
     if (!connected) {
-      throw NetworkException('انٹرنیٹ کنیکشن دستیاب نہیں ہے');
+      throw NetworkException(userMessageUr: 'انٹرنیٹ کنیکشن دستیاب نہیں ہے');
     }
   }
 

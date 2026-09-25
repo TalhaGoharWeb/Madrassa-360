@@ -62,32 +62,24 @@ void main() {
     });
   });
 
-  group('isFinancialConflict (financial -> ALWAYS park, never overwrite)',
-      () {
-    test('server financial flag is authoritative even for normal entities',
-        () {
-      expect(
-          isFinancialConflict(
-              serverFinancialFlag: true, entity: 'students'),
+  group('isFinancialConflict (financial -> ALWAYS park, never overwrite)', () {
+    test('server financial flag is authoritative even for normal entities', () {
+      expect(isFinancialConflict(serverFinancialFlag: true, entity: 'students'),
           isTrue);
     });
 
-    test('client fallback catches finance tables when the flag is absent',
-        () {
+    test('client fallback catches finance tables when the flag is absent', () {
       expect(
-          isFinancialConflict(
-              serverFinancialFlag: false, entity: 'invoices'),
+          isFinancialConflict(serverFinancialFlag: false, entity: 'invoices'),
           isTrue);
       expect(
-          isFinancialConflict(
-              serverFinancialFlag: false, entity: 'payments'),
+          isFinancialConflict(serverFinancialFlag: false, entity: 'payments'),
           isTrue);
     });
 
     test('normal entity without the flag is not financial', () {
       expect(
-          isFinancialConflict(
-              serverFinancialFlag: false, entity: 'attendance'),
+          isFinancialConflict(serverFinancialFlag: false, entity: 'attendance'),
           isFalse);
     });
   });
@@ -97,33 +89,27 @@ void main() {
     final t2 = DateTime.utc(2026, 9, 1, 12);
 
     test('server newer -> take the server row', () {
-      expect(
-          decideNormalConflict(serverUpdatedAt: t2, localUpdatedAt: t1),
+      expect(decideNormalConflict(serverUpdatedAt: t2, localUpdatedAt: t1),
           NormalConflictDecision.takeServer);
     });
 
-    test('local newer -> rebase onto fresh base_revision and retry once',
-        () {
-      expect(
-          decideNormalConflict(serverUpdatedAt: t1, localUpdatedAt: t2),
+    test('local newer -> rebase onto fresh base_revision and retry once', () {
+      expect(decideNormalConflict(serverUpdatedAt: t1, localUpdatedAt: t2),
           NormalConflictDecision.rebaseAndRetry);
     });
 
     test('timestamps tied -> rebase and retry (local wins ties)', () {
-      expect(
-          decideNormalConflict(serverUpdatedAt: t1, localUpdatedAt: t1),
+      expect(decideNormalConflict(serverUpdatedAt: t1, localUpdatedAt: t1),
           NormalConflictDecision.rebaseAndRetry);
     });
 
     test('server time unknown -> rebase and retry', () {
-      expect(
-          decideNormalConflict(serverUpdatedAt: null, localUpdatedAt: t1),
+      expect(decideNormalConflict(serverUpdatedAt: null, localUpdatedAt: t1),
           NormalConflictDecision.rebaseAndRetry);
     });
 
     test('local time unknown -> take the server row (safe default)', () {
-      expect(
-          decideNormalConflict(serverUpdatedAt: t2, localUpdatedAt: null),
+      expect(decideNormalConflict(serverUpdatedAt: t2, localUpdatedAt: null),
           NormalConflictDecision.takeServer);
     });
   });
@@ -147,8 +133,7 @@ void main() {
           'created_at': 1758772800000,
         };
 
-    test('parses reason/operation/isFinancial from the payload envelope',
-        () {
+    test('parses reason/operation/isFinancial from the payload envelope', () {
       final c = SyncConflict.fromRow(row());
       expect(c.conflictId, '7');
       expect(c.entity, 'invoices');
@@ -169,14 +154,12 @@ void main() {
     test('cleanLocalPayload strips review metadata before any retry', () {
       final c = SyncConflict.fromRow(row());
       expect(c.cleanLocalPayload, {'student_id': 's1'});
-      expect(
-          c.cleanLocalPayload.keys.any((k) => k.startsWith('_')), isFalse);
+      expect(c.cleanLocalPayload.keys.any((k) => k.startsWith('_')), isFalse);
     });
 
     test('resolved flag maps to status', () {
       expect(SyncConflict.fromRow(row(resolved: 1)).status, 'resolved');
-      expect(
-          SyncConflict.fromRow(row(resolved: 0)).status, 'unresolved');
+      expect(SyncConflict.fromRow(row(resolved: 0)).status, 'unresolved');
     });
 
     test('malformed payload JSON -> empty maps, never a crash', () {

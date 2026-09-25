@@ -61,7 +61,9 @@ class DateUtils {
   /// Check if date is today
   static bool isToday(DateTime date) {
     final now = DateTime.now();
-    return date.year == now.year && date.month == now.month && date.day == now.day;
+    return date.year == now.year &&
+        date.month == now.month &&
+        date.day == now.day;
   }
 
   /// Check if date is yesterday
@@ -144,7 +146,8 @@ class DateUtils {
     while (addedDays < days) {
       result = result.add(const Duration(days: 1));
       // Skip Saturday (6) and Sunday (7)
-      if (result.weekday != DateTime.saturday && result.weekday != DateTime.sunday) {
+      if (result.weekday != DateTime.saturday &&
+          result.weekday != DateTime.sunday) {
         addedDays++;
       }
     }

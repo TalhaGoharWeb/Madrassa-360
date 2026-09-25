@@ -38,8 +38,8 @@ class InAppChannel extends NotificationChannel {
   /// notification is, by definition, delivered to the inbox.
   @override
   Future<ChannelDispatchResult> send(LocalNotificationRow notification) async {
-    final row =
-        await _db.notificationsDao.getById(notification.id, notification.tenantId);
+    final row = await _db.notificationsDao
+        .getById(notification.id, notification.tenantId);
     if (row == null) {
       return const ChannelDispatchResult.failed('notification_missing');
     }

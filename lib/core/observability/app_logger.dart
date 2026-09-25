@@ -101,7 +101,8 @@ class AppLogger {
     if (tenantId == _tenantId) return;
     _tenantId = tenantId;
     if (_initialized) {
-      _writeLine(_format(LogLevel.info, 'tenant context: ${_tenantId ?? 'unknown'}'));
+      _writeLine(
+          _format(LogLevel.info, 'tenant context: ${_tenantId ?? 'unknown'}'));
     }
   }
 
@@ -127,17 +128,23 @@ class AppLogger {
       _log(LogLevel.info, message, context: context);
 
   void warning(String message,
-          {Map<String, Object?>? context, Object? error, StackTrace? stackTrace}) =>
+          {Map<String, Object?>? context,
+          Object? error,
+          StackTrace? stackTrace}) =>
       _log(LogLevel.warning, message,
           context: context, error: error, stackTrace: stackTrace);
 
   void error(String message,
-          {Map<String, Object?>? context, Object? error, StackTrace? stackTrace}) =>
+          {Map<String, Object?>? context,
+          Object? error,
+          StackTrace? stackTrace}) =>
       _log(LogLevel.error, message,
           context: context, error: error, stackTrace: stackTrace);
 
   void fatal(String message,
-          {Map<String, Object?>? context, Object? error, StackTrace? stackTrace}) =>
+          {Map<String, Object?>? context,
+          Object? error,
+          StackTrace? stackTrace}) =>
       _log(LogLevel.fatal, message,
           context: context, error: error, stackTrace: stackTrace);
 
@@ -181,16 +188,15 @@ class AppLogger {
   /// through untouched. Pure function — safe to unit test.
   static Object? redact(Object? value) {
     if (value is Map) {
-      return value.map((k, v) => MapEntry(
-          k, _sensitiveKey.hasMatch('$k') ? mask : redact(v)));
+      return value.map((k, v) =>
+          MapEntry(k, _sensitiveKey.hasMatch('$k') ? mask : redact(v)));
     }
     if (value is Iterable) {
       return value.map(redact).toList();
     }
     if (value is String) {
       return _inlineSecret.hasMatch(value)
-          ? value.replaceAllMapped(
-              _inlineSecret, (m) => '${m.group(1)}=$mask')
+          ? value.replaceAllMapped(_inlineSecret, (m) => '${m.group(1)}=$mask')
           : value;
     }
     return value;
@@ -219,15 +225,13 @@ class AppLogger {
 
   String _format(LogLevel level, String message) {
     final ts = DateTime.now().toIso8601String();
-    final redacted = redact('$message');
+    final redacted = redact(message);
     return '[$ts] [${level.name.toUpperCase()}] [tenant=${_tenantId ?? 'unknown'}] $redacted';
   }
 
   String _sessionMarker(String kind) {
     final ts = DateTime.now().toIso8601String();
-    return '═' * 24 +
-        ' $kind $ts | Madrassa 360 $_version | tenant=${_tenantId ?? 'unknown'} ' +
-        '═' * 24;
+    return "${'═' * 24} $kind $ts | Madrassa 360 $_version | tenant=${_tenantId ?? 'unknown'} ${'═' * 24}";
   }
 
   void _writeLine(String line) {

@@ -25,7 +25,7 @@ import 'dart:async';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../data/local/app_database.dart';
+import '../../data/local/app_database.dart' hide SyncQueue;
 import '../../core/sync/sync_engine.dart';
 import '../models/staff.dart';
 import '../../core/services/supabase_service.dart';
@@ -73,8 +73,7 @@ class LocalStaffRepository implements IStaffRepository {
   }
 
   @override
-  Future<Staff?> getStaffById(String id,
-      {required String tenantId}) async {
+  Future<Staff?> getStaffById(String id, {required String tenantId}) async {
     final response = await _client
         .from('staff')
         .select()
@@ -91,11 +90,9 @@ class LocalStaffRepository implements IStaffRepository {
   Future<Staff> upsertStaff(Staff staff,
       {required String tenantId, String? pendingUploadId}) async {
     final nowIso = DateTime.now().toUtc().toIso8601String();
-    final exists =
-        await SyncQueue.rowExists(_db, 'staff', tenantId, staff.id);
+    final exists = await SyncQueue.rowExists(_db, 'staff', tenantId, staff.id);
     final baseRev = exists
-        ? await SyncQueue.currentRevision(
-            _db, 'staff', tenantId, staff.id)
+        ? await SyncQueue.currentRevision(_db, 'staff', tenantId, staff.id)
         : 0;
 
     // Server-shaped payload kept in the envelope's data JSON and queued.
@@ -140,8 +137,7 @@ class LocalStaffRepository implements IStaffRepository {
   @override
   Future<void> deleteStaff(String id, {required String tenantId}) async {
     final nowIso = DateTime.now().toUtc().toIso8601String();
-    final baseRev =
-        await SyncQueue.currentRevision(_db, 'staff', tenantId, id);
+    final baseRev = await SyncQueue.currentRevision(_db, 'staff', tenantId, id);
 
     await _db.transaction(() async {
       // Soft delete locally: sets deleted_at (epoch millis), refreshes

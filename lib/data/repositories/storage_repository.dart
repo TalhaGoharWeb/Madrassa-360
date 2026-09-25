@@ -44,8 +44,8 @@ class PendingUploadQueue {
   static Future<File> stageFile(
       String tenantId, XFile photo, String fileName) async {
     final supportDir = await getApplicationSupportDirectory();
-    final dir = Directory(
-        p.join(supportDir.path, 'Madrassa360', 'uploads', tenantId));
+    final dir =
+        Directory(p.join(supportDir.path, 'Madrassa360', 'uploads', tenantId));
     await dir.create(recursive: true);
     final staged = File(p.join(dir.path, fileName));
     return File(photo.path).copy(staged.path);

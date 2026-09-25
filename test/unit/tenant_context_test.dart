@@ -27,21 +27,22 @@ TenantMembership _m(String tenantId, {String role = 'admin'}) =>
       tenantName: 'Madrasa $tenantId',
     );
 
-ProviderContainer _container(List<TenantMembership> memberships) {
+Future<ProviderContainer> _container(List<TenantMembership> memberships) async {
   final c = ProviderContainer(
     overrides: [
-      tenantMembershipsProvider.overrideWithValue(
-        AsyncValue.data(memberships),
+      tenantMembershipsProvider.overrideWith(
+        (ref) async => memberships,
       ),
     ],
   );
   addTearDown(c.dispose);
+  // Resolve the async override so reads see data (not loading).
+  await c.read(tenantMembershipsProvider.future);
   return c;
 }
 
 Future<String?> _savedPref() async =>
-    (await SharedPreferences.getInstance())
-        .getString(TenantContext.prefsKey);
+    (await SharedPreferences.getInstance()).getString(TenantContext.prefsKey);
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -53,14 +54,14 @@ void main() {
 
   group('TenantContext.init resolution', () {
     test('0 memberships -> null (no access), nothing persisted', () async {
-      final c = _container([]);
+      final c = await _container([]);
       await c.read(activeTenantIdProvider.notifier).init();
       expect(c.read(activeTenantIdProvider), isNull);
       expect(await _savedPref(), isNull);
     });
 
     test('1 membership -> auto-selected and persisted', () async {
-      final c = _container([_m('t1')]);
+      final c = await _container([_m('t1')]);
       await c.read(activeTenantIdProvider.notifier).init();
       expect(c.read(activeTenantIdProvider), 't1');
       expect(await _savedPref(), 't1');
@@ -68,16 +69,15 @@ void main() {
 
     test('N memberships, no saved choice -> first membership (documented)',
         () async {
-      final c = _container([_m('t1'), _m('t2'), _m('t3')]);
+      final c = await _container([_m('t1'), _m('t2'), _m('t3')]);
       await c.read(activeTenantIdProvider.notifier).init();
       expect(c.read(activeTenantIdProvider), 't1');
       expect(await _savedPref(), 't1');
     });
 
     test('saved valid choice is restored', () async {
-      SharedPreferences.setMockInitialValues(
-          {TenantContext.prefsKey: 't2'});
-      final c = _container([_m('t1'), _m('t2')]);
+      SharedPreferences.setMockInitialValues({TenantContext.prefsKey: 't2'});
+      final c = await _container([_m('t1'), _m('t2')]);
       await c.read(activeTenantIdProvider.notifier).init();
       expect(c.read(activeTenantIdProvider), 't2');
     });
@@ -86,7 +86,7 @@ void main() {
         () async {
       SharedPreferences.setMockInitialValues(
           {TenantContext.prefsKey: 't-gone'});
-      final c = _container([_m('t1'), _m('t2')]);
+      final c = await _container([_m('t1'), _m('t2')]);
       await c.read(activeTenantIdProvider.notifier).init();
       expect(c.read(activeTenantIdProvider), 't1');
       expect(await _savedPref(), 't1');
@@ -95,7 +95,7 @@ void main() {
 
   group('TenantContext.switchTenant / clear (persistence round-trip)', () {
     test('switchTenant updates state and persists', () async {
-      final c = _container([_m('t1'), _m('t2')]);
+      final c = await _container([_m('t1'), _m('t2')]);
       final notifier = c.read(activeTenantIdProvider.notifier);
       await notifier.init();
       await notifier.switchTenant('t2');
@@ -103,20 +103,19 @@ void main() {
       expect(await _savedPref(), 't2');
     });
 
-    test('persistence round-trips across a fresh context instance',
-        () async {
-      final c1 = _container([_m('t1'), _m('t2')]);
+    test('persistence round-trips across a fresh context instance', () async {
+      final c1 = await _container([_m('t1'), _m('t2')]);
       await c1.read(activeTenantIdProvider.notifier).init();
       await c1.read(activeTenantIdProvider.notifier).switchTenant('t2');
 
       // New container = "app restarted": init must restore t2 from prefs.
-      final c2 = _container([_m('t1'), _m('t2')]);
+      final c2 = await _container([_m('t1'), _m('t2')]);
       await c2.read(activeTenantIdProvider.notifier).init();
       expect(c2.read(activeTenantIdProvider), 't2');
     });
 
     test('clear drops the state and removes the persisted choice', () async {
-      final c = _container([_m('t1')]);
+      final c = await _container([_m('t1')]);
       final notifier = c.read(activeTenantIdProvider.notifier);
       await notifier.init();
       expect(c.read(activeTenantIdProvider), 't1');
@@ -128,22 +127,21 @@ void main() {
 
   group('currentTenantIdProvider (effective tenant for queries)', () {
     test('active id valid in memberships -> active id', () async {
-      final c = _container([_m('t1'), _m('t2')]);
+      final c = await _container([_m('t1'), _m('t2')]);
       await c.read(activeTenantIdProvider.notifier).init();
       await c.read(activeTenantIdProvider.notifier).switchTenant('t2');
       expect(c.read(currentTenantIdProvider), 't2');
     });
 
     test('active id revoked -> first membership', () async {
-      final c = _container([_m('t2')]);
+      final c = await _container([_m('t2')]);
       // Simulate a stale active id (e.g. membership removed server-side).
       c.read(activeTenantIdProvider.notifier).state = 't1';
       expect(c.read(currentTenantIdProvider), 't2');
     });
 
-    test('no memberships -> null (callers must bail out unscoped)',
-        () async {
-      final c = _container([]);
+    test('no memberships -> null (callers must bail out unscoped)', () async {
+      final c = await _container([]);
       expect(c.read(currentTenantIdProvider), isNull);
     });
   });

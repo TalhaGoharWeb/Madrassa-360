@@ -121,13 +121,13 @@ class _PlatformUsersScreenState extends State<PlatformUsersScreen> {
           ElevatedButton(
             onPressed: () {
               final id = idCtrl.text.trim();
-              final uuidOk = RegExp(
-                      r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-'
-                      r'[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$')
-                  .hasMatch(id);
+              final uuidOk =
+                  RegExp(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-'
+                          r'[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$')
+                      .hasMatch(id);
               if (!uuidOk) {
-                ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(
-                    content: Text('درست UUID لکھیں')));
+                ScaffoldMessenger.of(ctx).showSnackBar(
+                    const SnackBar(content: Text('درست UUID لکھیں')));
                 return;
               }
               Navigator.of(ctx).pop(true);
@@ -148,8 +148,8 @@ class _PlatformUsersScreenState extends State<PlatformUsersScreen> {
         'role': 'platform_support',
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('platform_support شامل ہو گیا')));
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('platform_support شامل ہو گیا')));
       }
       _load();
     } catch (e) {
@@ -171,8 +171,8 @@ class _PlatformUsersScreenState extends State<PlatformUsersScreen> {
 
     if (uid == _myUid) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('آپ اپنا اکاؤنٹ خود نہیں ہٹا سکتے')));
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('آپ اپنا اکاؤنٹ خود نہیں ہٹا سکتے')));
       }
       return;
     }
@@ -181,9 +181,9 @@ class _PlatformUsersScreenState extends State<PlatformUsersScreen> {
       if (_ownerCount <= 1) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-              content: Text(
-                  'آخری platform_owner کو ہٹایا نہیں جا سکتا — پہلے کسی '
-                  'اور کو owner بنائیں')));
+              content:
+                  Text('آخری platform_owner کو ہٹایا نہیں جا سکتا — پہلے کسی '
+                      'اور کو owner بنائیں')));
         }
         return;
       }
@@ -208,8 +208,8 @@ class _PlatformUsersScreenState extends State<PlatformUsersScreen> {
                   TextField(
                     controller: ctrl,
                     onChanged: (_) => setS(() {}),
-                    decoration: const InputDecoration(
-                        labelText: 'REMOVE OWNER لکھیں'),
+                    decoration:
+                        const InputDecoration(labelText: 'REMOVE OWNER لکھیں'),
                   ),
                 ],
               ),
@@ -242,8 +242,7 @@ class _PlatformUsersScreenState extends State<PlatformUsersScreen> {
                 onPressed: () => Navigator.of(ctx).pop(false),
                 child: const Text('منسوخ')),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.error),
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
               onPressed: () => Navigator.of(ctx).pop(true),
               child: const Text('ہٹائیں'),
             ),
@@ -302,32 +301,28 @@ class _PlatformUsersScreenState extends State<PlatformUsersScreen> {
                   final role = (a['role'] as String?) ?? '';
                   final isOwner = role == 'platform_owner';
                   final isSelf = a['user_id'] == _myUid;
-                  final profile =
-                      a['profiles'] as Map<String, dynamic>?;
-                  final name =
-                      (profile?['name'] as String?)?.isNotEmpty == true
-                          ? profile!['name'] as String
-                          : '—';
+                  final profile = a['profiles'] as Map<String, dynamic>?;
+                  final name = (profile?['name'] as String?)?.isNotEmpty == true
+                      ? profile!['name'] as String
+                      : '—';
                   return Card(
                     margin: EdgeInsets.zero,
                     child: ListTile(
                       leading: CircleAvatar(
-                        backgroundColor: (isOwner
-                                ? AppColors.warning
-                                : AppColors.primary)
-                            .withOpacity(0.15),
+                        backgroundColor:
+                            (isOwner ? AppColors.warning : AppColors.primary)
+                                .withValues(alpha: 0.15),
                         child: Icon(
                           isOwner
                               ? Icons.shield
                               : Icons.admin_panel_settings_outlined,
-                          color: isOwner
-                              ? AppColors.warning
-                              : AppColors.primary,
+                          color:
+                              isOwner ? AppColors.warning : AppColors.primary,
                         ),
                       ),
                       title: Text(name,
-                          style: AppTypography.titleMedium.copyWith(
-                              fontWeight: FontWeight.w600)),
+                          style: AppTypography.titleMedium
+                              .copyWith(fontWeight: FontWeight.w600)),
                       subtitle: Text(
                         '${a['user_id']}',
                         style: AppTypography.bodySmall.copyWith(
@@ -342,10 +337,9 @@ class _PlatformUsersScreenState extends State<PlatformUsersScreen> {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
-                              color: (isOwner
-                                      ? AppColors.warning
-                                      : AppColors.info)
-                                  .withOpacity(0.12),
+                              color:
+                                  (isOwner ? AppColors.warning : AppColors.info)
+                                      .withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
@@ -362,8 +356,8 @@ class _PlatformUsersScreenState extends State<PlatformUsersScreen> {
                             const Padding(
                               padding: EdgeInsets.only(left: 6),
                               child: Text('(you)',
-                                  style:
-                                      TextStyle(color: AppColors.textSecondary)),
+                                  style: TextStyle(
+                                      color: AppColors.textSecondary)),
                             ),
                           if (!isSelf)
                             IconButton(

@@ -25,12 +25,13 @@ class MadrasaState {
     bool? isLoading,
     String? error,
     bool clearError = false,
-  }) => MadrasaState(
-    madrasas:  madrasas  ?? this.madrasas,
-    selected:  selected  ?? this.selected,
-    isLoading: isLoading ?? this.isLoading,
-    error:     clearError ? null : (error ?? this.error),
-  );
+  }) =>
+      MadrasaState(
+        madrasas: madrasas ?? this.madrasas,
+        selected: selected ?? this.selected,
+        isLoading: isLoading ?? this.isLoading,
+        error: clearError ? null : (error ?? this.error),
+      );
 }
 
 class MadrasaNotifier extends StateNotifier<MadrasaState> {
@@ -58,7 +59,8 @@ class MadrasaNotifier extends StateNotifier<MadrasaState> {
   Future<String?> create(Madrasa m) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      final data = await _client.from('madrasas').insert(m.toJson()).select().single();
+      final data =
+          await _client.from('madrasas').insert(m.toJson()).select().single();
       final created = Madrasa.fromJson(data);
       state = state.copyWith(
         isLoading: false,
@@ -69,9 +71,12 @@ class MadrasaNotifier extends StateNotifier<MadrasaState> {
       // Optimistic local add (rolled back by the sync engine on conflict)
       final opt = Madrasa(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
-        nameUrdu: m.nameUrdu, nameEnglish: m.nameEnglish,
-        cityUrdu: m.cityUrdu, cityEnglish: m.cityEnglish,
-        phone: m.phone, email: m.email,
+        nameUrdu: m.nameUrdu,
+        nameEnglish: m.nameEnglish,
+        cityUrdu: m.cityUrdu,
+        cityEnglish: m.cityEnglish,
+        phone: m.phone,
+        email: m.email,
         subscriptionPlan: m.subscriptionPlan,
       );
       state = state.copyWith(
@@ -112,14 +117,14 @@ class MadrasaNotifier extends StateNotifier<MadrasaState> {
   }
 
   // Stats for Super Admin dashboard
-  int get totalActive   => state.madrasas.where((m) => m.isActive).length;
+  int get totalActive => state.madrasas.where((m) => m.isActive).length;
   int get totalInactive => state.madrasas.where((m) => !m.isActive).length;
 }
 
 // ── Providers ────────────────────────────────────────────────────────────────
 
-final madrasaProvider =
-    StateNotifierProvider<MadrasaNotifier, MadrasaState>((_) => MadrasaNotifier());
+final madrasaProvider = StateNotifierProvider<MadrasaNotifier, MadrasaState>(
+    (_) => MadrasaNotifier());
 
 final madrasaListProvider = Provider<List<Madrasa>>(
   (ref) => ref.watch(madrasaProvider).madrasas,

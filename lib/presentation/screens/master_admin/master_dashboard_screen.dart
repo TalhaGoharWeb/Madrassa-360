@@ -97,9 +97,9 @@ class _MasterDashboardScreenState extends State<MasterDashboardScreen> {
 
     _students = students.length;
     _staff = staff.length;
-    _users = {
-      for (final m in memberships) (m['user_id'] as String?)
-    }.whereType<String>().length;
+    _users = {for (final m in memberships) (m['user_id'] as String?)}
+        .whereType<String>()
+        .length;
   }
 
   // ── Subscription stats (Worker 4's tables — may not exist yet) ───────
@@ -151,8 +151,8 @@ class _MasterDashboardScreenState extends State<MasterDashboardScreen> {
     // 3. Storage: list buckets (platform-level check).
     try {
       final buckets = await _client.storage.listBuckets();
-      _health['Storage'] = _HealthResult(
-          MaHealth.ok, '${buckets.length} bucket(s) reachable');
+      _health['Storage'] =
+          _HealthResult(MaHealth.ok, '${buckets.length} bucket(s) reachable');
     } catch (e) {
       _health['Storage'] =
           _HealthResult(MaHealth.down, 'listBuckets failed: $e');
@@ -181,8 +181,7 @@ class _MasterDashboardScreenState extends State<MasterDashboardScreen> {
         );
       }
     } catch (e) {
-      _health['Functions'] =
-          _HealthResult(MaHealth.unknown, 'Uncheckable: $e');
+      _health['Functions'] = _HealthResult(MaHealth.unknown, 'Uncheckable: $e');
     }
 
     // 5. API (PostgREST) — already proven by the database check above, but
@@ -366,8 +365,8 @@ class _MasterDashboardScreenState extends State<MasterDashboardScreen> {
               subtitle: 'Live checks — statuses are never faked',
               actions: [
                 IconButton(
-                  icon: const Icon(Icons.refresh,
-                      color: AppColors.textSecondary),
+                  icon:
+                      const Icon(Icons.refresh, color: AppColors.textSecondary),
                   tooltip: 'Re-run checks',
                   onPressed: () async {
                     await _runHealthChecks();

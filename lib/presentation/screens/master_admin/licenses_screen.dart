@@ -44,9 +44,10 @@ class _LicensesScreenState extends State<LicensesScreen> {
         max_users, max_students, enabled_modules,
         tenants ( name, tenant_code ),
         license_plans ( name )
-      ''').order('expires_at', ascending: true, nullsFirst: false);
+      ''');
       if (_status != 'all') q = q.eq('status', _status);
-      final rows = await q;
+      final rows =
+          await q.order('expires_at', ascending: true, nullsFirst: false);
       _rows = List<Map<String, dynamic>>.from(rows);
     } catch (e) {
       _error = e.toString();
@@ -71,7 +72,7 @@ class _LicensesScreenState extends State<LicensesScreen> {
               return ChoiceChip(
                 label: Text(s == 'all' ? 'All' : s),
                 selected: selected,
-                selectedColor: AppColors.primary.withOpacity(0.15),
+                selectedColor: AppColors.primary.withValues(alpha: 0.15),
                 onSelected: (_) {
                   setState(() => _status = s);
                   _load();
@@ -116,15 +117,15 @@ class _LicensesScreenState extends State<LicensesScreen> {
           final tenant = r['tenants'] as Map<String, dynamic>?;
           final plan = r['license_plans'] as Map<String, dynamic>?;
           final status = (r['status'] as String?) ?? 'unknown';
-          final modules =
-              (r['enabled_modules'] as List?)?.join(', ') ?? '—';
+          final modules = (r['enabled_modules'] as List?)?.join(', ') ?? '—';
           return Card(
             margin: EdgeInsets.zero,
             child: ExpansionTile(
               leading: const Icon(Icons.verified,
                   color: AppColors.primary, size: 32),
               title: Text(
-                (tenant?['name'] as String?) ?? (r['tenant_id'] as String? ?? '—'),
+                (tenant?['name'] as String?) ??
+                    (r['tenant_id'] as String? ?? '—'),
                 style: AppTypography.titleMedium
                     .copyWith(fontWeight: FontWeight.w600),
               ),

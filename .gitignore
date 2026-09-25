@@ -91,3 +91,6 @@ debug_symbols/
 *.mobileprovision
 google-services.json
 GoogleService-Info.plist
+
+# Drift / build_runner generated code (regenerated in CI)
+*.g.dart

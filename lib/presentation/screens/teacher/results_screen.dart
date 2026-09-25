@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/config/app_config.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../data/models/result.dart';
 import '../../../data/models/student.dart';
 import '../../../providers/result_provider.dart';
-import '../../../providers/tenant_branding_provider.dart';
 import '../../../core/widgets/tenant_logo.dart';
 import '../../../providers/teacher_portal_provider.dart';
 import '../../widgets/common/app_widgets.dart';
@@ -83,7 +81,8 @@ class _ResultsScreenState extends State<ResultsScreen>
         }
         if (resultsAsync.hasError) {
           return Center(
-            child: Text('نتائج لوڈ کرنے میں خطا', style: AppTypography.bodyMedium),
+            child:
+                Text('نتائج لوڈ کرنے میں خطا', style: AppTypography.bodyMedium),
           );
         }
 
@@ -159,7 +158,7 @@ class _ResultsScreenState extends State<ResultsScreen>
               onSelected: (selected) {
                 setState(() => _selectedClassId = classId);
               },
-              selectedColor: AppColors.primary.withOpacity(0.2),
+              selectedColor: AppColors.primary.withValues(alpha: 0.2),
               checkmarkColor: AppColors.primary,
               labelStyle: AppTypography.labelMedium.copyWith(
                 color: isSelected ? AppColors.primary : AppColors.textSecondary,
@@ -185,7 +184,7 @@ class _ResultsScreenState extends State<ResultsScreen>
                 width: 50,
                 height: 50,
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Center(
@@ -216,9 +215,9 @@ class _ResultsScreenState extends State<ResultsScreen>
               _buildGradeBadge(result.grade, result.percentage),
             ],
           ),
-          
+
           const Divider(height: 24),
-          
+
           // Subject Preview (First 3 subjects)
           ...result.subjects.take(3).map((subject) {
             return Padding(
@@ -226,7 +225,7 @@ class _ResultsScreenState extends State<ResultsScreen>
               child: _buildSubjectRow(subject),
             );
           }),
-          
+
           if (result.subjects.length > 3)
             Center(
               child: Text(
@@ -283,9 +282,9 @@ class _ResultsScreenState extends State<ResultsScreen>
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Column(
         children: [
@@ -350,7 +349,7 @@ class _ResultsScreenState extends State<ResultsScreen>
                     ),
                   ),
                   const SizedBox(height: 24),
-                  
+
                   // Result Card Header
                   Container(
                     width: double.infinity,
@@ -387,9 +386,9 @@ class _ResultsScreenState extends State<ResultsScreen>
                       ],
                     ),
                   ),
-                  
+
                   const SizedBox(height: 20),
-                  
+
                   // Student Info
                   AppCard(
                     margin: EdgeInsets.zero,
@@ -401,7 +400,7 @@ class _ResultsScreenState extends State<ResultsScreen>
                               width: 60,
                               height: 60,
                               decoration: BoxDecoration(
-                                color: AppColors.primary.withOpacity(0.1),
+                                color: AppColors.primary.withValues(alpha: 0.1),
                                 shape: BoxShape.circle,
                               ),
                               child: Center(
@@ -435,21 +434,22 @@ class _ResultsScreenState extends State<ResultsScreen>
                       ],
                     ),
                   ),
-                  
+
                   const SizedBox(height: 20),
-                  
+
                   // Subject Results
                   Text(
                     'مضامین کی تفصیل',
                     style: AppTypography.titleMedium,
                   ),
                   const SizedBox(height: 12),
-                  
+
                   // Subject Table Header
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.1),
+                      color: AppColors.primary.withValues(alpha: 0.1),
                       borderRadius: const BorderRadius.vertical(
                         top: Radius.circular(12),
                       ),
@@ -486,7 +486,7 @@ class _ResultsScreenState extends State<ResultsScreen>
                       ],
                     ),
                   ),
-                  
+
                   // Subject Rows
                   Container(
                     decoration: BoxDecoration(
@@ -534,7 +534,7 @@ class _ResultsScreenState extends State<ResultsScreen>
                                   ),
                                   decoration: BoxDecoration(
                                     color: _getGradeColor(subject.grade)
-                                        .withOpacity(0.1),
+                                        .withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text(
@@ -552,9 +552,9 @@ class _ResultsScreenState extends State<ResultsScreen>
                       }).toList(),
                     ),
                   ),
-                  
+
                   const SizedBox(height: 24),
-                  
+
                   // Print Button
                   SizedBox(
                     width: double.infinity,
@@ -605,10 +605,9 @@ class _ResultsScreenState extends State<ResultsScreen>
                 // Phase 6: the selection actually drives the roster below.
                 Consumer(
                   builder: (context, ref, _) {
-                    final classes = ref
-                            .watch(teacherAssignedClassesProvider)
-                            .valueOrNull ??
-                        const <AssignedClass>[];
+                    final classes =
+                        ref.watch(teacherAssignedClassesProvider).valueOrNull ??
+                            const <AssignedClass>[];
                     final nameToId = <String, String>{
                       for (final c in classes) c.name: c.id
                     };
@@ -620,16 +619,19 @@ class _ResultsScreenState extends State<ResultsScreen>
                       hint: 'جماعت',
                       items: classes.map((c) => c.name).toList(),
                       value: selectedName,
-                      onChanged: (name) => setState(
-                          () => _entryClassId =
-                              name == null ? '' : (nameToId[name] ?? '')),
+                      onChanged: (name) => setState(() => _entryClassId =
+                          name == null ? '' : (nameToId[name] ?? '')),
                     );
                   },
                 ),
                 const SizedBox(height: 12),
                 _buildDropdownField(
                   hint: 'امتحان کی قسم',
-                  items: const ['ماہانہ امتحان', 'ہفتہ وار ٹیسٹ', 'سالانہ امتحان'],
+                  items: const [
+                    'ماہانہ امتحان',
+                    'ہفتہ وار ٹیسٹ',
+                    'سالانہ امتحان'
+                  ],
                 ),
               ],
             ),
@@ -712,7 +714,8 @@ class _ResultsScreenState extends State<ResultsScreen>
         child: Column(
           children: [
             Icon(icon,
-                size: 48, color: AppColors.textSecondary.withOpacity(0.5)),
+                size: 48,
+                color: AppColors.textSecondary.withValues(alpha: 0.5)),
             const SizedBox(height: 12),
             Text(
               message,
@@ -767,7 +770,7 @@ class _ResultsScreenState extends State<ResultsScreen>
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Center(
@@ -795,7 +798,7 @@ class _ResultsScreenState extends State<ResultsScreen>
             ],
           ),
           const Divider(height: 24),
-          
+
           // Subject Input Fields
           Row(
             children: [
@@ -954,11 +957,13 @@ class _ResultsScreenState extends State<ResultsScreen>
                 children: [
                   Text(
                     title,
-                    style: AppTypography.bodyLarge.copyWith(fontWeight: FontWeight.w500),
+                    style: AppTypography.bodyLarge
+                        .copyWith(fontWeight: FontWeight.w500),
                   ),
                   Text(
                     subtitle,
-                    style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
+                    style: AppTypography.bodySmall
+                        .copyWith(color: AppColors.textSecondary),
                   ),
                 ],
               ),

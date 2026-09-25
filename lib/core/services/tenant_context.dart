@@ -40,12 +40,12 @@ class TenantMembership {
   factory TenantMembership.fromJson(Map<String, dynamic> json) {
     final tenant = json['tenants'] as Map<String, dynamic>? ?? {};
     return TenantMembership(
-      tenantId:      (json['tenant_id'] ?? '') as String,
-      role:          (json['role'] ?? '') as String,
-      tenantName:    (tenant['name'] ?? '') as String,
+      tenantId: (json['tenant_id'] ?? '') as String,
+      role: (json['role'] ?? '') as String,
+      tenantName: (tenant['name'] ?? '') as String,
       tenantNameUrdu: tenant['name_urdu'] as String?,
-      logoUrl:        tenant['logo_url'] as String?,
-      isActive:       json['is_active'] as bool? ?? true,
+      logoUrl: tenant['logo_url'] as String?,
+      isActive: json['is_active'] as bool? ?? true,
     );
   }
 }
@@ -62,7 +62,8 @@ final tenantMembershipsProvider =
   if (userId == null) return <TenantMembership>[];
   final rows = await SupabaseService.client
       .from('tenant_memberships')
-      .select('tenant_id, role, is_active, tenants!inner(name, name_urdu, logo_url)')
+      .select(
+          'tenant_id, role, is_active, tenants!inner(name, name_urdu, logo_url)')
       .eq('user_id', userId)
       .eq('is_active', true);
   return (rows as List)
@@ -92,9 +93,8 @@ class TenantContext extends StateNotifier<String?> {
       state = null;
       return;
     }
-    final valid =
-        saved != null && memberships.any((m) => m.tenantId == saved);
-    final id = valid ? saved! : memberships.first.tenantId;
+    final valid = saved != null && memberships.any((m) => m.tenantId == saved);
+    final id = valid ? saved : memberships.first.tenantId;
     state = id;
     await prefs.setString(prefsKey, id);
   }
@@ -123,8 +123,7 @@ class TenantContext extends StateNotifier<String?> {
 
 /// The active tenant id (null until [TenantContext.init] runs, or logged out).
 final activeTenantIdProvider =
-    StateNotifierProvider<TenantContext, String?>(
-        (ref) => TenantContext(ref));
+    StateNotifierProvider<TenantContext, String?>((ref) => TenantContext(ref));
 
 // ─────────────────────────────────────────────
 // Effective tenant for queries

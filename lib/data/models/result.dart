@@ -24,7 +24,8 @@ class SubjectResult {
     required this.totalMarks,
   });
 
-  double get percentage => totalMarks > 0 ? (marksObtained / totalMarks) * 100 : 0;
+  double get percentage =>
+      totalMarks > 0 ? (marksObtained / totalMarks) * 100 : 0;
 
   String get grade {
     if (percentage >= 90) return 'الف+';
@@ -37,24 +38,24 @@ class SubjectResult {
 
   factory SubjectResult.fromJson(Map<String, dynamic> json) {
     return SubjectResult(
-      id:            json['id'] as String,
-      tenantId:      (json['tenant_id'] ?? json['madrasa_id'] ?? '') as String,
-      examId:        json['exam_id'] as String,
-      studentId:     json['student_id'] as String,
-      subject:       json['subject'] as String,
+      id: json['id'] as String,
+      tenantId: (json['tenant_id'] ?? json['madrasa_id'] ?? '') as String,
+      examId: json['exam_id'] as String,
+      studentId: json['student_id'] as String,
+      subject: json['subject'] as String,
       marksObtained: (json['marks_obtained'] as num).toDouble(),
-      totalMarks:    (json['total_marks'] as num).toDouble(),
+      totalMarks: (json['total_marks'] as num).toDouble(),
     );
   }
 
   Map<String, dynamic> toJson() => {
-    'tenant_id':      tenantId,
-    'exam_id':        examId,
-    'student_id':     studentId,
-    'subject':        subject,
-    'marks_obtained': marksObtained,
-    'total_marks':    totalMarks,
-  };
+        'tenant_id': tenantId,
+        'exam_id': examId,
+        'student_id': studentId,
+        'subject': subject,
+        'marks_obtained': marksObtained,
+        'total_marks': totalMarks,
+      };
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -82,8 +83,7 @@ class StudentResult {
 
   double get totalObtained =>
       subjects.fold(0, (sum, s) => sum + s.marksObtained);
-  double get totalMarks =>
-      subjects.fold(0, (sum, s) => sum + s.totalMarks);
+  double get totalMarks => subjects.fold(0, (sum, s) => sum + s.totalMarks);
   double get percentage =>
       totalMarks > 0 ? (totalObtained / totalMarks) * 100 : 0;
 
@@ -120,20 +120,20 @@ class Exam {
 
   factory Exam.fromJson(Map<String, dynamic> json) {
     return Exam(
-      id:         json['id'] as String,
-      tenantId:   (json['tenant_id'] ?? json['madrasa_id'] ?? '') as String,
-      name:       json['name'] as String,
-      classId:    json['class_id'] as String?,
-      examDate:   json['exam_date'] as String,
+      id: json['id'] as String,
+      tenantId: (json['tenant_id'] ?? json['madrasa_id'] ?? '') as String,
+      name: json['name'] as String,
+      classId: json['class_id'] as String?,
+      examDate: json['exam_date'] as String,
       totalMarks: json['total_marks'] as int,
     );
   }
 
   Map<String, dynamic> toJson() => {
-    'tenant_id':  tenantId,
-    'name':        name,
-    'class_id':    classId,
-    'exam_date':   examDate,
-    'total_marks': totalMarks,
-  };
+        'tenant_id': tenantId,
+        'name': name,
+        'class_id': classId,
+        'exam_date': examDate,
+        'total_marks': totalMarks,
+      };
 }

@@ -27,30 +27,30 @@ class UserManagementState {
 
   const UserManagementState({
     this.accounts = const [],
-    this.roles    = const [],
+    this.roles = const [],
     this.isLoading = false,
     this.error,
   });
 
   UserManagementState copyWith({
     List<UserAccount>? accounts,
-    List<AppRole>?     roles,
-    bool?              isLoading,
-    String?            error,
-    bool               clearError = false,
+    List<AppRole>? roles,
+    bool? isLoading,
+    String? error,
+    bool clearError = false,
   }) {
     return UserManagementState(
-      accounts:  accounts  ?? this.accounts,
-      roles:     roles     ?? this.roles,
+      accounts: accounts ?? this.accounts,
+      roles: roles ?? this.roles,
       isLoading: isLoading ?? this.isLoading,
-      error:     clearError ? null : (error ?? this.error),
+      error: clearError ? null : (error ?? this.error),
     );
   }
 
   /// Seed with all system roles when the DB table is not yet created.
   static UserManagementState initial() => const UserManagementState(
-    roles: AppRole.allSystemRoles,
-  );
+        roles: AppRole.allSystemRoles,
+      );
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -80,10 +80,7 @@ class UserManagementNotifier extends StateNotifier<UserManagementState> {
 
   Future<void> _loadAccounts() async {
     try {
-      final rows = await _client
-          .from('user_accounts')
-          .select()
-          .order('name');
+      final rows = await _client.from('user_accounts').select().order('name');
       state = state.copyWith(
         accounts: rows.map((r) => UserAccount.fromJson(r)).toList(),
       );
@@ -164,8 +161,8 @@ class UserManagementNotifier extends StateNotifier<UserManagementState> {
         authUserId = (data['id'] ?? data['user_id'])?.toString();
       }
       if (authUserId == null || authUserId.isEmpty) {
-        state = state.copyWith(isLoading: false,
-            error: 'Server did not return a user id');
+        state = state.copyWith(
+            isLoading: false, error: 'Server did not return a user id');
         return 'Server did not return a user id';
       }
       AppLogger().info('[UserMgmt] Auth user created via manage-users',
@@ -182,15 +179,11 @@ class UserManagementNotifier extends StateNotifier<UserManagementState> {
 
     // ── Step 2: Store metadata in public.user_accounts ──────────────────
     try {
-      final row = account.toJson()
-        ..['id'] = authUserId;          // use Auth UUID as PK
-      final data = await _client
-          .from('user_accounts')
-          .insert(row)
-          .select()
-          .single();
+      final row = account.toJson()..['id'] = authUserId; // use Auth UUID as PK
+      final data =
+          await _client.from('user_accounts').insert(row).select().single();
       state = state.copyWith(
-        accounts:  [...state.accounts, UserAccount.fromJson(data)],
+        accounts: [...state.accounts, UserAccount.fromJson(data)],
         isLoading: false,
       );
     } on PostgrestException catch (e) {
@@ -198,11 +191,13 @@ class UserManagementNotifier extends StateNotifier<UserManagementState> {
       AppLogger().warning('[UserMgmt] user_accounts insert failed', error: e);
       final optimistic = UserAccount(
         id: authUserId,
-        name: account.name, email: account.email,
-        roleName: account.roleName, roleNameUrdu: account.roleNameUrdu,
+        name: account.name,
+        email: account.email,
+        roleName: account.roleName,
+        roleNameUrdu: account.roleNameUrdu,
       );
       state = state.copyWith(
-        accounts:  [...state.accounts, optimistic],
+        accounts: [...state.accounts, optimistic],
         isLoading: false,
       );
     } catch (e) {
@@ -223,7 +218,9 @@ class UserManagementNotifier extends StateNotifier<UserManagementState> {
           .eq('id', account.id!);
       state = state.copyWith(
         isLoading: false,
-        accounts: state.accounts.map((a) => a.id == account.id ? account : a).toList(),
+        accounts: state.accounts
+            .map((a) => a.id == account.id ? account : a)
+            .toList(),
       );
       return null;
     } on PostgrestException catch (e) {
@@ -233,7 +230,9 @@ class UserManagementNotifier extends StateNotifier<UserManagementState> {
       // Optimistic update
       state = state.copyWith(
         isLoading: false,
-        accounts: state.accounts.map((a) => a.id == account.id ? account : a).toList(),
+        accounts: state.accounts
+            .map((a) => a.id == account.id ? account : a)
+            .toList(),
       );
       return null;
     }
@@ -321,10 +320,7 @@ class UserManagementNotifier extends StateNotifier<UserManagementState> {
     if (role.id == null) return 'شناخت نہیں ملی';
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      await _client
-          .from('app_roles')
-          .update(role.toJson())
-          .eq('id', role.id!);
+      await _client.from('app_roles').update(role.toJson()).eq('id', role.id!);
     } on PostgrestException catch (_) {
       // optimistic
     } catch (_) {

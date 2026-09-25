@@ -62,11 +62,10 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
   Future<void> _loadActionOptions() async {
     try {
       // distinct actions — best effort
-      final rows =
-          await _client.from('audit_logs').select('action').limit(500);
-      _actions = {
-        for (final r in rows) (r['action'] as String?)
-      }.whereType<String>().toList()
+      final rows = await _client.from('audit_logs').select('action').limit(500);
+      _actions = {for (final r in rows) (r['action'] as String?)}
+          .whereType<String>()
+          .toList()
         ..sort();
     } catch (_) {
       _actions = [];
@@ -91,11 +90,12 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
         id, tenant_id, user_id, action, entity, entity_id,
         old_data, new_data, metadata, created_at,
         tenants ( name, tenant_code )
-      ''').order('created_at', ascending: false);
+      ''');
       if (_tenantFilter != null) q = q.eq('tenant_id', _tenantFilter!);
       if (_actionFilter != null) q = q.eq('action', _actionFilter!);
-      final rows =
-          await q.range(_logs.length, _logs.length + _pageSize - 1);
+      final rows = await q
+          .order('created_at', ascending: false)
+          .range(_logs.length, _logs.length + _pageSize - 1);
       if (rows.length < _pageSize) _hasMore = false;
       _logs.addAll(List<Map<String, dynamic>>.from(rows));
     } catch (e) {
@@ -136,7 +136,7 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
           Expanded(
             flex: 3,
             child: DropdownButtonFormField<String?>(
-              value: _tenantFilter,
+              initialValue: _tenantFilter,
               decoration: const InputDecoration(
                 labelText: 'مدرسہ / Tenant',
                 contentPadding:
@@ -164,7 +164,7 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
           Expanded(
             flex: 2,
             child: DropdownButtonFormField<String?>(
-              value: _actionFilter,
+              initialValue: _actionFilter,
               decoration: const InputDecoration(
                 labelText: 'Action',
                 contentPadding:
@@ -232,8 +232,8 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
         return Card(
           margin: EdgeInsets.zero,
           child: ExpansionTile(
-            leading: const Icon(Icons.history,
-                color: AppColors.primary, size: 28),
+            leading:
+                const Icon(Icons.history, color: AppColors.primary, size: 28),
             title: Text(
               '${l['action'] ?? '—'}  •  ${l['entity'] ?? '—'}',
               style: AppTypography.titleSmall
@@ -254,7 +254,8 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
                     _kv('Tenant', tenant?['name']),
                     _kv('User ID', l['user_id']),
                     _kv('Entity ID', l['entity_id']),
-                    _kv('Metadata',
+                    _kv(
+                        'Metadata',
                         (l['metadata'] ?? '').toString().isEmpty
                             ? null
                             : l['metadata'].toString()),

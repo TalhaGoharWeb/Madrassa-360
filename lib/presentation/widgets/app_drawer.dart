@@ -70,15 +70,12 @@ class AppDrawer extends ConsumerWidget {
                 final isSelected = selectedIndex == entry.index;
                 return ListTile(
                   leading: Icon(item.icon,
-                      color: isSelected
-                          ? headerColor
-                          : AppColors.textSecondary),
+                      color:
+                          isSelected ? headerColor : AppColors.textSecondary),
                   title: Text(
                     item.label,
                     style: AppTypography.bodyMedium.copyWith(
-                      color: isSelected
-                          ? headerColor
-                          : AppColors.textSecondary,
+                      color: isSelected ? headerColor : AppColors.textSecondary,
                       fontWeight:
                           isSelected ? FontWeight.bold : FontWeight.normal,
                     ),
@@ -108,8 +105,8 @@ class AppDrawer extends ConsumerWidget {
             child: branding == null
                 ? const SizedBox.shrink()
                 : TenantNameText(
-                    style: AppTypography.titleMedium
-                        .copyWith(color: Colors.white),
+                    style:
+                        AppTypography.titleMedium.copyWith(color: Colors.white),
                   ),
           ),
         ],

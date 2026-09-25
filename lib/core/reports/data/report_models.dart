@@ -193,11 +193,9 @@ class ReportResult {
 
   /// Only rows with both values (and a positive total) feed totals,
   /// percentages and rankings.
-  bool get usable =>
-      obtained != null && totalMarks != null && totalMarks! > 0;
+  bool get usable => obtained != null && totalMarks != null && totalMarks! > 0;
 
-  double? get percent =>
-      usable ? obtained! * 100.0 / totalMarks! : null;
+  double? get percent => usable ? obtained! * 100.0 / totalMarks! : null;
 }
 
 /// Aggregated exam outcome for one student.

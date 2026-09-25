@@ -85,12 +85,13 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
   Future<void> _backupNow() => _run(() async {
         final result = await _service.createBackup();
         if (!mounted) return;
-        setState(() => _status =
-            'بیک اپ مکمل: ${result.file.path.split('/').last} '
-            '(${BackupService.formatBytes(result.sizeBytes)}, '
-            '${result.manifest.totalRows} ریکارڈ)');
+        setState(
+            () => _status = 'بیک اپ مکمل: ${result.file.path.split('/').last} '
+                '(${BackupService.formatBytes(result.sizeBytes)}, '
+                '${result.manifest.totalRows} ریکارڈ)');
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('بیک اپ کامیابی سے بن گیا / Backup created')),
+          const SnackBar(
+              content: Text('بیک اپ کامیابی سے بن گیا / Backup created')),
         );
         await _refresh();
       });
@@ -101,10 +102,11 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
         await showDialog<void>(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: Text(v.valid ? 'بیک اپ درست ہے / Valid' : 'بیک اپ ناقص ہے / Invalid'),
+            title: Text(v.valid
+                ? 'بیک اپ درست ہے / Valid'
+                : 'بیک اپ ناقص ہے / Invalid'),
             content: v.valid
-                ? Text(
-                    'ریکارڈ: ${v.manifest!.totalRows}\n'
+                ? Text('ریکارڈ: ${v.manifest!.totalRows}\n'
                     'تاریخ: ${_fmtDate(v.manifest!.exportedAt)}\n'
                     'چیک سم: درست / checksum OK')
                 : Text('وجوہات:\n${v.reasons.join('\n')}'),
@@ -131,8 +133,7 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
           // do NOT call _refresh() here (the old db can't run queries).
           // The user must restart the app; the pre-restore copy is the
           // safety net if anything went wrong.
-          setState(() => _status =
-              'ریسٹور مکمل۔ ایپ دوبارہ شروع کریں۔\n'
+          setState(() => _status = 'ریسٹور مکمل۔ ایپ دوبارہ شروع کریں۔\n'
               'Restore complete — restart the app to use the restored data.\n'
               'حفاظتی کاپی: ${outcome.report.preRestoreCopy}');
           await showDialog<void>(
@@ -164,8 +165,8 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
-        title: const Text('خبردار / Warning',
-            style: TextStyle(color: Colors.red)),
+        title:
+            const Text('خبردار / Warning', style: TextStyle(color: Colors.red)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -196,8 +197,7 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
               child: const Text('منسوخ / Cancel')),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () =>
-                Navigator.of(ctx).pop(controller.text.trim()),
+            onPressed: () => Navigator.of(ctx).pop(controller.text.trim()),
             child: const Text('ریسٹور کریں / Restore'),
           ),
         ],
@@ -233,7 +233,7 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
         if (!mounted) return;
         setState(() => _status =
             'کلاؤڈ کاپی قطار میں لگ گئی — انٹرنیٹ آنے پر اپ لوڈ ہوگی۔\n'
-            'Cloud copy queued; uploads when online.');
+                'Cloud copy queued; uploads when online.');
         await _refresh();
       });
 
@@ -290,8 +290,8 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
                                     child: CircularProgressIndicator(
                                         strokeWidth: 2))
                                 : const Icon(Icons.backup),
-                            label: const Text(
-                                'ابھی بیک اپ بنائیں / Backup now'),
+                            label:
+                                const Text('ابھی بیک اپ بنائیں / Backup now'),
                           ),
                           if (_status != null) ...[
                             const SizedBox(height: 8),

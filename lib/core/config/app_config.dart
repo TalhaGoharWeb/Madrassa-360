@@ -17,12 +17,12 @@ class AppConfig {
   // ── Product identity (tenant-agnostic; shown pre-login) ──────────────
   // NOTE: the *institution* name/logo/contact shown after login come from
   // tenantBrandingProvider, never from here.
-  static const String appName        = 'مدرسہ 360';
+  static const String appName = 'مدرسہ 360';
   static const String appNameEnglish = 'Madrasa 360';
-  static const String appTagline     = 'مدارس کا مکمل نظام';
+  static const String appTagline = 'مدارس کا مکمل نظام';
 
   // ── Build metadata ───────────────────────────────────────────────────
-  static const String appVersion     = '1.0.0';
+  static const String appVersion = '1.0.0';
   static const String appBuildNumber = '1';
 
   // ── Supabase (credentials loaded at runtime from assets/.env) ──────────
@@ -88,8 +88,8 @@ class AppConfig {
   );
 
   static bool get isDevelopment => environment == 'development';
-  static bool get isProduction  => environment == 'production';
-  static bool get isStaging     => environment == 'staging';
+  static bool get isProduction => environment == 'production';
+  static bool get isStaging => environment == 'staging';
 
   // Assets Paths
   static const String assetsPath = 'assets/';

@@ -24,8 +24,7 @@ class _LibraryScreenState extends State<LibraryScreen>
     super.initState();
     _tabs = TabController(length: 3, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) =>
-        _ref?.read(libraryProvider.notifier).load(
-            madrasaId: widget.madrasaId));
+        _ref?.read(libraryProvider.notifier).load(madrasaId: widget.madrasaId));
   }
 
   @override
@@ -39,8 +38,8 @@ class _LibraryScreenState extends State<LibraryScreen>
     return Consumer(builder: (ctx, ref, _) {
       _ref = ref;
       final state = ref.watch(libraryProvider);
-      final isAdmin = (ref.watch(authProvider).user?.role.name ?? '')
-          .contains('admin');
+      final isAdmin =
+          (ref.watch(authProvider).user?.role.name ?? '').contains('admin');
 
       return Scaffold(
         appBar: AppBar(
@@ -72,12 +71,11 @@ class _LibraryScreenState extends State<LibraryScreen>
         body: state.isLoading
             ? const Center(child: CircularProgressIndicator())
             : TabBarView(controller: _tabs, children: [
-                _BooksList(state.books, ref, isAdmin, context, widget.madrasaId),
-                _IssuesList(
-                    state.issues.where((i) => !i.isReturned).toList(),
+                _BooksList(
+                    state.books, ref, isAdmin, context, widget.madrasaId),
+                _IssuesList(state.issues.where((i) => !i.isReturned).toList(),
                     ref, isAdmin, context),
-                _IssuesList(
-                    state.issues.where((i) => i.isOverdue).toList(),
+                _IssuesList(state.issues.where((i) => i.isOverdue).toList(),
                     ref, isAdmin, context,
                     isOverdue: true),
               ]),
@@ -107,8 +105,7 @@ class _LibraryScreenState extends State<LibraryScreen>
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(dCtx),
-              child: const Text('منسوخ')),
+              onPressed: () => Navigator.pop(dCtx), child: const Text('منسوخ')),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
@@ -171,8 +168,8 @@ class _BooksList extends StatelessWidget {
         return Card(
           elevation: 1,
           margin: const EdgeInsets.only(bottom: 10),
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           child: Padding(
             padding: const EdgeInsets.all(12),
             child: Row(children: [
@@ -180,11 +177,10 @@ class _BooksList extends StatelessWidget {
                 width: 48,
                 height: 64,
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(Icons.menu_book_outlined,
-                    color: AppColors.primary),
+                child: Icon(Icons.menu_book_outlined, color: AppColors.primary),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -205,8 +201,8 @@ class _BooksList extends StatelessWidget {
                             horizontal: 8, vertical: 2),
                         decoration: BoxDecoration(
                           color: available
-                              ? AppColors.success.withOpacity(0.1)
-                              : AppColors.error.withOpacity(0.1),
+                              ? AppColors.success.withValues(alpha: 0.1)
+                              : AppColors.error.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
@@ -233,8 +229,9 @@ class _BooksList extends StatelessWidget {
                   IconButton(
                     icon: const Icon(Icons.delete_outline),
                     color: AppColors.error,
-                    onPressed: () =>
-                        ref.read(libraryProvider.notifier).deleteBook(b.id ?? ''),
+                    onPressed: () => ref
+                        .read(libraryProvider.notifier)
+                        .deleteBook(b.id ?? ''),
                   ),
                 ]),
             ]),
@@ -273,12 +270,11 @@ class _BooksList extends StatelessWidget {
               child: TextField(
                 controller: idCtrl,
                 decoration: const InputDecoration(
-                    labelText: 'ID / رول نمبر',
-                    border: OutlineInputBorder()),
+                    labelText: 'ID / رول نمبر', border: OutlineInputBorder()),
               ),
             ),
             DropdownButtonFormField<String>(
-              value: borrowerType,
+              initialValue: borrowerType,
               decoration: const InputDecoration(
                   labelText: 'نوعیت', border: OutlineInputBorder()),
               items: const [
@@ -345,12 +341,13 @@ class _IssuesList extends StatelessWidget {
         return Card(
           elevation: 1,
           margin: const EdgeInsets.only(bottom: 10),
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           child: ListTile(
             leading: CircleAvatar(
-              backgroundColor:
-                  isOverdue ? AppColors.error.withOpacity(0.1) : AppColors.info.withOpacity(0.1),
+              backgroundColor: isOverdue
+                  ? AppColors.error.withValues(alpha: 0.1)
+                  : AppColors.info.withValues(alpha: 0.1),
               child: Icon(Icons.person_outline,
                   color: isOverdue ? AppColors.error : AppColors.info),
             ),
@@ -367,8 +364,7 @@ class _IssuesList extends StatelessWidget {
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 4)),
-                    onPressed: () =>
-                        _returnDialog(context, issue),
+                    onPressed: () => _returnDialog(context, issue),
                     child: const Text('واپسی'),
                   )
                 : null,
@@ -385,26 +381,23 @@ class _IssuesList extends StatelessWidget {
       builder: (dCtx) => AlertDialog(
         title: const Text('کتاب واپس'),
         content: Column(mainAxisSize: MainAxisSize.min, children: [
-          Text('کتاب: ${issue.bookTitle}',
-              style: AppTypography.bodyLarge),
+          Text('کتاب: ${issue.bookTitle}', style: AppTypography.bodyLarge),
           const SizedBox(height: 8),
           if (issue.isOverdue)
             Text('واجبُ الواپسی — جرمانہ لگائیں',
-                style: AppTypography.labelMedium
-                    .copyWith(color: AppColors.error)),
+                style:
+                    AppTypography.labelMedium.copyWith(color: AppColors.error)),
           const SizedBox(height: 12),
           TextField(
             controller: fineCtrl,
             keyboardType: TextInputType.number,
             decoration: const InputDecoration(
-                labelText: 'جرمانہ (₹)',
-                border: OutlineInputBorder()),
+                labelText: 'جرمانہ (₹)', border: OutlineInputBorder()),
           ),
         ]),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(dCtx),
-              child: const Text('منسوخ')),
+              onPressed: () => Navigator.pop(dCtx), child: const Text('منسوخ')),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.success,
