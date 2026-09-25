@@ -5,9 +5,9 @@
 /// its Supabase queries. RLS enforces isolation server-side; this is the
 /// client-side companion that always sends the active `tenant_id`.
 ///
-/// Wiring (Phase 5 will hook this into the auth flow):
-///   await ref.read(activeTenantIdProvider.notifier).init();   // after login
-///   await ref.read(activeTenantIdProvider.notifier).refresh(); // after logout
+/// Wiring (Phase 3 — done in AuthNotifier):
+///   await ref.read(activeTenantIdProvider.notifier).init();  // after sign-in
+///   await ref.read(activeTenantIdProvider.notifier).clear(); // after sign-out
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -111,6 +111,13 @@ class TenantContext extends StateNotifier<String?> {
   Future<void> refresh() async {
     _ref.invalidate(tenantMembershipsProvider);
     await init();
+  }
+
+  /// Clear the active tenant and drop the persisted choice (on logout).
+  Future<void> clear() async {
+    state = null;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(prefsKey);
   }
 }
 

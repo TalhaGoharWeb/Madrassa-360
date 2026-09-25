@@ -6,6 +6,12 @@ import 'madrasa_management_screen.dart';
 import '../admin/user_management_screen.dart';
 import '../common/about_screen.dart';
 
+/// @deprecated Phase-3 replacement: the legacy Super Admin shell is
+/// superseded by MasterAdminShell at
+/// lib/presentation/screens/master_admin/master_admin_shell.dart (route
+/// '/master', gated by MasterAdminGuard). Kept only because other code may
+/// still reference it — do not build new features here.
+@deprecated
 class SuperAdminMainScreen extends StatefulWidget {
   const SuperAdminMainScreen({super.key});
   @override

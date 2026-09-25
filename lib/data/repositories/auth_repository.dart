@@ -1,5 +1,9 @@
 /// تصدیق کا ذخیرہ
-/// Authentication Repository — wraps Supabase Auth
+/// Authentication Repository — wraps Supabase Auth (Phase 3: production-grade)
+///
+/// Covers Mission §19: email/password sign-in, password reset / account
+/// recovery, session persistence & expiry, sign-out, and auth state events.
+/// All failures surface as typed [AppException]s — never raw SDK errors.
 
 import 'dart:io';
 import 'package:supabase_flutter/supabase_flutter.dart' as sb;
@@ -136,13 +140,18 @@ class AuthRepository {
   // ── Sign In ──────────────────────────────────────────────────
 
   /// Sign in with [email] + [password]. Returns [AppUser] on success.
+  /// Throws [AuthenticationException] / [NetworkException] on failure.
   Future<AppUser> signIn({
     required String email,
     required String password,
   }) async {
+    final cleanEmail = email.trim();
+    if (cleanEmail.isEmpty || password.isEmpty) {
+      throw ValidationException('ای میل اور پاس ورڈ ضروری ہیں');
+    }
     try {
       final response = await _client.auth.signInWithPassword(
-        email: email,
+        email: cleanEmail,
         password: password,
       );
 
@@ -156,25 +165,82 @@ class AuthRepository {
     } on AuthenticationException {
       rethrow;
     } on HandshakeException {
-      throw AuthenticationException('نیٹ ورک ہینڈشیک ناکام — برا کرم دوبارہ کوشش کریں');
+      throw NetworkException('نیٹ ورک ہینڈشیک ناکام — برا کرم دوبارہ کوشش کریں');
     } on TlsException {
-      throw AuthenticationException('SSL/TLS خرابی — سیکیورٹی کنکشن ناکام');
+      throw NetworkException('SSL/TLS خرابی — سیکیورٹی کنکشن ناکام');
     } on SocketException {
-      throw AuthenticationException('انٹرنیٹ کنکشن نہیں — برا کرم نیٹ ورک چیک کریں');
+      throw NetworkException('انٹرنیٹ کنکشن نہیں — برا کرم نیٹ ورک چیک کریں');
     } catch (e) {
       ErrorHandler.logError(e, null);
       debugPrint('[Auth] login error: $e');
-      throw AuthenticationException('لاگ ان میں خرابی: ${e.toString()}');
+      throw AuthenticationException('لاگ ان میں خرابی');
     }
   }
 
   // ── Sign Out ─────────────────────────────────────────────────
 
+  /// Sign out locally and revoke the server session.
   Future<void> signOut() async {
-    await _client.auth.signOut();
+    try {
+      await _client.auth.signOut();
+    } on sb.AuthException catch (e) {
+      throw AuthenticationException(_mapAuthError(e.message));
+    } catch (e) {
+      ErrorHandler.logError(e, null);
+      // Local session is cleared by the SDK even when the server call fails;
+      // don't block logout on a network error.
+      debugPrint('[Auth] signOut error (non-fatal): $e');
+    }
   }
 
-  // ── Session Restore ──────────────────────────────────────────
+  // ── Password Reset / Account Recovery ────────────────────────
+
+  /// Send a password-reset email via Supabase Auth.
+  /// The link in the email lets the user set a new password (account recovery).
+  /// Throws [ValidationException] for a blank email, [AuthenticationException]
+  /// for rate-limits / unknown accounts, [NetworkException] when offline.
+  Future<void> sendPasswordReset({required String email}) async {
+    final cleanEmail = email.trim();
+    if (cleanEmail.isEmpty) {
+      throw ValidationException('ای میل ضروری ہے');
+    }
+    try {
+      await _client.auth.resetPasswordForEmail(cleanEmail);
+    } on sb.AuthException catch (e) {
+      throw AuthenticationException(_mapAuthError(e.message));
+    } on SocketException {
+      throw NetworkException('انٹرنیٹ کنکشن نہیں — برا کرم نیٹ ورک چیک کریں');
+    } catch (e) {
+      ErrorHandler.logError(e, null);
+      debugPrint('[Auth] password reset error: $e');
+      throw AuthenticationException('پاس ورڈ ری سیٹ لنک بھیجنے میں خرابی');
+    }
+  }
+
+  // ── Session ──────────────────────────────────────────────────
+
+  /// The persisted Supabase session (restored automatically at app start),
+  /// or null when signed out / expired.
+  sb.Session? get currentSession => _client.auth.currentSession;
+
+  /// The currently signed-in Supabase user, or null.
+  sb.User? get currentUser => _client.auth.currentUser;
+
+  /// True when a session exists (SDK auto-refreshes tokens in the background).
+  bool get isSignedIn => _client.auth.currentSession != null;
+
+  /// Force a token refresh. Throws [AuthenticationException] when the
+  /// refresh token is expired/revoked — callers should then sign out.
+  Future<void> refreshSession() async {
+    try {
+      await _client.auth.refreshSession();
+    } on sb.AuthException catch (e) {
+      throw AuthenticationException(_mapAuthError(e.message));
+    } catch (e) {
+      ErrorHandler.logError(e, null);
+      throw AuthenticationException('سیشن ریفریش ناکام — دوبارہ لاگ ان کریں');
+    }
+  }
 
   /// Returns the current [AppUser] from an existing session, or null.
   Future<AppUser?> getSessionUser() async {
@@ -190,7 +256,9 @@ class AuthRepository {
 
   // ── Auth State Stream ────────────────────────────────────────
 
-  /// Emits Supabase [AuthState] events (signedIn, signedOut, tokenRefreshed…).
+  /// Emits Supabase [AuthState] events.
+  /// Relevant events: SIGNED_IN, SIGNED_OUT, TOKEN_REFRESHED, USER_UPDATED.
+  /// A failed background refresh surfaces as SIGNED_OUT (session expired).
   Stream<sb.AuthState> get authStateChanges =>
       _client.auth.onAuthStateChange;
 
@@ -218,12 +286,16 @@ class AuthRepository {
     if (lower.contains('email not confirmed')) {
       return 'ای میل کی تصدیق نہیں ہوئی';
     }
-    if (lower.contains('too many requests')) {
+    if (lower.contains('too many requests') ||
+        lower.contains('rate limit')) {
       return 'بہت زیادہ کوششیں — کچھ دیر بعد دوبارہ کوشش کریں';
     }
     if (lower.contains('user not found') ||
         lower.contains('no user found')) {
       return 'یہ اکاؤنٹ موجود نہیں';
+    }
+    if (lower.contains('expired') || lower.contains('invalid refresh')) {
+      return 'سیشن ختم ہو گیا — دوبارہ لاگ ان کریں';
     }
     return 'لاگ ان میں خرابی';
   }

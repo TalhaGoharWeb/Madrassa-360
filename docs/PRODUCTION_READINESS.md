@@ -28,11 +28,11 @@
 | 4 | Cross-tenant tests pass | 🟡 WRITTEN (unexecuted) | `supabase/tests/cross_tenant_isolation.sql` (Phase 2): 30 assertions, Tenant A/B × Admin/Teacher matrix + escalation + storage + stale-policy guard — parse-validated, never executed (no staging DB) |
 | 5 | Storage policies isolated | 🟡 WRITTEN (unapplied) | `008_tenant_storage.sql` (Phase 2): `{tenant_id}/` prefixes + membership-checked policies on all 3 buckets, 13 legacy policies dropped — parse-validated, not applied |
 | 6 | Realtime isolated | 🟡 WRITTEN (unapplied) | Realtime inherits table RLS; tenant boundary arrives with 007 once applied; `security_invoker` set on the two views |
-| 7 | Auth hardened | ❌ FAIL | Fake logout (`profile_screen.dart:532-539`), plaintext `admin123/teacher123/parent123` in `auth_service.dart:61-81`, sessions in plaintext SharedPreferences, role escalation live |
+| 7 | Auth hardened | 🟡 DB-LAYER CODE-COMPLETE (Dart pending) | Profiles escalation closed in DB: 007 `profiles_lock_role()` trigger + 013 drops `user_roles`/`get_user_role()`/`get_my_role()`; platform guard = `platform_admins` + self-read policy (011). Dart side still red: fake logout, demo creds, plaintext sessions (Worker 2) |
 | 8 | Password reset works | ❌ FAIL | Flow not verified end-to-end; demo-credential mock still ships — cannot pass |
 | 9 | Session management works | ❌ FAIL | Logout doesn't call `signOut()`; no restored-session redirect (`main.dart` always → Login); no secure storage |
-| 10 | Audit logs work | ❌ FAIL | No `audit_logs` table; no audit trail on auth, fees, or role changes |
-| 11 | Privileged APIs protected | ❌ FAIL | Supabase Admin Auth called directly from the app — any decompiled APK yields auth-admin power |
+| 10 | Audit logs work | 🟡 CODE-COMPLETE (pending staging run) | `012_audit_logs.sql`: `audit_logs` table (tenant + platform events), append-only (no client write policies), `log_audit()` SECURITY DEFINER RPC, tenant-admin/platform-admin SELECT policies — parse-validated, NOT applied/executed |
+| 11 | Privileged APIs protected | 🟡 CONTRACT CODE-COMPLETE (Dart pending) | Guard contract written: `is_platform_admin()`, RLS on all platform tables, service-role Edge Function pattern for provisioning (no UI can self-elevate). `user_management_provider.dart:129,240` still calls Auth Admin with bundled service key — still blocks |
 | 12 | File upload validated | ❌ FAIL | `uploadPhoto` builds storage path from filename extension; allow-list/size limits exist in `AppConfig` but are never enforced (`student_provider.dart:89-107`) |
 | 13 | Input validation implemented | ❌ FAIL | Upload path unvalidated; no systematic input-validation audit passed — cannot certify |
 | 14 | SQL injection protections verified | ✅ PASS | No raw SQL in Dart; all DB access via parameterized PostgREST client (verified in `SECURITY_AUDIT.md §7`) |
@@ -42,6 +42,8 @@
 **Score: 2/16 pass, 4 items code-complete pending staging execution** (items 3–6: migrations + isolation suite written and parse-validated 2026-09-25, never applied/executed). Both passes are narrow technical facts, not endorsements — item 15's safety collapses the moment secrets sit client-side (item 1).
 
 > **Phase 2 update (2026-09-25, branch `feature/tenant-architecture`, unpushed):** tenant data architecture is implemented as ordered idempotent migrations `001`–`010` + `TenantContext` in Dart + 30-assertion isolation suite. The P0 items 4–6 in "stop the bleeding" (profiles escalation, stale-policy drops, PII leaks) are addressed **in code** by 007/008 — they become actually fixed only when the migrations run on staging and the tests go green. Key rotation (P0 items 1–3) is still entirely outstanding and still blocks everything.
+
+> **Phase 3 update (2026-09-25, branch `feature/master-admin`, unpushed, Worker 4):** migrations `011_licensing` (license_plans/licenses/tenant_subscriptions + 3 editable seed plans + `platform_admins_self_read` policy), `012_audit_logs` (append-only `audit_logs` + `log_audit()` RPC), `013_auth_cleanup` (drops legacy `user_roles` + 2 policies + `get_user_role()`/`get_my_role()` by verified name; rewrites `get_my_permissions()` without the `user_roles` branch; single-arg `has_permission()` proven non-existent and NOT dropped) — all pglast parse-validated, every DROP name script-verified against the source files. §60 items 7/10/11 move to "code-complete, pending staging run" — **nothing is marked pass**: the migrations have never been applied to any database, Edge Functions (Worker 1) and Dart auth rewrites (Worker 2) are still in flight, and key rotation (P0 items 1–3) remains the hard blocker.
 
 ---
 

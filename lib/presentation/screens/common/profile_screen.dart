@@ -1,24 +1,26 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/config/app_config.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../providers/auth_provider.dart';
 import '../auth/login_screen.dart';
 import 'about_screen.dart';
 
 /// پروفائل سکرین
 /// Profile Screen (Placeholder for Phase 1)
-class ProfileScreen extends StatefulWidget {
+class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
 
   @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
+class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   // Profile values — loaded from SharedPreferences; empty until user saves them
   String _name  = '';
   String _phone = '';
@@ -518,7 +520,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _showLogoutConfirmation(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: Text('لاگ آؤٹ کی تصدیق', style: AppTypography.titleLarge),
         content: Text(
           'کیا آپ واقعی لاگ آؤٹ کرنا چاہتے ہیں؟',
@@ -526,12 +528,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('منسوخ کریں'),
           ),
           TextButton(
-            onPressed: () {
-              Navigator.pop(context); // Close dialog
+            onPressed: () async {
+              Navigator.pop(dialogContext); // Close dialog
+              // Real sign-out: revoke the Supabase session + clear tenant
+              // context (handled inside the auth provider).
+              await ref.read(authProvider.notifier).logout();
+              if (!context.mounted) return;
               // Navigate back to login screen
               Navigator.of(context).pushAndRemoveUntil(
                 MaterialPageRoute(builder: (_) => const LoginScreen()),

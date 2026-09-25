@@ -8,7 +8,9 @@ import 'core/constants/app_strings.dart';
 import 'core/services/offline_sync_service.dart';
 import 'core/services/storage_service.dart';
 import 'core/services/supabase_service.dart';
+import 'core/widgets/master_admin_guard.dart';
 import 'presentation/screens/auth/login_screen.dart';
+import 'presentation/screens/master_admin/master_admin_shell.dart';
 
 /// مدرسہ  360 — ایپ انٹری پوائنٹ
 /// Madrasa 360 — Main Entry Point
@@ -103,6 +105,14 @@ class Madrasa360App extends StatelessWidget {
       
       // Home Screen - Start with Login
       home: const LoginScreen(),
+
+      // Named routes — '/master' is the platform-operator console, gated by
+      // MasterAdminGuard (platform_admins lookup; fails closed).
+      routes: {
+        '/master': (_) => const MasterAdminGuard(
+              child: MasterAdminShell(),
+            ),
+      },
     );
   }
 }

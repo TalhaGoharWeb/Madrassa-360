@@ -1,11 +1,15 @@
 /// صارف انتظام فراہم کنندہ
 /// User Management Provider — Riverpod state for roles & user accounts
+///
+/// SECURITY (P0, 2026-09-25): the client-side SUPABASE_SERVICE_KEY read and
+/// the direct Auth Admin REST calls were REMOVED. Privileged Auth operations
+/// (create/delete auth users) now go through the `manage-users` Edge
+/// Function (server-side, service key never leaves the server). If that
+/// function is not deployed yet, the op returns an honest error instead of
+/// falling back to a client-held service key.
 
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/services/supabase_service.dart';
 import '../data/models/app_role.dart';
@@ -114,7 +118,27 @@ class UserManagementNotifier extends StateNotifier<UserManagementState> {
 
   // ── User Account CRUD ─────────────────────────────────────
 
-  /// Creates a real Supabase Auth user then stores metadata in user_accounts.
+  /// Maps an Edge Function failure to an honest, actionable message.
+  /// A 404 / not-found means the server function is not deployed yet —
+  /// surfaced as "requires server function" (never silently degraded).
+  String _serverFunctionError(FunctionException e) {
+    final msg = e.toString().toLowerCase();
+    final detail = e.reasonPhrase;
+    if (msg.contains('404') || msg.contains('not found')) {
+      return 'یہ عمل سرور فنکشن درکار رکھتا ہے — manage-users Edge Function '
+          'ابھی deploy نہیں ہوا (requires server function)';
+    }
+    if (detail != null && detail.isNotEmpty) return detail;
+    return 'Server function error: $e';
+  }
+
+  /// Creates a real Supabase Auth user via the `manage-users` Edge Function
+  /// (server-side; the service key never touches the client), then stores
+  /// metadata in user_accounts.
+  ///
+  /// Returns null on success, or an error message. If the Edge Function is
+  /// not deployed yet, returns a "requires server function" error instead of
+  /// attempting any client-side privileged call.
   Future<String?> createAccount(UserAccount account) async {
     if (account.password == null || account.password!.length < 6) {
       return 'پاس ورڈ کم از کم 6 حروف کا ہونا چاہیے';
@@ -122,51 +146,37 @@ class UserManagementNotifier extends StateNotifier<UserManagementState> {
 
     state = state.copyWith(isLoading: true, clearError: true);
 
-    // ── Step 1: Create user in Supabase Auth via Admin REST API ─────────
+    // ── Step 1: Create user in Supabase Auth via Edge Function ──────────
     String? authUserId;
     try {
-      final supabaseUrl = dotenv.env['SUPABASE_URL'] ?? '';
-      final serviceKey  = dotenv.env['SUPABASE_SERVICE_KEY'] ?? '';
-
-      if (serviceKey.isEmpty || serviceKey.startsWith('paste-')) {
-        state = state.copyWith(isLoading: false,
-            error: 'SUPABASE_SERVICE_KEY .env میں شامل کریں');
-        return 'SUPABASE_SERVICE_KEY .env میں شامل کریں';
-      }
-
-      final uri = Uri.parse('$supabaseUrl/auth/v1/admin/users');
-      final response = await http.post(
-        uri,
-        headers: {
-          'Content-Type':  'application/json',
-          'apikey':        serviceKey,
-          'Authorization': 'Bearer $serviceKey',
-        },
-        body: jsonEncode({
-          'email':         account.email,
-          'password':      account.password,
-          'email_confirm': true,          // skip confirmation email
+      final res = await _client.functions.invoke(
+        'manage-users',
+        body: {
+          'action': 'create_user',
+          'email': account.email,
+          'password': account.password,
           'user_metadata': {'name': account.name},
-          'app_metadata':  {'role': account.roleName},
-        }),
+          'app_metadata': {'role': account.roleName},
+        },
       );
-
-      if (response.statusCode != 200 && response.statusCode != 201) {
-        final body = jsonDecode(response.body) as Map<String, dynamic>;
-        final msg  = body['msg'] as String? ??
-                     body['message'] as String? ??
-                     body['error_description'] as String? ??
-                     'Auth خرابی (${response.statusCode})';
-        state = state.copyWith(isLoading: false, error: msg);
-        return msg;
+      final data = res.data;
+      if (data is Map) {
+        authUserId = (data['id'] ?? data['user_id'])?.toString();
       }
-
-      final created = jsonDecode(response.body) as Map<String, dynamic>;
-      authUserId = created['id'] as String?;
-      debugPrint('[UserMgmt] Auth user created: $authUserId');
+      if (authUserId == null || authUserId.isEmpty) {
+        state = state.copyWith(isLoading: false,
+            error: 'Server did not return a user id');
+        return 'Server did not return a user id';
+      }
+      debugPrint('[UserMgmt] Auth user created via manage-users: $authUserId');
+    } on FunctionException catch (e) {
+      final msg = _serverFunctionError(e);
+      state = state.copyWith(isLoading: false, error: msg);
+      return msg;
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: 'Auth API خرابی: $e');
-      return 'Auth API خرابی: $e';
+      final msg = 'Auth server error: $e';
+      state = state.copyWith(isLoading: false, error: msg);
+      return msg;
     }
 
     // ── Step 2: Store metadata in public.user_accounts ──────────────────
@@ -231,22 +241,27 @@ class UserManagementNotifier extends StateNotifier<UserManagementState> {
   Future<String?> toggleAccountStatus(UserAccount account) =>
       updateAccount(account.copyWith(isActive: !account.isActive));
 
+  /// Deletes the Auth user via the `manage-users` Edge Function, then
+  /// removes the user_accounts row. If the Edge Function is unavailable the
+  /// whole op is refused (deleting the DB row while the Auth user survives
+  /// would orphan the account).
   Future<String?> deleteAccount(String id) async {
     state = state.copyWith(isLoading: true, clearError: true);
 
-    // ── Delete from Supabase Auth first ─────────────────────
+    // ── Delete from Supabase Auth via Edge Function ───────────────────
     try {
-      final supabaseUrl = dotenv.env['SUPABASE_URL'] ?? '';
-      final serviceKey  = dotenv.env['SUPABASE_SERVICE_KEY'] ?? '';
-      if (serviceKey.isNotEmpty && !serviceKey.startsWith('paste-')) {
-        final uri = Uri.parse('$supabaseUrl/auth/v1/admin/users/$id');
-        await http.delete(uri, headers: {
-          'apikey':        serviceKey,
-          'Authorization': 'Bearer $serviceKey',
-        });
-      }
+      await _client.functions.invoke(
+        'manage-users',
+        body: {'action': 'delete_user', 'user_id': id},
+      );
+    } on FunctionException catch (e) {
+      final msg = _serverFunctionError(e);
+      state = state.copyWith(isLoading: false, error: msg);
+      return msg;
     } catch (e) {
-      debugPrint('[UserMgmt] Auth delete failed: $e');
+      final msg = 'Auth server error: $e';
+      state = state.copyWith(isLoading: false, error: msg);
+      return msg;
     }
 
     // ── Remove from user_accounts table ─────────────────────

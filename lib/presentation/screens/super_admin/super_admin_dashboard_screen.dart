@@ -6,6 +6,12 @@ import '../../../providers/madrasa_provider.dart';
 import '../../../providers/auth_provider.dart';
 import 'madrasa_management_screen.dart';
 
+/// @deprecated Phase-3 replacement: the legacy single-tenant Super Admin
+/// dashboard is superseded by the multi-tenant Master Admin console at
+/// lib/presentation/screens/master_admin/ (route '/master', gated by
+/// MasterAdminGuard). Kept only because other code may still reference it —
+/// do not build new features here; use MasterDashboardScreen instead.
+@deprecated
 class SuperAdminDashboardScreen extends StatefulWidget {
   const SuperAdminDashboardScreen({super.key});
   @override

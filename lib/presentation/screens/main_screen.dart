@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_strings.dart';
 import '../../core/constants/app_typography.dart';
+import '../../core/widgets/master_admin_guard.dart';
 import 'teacher/teacher_dashboard_screen.dart';
 import 'teacher/attendance_screen.dart';
 import 'teacher/results_screen.dart';
@@ -19,6 +20,21 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
+
+  /// True when the signed-in user is a platform operator (platform_owner or
+  /// platform_support). Drives the conditional "Platform Admin" entry.
+  bool _isPlatformAdmin = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Lightweight platform_admins lookup (fails closed → entry stays hidden).
+    fetchPlatformAdminRole().then((role) {
+      if (mounted && role != null) {
+        setState(() => _isPlatformAdmin = true);
+      }
+    });
+  }
 
   // List of screens for each tab
   final List<Widget> _screens = const [
@@ -75,10 +91,15 @@ class _MainScreenState extends State<MainScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: List.generate(
-                _navItems.length,
-                (index) => _buildNavItem(index),
-              ),
+              children: [
+                ...List.generate(
+                  _navItems.length,
+                  (index) => _buildNavItem(index),
+                ),
+                // Platform Admin entry — visible only to platform operators.
+                // Opens the guarded '/master' route (the guard re-verifies).
+                if (_isPlatformAdmin) _buildPlatformAdminItem(),
+              ],
             ),
           ),
         ),
@@ -120,6 +141,42 @@ class _MainScreenState extends State<MainScreen> {
               style: AppTypography.navLabel.copyWith(
                 color: isSelected ? AppColors.primary : AppColors.textSecondary,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                fontSize: 11,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Conditional "Platform Admin" entry (platform operators only).
+  /// Pushes the guarded '/master' route — MasterAdminGuard re-verifies.
+  Widget _buildPlatformAdminItem() {
+    return InkWell(
+      onTap: () => Navigator.of(context).pushNamed('/master'),
+      borderRadius: BorderRadius.circular(16),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.admin_panel_settings_outlined,
+              color: AppColors.warning,
+              size: 24,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'پلیٹ فارم',
+              style: AppTypography.navLabel.copyWith(
+                color: AppColors.warning,
+                fontWeight: FontWeight.bold,
                 fontSize: 11,
               ),
             ),

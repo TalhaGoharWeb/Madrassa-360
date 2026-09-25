@@ -5,6 +5,12 @@ import '../../../core/constants/app_typography.dart';
 import '../../../data/models/models.dart';
 import '../../../providers/madrasa_provider.dart';
 
+/// @deprecated Phase-3 replacement: legacy madrasa management is superseded
+/// by MadrasaListScreen / MadrasaDetailScreen / CreateMadrasaWizard at
+/// lib/presentation/screens/master_admin/ (route '/master', gated by
+/// MasterAdminGuard). Kept only because other code may still reference it —
+/// do not build new features here.
+@deprecated
 class MadrasaManagementScreen extends StatefulWidget {
   const MadrasaManagementScreen({super.key});
   @override

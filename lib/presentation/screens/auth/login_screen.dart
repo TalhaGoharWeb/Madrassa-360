@@ -8,12 +8,17 @@ import '../../../core/utils/validators.dart';
 import '../../../core/widgets/loading_widget.dart';
 import '../../../providers/auth_provider.dart';
 import '../main_screen.dart';
-import '../admin/admin_main_screen.dart';
-import '../parent/parent_main_screen.dart';
-import '../super_admin/super_admin_main_screen.dart';
+import 'forgot_password_screen.dart';
+import 'no_access_screen.dart';
+import 'tenant_picker_screen.dart';
 
 /// لاگ ان اسکرین
 /// Login Screen — Supabase Email/Password Authentication
+///
+/// There is deliberately NO self-registration here: user accounts are created
+/// by institution provisioning / invitation only. New users are directed to
+/// contact their institution administrator. Post-login navigation follows
+/// [AuthRoute] from the auth provider (home / tenantPicker / noAccess).
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
@@ -46,7 +51,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       begin: const Offset(0, 0.3),
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeOut));
-    
+
     _animationController.forward();
   }
 
@@ -79,45 +84,33 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       return;
     }
 
-    // Determine destination from the authenticated role
-    final role = ref.read(authProvider).user?.role;
-    Widget destination;
-    switch (role) {
-      // Platform-level: full super admin panel
-      case UserRole.superAdmin:
-      case UserRole.franchiseManager:
-        destination = const SuperAdminMainScreen();
-        break;
-
-      // Madrasa staff: all go to admin panel; permissions control what they see
-      case UserRole.madrasaAdmin:
-      case UserRole.admin: // legacy alias
-      case UserRole.editor:
-      case UserRole.academicManager:
-      case UserRole.teacher:
-      case UserRole.attendanceOfficer:
-      case UserRole.accountant:
-      case UserRole.financeManager:
-      case UserRole.libraryManager:
-      case UserRole.hostelManager:
-      case UserRole.announcementManager:
-      case UserRole.admissionOfficer:
-      case UserRole.itManager:
-        destination = const AdminMainScreen();
-        break;
-
-      // External
-      case UserRole.parent:
-        destination = const ParentMainScreen();
-        break;
-
-      case UserRole.student:
-      default:
+    // Route per the provider's post-login decision.
+    final route = ref.read(authProvider).route;
+    Widget? destination;
+    switch (route) {
+      case AuthRoute.home:
         destination = const MainScreen();
+        break;
+      case AuthRoute.tenantPicker:
+        destination = const TenantPickerScreen();
+        break;
+      case AuthRoute.noAccess:
+        destination = const NoAccessScreen();
+        break;
+      case AuthRoute.login:
+        destination = null; // shouldn't happen after a successful login
+        break;
     }
+    if (destination == null || !mounted) return;
 
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => destination),
+      MaterialPageRoute(builder: (_) => destination!),
+    );
+  }
+
+  void _openForgotPassword() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()),
     );
   }
 
@@ -242,7 +235,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
             ),
           ),
           const SizedBox(height: 24),
-          
+
           // Email Input
           Text(
             'ای میل',
@@ -259,10 +252,38 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           ),
           const SizedBox(height: 8),
           _buildPasswordInput(),
-          const SizedBox(height: 32),
-          
+          const SizedBox(height: 8),
+
+          // Forgot password link
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton(
+              onPressed: _openForgotPassword,
+              child: Text(
+                'پاس ورڈ بھول گئے؟',
+                style: AppTypography.bodyMedium.copyWith(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+
           // Login Button
           _buildLoginButton(),
+          const SizedBox(height: 16),
+
+          // No self-registration: accounts are provisioned by the institution.
+          Center(
+            child: Text(
+              'اکاؤنٹ نہیں ہے؟ اپنے ادارے کے منتظم سے رابطہ کریں',
+              style: AppTypography.bodySmall.copyWith(
+                color: AppColors.textSecondary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
         ],
       ),
     );
