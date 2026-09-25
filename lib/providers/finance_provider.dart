@@ -1,97 +1,233 @@
-/// مالیات فراہم کنندہ
+/// مالیات فراہم کنندہ — Phase 4 finance rebuild (014_finance.sql)
+/// Invoice → payment → receipt → ledger flow. Every query is tenant-scoped
+/// via [currentTenantIdProvider]; null (logged out / loading) bails out
+/// instead of querying unscoped.
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../core/services/supabase_service.dart';
 import '../core/services/tenant_context.dart';
 import '../data/models/finance.dart';
+import '../data/repositories/finance_repository.dart';
+import 'auth_provider.dart';
 
 class FinanceState {
-  final List<FinanceTransaction> transactions;
+  final List<LedgerTransaction> ledger;
+  final List<Account> accounts;
+  final List<Invoice> invoices;
+  final List<Payment> payments;
   final bool isLoading;
   final String? error;
+
   const FinanceState({
-    this.transactions = const [], this.isLoading = false, this.error,
+    this.ledger = const [],
+    this.accounts = const [],
+    this.invoices = const [],
+    this.payments = const [],
+    this.isLoading = false,
+    this.error,
   });
+
   FinanceState copyWith({
-    List<FinanceTransaction>? transactions,
-    bool? isLoading, String? error, bool clearError = false,
-  }) => FinanceState(
-    transactions: transactions ?? this.transactions,
-    isLoading: isLoading ?? this.isLoading,
-    error: clearError ? null : (error ?? this.error),
-  );
+    List<LedgerTransaction>? ledger,
+    List<Account>? accounts,
+    List<Invoice>? invoices,
+    List<Payment>? payments,
+    bool? isLoading,
+    String? error,
+    bool clearError = false,
+    bool clearData = false,
+  }) =>
+      FinanceState(
+        ledger: clearData ? const [] : (ledger ?? this.ledger),
+        accounts: clearData ? const [] : (accounts ?? this.accounts),
+        invoices: clearData ? const [] : (invoices ?? this.invoices),
+        payments: clearData ? const [] : (payments ?? this.payments),
+        isLoading: isLoading ?? this.isLoading,
+        error: clearError ? null : (error ?? this.error),
+      );
 
-  double get totalIncome => transactions
-      .where((t) => t.type.isIncome)
-      .fold(0, (s, t) => s + t.amount);
+  /// Posted ledger only — drafts are not real money yet.
+  Iterable<LedgerTransaction> get _posted =>
+      ledger.where((e) => e.status == DocStatus.posted);
 
-  double get totalExpense => transactions
-      .where((t) => !t.type.isIncome)
-      .fold(0, (s, t) => s + t.amount);
+  double get totalIncome =>
+      _posted.where((e) => e.isIncome).fold(0, (s, e) => s + e.amount);
+
+  double get totalExpense =>
+      _posted.where((e) => !e.isIncome).fold(0, (s, e) => s + e.amount);
 
   double get balance => totalIncome - totalExpense;
+
+  List<LedgerTransaction> byKind(LedgerKind kind) =>
+      ledger.where((e) => e.kind == kind).toList();
 }
 
 class FinanceNotifier extends StateNotifier<FinanceState> {
-  FinanceNotifier(this._ref) : super(const FinanceState());
-  final Ref _ref;
-  final _c = SupabaseService.client;
+  FinanceNotifier(this._ref, [IFinanceRepository? repo])
+      : _repo = repo ?? SupabaseFinanceRepository(),
+        super(const FinanceState());
 
-  /// [madrasaId] is DEPRECATED (kept for signature compatibility; Phase 8
-  /// removes it). Tenant scoping is mandatory via [currentTenantIdProvider].
-  Future<void> load({String? madrasaId}) async {
-    final tenantId = _ref.read(currentTenantIdProvider);
+  final Ref _ref;
+  final IFinanceRepository _repo;
+
+  String? get _tenantId => _ref.read(currentTenantIdProvider);
+  String? get _actorId => _ref.read(authProvider).user?.id;
+
+  Future<void> load() async {
+    final tenantId = _tenantId;
     if (tenantId == null) {
-      state = state.copyWith(isLoading: false, transactions: const []);
+      state = state.copyWith(isLoading: false, clearData: true);
       return;
     }
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      final q = _c.from('finance_transactions').select().eq('tenant_id', tenantId) as dynamic;
-      final rows = await q.order('date', ascending: false);
+      final results = await Future.wait([
+        _repo.getLedger(tenantId: tenantId),
+        _repo.getAccounts(tenantId: tenantId),
+        _repo.getInvoices(tenantId: tenantId),
+        _repo.getPayments(tenantId: tenantId),
+      ]);
       state = state.copyWith(
         isLoading: false,
-        transactions:
-            rows.map<FinanceTransaction>((r) => FinanceTransaction.fromJson(r)).toList(),
+        ledger: results[0] as List<LedgerTransaction>,
+        accounts: results[1] as List<Account>,
+        invoices: results[2] as List<Invoice>,
+        payments: results[3] as List<Payment>,
       );
-    } catch (_) { state = state.copyWith(isLoading: false); }
-  }
-
-  Future<String?> addTransaction(FinanceTransaction t) async {
-    final tenantId = _ref.read(currentTenantIdProvider);
-    if (tenantId == null) return 'No active tenant';
-    state = state.copyWith(isLoading: true, clearError: true);
-    try {
-      final payload = <String, dynamic>{...t.toJson(), 'tenant_id': tenantId};
-      final data = await _c.from('finance_transactions').insert(payload).select().single();
-      state = state.copyWith(
-        isLoading: false,
-        transactions: [FinanceTransaction.fromJson(data), ...state.transactions],
-      );
-      return null;
-    } catch (_) {
-      final opt = FinanceTransaction(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        tenantId: tenantId, madrasaId: t.madrasaId, type: t.type,
-        amount: t.amount, description: t.description,
-        personName: t.personName, date: t.date,
-      );
-      state = state.copyWith(
-        isLoading: false,
-        transactions: [opt, ...state.transactions],
-      );
-      return null;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 
-  Future<void> deleteTransaction(String id) async {
-    try { await _c.from('finance_transactions').delete().eq('id', id); } catch (_) {}
-    state = state.copyWith(
-      transactions: state.transactions.where((t) => t.id != id).toList());
+  /// Records income end-to-end: draft → approved → posted.
+  /// Returns an error message, or null on success.
+  Future<String?> recordIncome({
+    required TransactionCategory sourceType,
+    String? donorName,
+    required double amount,
+    String? accountId,
+    String? description,
+  }) async {
+    final tenantId = _tenantId;
+    if (tenantId == null) return 'No active tenant';
+    final actorId = _actorId;
+    if (actorId == null) return 'Not signed in';
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      await _repo.recordIncome(
+        IncomeEntry(
+          tenantId: tenantId,
+          sourceType: sourceType,
+          donorName: donorName,
+          amount: amount,
+          accountId: accountId ?? _defaultAccountId(),
+          receivedDate: DateTime.now(),
+          description: description,
+          createdBy: actorId,
+        ),
+        tenantId: tenantId,
+        actorId: actorId,
+      );
+      await load();
+      return null;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      return e.toString();
+    }
   }
 
-  List<FinanceTransaction> byType(TransactionType type) =>
-      state.transactions.where((t) => t.type == type).toList();
+  /// Records an expense end-to-end: draft → approved → posted.
+  Future<String?> recordExpense({
+    required String category,
+    String? recipient,
+    required double amount,
+    String? accountId,
+    String? description,
+  }) async {
+    final tenantId = _tenantId;
+    if (tenantId == null) return 'No active tenant';
+    final actorId = _actorId;
+    if (actorId == null) return 'Not signed in';
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      await _repo.recordExpense(
+        ExpenseEntry(
+          tenantId: tenantId,
+          category: category,
+          recipient: recipient,
+          amount: amount,
+          accountId: accountId ?? _defaultAccountId(),
+          expenseDate: DateTime.now(),
+          description: description,
+          createdBy: actorId,
+        ),
+        tenantId: tenantId,
+        actorId: actorId,
+      );
+      await load();
+      return null;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      return e.toString();
+    }
+  }
+
+  /// Records a fee payment: draft → posted. The DB trigger fills the
+  /// receipt number and creates the ledger entry + invoice allocation.
+  Future<String?> recordPayment({
+    String? studentId,
+    String? invoiceId,
+    String? accountId,
+    required double amount,
+    PaymentMethod method = PaymentMethod.cash,
+    String? notes,
+  }) async {
+    final tenantId = _tenantId;
+    if (tenantId == null) return 'No active tenant';
+    final actorId = _actorId;
+    if (actorId == null) return 'Not signed in';
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      await _repo.recordPayment(
+        Payment(
+          tenantId: tenantId,
+          studentId: studentId,
+          invoiceId: invoiceId,
+          accountId: accountId ?? _defaultAccountId(),
+          amount: amount,
+          paymentDate: DateTime.now(),
+          method: method,
+          notes: notes,
+          createdBy: actorId,
+        ),
+        tenantId: tenantId,
+      );
+      await load();
+      return null;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      return e.toString();
+    }
+  }
+
+  /// Deletes a DRAFT ledger line. Posted/void rows are immutable
+  /// (DB-enforced) — corrections go through reversal entries.
+  Future<String?> deleteLedgerDraft(String id) async {
+    final tenantId = _tenantId;
+    if (tenantId == null) return 'No active tenant';
+    try {
+      await _repo.deleteLedgerDraft(id, tenantId: tenantId);
+      state = state.copyWith(
+          ledger: state.ledger.where((e) => e.id != id).toList());
+      return null;
+    } catch (e) {
+      return e.toString();
+    }
+  }
+
+  String? _defaultAccountId() =>
+      state.accounts.isNotEmpty ? state.accounts.first.id : null;
 }
 
 final financeProvider =
-    StateNotifierProvider<FinanceNotifier, FinanceState>((ref) => FinanceNotifier(ref));
+    StateNotifierProvider<FinanceNotifier, FinanceState>(
+        (ref) => FinanceNotifier(ref));
