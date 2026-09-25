@@ -6,6 +6,7 @@ import 'package:uuid/uuid.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../core/services/tenant_context.dart';
 import '../../../data/models/staff.dart';
 import '../../../providers/staff_provider.dart';
 import '../../widgets/common/app_widgets.dart';
@@ -663,6 +664,7 @@ class _StaffListScreenState extends State<StaffListScreen> {
                     );
                     final staff = Staff(
                       id: const Uuid().v4(),
+                      tenantId: _ref!.read(currentTenantIdProvider) ?? '',
                       name: nameController.text.trim(),
                       fatherName: fatherNameController.text.trim(),
                       designation: designationController.text.trim(),
@@ -837,6 +839,7 @@ class _StaffListScreenState extends State<StaffListScreen> {
                     );
                     final updated = Staff(
                       id: staff.id,
+                      tenantId: staff.tenantId,
                       name: nameCtrl.text.trim(),
                       fatherName: fatherCtrl.text.trim(),
                       designation: desigCtrl.text.trim(),

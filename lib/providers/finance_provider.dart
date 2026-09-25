@@ -1,6 +1,7 @@
 /// مالیات فراہم کنندہ
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/services/supabase_service.dart';
+import '../core/services/tenant_context.dart';
 import '../data/models/finance.dart';
 
 class FinanceState {
@@ -31,14 +32,21 @@ class FinanceState {
 }
 
 class FinanceNotifier extends StateNotifier<FinanceState> {
-  FinanceNotifier() : super(const FinanceState());
+  FinanceNotifier(this._ref) : super(const FinanceState());
+  final Ref _ref;
   final _c = SupabaseService.client;
 
+  /// [madrasaId] is DEPRECATED (kept for signature compatibility; Phase 8
+  /// removes it). Tenant scoping is mandatory via [currentTenantIdProvider].
   Future<void> load({String? madrasaId}) async {
+    final tenantId = _ref.read(currentTenantIdProvider);
+    if (tenantId == null) {
+      state = state.copyWith(isLoading: false, transactions: const []);
+      return;
+    }
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      var q = _c.from('finance_transactions').select();
-      if (madrasaId != null) q = q.eq('madrasa_id', madrasaId) as dynamic;
+      final q = _c.from('finance_transactions').select().eq('tenant_id', tenantId) as dynamic;
       final rows = await q.order('date', ascending: false);
       state = state.copyWith(
         isLoading: false,
@@ -49,9 +57,12 @@ class FinanceNotifier extends StateNotifier<FinanceState> {
   }
 
   Future<String?> addTransaction(FinanceTransaction t) async {
+    final tenantId = _ref.read(currentTenantIdProvider);
+    if (tenantId == null) return 'No active tenant';
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      final data = await _c.from('finance_transactions').insert(t.toJson()).select().single();
+      final payload = <String, dynamic>{...t.toJson(), 'tenant_id': tenantId};
+      final data = await _c.from('finance_transactions').insert(payload).select().single();
       state = state.copyWith(
         isLoading: false,
         transactions: [FinanceTransaction.fromJson(data), ...state.transactions],
@@ -60,7 +71,7 @@ class FinanceNotifier extends StateNotifier<FinanceState> {
     } catch (_) {
       final opt = FinanceTransaction(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
-        madrasaId: t.madrasaId, type: t.type,
+        tenantId: tenantId, madrasaId: t.madrasaId, type: t.type,
         amount: t.amount, description: t.description,
         personName: t.personName, date: t.date,
       );
@@ -83,4 +94,4 @@ class FinanceNotifier extends StateNotifier<FinanceState> {
 }
 
 final financeProvider =
-    StateNotifierProvider<FinanceNotifier, FinanceState>((_) => FinanceNotifier());
+    StateNotifierProvider<FinanceNotifier, FinanceState>((ref) => FinanceNotifier(ref));

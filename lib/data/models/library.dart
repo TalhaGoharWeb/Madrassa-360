@@ -5,7 +5,8 @@ enum BookStatus { available, issued, lost }
 
 class LibraryBook {
   final String? id;
-  final String? madrasaId;
+  final String tenantId;   // multi-tenant owner (public.tenants) — required
+  final String? madrasaId; // DEPRECATED: kept for Phase-8 removal
   final String title;
   final String? author;
   final String? subject;
@@ -17,6 +18,7 @@ class LibraryBook {
 
   const LibraryBook({
     this.id,
+    required this.tenantId,
     this.madrasaId,
     required this.title,
     this.author,
@@ -30,6 +32,7 @@ class LibraryBook {
 
   factory LibraryBook.fromJson(Map<String, dynamic> j) => LibraryBook(
         id:               j['id'] as String?,
+        tenantId:         (j['tenant_id'] ?? j['madrasa_id'] ?? '') as String,
         madrasaId:        j['madrasa_id'] as String?,
         title:            j['title'] as String? ?? '',
         author:           j['author'] as String?,
@@ -45,6 +48,7 @@ class LibraryBook {
       );
 
   Map<String, dynamic> toJson() => {
+        'tenant_id':       tenantId,
         'madrasa_id':       madrasaId,
         'title':            title,
         'author':           author,
@@ -58,7 +62,8 @@ class LibraryBook {
 
 class BookIssue {
   final String? id;
-  final String? madrasaId;
+  final String tenantId;   // multi-tenant owner (public.tenants) — required
+  final String? madrasaId; // DEPRECATED: kept for Phase-8 removal
   final String bookId;
   final String bookTitle;
   final String borrowerId;   // student or staff id
@@ -72,6 +77,7 @@ class BookIssue {
 
   const BookIssue({
     this.id,
+    required this.tenantId,
     this.madrasaId,
     required this.bookId,
     required this.bookTitle,
@@ -87,6 +93,7 @@ class BookIssue {
 
   factory BookIssue.fromJson(Map<String, dynamic> j) => BookIssue(
         id:           j['id'] as String?,
+        tenantId:     (j['tenant_id'] ?? j['madrasa_id'] ?? '') as String,
         madrasaId:    j['madrasa_id'] as String?,
         bookId:       j['book_id'] as String,
         bookTitle:    j['book_title'] as String? ?? '',
@@ -102,6 +109,7 @@ class BookIssue {
       );
 
   Map<String, dynamic> toJson() => {
+        'tenant_id':   tenantId,
         'madrasa_id':   madrasaId,
         'book_id':      bookId,
         'book_title':   bookTitle,

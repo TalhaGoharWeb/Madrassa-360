@@ -24,7 +24,8 @@ extension TransactionTypeX on TransactionType {
 
 class FinanceTransaction {
   final String? id;
-  final String? madrasaId;
+  final String tenantId;   // multi-tenant owner (public.tenants) — required
+  final String? madrasaId; // DEPRECATED: kept for Phase-8 removal
   final TransactionType type;
   final double amount;
   final String? description;
@@ -36,6 +37,7 @@ class FinanceTransaction {
 
   const FinanceTransaction({
     this.id,
+    required this.tenantId,
     this.madrasaId,
     required this.type,
     required this.amount,
@@ -50,6 +52,7 @@ class FinanceTransaction {
   factory FinanceTransaction.fromJson(Map<String, dynamic> j) =>
       FinanceTransaction(
         id:                j['id'] as String?,
+        tenantId:          (j['tenant_id'] ?? j['madrasa_id'] ?? '') as String,
         madrasaId:         j['madrasa_id'] as String?,
         type:              TransactionType.values.firstWhere(
             (t) => t.name == (j['type'] as String? ?? 'expense'),
@@ -64,6 +67,7 @@ class FinanceTransaction {
       );
 
   Map<String, dynamic> toJson() => {
+        'tenant_id':           tenantId,
         'madrasa_id':           madrasaId,
         'type':                 type.name,
         'amount':               amount,

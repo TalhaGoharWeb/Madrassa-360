@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../core/services/tenant_context.dart';
 import '../../../data/models/models.dart';
 import '../../../providers/library_provider.dart';
 import '../../../providers/auth_provider.dart';
@@ -121,6 +122,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                     isbn: isbnCtrl.text,
                     totalCopies: int.tryParse(copiesCtrl.text) ?? 1,
                     availableCopies: int.tryParse(copiesCtrl.text) ?? 1,
+                    tenantId: ref.read(currentTenantIdProvider) ?? '',
                     madrasaId: widget.madrasaId,
                   ));
             },
@@ -302,6 +304,7 @@ class _BooksList extends StatelessWidget {
                       borrowerId: idCtrl.text,
                       borrowerName: nameCtrl.text,
                       borrowerType: borrowerType,
+                      tenantId: ref.read(currentTenantIdProvider) ?? '',
                       madrasaId: madrasaId,
                       issuedAt: DateTime.now(),
                       dueAt: DateTime.now().add(const Duration(days: 14)),

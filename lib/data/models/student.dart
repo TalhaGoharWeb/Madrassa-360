@@ -5,8 +5,14 @@ import 'attendance_status.dart';
 
 /// Full student model backed by Supabase.
 /// Used by [StudentRepository] and all real providers.
+///
+/// [tenantId] is the multi-tenant owner (public.tenants). It is required:
+/// every query and insert must be scoped to it (Phase 2 SaaS).
+/// `fromJson` also accepts the legacy `madrasa_id` key so old
+/// SharedPreferences caches keep decoding during the migration.
 class Student {
   final String id;
+  final String tenantId;
   final String rollNo;
   final String name;
   final String fatherName;
@@ -27,6 +33,7 @@ class Student {
 
   const Student({
     required this.id,
+    required this.tenantId,
     required this.rollNo,
     required this.name,
     required this.fatherName,
@@ -50,6 +57,7 @@ class Student {
   factory Student.fromJson(Map<String, dynamic> json) {
     return Student(
       id: json['id'] as String,
+      tenantId: (json['tenant_id'] ?? json['madrasa_id'] ?? '') as String,
       rollNo: json['roll_no'] as String,
       name: json['name'] as String,
       fatherName: json['father_name'] as String,
@@ -69,6 +77,7 @@ class Student {
 
   /// Serialise for INSERT / UPDATE (excludes generated/read-only cols).
   Map<String, dynamic> toJson() => {
+    'tenant_id':      tenantId,
     'roll_no':        rollNo,
     'name':           name,
     'father_name':    fatherName,
@@ -90,6 +99,7 @@ class Student {
   }) {
     return Student(
       id: id,
+      tenantId: tenantId,
       rollNo: rollNo,
       name: name,
       fatherName: fatherName,

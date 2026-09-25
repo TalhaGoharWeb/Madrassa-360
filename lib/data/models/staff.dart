@@ -2,8 +2,11 @@
 /// Staff model — maps to the public.staff table
 
 /// Full staff member model backed by Supabase.
+///
+/// [tenantId] is the multi-tenant owner (public.tenants) — required.
 class Staff {
   final String id;
+  final String tenantId;
   final String name;
   final String fatherName;
   final String designation;
@@ -18,6 +21,7 @@ class Staff {
 
   const Staff({
     required this.id,
+    required this.tenantId,
     required this.name,
     required this.fatherName,
     required this.designation,
@@ -34,6 +38,7 @@ class Staff {
   factory Staff.fromJson(Map<String, dynamic> json) {
     return Staff(
       id:          json['id'] as String,
+      tenantId:    (json['tenant_id'] ?? json['madrasa_id'] ?? '') as String,
       name:        json['name'] as String,
       fatherName:  json['father_name'] as String,
       designation: json['designation'] as String,
@@ -49,6 +54,7 @@ class Staff {
   }
 
   Map<String, dynamic> toJson() => {
+    'tenant_id':    tenantId,
     'name':         name,
     'father_name':  fatherName,
     'designation':  designation,
@@ -65,6 +71,7 @@ class Staff {
   Staff copyWith({String? photoUrl, bool? isActive}) {
     return Staff(
       id: id,
+      tenantId: tenantId,
       name: name,
       fatherName: fatherName,
       designation: designation,

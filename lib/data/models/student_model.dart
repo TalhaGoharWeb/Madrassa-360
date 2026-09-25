@@ -4,6 +4,7 @@ import 'attendance_status.dart';
 /// Mock Student Model for Phase 1 (No Firebase)
 class MockStudent {
   final String id;
+  final String tenantId;      // multi-tenant owner (Phase 2 SaaS)
   final String name;           // طالب علم کا نام (Urdu)
   final String fatherName;     // والد کا نام (Urdu)
   final String rollNo;         // رول نمبر
@@ -14,6 +15,7 @@ class MockStudent {
 
   MockStudent({
     required this.id,
+    required this.tenantId,
     required this.name,
     required this.fatherName,
     required this.rollNo,
@@ -35,6 +37,7 @@ class MockStudent {
   /// Copy with method for immutability
   MockStudent copyWith({
     String? id,
+    String? tenantId,
     String? name,
     String? fatherName,
     String? rollNo,
@@ -45,6 +48,7 @@ class MockStudent {
   }) {
     return MockStudent(
       id: id ?? this.id,
+      tenantId: tenantId ?? this.tenantId,
       name: name ?? this.name,
       fatherName: fatherName ?? this.fatherName,
       rollNo: rollNo ?? this.rollNo,

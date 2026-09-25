@@ -50,6 +50,7 @@ class SupabaseAttendanceRepository implements IAttendanceRepository {
         final m = e as Map<String, dynamic>;
         return AttendanceRecord(
           id:              m['id'] as String?,
+          tenantId:        (m['tenant_id'] ?? '') as String,
           studentId:       m['student_id'] as String,
           studentName:     m['student_name'] as String,
           studentRollNo:   m['student_roll_no'] as String,

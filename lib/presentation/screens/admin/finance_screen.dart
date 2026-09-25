@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../core/services/tenant_context.dart';
 import '../../../data/models/models.dart';
 import '../../../providers/finance_provider.dart';
 import '../../../providers/auth_provider.dart';
@@ -161,6 +162,7 @@ class _FinanceScreenState extends State<FinanceScreen> {
                         amount: double.tryParse(amtCtrl.text) ?? 0,
                         description: descCtrl.text,
                         personName: nameCtrl.text,
+                        tenantId: ref.read(currentTenantIdProvider) ?? '',
                         madrasaId: widget.madrasaId,
                         receiptNumber: receiptCtrl.text,
                         createdByUserId: user?.id ?? '',

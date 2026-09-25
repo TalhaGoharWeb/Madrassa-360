@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../core/services/tenant_context.dart';
 import '../../../data/models/models.dart';
 import '../../../providers/darja_provider.dart';
 
@@ -151,6 +152,7 @@ class _DarjaScreenState extends State<DarjaScreen> {
                   nameUrdu: nameUCtrl.text,
                   nameEnglish: nameECtrl.text,
                   level: level,
+                  tenantId: ref.read(currentTenantIdProvider) ?? '',
                   madrasaId: widget.madrasaId,
                   capacity: int.tryParse(capCtrl.text) ?? 30,
                 ));
@@ -286,6 +288,7 @@ class _DarjaCard extends StatelessWidget {
               Navigator.pop(dCtx);
               await ref.read(darjaProvider.notifier).createSection(DarjaSection(
                     darjaId: darja.id ?? '',
+                    tenantId: ref.read(currentTenantIdProvider) ?? '',
                     madrasaId: madrasaId,
                     nameUrdu: ctrl.text,
                   ));

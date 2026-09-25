@@ -35,8 +35,11 @@ extension FeeStatusX on FeeStatus {
 }
 
 /// One fee record per student per month.
+///
+/// [tenantId] is the multi-tenant owner (public.tenants) — required.
 class Fee {
   final String id;
+  final String tenantId;
   final String studentId;
   final String studentName;   // joined from students
   final String studentClass;  // joined from students → classes
@@ -49,6 +52,7 @@ class Fee {
 
   const Fee({
     required this.id,
+    required this.tenantId,
     required this.studentId,
     required this.studentName,
     required this.studentClass,
@@ -69,6 +73,7 @@ class Fee {
 
     return Fee(
       id:           json['id'] as String,
+      tenantId:     (json['tenant_id'] ?? json['madrasa_id'] ?? '') as String,
       studentId:    json['student_id'] as String,
       studentName:  student?['name'] as String? ?? '',
       studentClass: studentClass,
@@ -83,6 +88,7 @@ class Fee {
 
   /// For INSERT/UPDATE — only writable columns.
   Map<String, dynamic> toJson() => {
+    'tenant_id':  tenantId,
     'student_id':  studentId,
     'month':       month,
     'amount_due':  amountDue,
@@ -94,6 +100,7 @@ class Fee {
   Fee copyWith({double? amountPaid, String? paidDate}) {
     return Fee(
       id: id,
+      tenantId: tenantId,
       studentId: studentId,
       studentName: studentName,
       studentClass: studentClass,

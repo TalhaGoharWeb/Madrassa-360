@@ -4,6 +4,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/services/supabase_service.dart';
+import '../core/services/tenant_context.dart';
 import '../data/models/announcement.dart';
 
 class AnnouncementState {
@@ -30,14 +31,21 @@ class AnnouncementState {
 }
 
 class AnnouncementNotifier extends StateNotifier<AnnouncementState> {
-  AnnouncementNotifier() : super(const AnnouncementState());
+  AnnouncementNotifier(this._ref) : super(const AnnouncementState());
+  final Ref _ref;
   final _client = SupabaseService.client;
 
+  /// [madrasaId] is DEPRECATED (kept for signature compatibility; Phase 8
+  /// removes it). Tenant scoping is mandatory via [currentTenantIdProvider].
   Future<void> load({String? madrasaId}) async {
+    final tenantId = _ref.read(currentTenantIdProvider);
+    if (tenantId == null) {
+      state = state.copyWith(isLoading: false, announcements: const []);
+      return;
+    }
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      var q = _client.from('announcements').select();
-      if (madrasaId != null) q = q.eq('madrasa_id', madrasaId) as dynamic;
+      final q = _client.from('announcements').select().eq('tenant_id', tenantId) as dynamic;
       final rows = await q.order('created_at', ascending: false);
       state = state.copyWith(
         isLoading: false,
@@ -51,9 +59,12 @@ class AnnouncementNotifier extends StateNotifier<AnnouncementState> {
   }
 
   Future<String?> create(Announcement a) async {
+    final tenantId = _ref.read(currentTenantIdProvider);
+    if (tenantId == null) return 'No active tenant';
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      final data = await _client.from('announcements').insert(a.toJson()).select().single();
+      final payload = <String, dynamic>{...a.toJson(), 'tenant_id': tenantId};
+      final data = await _client.from('announcements').insert(payload).select().single();
       state = state.copyWith(
         isLoading: false,
         announcements: [Announcement.fromJson(data), ...state.announcements],
@@ -62,7 +73,7 @@ class AnnouncementNotifier extends StateNotifier<AnnouncementState> {
     } catch (_) {
       final opt = Announcement(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
-        title: a.title, body: a.body, target: a.target,
+        tenantId: tenantId, title: a.title, body: a.body, target: a.target,
         isPinned: a.isPinned, madrasaId: a.madrasaId,
         postedByName: a.postedByName,
         createdAt: DateTime.now(),
@@ -96,7 +107,7 @@ class AnnouncementNotifier extends StateNotifier<AnnouncementState> {
 
 final announcementProvider =
     StateNotifierProvider<AnnouncementNotifier, AnnouncementState>(
-        (_) => AnnouncementNotifier());
+        (ref) => AnnouncementNotifier(ref));
 
 final announcementListProvider = Provider<List<Announcement>>(
     (ref) => ref.watch(announcementProvider).announcements);

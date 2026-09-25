@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../core/services/tenant_context.dart';
 import '../../../data/models/models.dart';
 import '../../../providers/announcement_provider.dart';
 import '../../../providers/auth_provider.dart';
@@ -143,6 +144,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                         target: _targetFromString(target),
                         postedByUserId: user?.id ?? '',
                         postedByName: user?.email ?? '',
+                        tenantId: ref.read(currentTenantIdProvider) ?? '',
                         madrasaId: widget.madrasaId,
                         isPinned: pinned,
                       ),

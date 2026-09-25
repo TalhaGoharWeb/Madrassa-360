@@ -3,7 +3,8 @@
 
 class Darja {
   final String? id;
-  final String? madrasaId;
+  final String tenantId;   // multi-tenant owner (public.tenants) — required
+  final String? madrasaId; // DEPRECATED: kept for Phase-8 removal
   final String nameUrdu;
   final String nameEnglish;
   final String level;       // 'nazra' | 'hifz' | 'dars_e_nizami' | 'takhassus'
@@ -14,6 +15,7 @@ class Darja {
 
   const Darja({
     this.id,
+    required this.tenantId,
     this.madrasaId,
     required this.nameUrdu,
     required this.nameEnglish,
@@ -26,6 +28,7 @@ class Darja {
 
   factory Darja.fromJson(Map<String, dynamic> j) => Darja(
         id:          j['id'] as String?,
+        tenantId:    (j['tenant_id'] ?? j['madrasa_id'] ?? '') as String,
         madrasaId:   j['madrasa_id'] as String?,
         nameUrdu:    j['name_urdu'] as String? ?? '',
         nameEnglish: j['name_english'] as String? ?? '',
@@ -37,6 +40,7 @@ class Darja {
       );
 
   Map<String, dynamic> toJson() => {
+        'tenant_id':    tenantId,
         'madrasa_id':   madrasaId,
         'name_urdu':    nameUrdu,
         'name_english': nameEnglish,
@@ -52,7 +56,7 @@ class Darja {
     String? level, int? orderIndex,
     String? description, int? capacity, bool? isActive,
   }) => Darja(
-    id: id, madrasaId: madrasaId,
+    id: id, tenantId: tenantId, madrasaId: madrasaId,
     nameUrdu:    nameUrdu    ?? this.nameUrdu,
     nameEnglish: nameEnglish ?? this.nameEnglish,
     level:       level       ?? this.level,
@@ -76,7 +80,8 @@ class Darja {
 class DarjaSection {
   final String? id;
   final String darjaId;
-  final String? madrasaId;
+  final String tenantId;   // multi-tenant owner (public.tenants) — required
+  final String? madrasaId; // DEPRECATED: kept for Phase-8 removal
   final String nameUrdu;   // e.g. الف، ب، ج
   final String? teacherId; // FK → staff
   final int? capacity;
@@ -85,6 +90,7 @@ class DarjaSection {
   const DarjaSection({
     this.id,
     required this.darjaId,
+    required this.tenantId,
     this.madrasaId,
     required this.nameUrdu,
     this.teacherId,
@@ -95,6 +101,7 @@ class DarjaSection {
   factory DarjaSection.fromJson(Map<String, dynamic> j) => DarjaSection(
         id:        j['id'] as String?,
         darjaId:   j['darja_id'] as String,
+        tenantId:  (j['tenant_id'] ?? j['madrasa_id'] ?? '') as String,
         madrasaId: j['madrasa_id'] as String?,
         nameUrdu:  j['name_urdu'] as String? ?? '',
         teacherId: j['teacher_id'] as String?,
@@ -104,6 +111,7 @@ class DarjaSection {
 
   Map<String, dynamic> toJson() => {
         'darja_id':   darjaId,
+        'tenant_id':  tenantId,
         'madrasa_id': madrasaId,
         'name_urdu':  nameUrdu,
         'teacher_id': teacherId,

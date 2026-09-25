@@ -82,6 +82,7 @@ class OfflineSyncService {
 
   static Map<String, dynamic> _recordToMap(AttendanceRecord r) => {
     'id':              r.id,
+    'tenant_id':       r.tenantId,
     'student_id':      r.studentId,
     'student_name':    r.studentName,
     'student_roll_no': r.studentRollNo,
@@ -96,6 +97,7 @@ class OfflineSyncService {
     try {
       return AttendanceRecord(
         id:              m['id'] as String?,
+        tenantId:        (m['tenant_id'] ?? '') as String,
         studentId:       m['student_id'] as String,
         studentName:     m['student_name'] as String,
         studentRollNo:   m['student_roll_no'] as String,

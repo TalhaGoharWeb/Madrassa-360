@@ -7,6 +7,7 @@
 
 class SubjectResult {
   final String id;
+  final String tenantId; // multi-tenant owner (public.tenants) — required
   final String examId;
   final String studentId;
   final String subject;
@@ -15,6 +16,7 @@ class SubjectResult {
 
   const SubjectResult({
     required this.id,
+    required this.tenantId,
     required this.examId,
     required this.studentId,
     required this.subject,
@@ -36,6 +38,7 @@ class SubjectResult {
   factory SubjectResult.fromJson(Map<String, dynamic> json) {
     return SubjectResult(
       id:            json['id'] as String,
+      tenantId:      (json['tenant_id'] ?? json['madrasa_id'] ?? '') as String,
       examId:        json['exam_id'] as String,
       studentId:     json['student_id'] as String,
       subject:       json['subject'] as String,
@@ -45,6 +48,7 @@ class SubjectResult {
   }
 
   Map<String, dynamic> toJson() => {
+    'tenant_id':      tenantId,
     'exam_id':        examId,
     'student_id':     studentId,
     'subject':        subject,
@@ -99,6 +103,7 @@ class StudentResult {
 
 class Exam {
   final String id;
+  final String tenantId; // multi-tenant owner (public.tenants) — required
   final String name;
   final String? classId;
   final String examDate;
@@ -106,6 +111,7 @@ class Exam {
 
   const Exam({
     required this.id,
+    required this.tenantId,
     required this.name,
     this.classId,
     required this.examDate,
@@ -115,6 +121,7 @@ class Exam {
   factory Exam.fromJson(Map<String, dynamic> json) {
     return Exam(
       id:         json['id'] as String,
+      tenantId:   (json['tenant_id'] ?? json['madrasa_id'] ?? '') as String,
       name:       json['name'] as String,
       classId:    json['class_id'] as String?,
       examDate:   json['exam_date'] as String,
@@ -123,6 +130,7 @@ class Exam {
   }
 
   Map<String, dynamic> toJson() => {
+    'tenant_id':  tenantId,
     'name':        name,
     'class_id':    classId,
     'exam_date':   examDate,

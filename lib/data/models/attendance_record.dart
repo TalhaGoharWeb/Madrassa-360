@@ -7,6 +7,7 @@ import 'attendance_status.dart';
 /// Used by [AttendanceRepository] and the updated attendance screen.
 class AttendanceRecord {
   final String? id;           // null for unsaved (optimistic) records
+  final String tenantId;      // multi-tenant owner (public.tenants) — required
   final String studentId;
   final String studentName;
   final String studentRollNo;
@@ -19,6 +20,7 @@ class AttendanceRecord {
 
   const AttendanceRecord({
     this.id,
+    required this.tenantId,
     required this.studentId,
     required this.studentName,
     required this.studentRollNo,
@@ -40,6 +42,7 @@ class AttendanceRecord {
     final statusStr = todayAtt?['status'] as String? ?? 'present';
     return AttendanceRecord(
       id:               todayAtt?['id'] as String?,
+      tenantId:         (json['tenant_id'] ?? json['madrasa_id'] ?? '') as String,
       studentId:        json['id'] as String,
       studentName:      json['name'] as String,
       studentRollNo:    json['roll_no'] as String,
@@ -63,6 +66,7 @@ class AttendanceRecord {
 
   /// Serialise for upsert into public.attendance.
   Map<String, dynamic> toUpsertJson() => {
+    'tenant_id':  tenantId,
     'student_id': studentId,
     'class_id':   classId,
     'teacher_id': teacherId,
@@ -74,6 +78,7 @@ class AttendanceRecord {
   AttendanceRecord copyWith({AttendanceStatus? status, String? note}) {
     return AttendanceRecord(
       id:              id,
+      tenantId:        tenantId,
       studentId:       studentId,
       studentName:     studentName,
       studentRollNo:   studentRollNo,

@@ -17,7 +17,8 @@ extension AnnouncementTargetX on AnnouncementTarget {
 
 class Announcement {
   final String? id;
-  final String? madrasaId;
+  final String tenantId;   // multi-tenant owner (public.tenants) — required
+  final String? madrasaId; // DEPRECATED: kept for Phase-8 removal
   final String title;
   final String body;
   final AnnouncementTarget target;
@@ -29,6 +30,7 @@ class Announcement {
 
   const Announcement({
     this.id,
+    required this.tenantId,
     this.madrasaId,
     required this.title,
     required this.body,
@@ -42,6 +44,7 @@ class Announcement {
 
   factory Announcement.fromJson(Map<String, dynamic> j) => Announcement(
         id:              j['id'] as String?,
+        tenantId:        (j['tenant_id'] ?? j['madrasa_id'] ?? '') as String,
         madrasaId:       j['madrasa_id'] as String?,
         title:           j['title'] as String? ?? '',
         body:            j['body'] as String? ?? '',
@@ -58,6 +61,7 @@ class Announcement {
       );
 
   Map<String, dynamic> toJson() => {
+        'tenant_id':         tenantId,
         'madrasa_id':         madrasaId,
         'title':              title,
         'body':               body,
@@ -72,7 +76,7 @@ class Announcement {
     String? title, String? body,
     AnnouncementTarget? target, bool? isPinned,
   }) => Announcement(
-    id: id, madrasaId: madrasaId, createdAt: createdAt,
+    id: id, tenantId: tenantId, madrasaId: madrasaId, createdAt: createdAt,
     postedByUserId: postedByUserId, postedByName: postedByName,
     title:    title    ?? this.title,
     body:     body     ?? this.body,

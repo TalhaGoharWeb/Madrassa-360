@@ -1,6 +1,7 @@
 /// کتب خانہ فراہم کنندہ
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/services/supabase_service.dart';
+import '../core/services/tenant_context.dart';
 import '../data/models/library.dart';
 
 class LibraryState {
@@ -23,18 +24,24 @@ class LibraryState {
 }
 
 class LibraryNotifier extends StateNotifier<LibraryState> {
-  LibraryNotifier() : super(const LibraryState());
+  LibraryNotifier(this._ref) : super(const LibraryState());
+  final Ref _ref;
   final _c = SupabaseService.client;
 
+  /// [madrasaId] is DEPRECATED (kept for signature compatibility; Phase 8
+  /// removes it). Tenant scoping is mandatory via [currentTenantIdProvider].
   Future<void> load({String? madrasaId}) async {
+    final tenantId = _ref.read(currentTenantIdProvider);
+    if (tenantId == null) {
+      state = state.copyWith(isLoading: false, books: const [], issues: const []);
+      return;
+    }
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      var bq = _c.from('library_books').select();
-      if (madrasaId != null) bq = bq.eq('madrasa_id', madrasaId) as dynamic;
+      final bq = _c.from('library_books').select().eq('tenant_id', tenantId) as dynamic;
       final brows = await bq.order('title');
 
-      var iq = _c.from('book_issues').select();
-      if (madrasaId != null) iq = iq.eq('madrasa_id', madrasaId) as dynamic;
+      final iq = _c.from('book_issues').select().eq('tenant_id', tenantId) as dynamic;
       final irows = await iq.order('issued_at', ascending: false);
 
       state = state.copyWith(
@@ -46,14 +53,17 @@ class LibraryNotifier extends StateNotifier<LibraryState> {
   }
 
   Future<String?> addBook(LibraryBook b) async {
+    final tenantId = _ref.read(currentTenantIdProvider);
+    if (tenantId == null) return 'No active tenant';
     try {
-      final data = await _c.from('library_books').insert(b.toJson()).select().single();
+      final payload = <String, dynamic>{...b.toJson(), 'tenant_id': tenantId};
+      final data = await _c.from('library_books').insert(payload).select().single();
       state = state.copyWith(books: [...state.books, LibraryBook.fromJson(data)]);
       return null;
     } catch (_) {
       final opt = LibraryBook(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
-        madrasaId: b.madrasaId, title: b.title, author: b.author,
+        tenantId: tenantId, madrasaId: b.madrasaId, title: b.title, author: b.author,
         subject: b.subject, totalCopies: b.totalCopies,
         availableCopies: b.totalCopies,
       );
@@ -63,8 +73,11 @@ class LibraryNotifier extends StateNotifier<LibraryState> {
   }
 
   Future<String?> issueBook(BookIssue issue) async {
+    final tenantId = _ref.read(currentTenantIdProvider);
+    if (tenantId == null) return 'No active tenant';
     try {
-      final data = await _c.from('book_issues').insert(issue.toJson()).select().single();
+      final payload = <String, dynamic>{...issue.toJson(), 'tenant_id': tenantId};
+      final data = await _c.from('book_issues').insert(payload).select().single();
       state = state.copyWith(issues: [BookIssue.fromJson(data), ...state.issues]);
       // Decrease available copies
       final book = state.books.firstWhere((b) => b.id == issue.bookId);
@@ -85,7 +98,7 @@ class LibraryNotifier extends StateNotifier<LibraryState> {
       state = state.copyWith(
         issues: state.issues.map((i) => i.id == issueId
             ? BookIssue(
-                id: i.id, madrasaId: i.madrasaId, bookId: i.bookId,
+                id: i.id, tenantId: i.tenantId, madrasaId: i.madrasaId, bookId: i.bookId,
                 bookTitle: i.bookTitle, borrowerId: i.borrowerId,
                 borrowerName: i.borrowerName, borrowerType: i.borrowerType,
                 issuedAt: i.issuedAt, dueAt: i.dueAt,
@@ -109,4 +122,4 @@ class LibraryNotifier extends StateNotifier<LibraryState> {
 }
 
 final libraryProvider =
-    StateNotifierProvider<LibraryNotifier, LibraryState>((_) => LibraryNotifier());
+    StateNotifierProvider<LibraryNotifier, LibraryState>((ref) => LibraryNotifier(ref));
