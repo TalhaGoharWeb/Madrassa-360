@@ -50,12 +50,13 @@ if either is missing.
 cd ~/workspace/madrassa-360            # repo root
 supabase functions deploy provision-tenant
 supabase functions deploy manage-tenant
+supabase functions deploy export-tenant
 ```
 
 Or both at once:
 
 ```bash
-supabase functions deploy provision-tenant manage-tenant
+supabase functions deploy provision-tenant manage-tenant export-tenant
 ```
 
 ## Type-check
@@ -65,7 +66,7 @@ cd supabase/functions
 deno task check
 ```
 
-(runs `deno check` on both functions plus the shared module).
+(runs `deno check` on all three functions plus the shared module).
 
 ## API reference
 

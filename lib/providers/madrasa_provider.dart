@@ -66,7 +66,7 @@ class MadrasaNotifier extends StateNotifier<MadrasaState> {
       );
       return null;
     } catch (e) {
-      // Optimistic add for demo
+      // Optimistic local add (rolled back by the sync engine on conflict)
       final opt = Madrasa(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         nameUrdu: m.nameUrdu, nameEnglish: m.nameEnglish,

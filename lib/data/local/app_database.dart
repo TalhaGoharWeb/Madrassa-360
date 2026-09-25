@@ -703,6 +703,113 @@ class SyncStates extends Table {
 }
 
 // ─────────────────────────────────────────────
+// Notification tables (Phase 6 / Worker 2)
+//
+// Offline-first: notification records are created locally in the SAME
+// transaction as the business write that triggers them (see
+// lib/core/notifications/notification_triggers.dart), so recording a
+// notification NEVER requires connectivity. The `notification_outbox`
+// table is the per-channel dispatch queue drained by
+// NotificationDispatcher when connectivity returns. These tables are
+// intentionally OUTSIDE the 016 sync_apply contract (append-only,
+// server-fanned-out events, not optimistic-concurrency rows).
+// ─────────────────────────────────────────────
+
+/// اطلاعات — local notification records (in-app inbox).
+/// Mirrors public.notifications (017); `id` is the client-generated UUID
+/// that the send-notification Edge Function upserts on (idempotent fan-out).
+@DataClassName('LocalNotificationRow')
+class Notifications extends Table {
+  TextColumn get id => text()();
+  TextColumn get tenantId => text()();
+  // NULL = tenant broadcast (visible to every member of the tenant).
+  TextColumn get userId => text().nullable()();
+  TextColumn get type => text()();
+  TextColumn get title => text()();
+  TextColumn get titleUrdu => text().nullable()();
+  TextColumn get body => text().nullable()();
+  TextColumn get bodyUrdu => text().nullable()();
+  // JSON payload (deep links etc.), '{}' when empty.
+  TextColumn get data => text().withDefault(const Constant('{}'))();
+  // Origin/fan-out channel hint: 'in_app' | 'push' | 'email' (+ future).
+  TextColumn get channel => text().withDefault(const Constant('in_app'))();
+  IntColumn get readAt => integer().nullable()(); // epoch millis
+  IntColumn get createdAt => integer()(); // epoch millis
+
+  @override
+  Set<Column> get primaryKey => {id};
+
+  @override
+  List<Index> get indexes => [
+        Index(
+            'idx_notifications_inbox',
+            'CREATE INDEX idx_notifications_inbox ON '
+            'notifications (tenant_id, user_id, created_at)'),
+        Index(
+            'idx_notifications_unread',
+            'CREATE INDEX idx_notifications_unread ON '
+            'notifications (tenant_id, user_id) WHERE read_at IS NULL'),
+      ];
+}
+
+/// اطلاع کی ترسیل کی قطار — per-channel dispatch outbox.
+/// One row per (notification, channel). The dispatcher claims `pending`
+/// rows whose backoff expired, calls the channel, and marks them
+/// sent/failed/skipped. `sent` rows are pruned after 7 days.
+@DataClassName('NotificationOutboxEntry')
+class NotificationOutbox extends Table {
+  @override
+  String get tableName => 'notification_outbox';
+
+  TextColumn get id => text()();
+  TextColumn get tenantId => text()();
+  TextColumn get notificationId => text()();
+  TextColumn get channel => text()();
+  TextColumn get status => text().customConstraint(
+        "NOT NULL DEFAULT 'pending' CHECK (\"status\" IN "
+        "('pending', 'sending', 'sent', 'failed', 'skipped'))",
+      )();
+  IntColumn get attempts => integer().withDefault(const Constant(0))();
+  IntColumn get nextRetryAt => integer().nullable()(); // epoch millis
+  TextColumn get lastError => text().nullable()();
+  IntColumn get createdAt => integer()(); // epoch millis
+
+  @override
+  Set<Column> get primaryKey => {id};
+
+  @override
+  List<Index> get indexes => [
+        Index(
+            'idx_notification_outbox_due',
+            'CREATE INDEX idx_notification_outbox_due ON '
+            'notification_outbox (tenant_id, status, next_retry_at, created_at)'),
+        Index(
+            'idx_notification_outbox_notification',
+            'CREATE INDEX idx_notification_outbox_notification ON '
+            'notification_outbox (notification_id, channel)'),
+      ];
+}
+
+/// اطلاع کی ترجیحات — per-user per-channel opt-outs, cached locally.
+/// Missing row = channel ENABLED (default-on), mirroring the server
+/// table public.notification_preferences (017).
+@DataClassName('LocalNotificationPreference')
+class NotificationPreferences extends Table {
+  @override
+  String get tableName => 'notification_preferences';
+
+  TextColumn get userId => text()();
+  TextColumn get tenantId => text()();
+  TextColumn get channel => text()();
+  // 0/1 — matches the SyncConflicts.resolved convention in this file.
+  IntColumn get enabled => integer().withDefault(const Constant(1))();
+  IntColumn get updatedAt => integer()();
+
+  @override
+  Set<Column> get primaryKey => {userId, tenantId, channel};
+}
+
+// ─────────────────────────────────────────────
 // DAOs — one per business entity
 // ─────────────────────────────────────────────
 
@@ -2068,6 +2175,187 @@ class SyncConflictDao extends DatabaseAccessor<AppDatabase>
 }
 
 // ─────────────────────────────────────────────
+// Notification DAOs (Phase 6 / Worker 2)
+// ─────────────────────────────────────────────
+
+@DriftAccessor(tables: [Notifications])
+class NotificationsDao extends DatabaseAccessor<AppDatabase>
+    with _$NotificationsDaoMixin {
+  NotificationsDao(super.db);
+
+  Future<void> insert(NotificationsCompanion entry) =>
+      into(db.notifications).insert(entry);
+
+  Future<LocalNotificationRow?> getById(String id, String tenantId) =>
+      (select(db.notifications)
+            ..where((t) =>
+                t.id.equals(id) & t.tenantId.equals(tenantId)))
+          .getSingleOrNull();
+
+  /// Inbox: the user's own notifications + tenant broadcasts (user_id NULL),
+  /// newest first.
+  Future<List<LocalNotificationRow>> listInbox(
+          String tenantId, String userId) =>
+      (select(db.notifications)
+            ..where((t) =>
+                t.tenantId.equals(tenantId) &
+                (t.userId.equals(userId) | t.userId.isNull()))
+            ..orderBy([
+              (t) => OrderingTerm(
+                  expression: t.createdAt, mode: OrderingMode.desc)
+            ]))
+          .get();
+
+  Stream<List<LocalNotificationRow>> watchInbox(
+          String tenantId, String userId) =>
+      (select(db.notifications)
+            ..where((t) =>
+                t.tenantId.equals(tenantId) &
+                (t.userId.equals(userId) | t.userId.isNull()))
+            ..orderBy([
+              (t) => OrderingTerm(
+                  expression: t.createdAt, mode: OrderingMode.desc)
+            ]))
+          .watch();
+
+  /// Unread badge count (own + broadcasts).
+  Stream<int> watchUnreadCount(String tenantId, String userId) {
+    // One expression instance, reused for addColumns + read (drift
+    // keys TypedResult rows by the expression object).
+    final countExp = db.notifications.id.count();
+    final query = selectOnly(db.notifications)
+      ..addColumns([countExp])
+      ..where(db.notifications.tenantId.equals(tenantId) &
+          (db.notifications.userId.equals(userId) |
+              db.notifications.userId.isNull()) &
+          db.notifications.readAt.isNull());
+    return query.watchSingle().map((row) => row.read(countExp) ?? 0);
+  }
+
+  Future<void> markRead(String id, String tenantId, int readAtMs) =>
+      (update(db.notifications)
+            ..where((t) =>
+                t.id.equals(id) & t.tenantId.equals(tenantId)))
+          .write(NotificationsCompanion(readAt: Value(readAtMs)));
+
+  /// Marks every unread inbox row (own + broadcasts) as read.
+  Future<void> markAllRead(
+          String tenantId, String userId, int readAtMs) =>
+      (update(db.notifications)
+            ..where((t) =>
+                t.tenantId.equals(tenantId) &
+                (t.userId.equals(userId) | t.userId.isNull()) &
+                t.readAt.isNull()))
+          .write(NotificationsCompanion(readAt: Value(readAtMs)));
+
+  /// Clears all notification rows for one tenant (logout / tenant switch).
+  Future<void> clearTenant(String tenantId) =>
+      (delete(db.notifications)..where((t) => t.tenantId.equals(tenantId)))
+          .go();
+}
+
+@DriftAccessor(tables: [NotificationOutbox])
+class NotificationOutboxDao extends DatabaseAccessor<AppDatabase>
+    with _$NotificationOutboxDaoMixin {
+  NotificationOutboxDao(super.db);
+
+  Future<void> enqueue(NotificationOutboxCompanion entry) =>
+      into(db.notificationOutbox).insert(entry);
+
+  /// Rows due for dispatch: pending, or failed whose backoff expired.
+  Future<List<NotificationOutboxEntry>> dueRows(
+          String tenantId, int nowMs) =>
+      (select(db.notificationOutbox)
+            ..where((t) =>
+                t.tenantId.equals(tenantId) &
+                ((t.status.equals('pending')) |
+                    (t.status.equals('failed') &
+                        t.nextRetryAt.isNotNull() &
+                        t.nextRetryAt.isSmallerOrEqualValue(nowMs))))
+            ..orderBy([
+              (t) => OrderingTerm(
+                  expression: t.createdAt, mode: OrderingMode.asc)
+            ]))
+          .get();
+
+  Future<void> markSending(String id) =>
+      (update(db.notificationOutbox)..where((t) => t.id.equals(id)))
+          .write(const NotificationOutboxCompanion(status: Value('sending')));
+
+  Future<void> markSent(String id) =>
+      (update(db.notificationOutbox)..where((t) => t.id.equals(id))).write(
+          const NotificationOutboxCompanion(
+              status: Value('sent'), lastError: Value(null)));
+
+  Future<void> markSkipped(String id, String reason) =>
+      (update(db.notificationOutbox)..where((t) => t.id.equals(id))).write(
+          NotificationOutboxCompanion(
+              status: const Value('skipped'),
+              lastError: Value(reason)));
+
+  /// NULL [nextRetryAtMs] is never passed by the dispatcher — NULL means
+  /// "due now" (see dueRows); the dispatcher parks exhausted rows with a
+  /// far-future timestamp instead.
+  Future<void> markFailed(
+          String id, int attempts, int nextRetryAtMs, String error) =>
+      (update(db.notificationOutbox)..where((t) => t.id.equals(id))).write(
+          NotificationOutboxCompanion(
+              status: const Value('failed'),
+              attempts: Value(attempts),
+              nextRetryAt: Value(nextRetryAtMs),
+              lastError: Value(error)));
+
+  /// Prunes old terminal rows (sent/skipped) to bound table growth.
+  Future<void> pruneTerminal(String tenantId, int olderThanMs) =>
+      (delete(db.notificationOutbox)
+            ..where((t) =>
+                t.tenantId.equals(tenantId) &
+                t.status.isIn(['sent', 'skipped']) &
+                t.createdAt.isSmallerThanValue(olderThanMs)))
+          .go();
+
+  /// Clears all outbox rows for one tenant (logout / tenant switch).
+  Future<void> clearTenant(String tenantId) =>
+      (delete(db.notificationOutbox)
+            ..where((t) => t.tenantId.equals(tenantId)))
+          .go();
+}
+
+@DriftAccessor(tables: [NotificationPreferences])
+class NotificationPreferencesDao extends DatabaseAccessor<AppDatabase>
+    with _$NotificationPreferencesDaoMixin {
+  NotificationPreferencesDao(super.db);
+
+  /// Upsert a preference row.
+  Future<void> set(NotificationPreferencesCompanion entry) =>
+      into(db.notificationPreferences).insertOnConflictUpdate(entry);
+
+  /// Raw row, or null when the user never touched this channel
+  /// (null = ENABLED by the default-on contract).
+  Future<LocalNotificationPreference?> get(
+          String userId, String tenantId, String channel) =>
+      (select(db.notificationPreferences)
+            ..where((t) =>
+                t.userId.equals(userId) &
+                t.tenantId.equals(tenantId) &
+                t.channel.equals(channel)))
+          .getSingleOrNull();
+
+  Stream<List<LocalNotificationPreference>> watchAll(
+          String userId, String tenantId) =>
+      (select(db.notificationPreferences)
+            ..where((t) =>
+                t.userId.equals(userId) & t.tenantId.equals(tenantId)))
+          .watch();
+
+  /// Clears all preference rows for one tenant (logout / tenant switch).
+  Future<void> clearTenant(String tenantId) =>
+      (delete(db.notificationPreferences)
+            ..where((t) => t.tenantId.equals(tenantId)))
+          .go();
+}
+
+// ─────────────────────────────────────────────
 // The database itself
 // ─────────────────────────────────────────────
 
@@ -2099,6 +2387,9 @@ class SyncConflictDao extends DatabaseAccessor<AppDatabase>
     SyncQueue,
     SyncConflicts,
     SyncStates,
+    Notifications,
+    NotificationOutbox,
+    NotificationPreferences,
   ],
   daos: [
     StudentsDao,
@@ -2127,16 +2418,28 @@ class SyncConflictDao extends DatabaseAccessor<AppDatabase>
     SyncQueueDao,
     SyncStateDao,
     SyncConflictDao,
+    NotificationsDao,
+    NotificationOutboxDao,
+    NotificationPreferencesDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (m) async => m.createAll(),
+        // v1 → v2: Phase 6 notifications tables. Fresh installs get them
+        // via onCreate; existing v1 installs create just the new tables.
+        onUpgrade: (m, from, to) async {
+          if (from < 2) {
+            await m.createTable(notifications);
+            await m.createTable(notificationOutbox);
+            await m.createTable(notificationPreferences);
+          }
+        },
       );
 }

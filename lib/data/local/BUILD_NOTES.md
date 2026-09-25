@@ -145,3 +145,47 @@ there is no cross-tenant path.
 Bump `schemaVersion` and add an `onUpgrade` step in `AppDatabase.migration`
 for every future schema change — never ship a destructive recreate against
 a database that holds an unsynced queue.
+
+## 8. Phase 6 — notifications (schema v2)
+
+`schemaVersion = 2`. `onUpgrade` creates the three notification tables when
+`from < 2`. Regenerate codegen (`§2`) — `app_database.g.dart` must gain
+`LocalNotificationRow` / `NotificationOutboxEntry` /
+`LocalNotificationPreference` data classes, their companions, and the
+`_$NotificationsDaoMixin` / `_$NotificationOutboxDaoMixin` /
+`_$NotificationPreferencesDaoMixin` mixins.
+
+- `notifications` — local inbox mirror of `public.notifications` (017).
+  PK `id` (client UUID — the `send-notification` Edge Function upserts on
+  the same id); `tenant_id`; nullable `user_id` (NULL = tenant broadcast);
+  `type`, `title`, nullable `title_urdu`/`body`/`body_urdu`; `data` TEXT
+  JSON (`'{}'` default); `channel` TEXT (`'in_app'` default);
+  `read_at` / `created_at` epoch millis. Indexes: inbox
+  `(tenant_id, user_id, created_at)`, unread
+  `(tenant_id, user_id) WHERE read_at IS NULL`.
+- `notification_outbox` — per-notification/per-channel dispatch rows.
+  `status` CHECK `('pending','sending','failed','sent','skipped')`;
+  `attempts`, `next_retry_at` (NULL = due now; far-future = parked after
+  5 attempts), `last_error`, `created_at`. Indexes: due-work
+  `(tenant_id, status, next_retry_at)`, `(notification_id, channel)`.
+- `notification_preferences` — local mirror of
+  `public.notification_preferences`. PK `(user_id, tenant_id, channel)`;
+  `enabled` INTEGER 0/1; `updated_at`. Missing row = channel enabled.
+
+`NotificationsDao`: `insert`, `getById`, `listInbox`/`watchInbox` (own +
+broadcasts, newest first), `watchUnreadCount`, `markRead`, `markAllRead`
+(own + broadcasts — read state is local-only and never syncs upstream,
+so this is safe; the server freezes broadcast `read_at` via 017's
+trigger), `clearTenant`.
+`NotificationOutboxDao`: idempotent `enqueue`, `dueRows`, `markSending`
+(atomic pending→sending claim), `markSent`/`markSkipped`/`markFailed`
+(backoff 5s→40s, parked after 5 attempts), `reclaimStaleSending` (crash
+recovery), `pruneTerminal` (7 days), `clearTenant`.
+`NotificationPreferencesDao`: `set` (upsert), `get`, `watchAll`, `clear`.
+
+pubspec additions (Phase 6): `firebase_core: ^3.15.2` +
+`firebase_messaging: ^15.2.0` (SDK `>=3.2.0 <4.0.0`, verified via the
+pub.dev API 2026-09-25). Android/iOS/macOS only — no Windows/Linux
+implementation; `PushChannel.supportsPlatform()` gates every call so the
+Windows desktop build is unaffected (`flutter build windows` must still
+succeed with the plugins present but unregistered).

@@ -46,6 +46,41 @@ dependencies:
   path_provider: ^2.1.5           # Per-OS app-data dir; on Windows resolves under %APPDATA% (SDK ^3.4.0)
   path: ^1.9.0                    # join() for the database file path
 
+  # ── Reporting engine (Phase 6): offline-first PDF/CSV/XLSX ────
+  # Pinned below the 3.13 line: pdf 3.12.0 is the highest version whose
+  # SDK constraint (>=2.19.0 <4.0.0) fits this app's sdk: ^3.5.0
+  # (pdf >=3.13 needs Dart >=3.12). Verified via pub.dev API.
+  pdf: ^3.12.0                    # PDF generation (SDK >=2.19.0 <4.0.0)
+  # printing 5.14.3: highest line with SDK >=3.3.0 <4.0.0
+  # (printing >=5.15 needs Dart >=3.12). Verified via pub.dev API.
+  printing: ^5.14.3               # PDF preview / print / system share (Flutter >=3.22.0)
+  # excel 4.0.6 (latest line): pure-Dart XLSX writer,
+  # SDK >=3.0.0 <4.0.0. Verified via pub.dev API.
+  excel: ^4.0.6                   # XLSX export for tabular reports
+
+  # ── One-file offline backup (Phase 6) ───────────────────────────
+  # crypto is pure Dart (no native code, works offline after pub get).
+  # 3.0.7's SDK constraint is ^3.4.0, which intersects this app's
+  # sdk: ^3.5.0. Verified against the pub.dev API 2026-09-25.
+  # Used for SHA-256 data checksums in the backup manifest ONLY —
+  # nothing here performs encryption or key management.
+  crypto: ^3.0.7                  # SHA-256 checksums (SDK ^3.4.0)
+
+  # ── Push notifications (Phase 6) ──────────────────────────────
+  # firebase_messaging 15.2.10 (latest 15.x; pin ^15.2.0): SDK constraint
+  # >=3.2.0 <4.0.0 intersects this app's sdk: ^3.5.0 and the resolved
+  # toolchain (Dart >=3.7.0). The 16.x line (firebase_core ^4.14.0) was
+  # NOT pinned — its Dart lower bound is unverified and may exceed the
+  # team's Dart 3.7. firebase_core ^3.15.2 is what messaging 15.2.10
+  # itself depends on. Verified via the pub.dev API 2026-09-25.
+  # PLATFORM NOTE: firebase_messaging ships Android/iOS/macOS/Web only —
+  # no Windows/Linux implementation. PushChannel.supportsPlatform()
+  # gates every call, so the Windows desktop build is unaffected and
+  # push rows are marked 'skipped' there (documented no-op, never a
+  # MissingPluginException crash).
+  firebase_core: ^3.15.2             # Firebase init (Android/iOS/macOS only)
+  firebase_messaging: ^15.2.0        # FCM push (Android/iOS/macOS only)
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

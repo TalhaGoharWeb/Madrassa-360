@@ -1,1 +1,12 @@
-{"lint":{"rules":{"exclude":["no-import-prefix"]}},"tasks":{"check":"deno check provision-tenant/index.ts manage-tenant/index.ts _shared/guard.ts"}}
+{
+  "lint": {
+    "rules": {
+      "exclude": [
+        "no-import-prefix"
+      ]
+    }
+  },
+  "tasks": {
+    "check": "deno check provision-tenant/index.ts manage-tenant/index.ts export-tenant/index.ts send-notification/index.ts _shared/guard.ts"
+  }
+}

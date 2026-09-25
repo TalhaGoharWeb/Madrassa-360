@@ -39,10 +39,12 @@ for f in supabase/01_schema.sql supabase/02_rls.sql supabase/03_storage.sql \
 done
 # NOTE: 04_seed.sql is intentionally skipped — it ships mock PII.
 
-# 2. Apply the tenant migrations in order
-for f in $(ls supabase/migrations/*.sql | sort); do
+# 2. Apply the tenant migrations in order (EXCLUDING the dev-only seed)
+for f in $(ls supabase/migrations/*.sql | sort | grep -v '010_tenant_seed'); do
   psql "$STAGING_DB_URL" -v ON_ERROR_STOP=1 -f "$f"
 done
+# NOTE: 010_tenant_seed.sql is DEV/STAGING ONLY and is deliberately excluded
+# from the glob above — never apply it to production (see step 4).
 
 # 3. Verify the ledger
 psql "$STAGING_DB_URL" -c "SELECT version FROM public.schema_migrations ORDER BY version;"

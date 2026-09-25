@@ -6,9 +6,12 @@ import 'package:uuid/uuid.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../core/services/tenant_context.dart';
 import '../../../core/utils/date_utils.dart';
 import '../../../data/models/student.dart';
+import '../../../data/models/fee.dart';
 import '../../../providers/student_provider.dart';
+import '../../../providers/fee_provider.dart';
 import '../../widgets/common/app_widgets.dart';
 
 /// طلباء کی فہرست
@@ -992,11 +995,19 @@ class _StudentListScreenState extends State<StudentListScreen> {
       final d = DateTime(now.year, now.month - i, 1);
       return '${DateUtils.formatMonthName(d)} ${d.year}';
     });
+    // Parallel 'YYYY-MM' values for the DB (display names are localized).
+    final monthValues = List.generate(6, (i) {
+      final d = DateTime(now.year, now.month - i, 1);
+      return '${d.year}-${d.month.toString().padLeft(2, '0')}';
+    });
     String selectedMonth = monthOptions.first;
+    // Outer screen context — used for snackbars after the dialog is popped.
+    final screenContext = context;
 
     showDialog(
       context: context,
-      builder: (context) => StatefulBuilder(
+      builder: (dialogContext) => Consumer(
+        builder: (context, ref, _) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
           title: Text(
             '${student.name} کی فیس',
@@ -1117,20 +1128,69 @@ class _StudentListScreenState extends State<StudentListScreen> {
             child: const Text('منسوخ کریں'),
           ),
           ElevatedButton(
-            onPressed: () {
-              if (amountController.text.isNotEmpty) {
-                final amount = double.tryParse(amountController.text);
-                if (amount != null && amount > 0) {
-                  // Mock fee collection
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('ر ${amount} کی ${selectedFeeType} کامیابی سے وصول کر لی گئی'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                  Navigator.pop(context);
-                  // In a real app, this would save the fee record to database
+            onPressed: () async {
+              final amount = double.tryParse(amountController.text);
+              if (amount == null || amount <= 0) {
+                ScaffoldMessenger.of(screenContext).showSnackBar(
+                  const SnackBar(content: Text('درست رقم درج کریں')),
+                );
+                return;
+              }
+              // Phase 6 (mock purge): real collection — persists the payment
+              // through FeeNotifier (local Drift DB + sync queue). Never a
+              // fake success snackbar again.
+              final monthIdx = monthOptions.indexOf(selectedMonth);
+              final monthValue = monthValues[monthIdx < 0 ? 0 : monthIdx];
+              final fees =
+                  ref.read(feesByStudentProvider(student.id)).valueOrNull ??
+                      const <Fee>[];
+              Fee? existing;
+              for (final f in fees) {
+                if (f.month == monthValue) {
+                  existing = f;
+                  break;
                 }
+              }
+              final nowPaid = DateTime.now();
+              final todayStr =
+                  '${nowPaid.year}-${nowPaid.month.toString().padLeft(2, '0')}-${nowPaid.day.toString().padLeft(2, '0')}';
+              try {
+                final Fee record;
+                if (existing != null) {
+                  record = existing.copyWith(
+                    amountPaid: existing.amountPaid + amount,
+                    paidDate: todayStr,
+                  );
+                } else {
+                  final tenantId = ref.read(currentTenantIdProvider);
+                  if (tenantId == null) throw StateError('No active tenant');
+                  record = Fee(
+                    id: const Uuid().v4(),
+                    tenantId: tenantId,
+                    studentId: student.id,
+                    studentName: student.name,
+                    studentClass: student.className,
+                    month: monthValue,
+                    amountDue: amount,
+                    amountPaid: amount,
+                    dueDate: todayStr,
+                    paidDate: todayStr,
+                    status: FeeStatus.paid,
+                  );
+                }
+                await ref.read(feeNotifierProvider.notifier).save(record);
+                if (dialogContext.mounted) Navigator.pop(dialogContext);
+                ScaffoldMessenger.of(screenContext).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                        'ر $amount کی $selectedFeeType کامیابی سے وصول کر لی گئی'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              } catch (_) {
+                ScaffoldMessenger.of(screenContext).showSnackBar(
+                  const SnackBar(content: Text('فیس وصول کرنے میں خطا')),
+                );
               }
             },
             style: ElevatedButton.styleFrom(
@@ -1140,7 +1200,8 @@ class _StudentListScreenState extends State<StudentListScreen> {
           ),
         ],
       ),
-    ),
+        ),
+      ),
   );
   }
 }

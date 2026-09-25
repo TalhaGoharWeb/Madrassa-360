@@ -45,6 +45,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../data/local/app_database.dart';
+import '../../core/notifications/notification_triggers.dart';
 import '../../core/sync/sync_engine.dart';
 import '../models/finance.dart';
 import '../../core/services/supabase_service.dart';
@@ -554,6 +555,17 @@ class LocalFinanceRepository implements IFinanceRepository {
         fromData: InvoiceItem.fromJson,
       );
     }
+    // Local-first notification — best-effort: a notification failure must
+    // never fail the financial write.
+    try {
+      await NotificationTriggers.onFeeInvoiceCreated(
+        _db,
+        tenantId: tenantId,
+        invoiceId: invoiceId,
+        studentId: inv.studentId,
+        amount: invoice.total,
+      );
+    } catch (_) {}
     return invoice;
   }
 
@@ -625,6 +637,19 @@ class LocalFinanceRepository implements IFinanceRepository {
       tenantId: tenantId,
       to: DocStatus.posted.dbValue,
     );
+    // Local-first notification — best-effort: a notification failure must
+    // never fail the financial write.
+    try {
+      await NotificationTriggers.onPaymentReceived(
+        _db,
+        tenantId: tenantId,
+        paymentId: row.id!,
+        invoiceId: p.invoiceId,
+        studentId: p.studentId ?? '',
+        studentName: p.studentName,
+        amount: p.amount,
+      );
+    } catch (_) {}
     return Payment.fromJson(posted);
   }
 

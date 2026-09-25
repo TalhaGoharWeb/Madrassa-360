@@ -18,6 +18,9 @@ import 'finance_screen.dart';
 import '../common/announcements_screen.dart';
 import '../teacher/attendance_screen.dart';
 import '../teacher/results_screen.dart';
+import '../common/notifications_screen.dart';
+import '../reports/reports_hub_screen.dart';
+import 'backup_screen.dart';
 
 /// منتظم ڈیش بورڈ
 /// Admin Dashboard Screen with Statistics and Overview.
@@ -377,6 +380,36 @@ class AdminDashboardScreen extends StatelessWidget {
         screen: const Placeholder(), // StaffListScreen imported in outer scope
         requiredPerm: AppPermissions.viewStaff,
         module: 'staff',
+      ),
+      // Phase 6 — offline-first reporting, one-file backup, notifications
+      // inbox. Reports are tenant-module-gated; backup is a core admin
+      // function (never module-gated); the inbox follows the
+      // notifications module like announcements do.
+      _ModuleDef(
+        label: 'رپورٹس',
+        subtitle: 'رپورٹیں بنائیں اور پرنٹ کریں',
+        icon: Icons.bar_chart_outlined,
+        color: const Color(0xFF0D47A1),
+        screen: const ReportsHubScreen(),
+        requiredPerm: AppPermissions.viewReports,
+        module: 'reports',
+      ),
+      _ModuleDef(
+        label: 'بیک اپ',
+        subtitle: 'مکمل ڈیٹا ایک فائل میں',
+        icon: Icons.backup_outlined,
+        color: const Color(0xFF4E342E),
+        screen: const BackupScreen(),
+        requiredPerm: AppPermissions.manageSettings,
+      ),
+      _ModuleDef(
+        label: 'اطلاعات',
+        subtitle: 'پیغامات دیکھیں',
+        icon: Icons.notifications_outlined,
+        color: const Color(0xFF00695C),
+        screen: const NotificationsScreen(),
+        requiredPerm: AppPermissions.viewAnnouncements,
+        module: 'notifications',
       ),
     ];
 

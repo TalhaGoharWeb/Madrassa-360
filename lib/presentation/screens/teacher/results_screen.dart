@@ -30,6 +30,11 @@ class _ResultsScreenState extends State<ResultsScreen>
   /// offered — a teacher cannot filter by (or see) unassigned classes.
   String _selectedClassId = '';
 
+  /// Id of the teacher's assigned class used by the ENTRY tab ('' = none).
+  /// Phase 6 (mock purge): entry cards render the real roster of this
+  /// class — never the old hard-coded name list.
+  String _entryClassId = '';
+
   @override
   void initState() {
     super.initState();
@@ -597,48 +602,96 @@ class _ResultsScreenState extends State<ResultsScreen>
                 ),
                 const SizedBox(height: 12),
                 // Phase 4: only the teacher's assigned classes are offered.
+                // Phase 6: the selection actually drives the roster below.
                 Consumer(
                   builder: (context, ref, _) {
                     final classes = ref
                             .watch(teacherAssignedClassesProvider)
                             .valueOrNull ??
                         const <AssignedClass>[];
+                    final nameToId = <String, String>{
+                      for (final c in classes) c.name: c.id
+                    };
+                    String? selectedName;
+                    for (final c in classes) {
+                      if (c.id == _entryClassId) selectedName = c.name;
+                    }
                     return _buildDropdownField(
                       hint: 'جماعت',
                       items: classes.map((c) => c.name).toList(),
+                      value: selectedName,
+                      onChanged: (name) => setState(
+                          () => _entryClassId =
+                              name == null ? '' : (nameToId[name] ?? '')),
                     );
                   },
                 ),
                 const SizedBox(height: 12),
                 _buildDropdownField(
                   hint: 'امتحان کی قسم',
-                  items: ['ماہانہ امتحان', 'ہفتہ وار ٹیسٹ', 'سالانہ امتحان'],
+                  items: const ['ماہانہ امتحان', 'ہفتہ وار ٹیسٹ', 'سالانہ امتحان'],
                 ),
               ],
             ),
           ),
-          
+
           const SizedBox(height: 16),
-          
-          // Student Entry Cards
+
+          // Student Entry Cards — real roster of the selected class.
           Text(
             'طلباء کے نمبرات',
             style: AppTypography.titleMedium,
           ),
           const SizedBox(height: 12),
-          
-          ...List.generate(3, (index) {
-            final students = ['محمد احمد', 'عبداللہ خان', 'حافظ عمر'];
-            return _buildStudentEntryCard(students[index], '${index + 1}');
-          }),
-          
+
+          if (_entryClassId.isEmpty)
+            _buildEmptyState(
+                'براہ کرم پہلے جماعت منتخب کریں', Icons.class_outlined)
+          else
+            Consumer(
+              builder: (context, ref, _) {
+                final studentsAsync =
+                    ref.watch(teacherClassStudentsProvider(_entryClassId));
+                return studentsAsync.when(
+                  loading: () => const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(24),
+                      child: CircularProgressIndicator(),
+                    ),
+                  ),
+                  error: (_, __) => _buildEmptyState(
+                      'طلباء لوڈ کرنے میں خطا', Icons.error_outline),
+                  data: (students) => students.isEmpty
+                      ? _buildEmptyState('اس جماعت میں کوئی طالب علم نہیں',
+                          Icons.people_outline)
+                      : Column(
+                          children: [
+                            for (final s in students)
+                              _buildStudentEntryCard(s.name, s.rollNo),
+                          ],
+                        ),
+                );
+              },
+            ),
+
           const SizedBox(height: 24),
-          
+
           // Save Button
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: () {},
+              onPressed: () {
+                // Phase 6 (mock purge): marks entry has no backing Exam
+                // record yet, so persisting would be fake — be honest.
+                // TODO(phase-8): persist via ResultNotifier.save once an
+                // exam entity (examId) exists for the selected exam type.
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                        'نتائج کی مستقل محفوظ سازی امتحان ماڈیول کے ساتھ آئے گی'),
+                  ),
+                );
+              },
               icon: const Icon(Icons.save),
               label: const Text('نتائج محفوظ کریں'),
               style: ElevatedButton.styleFrom(
@@ -651,9 +704,33 @@ class _ResultsScreenState extends State<ResultsScreen>
     );
   }
 
+  /// Explicit empty state — never invented rows.
+  Widget _buildEmptyState(String message, IconData icon) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
+        child: Column(
+          children: [
+            Icon(icon,
+                size: 48, color: AppColors.textSecondary.withOpacity(0.5)),
+            const SizedBox(height: 12),
+            Text(
+              message,
+              style: AppTypography.bodyMedium
+                  .copyWith(color: AppColors.textSecondary),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildDropdownField({
     required String hint,
     required List<String> items,
+    String? value,
+    ValueChanged<String?>? onChanged,
   }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -665,6 +742,7 @@ class _ResultsScreenState extends State<ResultsScreen>
       child: DropdownButton<String>(
         isExpanded: true,
         hint: Text(hint, style: AppTypography.bodyMedium),
+        value: value,
         underline: const SizedBox(),
         items: items.map((item) {
           return DropdownMenuItem(
@@ -672,7 +750,7 @@ class _ResultsScreenState extends State<ResultsScreen>
             child: Text(item, style: AppTypography.bodyMedium),
           );
         }).toList(),
-        onChanged: (value) {},
+        onChanged: onChanged ?? (value) {},
       ),
     );
   }
@@ -896,26 +974,14 @@ class _ResultsScreenState extends State<ResultsScreen>
   }
 
   void _printResults(String type) {
-    String message;
-    switch (type) {
-      case 'all':
-        message = 'تمام طلباء کے نتائج پرنٹ ہو رہے ہیں...';
-        break;
-      case 'excellent':
-        message = 'ممتاز طلباء کے نتائج پرنٹ ہو رہے ہیں...';
-        break;
-      case 'failed':
-        message = 'ناکام طلباء کے نتائج پرنٹ ہو رہے ہیں...';
-        break;
-      default:
-        message = 'نتائج پرنٹ ہو رہے ہیں...';
-    }
-
+    // Phase 6 (mock purge): there is no print engine yet — the old code
+    // showed a fake green "printing…" snackbar. Be honest instead.
+    // TODO(phase-8): wire to a real result printer via the `printing`
+    // package once the dependency is approved.
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.green,
-        duration: const Duration(seconds: 2),
+      const SnackBar(
+        content: Text('نتائج پرنٹنگ جلد دستیاب ہوگی'),
+        duration: Duration(seconds: 2),
       ),
     );
   }

@@ -1,6 +1,5 @@
 /// Data Models Barrel Export
 export 'attendance_status.dart';
-export 'student_model.dart';
 export 'student.dart';
 export 'staff.dart';
 export 'fee.dart';

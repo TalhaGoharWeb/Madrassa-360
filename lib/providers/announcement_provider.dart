@@ -19,6 +19,7 @@ import '../core/services/tenant_context.dart';
 import '../core/sync/sync_engine.dart';
 import '../core/sync/sync_providers.dart';
 import '../data/models/announcement.dart';
+import '../core/notifications/notification_triggers.dart';
 
 class AnnouncementState {
   final List<Announcement> announcements;
@@ -111,6 +112,17 @@ class AnnouncementNotifier extends StateNotifier<AnnouncementState> {
 
       engine?.notifyLocalChange();
       unawaited(engine?.syncNow() ?? Future.value());
+
+      // Local-first notification — best-effort.
+      try {
+        await NotificationTriggers.onAnnouncementPosted(
+          db,
+          tenantId: tenantId,
+          announcementId: id,
+          title: a.title,
+          body: a.body,
+        );
+      } catch (_) {}
 
       state = state.copyWith(
         isLoading: false,
