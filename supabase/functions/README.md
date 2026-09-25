@@ -1,12 +1,14 @@
 # Madrassa-360 Platform (Master-Admin) Edge Functions
 
-Two Deno Edge Functions that only **platform admins** can call. They implement
-tenant lifecycle management for the multi-tenant SaaS:
+Three Deno Edge Functions for privileged platform operations. `provision-tenant`
+and `manage-tenant` are platform-admin only; `manage-users` additionally serves
+tenant owners/admins scoped to the tenants they administer.
 
 | Function | Route | Purpose |
 |---|---|---|
 | `provision-tenant` | `POST /functions/v1/provision-tenant` | Create a complete tenant: `tenants` row → `tenant_settings` update → `tenant_modules` → `tenant_subscriptions` + `licenses` → auth user (`tenant_owner`) → `tenant_membership` → `audit_logs`. Compensating cleanup on failure. |
 | `manage-tenant` | `POST /functions/v1/manage-tenant` | `suspend` / `reactivate` / `archive` a tenant (flips `tenants.status`, writes `audit_logs`). Archive never deletes data. |
+| `manage-users` | `POST /functions/v1/manage-users` | Privileged user management: `create_user` / `update_user` / `set_active` / `delete_user` (Auth Admin API) + `assign_membership` / `remove_membership` / `list_users` + `set_platform_role`. Platform admins unrestricted (only a platform_owner may grant platform roles); tenant owners/admins scoped to their own tenants, role assignment capped at their own rank, last-owner protected. Every mutation writes `audit_logs`. |
 
 Shared code (CORS, JWT → platform-admin guard, input validators) lives in
 `_shared/guard.ts`. Nothing in `supabase/functions/` may hardcode keys — secrets
@@ -50,13 +52,14 @@ if either is missing.
 cd ~/workspace/madrassa-360            # repo root
 supabase functions deploy provision-tenant
 supabase functions deploy manage-tenant
+supabase functions deploy manage-users
 supabase functions deploy export-tenant
 ```
 
 Or both at once:
 
 ```bash
-supabase functions deploy provision-tenant manage-tenant export-tenant
+supabase functions deploy provision-tenant manage-tenant manage-users export-tenant
 ```
 
 ## Type-check
@@ -141,6 +144,31 @@ Success: **200** `{ "tenant_id": "<uuid>", "status": "suspended", "changed": tru
 
 Unknown tenant → **404**; non-platform-admin caller → **403**; missing/bad
 token → **401**.
+
+### POST /functions/v1/manage-users
+
+Headers: `Authorization: Bearer <JWT>`, `Content-Type: application/json`.
+Caller: a `platform_admins` row, or an active `tenant_owner`/`tenant_admin`
+membership (tenant callers are scoped to the tenants they administer).
+
+Body: `{ "action": "<action>", ...action fields }`
+
+| action | fields | notes |
+|---|---|---|
+| `create_user` | `email`, `password` (≥6), `user_metadata?`, `app_metadata?`, `tenant_id?`+`role?` | Creates the Auth user (email confirmed), optionally adds a `tenant_membership`. Rolls back the Auth user if the membership insert fails. Returns `{ id, user_id, email }` — never the password. |
+| `update_user` | `user_id`, `email?`, `password?`, `user_metadata?`, `app_metadata?` | |
+| `set_active` | `user_id`, `active` | Deactivate = long ban; refuses to strand a tenant without an owner. |
+| `delete_user` | `user_id` | Refuses the last platform admin and a tenant's last owner. Memberships cascade. |
+| `assign_membership` | `user_id`, `tenant_id`, `role` | `role` must be a valid tenant role; tenant callers cannot assign above their own rank. |
+| `remove_membership` | `user_id`, `tenant_id` | Refuses to remove a tenant's last active owner. |
+| `list_users` | `tenant_id?`, `search?`, `limit?`, `offset?` | Scoped listing with each user's tenant memberships. |
+| `set_platform_role` | `user_id`, `role` (`platform_owner`\|`platform_support`\|`null`) | Platform-owner only; refuses to remove the last platform admin. |
+
+Tenant callers can never touch `platform_admins` rows, never assign platform
+roles, and never manage users outside their tenants. Every mutating action
+writes an `audit_logs` entry (`manage-users.<action>`); passwords are never
+logged or returned. The Flutter `UserManagementNotifier` already invokes
+`create_user`/`delete_user` with exactly these shapes.
 
 ## How the Flutter app invokes them
 
