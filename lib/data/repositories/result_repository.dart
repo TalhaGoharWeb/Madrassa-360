@@ -23,7 +23,7 @@ import 'dart:async';
 
 import 'package:drift/drift.dart';
 
-import '../../data/local/app_database.dart';
+import '../../data/local/app_database.dart' hide SyncQueue;
 import '../../core/sync/sync_engine.dart';
 import '../models/result.dart';
 
@@ -79,8 +79,7 @@ class LocalResultRepository implements IResultRepository {
   Future<Exam?> getExamById(String id, {required String tenantId}) async {
     final row = await LocalRows.byId(_db, 'exams', tenantId, id);
     if (row == null) return null;
-    return Exam.fromJson(
-        (row['_data'] as Map<String, dynamic>?) ?? const {});
+    return Exam.fromJson((row['_data'] as Map<String, dynamic>?) ?? const {});
   }
 
   @override
@@ -105,8 +104,7 @@ class LocalResultRepository implements IResultRepository {
 
     final Map<String, List<Map<String, dynamic>>> grouped = {};
     for (final row in rows) {
-      final payload =
-          (row['_data'] as Map<String, dynamic>?) ?? const {};
+      final payload = (row['_data'] as Map<String, dynamic>?) ?? const {};
       final sid = (payload['student_id'] ?? '') as String;
       grouped.putIfAbsent(sid, () => []).add({
         ...payload,
@@ -158,11 +156,10 @@ class LocalResultRepository implements IResultRepository {
   Future<SubjectResult> upsertResult(SubjectResult result,
       {required String tenantId}) async {
     final nowIso = DateTime.now().toUtc().toIso8601String();
-    final exists = await SyncQueue.rowExists(
-        _db, 'results', tenantId, result.id);
+    final exists =
+        await SyncQueue.rowExists(_db, 'results', tenantId, result.id);
     final baseRev = exists
-        ? await SyncQueue.currentRevision(
-            _db, 'results', tenantId, result.id)
+        ? await SyncQueue.currentRevision(_db, 'results', tenantId, result.id)
         : 0;
 
     // Server-shaped payload kept in the envelope's data JSON and queued.

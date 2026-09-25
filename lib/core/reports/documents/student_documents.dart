@@ -14,7 +14,6 @@ import 'package:pdf/widgets.dart' as pw;
 import '../data/report_models.dart';
 import '../pdf_kit.dart';
 import '../report_context.dart';
-import '../urdu_pdf.dart';
 import 'document_helpers.dart';
 
 class StudentDocuments {
@@ -43,12 +42,9 @@ class StudentDocuments {
               pw.Expanded(
                 child: pw.Column(children: [
                   await fieldRow(s, 'نام', student.name),
-                  await fieldRow(
-                      s, 'ولدیت', student.fatherName),
-                  await fieldRow(s, 'تاریخ پیدائش',
-                      student.dateOfBirth),
-                  await fieldRow(s, 'تاریخ داخلہ',
-                      student.dateOfAdmit),
+                  await fieldRow(s, 'ولدیت', student.fatherName),
+                  await fieldRow(s, 'تاریخ پیدائش', student.dateOfBirth),
+                  await fieldRow(s, 'تاریخ داخلہ', student.dateOfAdmit),
                 ]),
               ),
               pw.SizedBox(width: 16),
@@ -59,8 +55,7 @@ class StudentDocuments {
                     border: pw.Border.all(color: PdfBuildScope.line)),
                 child: pw.Center(
                   child: await s.u('تصویر',
-                      size: 10,
-                      color: const Color(0xFF9E9E9E)),
+                      size: 10, color: const Color(0xFF9E9E9E)),
                 ),
               ),
             ],
@@ -94,11 +89,10 @@ class StudentDocuments {
     final student = await ctx.data
         .studentById(ctx.params.tenantId, ctx.params.studentId ?? '');
     if (student == null) {
-      return _missingStudent(
-          ctx, 'طالب علم کا شناختی کارڈ', 'Student ID Card');
+      return _missingStudent(ctx, 'طالب علم کا شناختی کارڈ', 'Student ID Card');
     }
     // CR80: 85.60 × 53.98 mm → points.
-    final card = const PdfPageFormat(242.65, 153.0);
+    const card = PdfPageFormat(242.65, 153.0);
     return PdfKit.build(
       branding: ctx.branding,
       urdu: ctx.urdu,
@@ -108,12 +102,11 @@ class StudentDocuments {
       margin: const pw.EdgeInsets.all(8),
       bare: true,
       body: (s) async {
-        final white = const Color(0xFFFFFFFF);
+        const white = Color(0xFFFFFFFF);
         return [
           // Brand band.
           pw.Container(
-            padding: const pw.EdgeInsets.symmetric(
-                horizontal: 8, vertical: 5),
+            padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 5),
             decoration: pw.BoxDecoration(color: s.primary),
             child: pw.Row(
               children: [
@@ -134,8 +127,7 @@ class StudentDocuments {
                     align: ui.TextAlign.left,
                   ),
                 ),
-                await s.u('شناختی کارڈ',
-                    size: 10, bold: true, color: white),
+                await s.u('شناختی کارڈ', size: 10, bold: true, color: white),
               ],
             ),
           ),
@@ -159,12 +151,9 @@ class StudentDocuments {
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
                     await _idLine(s, 'نام', student.name),
-                    await _idLine(s, 'ولدیت',
-                        student.fatherName ?? '—'),
-                    await _idLine(s, 'رول نمبر',
-                        student.rollNo ?? '—'),
-                    await _idLine(s, 'جماعت',
-                        student.className ?? '—'),
+                    await _idLine(s, 'ولدیت', student.fatherName ?? '—'),
+                    await _idLine(s, 'رول نمبر', student.rollNo ?? '—'),
+                    await _idLine(s, 'جماعت', student.className ?? '—'),
                   ],
                 ),
               ),
@@ -176,9 +165,7 @@ class StudentDocuments {
             decoration: pw.BoxDecoration(color: s.primary),
             child: pw.Center(
               child: s.e(
-                ctx.branding.contactLine
-                        ?.replaceAll('فون: ', 'Ph: ') ??
-                    '',
+                ctx.branding.contactLine?.replaceAll('فون: ', 'Ph: ') ?? '',
                 size: 7,
                 color: PdfColors.white,
               ),
@@ -195,8 +182,7 @@ class StudentDocuments {
     final student = await ctx.data
         .studentById(ctx.params.tenantId, ctx.params.studentId ?? '');
     if (student == null) {
-      return _missingStudent(
-          ctx, 'کردار سرٹیفکیٹ', 'Character Certificate');
+      return _missingStudent(ctx, 'کردار سرٹیفکیٹ', 'Character Certificate');
     }
     return PdfKit.build(
       branding: ctx.branding,
@@ -226,12 +212,9 @@ class StudentDocuments {
           pw.Row(
             children: [
               pw.Expanded(
-                  child: await fieldRow(
-                      s, 'داخلہ نمبر', student.rollNo)),
+                  child: await fieldRow(s, 'داخلہ نمبر', student.rollNo)),
               pw.SizedBox(width: 16),
-              pw.Expanded(
-                  child: await fieldRow(
-                      s, 'تاریخ اجراء', todayIso())),
+              pw.Expanded(child: await fieldRow(s, 'تاریخ اجراء', todayIso())),
             ],
           ),
           pw.SizedBox(height: 30),
@@ -254,14 +237,13 @@ class StudentDocuments {
     final student = await ctx.data
         .studentById(ctx.params.tenantId, ctx.params.studentId ?? '');
     if (student == null) {
-      return _missingStudent(
-          ctx, 'منتقلی سرٹیفکیٹ', 'Transfer Certificate');
+      return _missingStudent(ctx, 'منتقلی سرٹیفکیٹ', 'Transfer Certificate');
     }
     final dues = await ctx.data
         .invoices(ctx.params.tenantId, studentId: student.id)
         .then((invoices) async {
-      final payments = await ctx.data
-          .payments(ctx.params.tenantId, studentId: student.id);
+      final payments =
+          await ctx.data.payments(ctx.params.tenantId, studentId: student.id);
       var billed = 0.0, paid = 0.0;
       for (final i in invoices) {
         billed += i.total;
@@ -299,11 +281,12 @@ class StudentDocuments {
           await fieldRow(
             s,
             'واجبات (بمطابق مقامی ریکارڈ)',
-            dues > 0.5 ? 'روپے ${fmtMoney(dues)} واجب الادا' : 'کوئی واجب الادا نہیں',
+            dues > 0.5
+                ? 'روپے ${fmtMoney(dues)} واجب الادا'
+                : 'کوئی واجب الادا نہیں',
           ),
           pw.SizedBox(height: 28),
-          await s.signatureRow(
-              ['دستخط کلاس انچارج', 'دستخط پرنسپل مع مہر']),
+          await s.signatureRow(['دستخط کلاس انچارج', 'دستخط پرنسپل مع مہر']),
         ];
       },
     );

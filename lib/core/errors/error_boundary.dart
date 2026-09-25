@@ -115,8 +115,8 @@ class ErrorBoundary {
         ? handleError(error, stackTrace, ref, localeCode: localeCode)
         : handleErrorSimple(error, stackTrace ?? StackTrace.current,
             localeCode: localeCode);
-    final dialogTitle =
-        title ?? (localeCode.toLowerCase().startsWith('en') ? 'Error' : 'خرابی');
+    final dialogTitle = title ??
+        (localeCode.toLowerCase().startsWith('en') ? 'Error' : 'خرابی');
     final okLabel =
         localeCode.toLowerCase().startsWith('en') ? 'OK' : 'ٹھیک ہے';
     return showDialog<void>(
@@ -142,8 +142,7 @@ class ErrorBoundary {
     String? tag,
     required String localeCode,
   }) {
-    final ex =
-        error is AppException ? error : AppException.fromSupabase(error);
+    final ex = error is AppException ? error : AppException.fromSupabase(error);
 
     // Technical details go ONLY to the log. The user message returned
     // below contains no diagnostics.

@@ -13,7 +13,7 @@ class StorageService {
     try {
       _prefs = await SharedPreferences.getInstance();
     } catch (e) {
-      throw StorageException('ذخیرہ شروع کرنے میں خرابی');
+      throw StorageException(userMessageUr: 'ذخیرہ شروع کرنے میں خرابی');
     }
   }
 
@@ -23,7 +23,7 @@ class StorageService {
       await _ensureInitialized();
       await _prefs!.setString(key, value);
     } catch (e) {
-      throw StorageException('ڈیٹا محفوظ کرنے میں خرابی');
+      throw StorageException(userMessageUr: 'ڈیٹا محفوظ کرنے میں خرابی');
     }
   }
 
@@ -43,7 +43,7 @@ class StorageService {
       await _ensureInitialized();
       await _prefs!.setInt(key, value);
     } catch (e) {
-      throw StorageException('ڈیٹا محفوظ کرنے میں خرابی');
+      throw StorageException(userMessageUr: 'ڈیٹا محفوظ کرنے میں خرابی');
     }
   }
 
@@ -63,7 +63,7 @@ class StorageService {
       await _ensureInitialized();
       await _prefs!.setBool(key, value);
     } catch (e) {
-      throw StorageException('ڈیٹا محفوظ کرنے میں خرابی');
+      throw StorageException(userMessageUr: 'ڈیٹا محفوظ کرنے میں خرابی');
     }
   }
 
@@ -83,7 +83,7 @@ class StorageService {
       await _ensureInitialized();
       await _prefs!.setDouble(key, value);
     } catch (e) {
-      throw StorageException('ڈیٹا محفوظ کرنے میں خرابی');
+      throw StorageException(userMessageUr: 'ڈیٹا محفوظ کرنے میں خرابی');
     }
   }
 
@@ -104,7 +104,7 @@ class StorageService {
       final jsonString = json.encode(value);
       await _prefs!.setString(key, jsonString);
     } catch (e) {
-      throw StorageException('ڈیٹا محفوظ کرنے میں خرابی');
+      throw StorageException(userMessageUr: 'ڈیٹا محفوظ کرنے میں خرابی');
     }
   }
 
@@ -126,7 +126,7 @@ class StorageService {
       await _ensureInitialized();
       await _prefs!.setStringList(key, value);
     } catch (e) {
-      throw StorageException('ڈیٹا محفوظ کرنے میں خرابی');
+      throw StorageException(userMessageUr: 'ڈیٹا محفوظ کرنے میں خرابی');
     }
   }
 
@@ -146,7 +146,7 @@ class StorageService {
       await _ensureInitialized();
       await _prefs!.remove(key);
     } catch (e) {
-      throw StorageException('ڈیٹا حذف کرنے میں خرابی');
+      throw StorageException(userMessageUr: 'ڈیٹا حذف کرنے میں خرابی');
     }
   }
 
@@ -156,7 +156,7 @@ class StorageService {
       await _ensureInitialized();
       await _prefs!.clear();
     } catch (e) {
-      throw StorageException('ڈیٹا صاف کرنے میں خرابی');
+      throw StorageException(userMessageUr: 'ڈیٹا صاف کرنے میں خرابی');
     }
   }
 
@@ -190,7 +190,7 @@ class StorageService {
   /// Ensure SharedPreferences is initialized (sync)
   static void _ensureInitializedSync() {
     if (_prefs == null) {
-      throw StorageException('ذخیرہ ابھی تک شروع نہیں ہوا');
+      throw StorageException(userMessageUr: 'ذخیرہ ابھی تک شروع نہیں ہوا');
     }
   }
 }

@@ -125,10 +125,13 @@ class UpdateService {
           .maybeSingle()
           .timeout(const Duration(seconds: 10));
 
-      if (row == null) return const UpdateCheckResult(decision: UpdateDecision.unknown);
+      if (row == null) {
+        return const UpdateCheckResult(decision: UpdateDecision.unknown);
+      }
 
       final latest = (row['latest_version'] as String?)?.trim() ?? '';
-      final minimum = (row['minimum_supported_version'] as String?)?.trim() ?? '';
+      final minimum =
+          (row['minimum_supported_version'] as String?)?.trim() ?? '';
       if (latest.isEmpty || minimum.isEmpty) {
         return const UpdateCheckResult(decision: UpdateDecision.unknown);
       }
@@ -141,8 +144,9 @@ class UpdateService {
 
       final forced = compareSemver(local, minimum) < 0;
       return UpdateCheckResult(
-        decision:
-            forced ? UpdateDecision.forcedUpdate : UpdateDecision.optionalUpdate,
+        decision: forced
+            ? UpdateDecision.forcedUpdate
+            : UpdateDecision.optionalUpdate,
         latestVersion: latest,
         minimumVersion: minimum,
         downloadUrl: (row['download_url'] as String?)?.trim(),
@@ -392,7 +396,8 @@ class ForcedUpdateScreen extends ConsumerWidget {
                       const SizedBox(height: 24),
                       FilledButton.icon(
                         icon: const Icon(Icons.download),
-                        label: const Text('اپ ڈیٹ ڈاؤن لوڈ کریں / Download update'),
+                        label: const Text(
+                            'اپ ڈیٹ ڈاؤن لوڈ کریں / Download update'),
                         onPressed: () async {
                           final ok = await ref
                               .read(updateServiceProvider)

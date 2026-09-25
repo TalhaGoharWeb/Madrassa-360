@@ -186,11 +186,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
     } on AppException catch (e, st) {
       // Phase 7: classify (already typed) + log + health counter via the
       // error boundary; the returned message is the same safe Urdu string.
-      final message = ErrorBoundary.handleError(e, st, ref, tag: 'auth/login');
+      final message = ErrorBoundary.handleErrorSimple(e, st, tag: 'auth/login');
       state = AuthState.error(message);
       return false;
     } catch (e, st) {
-      final message = ErrorBoundary.handleError(e, st, ref, tag: 'auth/login');
+      final message = ErrorBoundary.handleErrorSimple(e, st, tag: 'auth/login');
       state = AuthState.error(message);
       return false;
     }
@@ -204,7 +204,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     try {
       await _repo.signOut();
     } catch (e, st) {
-      ErrorBoundary.handleError(e, st, ref, tag: 'auth/logout');
+      ErrorBoundary.handleErrorSimple(e, st, tag: 'auth/logout');
     } finally {
       // SIGNED_OUT event will also fire; _handleSignedOut is idempotent.
       await _handleSignedOut();
@@ -259,7 +259,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
         // Tenant wiring must not fail the login itself (e.g. flaky network):
         // fall back to any previously restored active tenant below.
         tenantLoadOk = false;
-        ErrorBoundary.handleError(e, st, ref, tag: 'auth/tenant-wiring');
+        ErrorBoundary.handleErrorSimple(e, st, tag: 'auth/tenant-wiring');
       }
 
       final route = _resolveRoute(
@@ -276,7 +276,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       );
     } catch (e, st) {
       final message =
-          ErrorBoundary.handleError(e, st, ref, tag: 'auth/session-load');
+          ErrorBoundary.handleErrorSimple(e, st, tag: 'auth/session-load');
       state = AuthState.error(message);
     }
   }
@@ -301,7 +301,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
         permissions: perms,
       );
     } catch (e, st) {
-      ErrorBoundary.handleError(e, st, ref, tag: 'auth/session-refresh');
+      ErrorBoundary.handleErrorSimple(e, st, tag: 'auth/session-refresh');
       // Keep the existing state — a transient refresh failure must not
       // log the user out; a truly dead session arrives as SIGNED_OUT.
     }
@@ -313,7 +313,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       _ref.invalidate(tenantMembershipsProvider);
       await _ref.read(activeTenantIdProvider.notifier).clear();
     } catch (e, st) {
-      ErrorBoundary.handleError(e, st, ref, tag: 'auth/signout-cleanup');
+      ErrorBoundary.handleErrorSimple(e, st, tag: 'auth/signout-cleanup');
     }
     state = AuthState.unauthenticated();
   }
@@ -334,7 +334,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
       }
       return AuthRoute.noAccess;
     }
-    if (memberships.length == 1) return AuthRoute.home; // auto-selected by init()
+    if (memberships.length == 1) {
+      return AuthRoute.home; // auto-selected by init()
+    }
     return AuthRoute.tenantPicker;
   }
 
@@ -349,7 +351,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
           .maybeSingle();
       return row != null;
     } catch (e, st) {
-      ErrorBoundary.handleError(e, st, ref, tag: 'auth/platform-admin-check');
+      ErrorBoundary.handleErrorSimple(e, st, tag: 'auth/platform-admin-check');
       return false;
     }
   }

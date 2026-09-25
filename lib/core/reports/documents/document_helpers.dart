@@ -32,8 +32,7 @@ Future<pw.Widget> fieldRow(
             padding: const pw.EdgeInsets.only(bottom: 3, left: 4),
             decoration: pw.BoxDecoration(
               border: pw.Border(
-                bottom: pw.BorderSide(
-                    color: PdfBuildScope.line, width: 0.8),
+                bottom: pw.BorderSide(color: PdfBuildScope.line, width: 0.8),
               ),
             ),
             child: pw.Align(

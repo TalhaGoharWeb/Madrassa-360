@@ -4,7 +4,6 @@
 import 'data/report_data.dart';
 import 'report_branding.dart';
 import 'report_params.dart';
-import 'report_catalog.dart';
 import 'urdu_pdf.dart';
 
 /// Everything a report builder needs: offline data, branding, the Urdu

@@ -37,8 +37,7 @@ class EmailChannel extends NotificationChannel {
   bool supportsPlatform() => true;
 
   @override
-  Future<ChannelDispatchResult> send(
-      LocalNotificationRow notification) async {
+  Future<ChannelDispatchResult> send(LocalNotificationRow notification) async {
     try {
       final res = await SupabaseService.client.functions.invoke(
         'send-notification',
@@ -62,8 +61,7 @@ class EmailChannel extends NotificationChannel {
   }
 
   @override
-  Future<void> queue(
-      AppDatabase db, LocalNotificationRow notification) {
+  Future<void> queue(AppDatabase db, LocalNotificationRow notification) {
     return NotificationOutboxStore.enqueue(
       db,
       tenantId: notification.tenantId,

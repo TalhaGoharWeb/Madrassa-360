@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide DateUtils;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
@@ -73,30 +73,32 @@ class _FeeManagementScreenState extends State<FeeManagementScreen>
 
   Widget _buildFeeListTab() {
     return Consumer(builder: (context, ref, _) {
-    final feeAsync = ref.watch(allFeesProvider);
-    final feeRecords = feeAsync.valueOrNull ?? [];
+      final feeAsync = ref.watch(allFeesProvider);
+      final feeRecords = feeAsync.valueOrNull ?? [];
 
-    if (feeAsync.isLoading) return const Center(child: CircularProgressIndicator());
-    if (feeAsync.hasError) {
-      return Center(
-        child: Text('فیس لوڈ کرنے میں خطا', style: AppTypography.bodyMedium),
+      if (feeAsync.isLoading) {
+        return const Center(child: CircularProgressIndicator());
+      }
+      if (feeAsync.hasError) {
+        return Center(
+          child: Text('فیس لوڈ کرنے میں خطا', style: AppTypography.bodyMedium),
+        );
+      }
+
+      return Column(
+        children: [
+          // Summary Cards
+          _buildFeeSummary(feeRecords),
+
+          // Filter Chips
+          _buildStatusFilter(),
+
+          // Fee List
+          Expanded(
+            child: _buildFeeList(feeRecords),
+          ),
+        ],
       );
-    }
-
-    return Column(
-      children: [
-        // Summary Cards
-        _buildFeeSummary(feeRecords),
-
-        // Filter Chips
-        _buildStatusFilter(),
-
-        // Fee List
-        Expanded(
-          child: _buildFeeList(feeRecords),
-        ),
-      ],
-    );
     });
   }
 
@@ -107,7 +109,7 @@ class _FeeManagementScreenState extends State<FeeManagementScreen>
     final pending = records
         .where((r) => r.status != FeeStatus.paid)
         .fold<double>(0, (sum, r) => sum + r.remaining);
-    
+
     return Container(
       margin: const EdgeInsets.all(16),
       child: Row(
@@ -134,7 +136,8 @@ class _FeeManagementScreenState extends State<FeeManagementScreen>
             child: _buildSummaryCard(
               icon: Icons.warning,
               label: 'واجب الادا',
-              value: '${records.where((r) => r.status == FeeStatus.pastDue).length}',
+              value:
+                  '${records.where((r) => r.status == FeeStatus.pastDue).length}',
               color: AppColors.error,
             ),
           ),
@@ -152,9 +155,9 @@ class _FeeManagementScreenState extends State<FeeManagementScreen>
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.2)),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Column(
         children: [
@@ -194,7 +197,7 @@ class _FeeManagementScreenState extends State<FeeManagementScreen>
           final status = statuses[index];
           final isSelected = _selectedStatus == status['id'];
           final color = status['color'] as Color;
-          
+
           return Padding(
             padding: const EdgeInsets.only(left: 8),
             child: FilterChip(
@@ -203,7 +206,7 @@ class _FeeManagementScreenState extends State<FeeManagementScreen>
               onSelected: (selected) {
                 setState(() => _selectedStatus = status['id'] as String);
               },
-              selectedColor: color.withOpacity(0.2),
+              selectedColor: color.withValues(alpha: 0.2),
               checkmarkColor: color,
               labelStyle: AppTypography.labelMedium.copyWith(
                 color: isSelected ? color : AppColors.textSecondary,
@@ -217,7 +220,7 @@ class _FeeManagementScreenState extends State<FeeManagementScreen>
 
   Widget _buildFeeList(List<Fee> records) {
     var filteredRecords = records;
-    
+
     if (_selectedStatus != 'all') {
       final status = FeeStatus.values.firstWhere(
         (s) => s.name == _selectedStatus,
@@ -256,7 +259,7 @@ class _FeeManagementScreenState extends State<FeeManagementScreen>
             width: 50,
             height: 50,
             decoration: BoxDecoration(
-              color: _getStatusColor(record.status).withOpacity(0.1),
+              color: _getStatusColor(record.status).withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
@@ -265,7 +268,7 @@ class _FeeManagementScreenState extends State<FeeManagementScreen>
             ),
           ),
           const SizedBox(width: 12),
-          
+
           // Info
           Expanded(
             child: Column(
@@ -297,7 +300,7 @@ class _FeeManagementScreenState extends State<FeeManagementScreen>
               ],
             ),
           ),
-          
+
           // Status Badge
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
@@ -322,7 +325,7 @@ class _FeeManagementScreenState extends State<FeeManagementScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: _getStatusColor(status).withOpacity(0.1),
+        color: _getStatusColor(status).withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
@@ -366,122 +369,122 @@ class _FeeManagementScreenState extends State<FeeManagementScreen>
   /// names, amounts or "12%+" trends.
   Widget _buildCollectionTab() {
     return Consumer(builder: (context, ref, _) {
-    final feeAsync = ref.watch(allFeesProvider);
-    final records = feeAsync.valueOrNull ?? [];
-    final paid = records
-        .where((r) => r.status == FeeStatus.paid)
-        .toList()
-      ..sort((a, b) => (b.paidDate ?? '').compareTo(a.paidDate ?? ''));
+      final feeAsync = ref.watch(allFeesProvider);
+      final records = feeAsync.valueOrNull ?? [];
+      final paid = records.where((r) => r.status == FeeStatus.paid).toList()
+        ..sort((a, b) => (b.paidDate ?? '').compareTo(a.paidDate ?? ''));
 
-    final now = DateTime.now();
-    final todayStr =
-        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-    final todayPaid = paid.where((r) => r.paidDate == todayStr).toList();
-    final todayTotal =
-        todayPaid.fold<double>(0, (sum, r) => sum + r.amountPaid);
+      final now = DateTime.now();
+      final todayStr =
+          '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+      final todayPaid = paid.where((r) => r.paidDate == todayStr).toList();
+      final todayTotal =
+          todayPaid.fold<double>(0, (sum, r) => sum + r.amountPaid);
 
-    if (feeAsync.isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    if (feeAsync.hasError) {
-      return Center(
-        child: Text('فیس لوڈ کرنے میں خطا', style: AppTypography.bodyMedium),
-      );
-    }
+      if (feeAsync.isLoading) {
+        return const Center(child: CircularProgressIndicator());
+      }
+      if (feeAsync.hasError) {
+        return Center(
+          child: Text('فیس لوڈ کرنے میں خطا', style: AppTypography.bodyMedium),
+        );
+      }
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          // Collection Stats — real tenant data
-          AppCard(
-            gradient: const LinearGradient(
-              colors: [AppColors.primary, AppColors.primaryDark],
-              begin: Alignment.topRight,
-              end: Alignment.bottomLeft,
-            ),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.account_balance_wallet, color: Colors.white, size: 32),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'آج کی وصولی',
-                            style: AppTypography.labelMedium.copyWith(
-                              color: Colors.white70,
+      return SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            // Collection Stats — real tenant data
+            AppCard(
+              gradient: const LinearGradient(
+                colors: [AppColors.primary, AppColors.primaryDark],
+                begin: Alignment.topRight,
+                end: Alignment.bottomLeft,
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.account_balance_wallet,
+                          color: Colors.white, size: 32),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'آج کی وصولی',
+                              style: AppTypography.labelMedium.copyWith(
+                                color: Colors.white70,
+                              ),
                             ),
-                          ),
-                          Text(
-                            '${formatPK(todayTotal)} روپے',
-                            style: AppTypography.headingMedium.copyWith(
-                              color: Colors.white,
+                            Text(
+                              '${formatPK(todayTotal)} روپے',
+                              style: AppTypography.headingMedium.copyWith(
+                                color: Colors.white,
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        '${DateUtils.formatMonthName(now)} ${now.year}',
-                        style: AppTypography.labelMedium.copyWith(
-                          color: Colors.white,
+                          ],
                         ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                const Divider(color: Colors.white24),
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildCollectionStat('${paid.length}', 'رسیدیں'),
-                    _buildCollectionStat('${todayPaid.length}', 'آج'),
-                  ],
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          // Recent Collections — the tenant's real paid fees, newest first
-          const SectionHeader(
-            title: 'حالیہ وصولی',
-            actionText: 'سب دیکھیں',
-          ),
-
-          if (paid.isEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 24),
-              child: Text(
-                'ابھی کوئی وصولی درج نہیں',
-                style: AppTypography.bodyMedium.copyWith(
-                  color: AppColors.textSecondary,
-                ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          '${DateUtils.formatMonthName(now)} ${now.year}',
+                          style: AppTypography.labelMedium.copyWith(
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  const Divider(color: Colors.white24),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildCollectionStat('${paid.length}', 'رسیدیں'),
+                      _buildCollectionStat('${todayPaid.length}', 'آج'),
+                    ],
+                  ),
+                ],
               ),
-            )
-          else
-            ...paid.take(5).map((r) => _buildCollectionItem(
-                  name: r.studentName,
-                  amount: formatPK(r.amountPaid),
-                  time: _paidTimeLabel(r),
-                  method: _monthLabel(r.month),
-                )),
-        ],
-      ),
-    );
+            ),
+
+            const SizedBox(height: 16),
+
+            // Recent Collections — the tenant's real paid fees, newest first
+            const SectionHeader(
+              title: 'حالیہ وصولی',
+              actionText: 'سب دیکھیں',
+            ),
+
+            if (paid.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24),
+                child: Text(
+                  'ابھی کوئی وصولی درج نہیں',
+                  style: AppTypography.bodyMedium.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              )
+            else
+              ...paid.take(5).map((r) => _buildCollectionItem(
+                    name: r.studentName,
+                    amount: formatPK(r.amountPaid),
+                    time: _paidTimeLabel(r),
+                    method: _monthLabel(r.month),
+                  )),
+          ],
+        ),
+      );
     });
   }
 
@@ -535,7 +538,7 @@ class _FeeManagementScreenState extends State<FeeManagementScreen>
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: AppColors.success.withOpacity(0.1),
+              color: AppColors.success.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10),
             ),
             child: const Icon(
@@ -553,17 +556,20 @@ class _FeeManagementScreenState extends State<FeeManagementScreen>
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
                         color: method == 'نقد'
-                            ? AppColors.success.withOpacity(0.1)
-                            : AppColors.info.withOpacity(0.1),
+                            ? AppColors.success.withValues(alpha: 0.1)
+                            : AppColors.info.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
                         method,
                         style: AppTypography.labelSmall.copyWith(
-                          color: method == 'نقد' ? AppColors.success : AppColors.info,
+                          color: method == 'نقد'
+                              ? AppColors.success
+                              : AppColors.info,
                         ),
                       ),
                     ),
@@ -614,14 +620,15 @@ class _FeeManagementScreenState extends State<FeeManagementScreen>
                     ),
                   ),
                   const SizedBox(height: 24),
-                  
+
                   // Header
                   Row(
                     children: [
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: _getStatusColor(record.status).withOpacity(0.1),
+                          color: _getStatusColor(record.status)
+                              .withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Icon(
@@ -635,7 +642,8 @@ class _FeeManagementScreenState extends State<FeeManagementScreen>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(record.studentName, style: AppTypography.headingSmall),
+                            Text(record.studentName,
+                                style: AppTypography.headingSmall),
                             Text(
                               '${record.studentClass} - ${record.month}',
                               style: AppTypography.bodyMedium.copyWith(
@@ -647,10 +655,10 @@ class _FeeManagementScreenState extends State<FeeManagementScreen>
                       ),
                     ],
                   ),
-                  
+
                   const SizedBox(height: 24),
                   const Divider(),
-                  
+
                   // Fee Details
                   InfoTile(
                     icon: Icons.payments,
@@ -667,7 +675,9 @@ class _FeeManagementScreenState extends State<FeeManagementScreen>
                     icon: Icons.pending,
                     label: 'باقی رقم',
                     value: '${record.remaining.toInt()} روپے',
-                    iconColor: record.remaining > 0 ? AppColors.error : AppColors.success,
+                    iconColor: record.remaining > 0
+                        ? AppColors.error
+                        : AppColors.success,
                   ),
                   InfoTile(
                     icon: Icons.calendar_today,
@@ -681,15 +691,16 @@ class _FeeManagementScreenState extends State<FeeManagementScreen>
                       value: record.paidDate!,
                       iconColor: AppColors.success,
                     ),
-                  
+
                   const SizedBox(height: 24),
-                  
+
                   // Actions
                   if (record.status != FeeStatus.paid)
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
-                        onPressed: () => _showFeeCollectionDialog(context, record),
+                        onPressed: () =>
+                            _showFeeCollectionDialog(context, record),
                         icon: const Icon(Icons.payments),
                         label: const Text('فیس وصول کریں'),
                         style: ElevatedButton.styleFrom(
@@ -753,7 +764,8 @@ class _FeeManagementScreenState extends State<FeeManagementScreen>
                     _buildReceiptRow('کلاس', record.studentClass),
                     _buildReceiptRow('مہینہ', _monthLabel(record.month)),
                     _buildReceiptRow('فیس کی قسم', 'ماہانہ فیس'),
-                    _buildReceiptRow('رقم', '${formatPK(record.amountPaid)} روپے'),
+                    _buildReceiptRow(
+                        'رقم', '${formatPK(record.amountPaid)} روپے'),
                     _buildReceiptRow('حیثیت', record.status.urduLabel),
                     _buildReceiptRow(
                         'تاریخ',
@@ -816,7 +828,8 @@ class _FeeManagementScreenState extends State<FeeManagementScreen>
             flex: 2,
             child: Text(
               '$label:',
-              style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w500),
+              style: AppTypography.bodyMedium
+                  .copyWith(fontWeight: FontWeight.w500),
             ),
           ),
           Expanded(
@@ -843,102 +856,106 @@ class _FeeManagementScreenState extends State<FeeManagementScreen>
       context: context,
       builder: (dialogContext) => Consumer(
         builder: (context, ref, _) => AlertDialog(
-        title: Text(
-          'فیس وصول کریں',
-          style: AppTypography.titleLarge,
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'طالب علم: ${record.studentName}',
-              style: AppTypography.bodyLarge.copyWith(fontWeight: FontWeight.w500),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'کلاس: ${record.studentClass}',
-              style: AppTypography.bodyMedium,
-            ),
-            Text(
-              'ماہ: ${record.month}',
-              style: AppTypography.bodyMedium,
-            ),
-            Text(
-              'باقی رقم: ر ${record.remaining}',
-              style: AppTypography.bodyMedium.copyWith(color: AppColors.error),
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: amountController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'وصول کی جانے والی رقم',
-                border: OutlineInputBorder(),
-                prefixText: 'ر ',
+          title: Text(
+            'فیس وصول کریں',
+            style: AppTypography.titleLarge,
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'طالب علم: ${record.studentName}',
+                style: AppTypography.bodyLarge
+                    .copyWith(fontWeight: FontWeight.w500),
               ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'رقم درج کریں';
+              const SizedBox(height: 8),
+              Text(
+                'کلاس: ${record.studentClass}',
+                style: AppTypography.bodyMedium,
+              ),
+              Text(
+                'ماہ: ${record.month}',
+                style: AppTypography.bodyMedium,
+              ),
+              Text(
+                'باقی رقم: ر ${record.remaining}',
+                style:
+                    AppTypography.bodyMedium.copyWith(color: AppColors.error),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: amountController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'وصول کی جانے والی رقم',
+                  border: OutlineInputBorder(),
+                  prefixText: 'ر ',
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'رقم درج کریں';
+                  }
+                  final amount = double.tryParse(value);
+                  if (amount == null || amount <= 0) {
+                    return 'درست رقم درج کریں';
+                  }
+                  if (amount > record.remaining) {
+                    return 'رقم باقی رقم سے زیادہ نہیں ہو سکتی';
+                  }
+                  return null;
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('منسوخ کریں'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final amount = double.tryParse(amountController.text);
+                if (amount == null ||
+                    amount <= 0 ||
+                    amount > record.remaining) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                        content:
+                            Text('درست رقم درج کریں (باقی رقم سے زیادہ نہیں)')),
+                  );
+                  return;
                 }
-                final amount = double.tryParse(value);
-                if (amount == null || amount <= 0) {
-                  return 'درست رقم درج کریں';
+                final now = DateTime.now();
+                final paidStr =
+                    '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+                final updated = record.copyWith(
+                  amountPaid: record.amountPaid + amount,
+                  paidDate: paidStr,
+                );
+                final messenger = ScaffoldMessenger.of(context);
+                try {
+                  await ref.read(feeNotifierProvider.notifier).save(updated);
+                  if (dialogContext.mounted) Navigator.pop(dialogContext);
+                  messenger.showSnackBar(
+                    SnackBar(
+                      content: Text(
+                          'ر ${formatPK(amount)} کی فیس کامیابی سے وصول کر لی گئی'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                } catch (_) {
+                  messenger.showSnackBar(
+                    const SnackBar(content: Text('فیس وصول کرنے میں خطا')),
+                  );
                 }
-                if (amount > record.remaining) {
-                  return 'رقم باقی رقم سے زیادہ نہیں ہو سکتی';
-                }
-                return null;
               },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.success,
+              ),
+              child: const Text('وصول کریں'),
             ),
           ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('منسوخ کریں'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final amount = double.tryParse(amountController.text);
-              if (amount == null ||
-                  amount <= 0 ||
-                  amount > record.remaining) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                      content: Text('درست رقم درج کریں (باقی رقم سے زیادہ نہیں)')),
-                );
-                return;
-              }
-              final now = DateTime.now();
-              final paidStr =
-                  '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-              final updated = record.copyWith(
-                amountPaid: record.amountPaid + amount,
-                paidDate: paidStr,
-              );
-              try {
-                await ref.read(feeNotifierProvider.notifier).save(updated);
-                if (dialogContext.mounted) Navigator.pop(dialogContext);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                        'ر ${formatPK(amount)} کی فیس کامیابی سے وصول کر لی گئی'),
-                    backgroundColor: Colors.green,
-                  ),
-                );
-              } catch (_) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('فیس وصول کرنے میں خطا')),
-                );
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.success,
-            ),
-            child: const Text('وصول کریں'),
-          ),
-        ],
         ),
       ),
     );
@@ -991,7 +1008,7 @@ class _FeeManagementScreenState extends State<FeeManagementScreen>
                     else ...[
                       // Student Selection — the tenant's real roster
                       DropdownButtonFormField<String>(
-                        value: selectedStudentId,
+                        initialValue: selectedStudentId,
                         decoration: const InputDecoration(
                           labelText: 'طالب علم',
                           border: OutlineInputBorder(),
@@ -1010,7 +1027,7 @@ class _FeeManagementScreenState extends State<FeeManagementScreen>
 
                       // Month Selection — real months, newest first
                       DropdownButtonFormField<String>(
-                        value: selectedMonth,
+                        initialValue: selectedMonth,
                         decoration: const InputDecoration(
                           labelText: 'ماہ',
                           border: OutlineInputBorder(),
@@ -1059,8 +1076,8 @@ class _FeeManagementScreenState extends State<FeeManagementScreen>
                         tenantId == null) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text(
-                              'طالب علم منتخب کریں اور درست رقم درج کریں'),
+                          content:
+                              Text('طالب علم منتخب کریں اور درست رقم درج کریں'),
                         ),
                       );
                       return;
@@ -1068,8 +1085,8 @@ class _FeeManagementScreenState extends State<FeeManagementScreen>
                     final student = matches.first;
                     // Due on the last day of the selected month.
                     final mp = selectedMonth.split('-');
-                    final due = DateTime(
-                        int.parse(mp[0]), int.parse(mp[1]) + 1, 0);
+                    final due =
+                        DateTime(int.parse(mp[0]), int.parse(mp[1]) + 1, 0);
                     final dueStr =
                         '${due.year}-${due.month.toString().padLeft(2, '0')}-${due.day.toString().padLeft(2, '0')}';
                     final fee = Fee(
@@ -1084,22 +1101,22 @@ class _FeeManagementScreenState extends State<FeeManagementScreen>
                       dueDate: dueStr,
                       status: FeeStatus.pending,
                     );
+                    final messenger = ScaffoldMessenger.of(context);
                     try {
                       await ref.read(feeNotifierProvider.notifier).save(fee);
                       if (dialogContext.mounted) {
                         Navigator.pop(dialogContext);
                       }
-                      ScaffoldMessenger.of(context).showSnackBar(
+                      messenger.showSnackBar(
                         SnackBar(
-                          content: Text(
-                              '${student.name} کے لیے واؤچر بنا دیا گیا'),
+                          content:
+                              Text('${student.name} کے لیے واؤچر بنا دیا گیا'),
                           backgroundColor: Colors.green,
                         ),
                       );
                     } catch (_) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text('واؤچر بنانے میں خطا')),
+                      messenger.showSnackBar(
+                        const SnackBar(content: Text('واؤچر بنانے میں خطا')),
                       );
                     }
                   },

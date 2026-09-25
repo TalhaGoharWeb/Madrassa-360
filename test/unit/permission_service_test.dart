@@ -46,36 +46,32 @@ void main() {
     });
   });
 
-  group('teacher role (005 matrix: attendance.mark yes, fees.collect no)',
-      () {
+  group('teacher role (005 matrix: attendance.mark yes, fees.collect no)', () {
     final teacher = AppPermissions.fallbackFor('teacher');
 
     test('teacher can mark attendance (SQL: attendance.mark)', () {
-      expect(
-          PermissionService.has(teacher, AppPermissions.markAttendance),
+      expect(PermissionService.has(teacher, AppPermissions.markAttendance),
           isTrue);
       expect(PermissionService.has(teacher, AppPermissions.viewAttendance),
           isTrue);
     });
 
-    test('teacher CANNOT collect/refund fees (SQL: no fees.* for teacher)',
-        () {
-      expect(PermissionService.has(teacher, AppPermissions.createFees),
-          isFalse);
-      expect(PermissionService.has(teacher, AppPermissions.updateFees),
-          isFalse);
-      expect(PermissionService.has(teacher, AppPermissions.deleteFees),
-          isFalse);
+    test('teacher CANNOT collect/refund fees (SQL: no fees.* for teacher)', () {
+      expect(
+          PermissionService.has(teacher, AppPermissions.createFees), isFalse);
+      expect(
+          PermissionService.has(teacher, AppPermissions.updateFees), isFalse);
+      expect(
+          PermissionService.has(teacher, AppPermissions.deleteFees), isFalse);
       // viewing fee records is allowed
-      expect(PermissionService.has(teacher, AppPermissions.viewFees),
-          isTrue);
+      expect(PermissionService.has(teacher, AppPermissions.viewFees), isTrue);
     });
 
     test('teacher can enter results but not delete them', () {
-      expect(PermissionService.has(teacher, AppPermissions.enterResults),
-          isTrue);
-      expect(PermissionService.has(teacher, AppPermissions.viewResults),
-          isTrue);
+      expect(
+          PermissionService.has(teacher, AppPermissions.enterResults), isTrue);
+      expect(
+          PermissionService.has(teacher, AppPermissions.viewResults), isTrue);
       expect(PermissionService.has(teacher, AppPermissions.deleteResults),
           isFalse);
     });
@@ -98,8 +94,7 @@ void main() {
       expect(PermissionService.has(p, AppPermissions.createFees), isTrue);
       expect(PermissionService.has(p, AppPermissions.updateFees), isTrue);
       expect(PermissionService.has(p, AppPermissions.deleteFees), isFalse);
-      expect(
-          PermissionService.has(p, AppPermissions.markAttendance), isFalse);
+      expect(PermissionService.has(p, AppPermissions.markAttendance), isFalse);
     });
 
     test('financeManager has the full finance set', () {
@@ -132,18 +127,15 @@ void main() {
             AppPermissions.viewResults,
           ]),
           isTrue);
-      expect(PermissionService.has(p, AppPermissions.markAttendance),
-          isFalse);
-      expect(PermissionService.has(p, AppPermissions.createStudents),
-          isFalse);
+      expect(PermissionService.has(p, AppPermissions.markAttendance), isFalse);
+      expect(PermissionService.has(p, AppPermissions.createStudents), isFalse);
     });
 
     test('madrasaAdmin is a superset of teacher', () {
       final admin = AppPermissions.fallbackFor('madrasaAdmin');
       final teacher = AppPermissions.fallbackFor('teacher');
       expect(admin.containsAll(teacher), isTrue);
-      expect(PermissionService.has(admin, AppPermissions.deleteFees),
-          isTrue);
+      expect(PermissionService.has(admin, AppPermissions.deleteFees), isTrue);
     });
   });
 
@@ -195,12 +187,10 @@ void main() {
         'notifications.view',
       };
       final perms = PermissionService.normalizeServerCodes(server);
-      expect(PermissionService.has(perms, AppPermissions.markAttendance),
-          isTrue);
       expect(
-          PermissionService.has(perms, AppPermissions.viewStudents), isTrue);
-      expect(PermissionService.has(perms, AppPermissions.enterResults),
-          isTrue);
+          PermissionService.has(perms, AppPermissions.markAttendance), isTrue);
+      expect(PermissionService.has(perms, AppPermissions.viewStudents), isTrue);
+      expect(PermissionService.has(perms, AppPermissions.enterResults), isTrue);
       // teacher has no fee rights anywhere in the matrix
       expect(PermissionService.has(perms, AppPermissions.viewFees), isFalse);
       expect(PermissionService.has(perms, AppPermissions.createFees), isFalse);
@@ -224,8 +214,7 @@ void main() {
 
     test('empty set stays empty; update maps to edit_* family', () {
       expect(PermissionService.normalizeServerCodes({}), isEmpty);
-      final perms =
-          PermissionService.normalizeServerCodes({'students.update'});
+      final perms = PermissionService.normalizeServerCodes({'students.update'});
       expect(perms, {AppPermissions.editStudents});
     });
   });

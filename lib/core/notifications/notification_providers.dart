@@ -9,8 +9,7 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../data/local/app_database.dart';
-import '../../data/local/database_provider.dart';
+import '../../data/local/app_database.dart' hide NotificationPreferences;
 import '../services/supabase_service.dart';
 import '../services/tenant_context.dart';
 import '../sync/sync_engine.dart';
@@ -31,8 +30,7 @@ final _currentUserIdProvider = Provider<String?>((ref) {
 /// One [NotificationDispatcher] per active tenant. Starts its
 /// connectivity + sync-event subscriptions on creation; disposed (and
 /// therefore unsubscribed) on tenant switch / logout.
-final notificationDispatcherProvider =
-    Provider<NotificationDispatcher?>((ref) {
+final notificationDispatcherProvider = Provider<NotificationDispatcher?>((ref) {
   final AppDatabase db = ref.watch(appDatabaseProvider);
   final String? tenantId = ref.watch(currentTenantIdProvider);
   final SyncEngine? engine = ref.watch(syncEngineProvider);

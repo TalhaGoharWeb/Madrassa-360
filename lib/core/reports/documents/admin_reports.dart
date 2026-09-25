@@ -61,8 +61,7 @@ class AdminReports {
       titleEn: titleEn,
       subtitleUr: subtitle,
       body: (s) async {
-        final nonEmpty =
-            tables?.where((t) => t.rows.isNotEmpty).toList() ?? [];
+        final nonEmpty = tables?.where((t) => t.rows.isNotEmpty).toList() ?? [];
         if (nonEmpty.isEmpty) {
           return [await s.emptyNotice(emptyUr, emptyEn)];
         }
@@ -72,8 +71,7 @@ class AdminReports {
           if (nonEmpty.length > 1) {
             w.add(await s.sectionTitle(t.titleUr));
           }
-          w.add(await s.dataTable(
-              headers: t.headers, rows: t.rows));
+          w.add(await s.dataTable(headers: t.headers, rows: t.rows));
           if (i < nonEmpty.length - 1) {
             w.add(pw.SizedBox(height: 12));
           }
@@ -89,8 +87,7 @@ class AdminReports {
 
   // ── طلبہ رجسٹر ────────────────────────────────────────────────
 
-  static Future<Uint8List> studentRegister(ReportContext ctx) =>
-      _tabular(
+  static Future<Uint8List> studentRegister(ReportContext ctx) => _tabular(
         ctx,
         'طلبہ رجسٹر',
         'Student Register',
@@ -107,8 +104,7 @@ class AdminReports {
 
   // ── اساتذہ رجسٹر ──────────────────────────────────────────────
 
-  static Future<Uint8List> teacherRegister(ReportContext ctx) =>
-      _tabular(
+  static Future<Uint8List> teacherRegister(ReportContext ctx) => _tabular(
         ctx,
         'اساتذہ رجسٹر',
         'Teacher / Staff Register',
@@ -125,8 +121,7 @@ class AdminReports {
 
   // ── حاضری خلاصہ ───────────────────────────────────────────────
 
-  static Future<Uint8List> attendanceSummary(ReportContext ctx) =>
-      _tabular(
+  static Future<Uint8List> attendanceSummary(ReportContext ctx) => _tabular(
         ctx,
         'حاضری خلاصہ',
         'Attendance Summary',
@@ -137,8 +132,7 @@ class AdminReports {
           var sum = 0.0, n = 0;
           for (final r in rows) {
             // فیصد column is last; '—' when unmarked.
-            final pct =
-                double.tryParse(r.last.replaceAll('%', ''));
+            final pct = double.tryParse(r.last.replaceAll('%', ''));
             if (pct != null) {
               sum += pct;
               n++;
@@ -156,8 +150,7 @@ class AdminReports {
 
   // ── فیس وصولی ─────────────────────────────────────────────────
 
-  static Future<Uint8List> feeCollection(ReportContext ctx) =>
-      _tabular(
+  static Future<Uint8List> feeCollection(ReportContext ctx) => _tabular(
         ctx,
         'فیس وصولی رپورٹ',
         'Fee Collection Report',
@@ -175,8 +168,7 @@ class AdminReports {
           }
           return [
             await s.statRow([
-              StatBox('کل وصولی', fmtMoney(total),
-                  '${rows.length} ادائیگیاں'),
+              StatBox('کل وصولی', fmtMoney(total), '${rows.length} ادائیگیاں'),
               StatBox(
                   'طریقے',
                   '${byMethod.length}',
@@ -190,8 +182,7 @@ class AdminReports {
 
   // ── واجب الادا فیس ────────────────────────────────────────────
 
-  static Future<Uint8List> outstandingFees(ReportContext ctx) =>
-      _tabular(
+  static Future<Uint8List> outstandingFees(ReportContext ctx) => _tabular(
         ctx,
         'واجب الادا فیس',
         'Outstanding Fees',
@@ -227,7 +218,7 @@ class AdminReports {
       titleEn: 'Income & Expense Report',
       subtitleUr: subtitle,
       body: (s) async {
-        final priced = (List<MoneyEntry> l) =>
+        List<MoneyEntry> priced(List<MoneyEntry> l) =>
             l.where((e) => e.amount != null).toList();
         final inPriced = priced(income);
         final exPriced = priced(expense);
@@ -244,10 +235,8 @@ class AdminReports {
             ),
           ];
         }
-        final inTotal =
-            inPriced.fold<double>(0, (a, e) => a + e.amount!);
-        final exTotal =
-            exPriced.fold<double>(0, (a, e) => a + e.amount!);
+        final inTotal = inPriced.fold<double>(0, (a, e) => a + e.amount!);
+        final exTotal = exPriced.fold<double>(0, (a, e) => a + e.amount!);
         final w = <pw.Widget>[
           await s.statRow([
             StatBox('کل آمدن', fmtMoney(inTotal)),
@@ -302,8 +291,7 @@ class AdminReports {
 
   // ── امتحانی نتائج ─────────────────────────────────────────────
 
-  static Future<Uint8List> examResults(ReportContext ctx) =>
-      _tabular(
+  static Future<Uint8List> examResults(ReportContext ctx) => _tabular(
         ctx,
         'امتحانی نتائج',
         'Exam Results',
@@ -313,8 +301,7 @@ class AdminReports {
           final rows = tables.first.rows;
           var sum = 0.0, n = 0, pass = 0;
           for (final r in rows) {
-            final pct =
-                double.tryParse(r[5].replaceAll('%', ''));
+            final pct = double.tryParse(r[5].replaceAll('%', ''));
             if (pct != null) {
               sum += pct;
               n++;
@@ -335,8 +322,7 @@ class AdminReports {
 
   // ── تعلیمی کارکردگی ───────────────────────────────────────────
 
-  static Future<Uint8List> academicPerformance(ReportContext ctx) =>
-      _tabular(
+  static Future<Uint8List> academicPerformance(ReportContext ctx) => _tabular(
         ctx,
         'تعلیمی کارکردگی',
         'Academic Performance',

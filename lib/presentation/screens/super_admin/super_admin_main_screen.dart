@@ -11,7 +11,7 @@ import '../common/about_screen.dart';
 /// lib/presentation/screens/master_admin/master_admin_shell.dart (route
 /// '/master', gated by MasterAdminGuard). Kept only because other code may
 /// still reference it — do not build new features here.
-@deprecated
+@Deprecated('Use master_admin_shell.dart instead')
 class SuperAdminMainScreen extends StatefulWidget {
   const SuperAdminMainScreen({super.key});
   @override
@@ -37,26 +37,28 @@ class _SuperAdminMainScreenState extends State<SuperAdminMainScreen> {
           selectedIndex: _index,
           onDestinationSelected: (i) => setState(() => _index = i),
           backgroundColor: Colors.white,
-          indicatorColor: AppColors.primary.withOpacity(0.12),
-          destinations: [
+          indicatorColor: AppColors.primary.withValues(alpha: 0.12),
+          destinations: const [
             NavigationDestination(
-              icon: const Icon(Icons.dashboard_outlined),
-              selectedIcon: const Icon(Icons.dashboard, color: AppColors.primary),
+              icon: Icon(Icons.dashboard_outlined),
+              selectedIcon: Icon(Icons.dashboard, color: AppColors.primary),
               label: 'ڈیش بورڈ',
             ),
             NavigationDestination(
-              icon: const Icon(Icons.account_balance_outlined),
-              selectedIcon: const Icon(Icons.account_balance, color: AppColors.primary),
+              icon: Icon(Icons.account_balance_outlined),
+              selectedIcon:
+                  Icon(Icons.account_balance, color: AppColors.primary),
               label: 'مدارس',
             ),
             NavigationDestination(
-              icon: const Icon(Icons.manage_accounts_outlined),
-              selectedIcon: const Icon(Icons.manage_accounts, color: AppColors.primary),
+              icon: Icon(Icons.manage_accounts_outlined),
+              selectedIcon:
+                  Icon(Icons.manage_accounts, color: AppColors.primary),
               label: 'صارفین',
             ),
             NavigationDestination(
-              icon: const Icon(Icons.info_outline),
-              selectedIcon: const Icon(Icons.info, color: AppColors.primary),
+              icon: Icon(Icons.info_outline),
+              selectedIcon: Icon(Icons.info, color: AppColors.primary),
               label: 'بارے میں',
             ),
           ],

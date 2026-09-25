@@ -6,7 +6,6 @@ import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:uuid/uuid.dart';
 import '../data/models/student.dart';
 import '../data/repositories/student_repository.dart';
 import '../data/repositories/storage_repository.dart';
@@ -139,8 +138,8 @@ class StudentNotifier extends AsyncNotifier<void> {
         ...(row['_data'] as Map<String, dynamic>),
         'photo_url': url,
       };
-      final baseRev = await SyncQueue.currentRevision(
-          db, 'students', tenantId, studentId);
+      final baseRev =
+          await SyncQueue.currentRevision(db, 'students', tenantId, studentId);
       await db.transaction(() async {
         await SyncEngine.writeLocalRow(
           db,

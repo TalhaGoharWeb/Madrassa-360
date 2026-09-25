@@ -100,8 +100,7 @@ class DashboardStats {
 // Provider
 // ─────────────────────────────────────────────
 
-final dashboardStatsProvider =
-    FutureProvider<DashboardStats>((ref) async {
+final dashboardStatsProvider = FutureProvider<DashboardStats>((ref) async {
   final tenantId = ref.watch(currentTenantIdProvider);
   if (tenantId == null) return const DashboardStats.zero();
 
@@ -110,8 +109,7 @@ final dashboardStatsProvider =
     final now = DateTime.now();
     final todayStr =
         '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-    final monthKey =
-        '${now.year}-${now.month.toString().padLeft(2, '0')}';
+    final monthKey = '${now.year}-${now.month.toString().padLeft(2, '0')}';
 
     final results = await Future.wait([
       // 0 — active students
@@ -162,8 +160,7 @@ final dashboardStatsProvider =
     // 'تعلیمی' (teaching) department marks teaching staff — the same
     // convention the dashboard used before Phase 4.
     final totalTeachers = staffRows
-        .where((r) =>
-            (r as Map<String, dynamic>)['department'] == 'تعلیمی')
+        .where((r) => (r as Map<String, dynamic>)['department'] == 'تعلیمی')
         .length;
     final totalClasses = darjaRows.length;
 
@@ -193,9 +190,7 @@ final dashboardStatsProvider =
       final due = (row['amount_due'] as num?)?.toDouble() ?? 0;
       final paid = (row['amount_paid'] as num?)?.toDouble() ?? 0;
       final status = row['status'] as String?;
-      if (status == 'pending' ||
-          status == 'past_due' ||
-          status == 'partial') {
+      if (status == 'pending' || status == 'past_due' || status == 'partial') {
         pending += (due - paid);
       }
       if (status == 'paid') paidFees.add(row);
@@ -250,8 +245,7 @@ final dashboardStatsProvider =
       pendingFees: pending,
       collectedThisMonth: monthCollected,
       monthlyTarget: monthTarget,
-      monthLabel:
-          '${app_date.DateUtils.formatMonthName(now)} ${now.year}',
+      monthLabel: '${app_date.DateUtils.formatMonthName(now)} ${now.year}',
       recentActivities: activities.take(5).toList(),
     );
   } catch (_) {
@@ -304,5 +298,5 @@ String formatPK(num value) {
     rest = rest.substring(0, rest.length - 2);
   }
   groups.add(rest);
-  return (n < 0 ? '-' : '') + groups.reversed.join(',') + ',' + last3;
+  return '${n < 0 ? '-' : ''}${groups.reversed.join(',')},$last3';
 }

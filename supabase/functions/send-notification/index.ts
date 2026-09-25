@@ -38,6 +38,7 @@
 //                          total?: number, detail?: string }
 
 import { preflight, json, serviceClient } from "../_shared/guard.ts";
+import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.44.4";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -86,7 +87,7 @@ async function fcmAccessToken(sa: ServiceAccount): Promise<string> {
     );
   const key = await crypto.subtle.importKey(
     "pkcs8",
-    pemToPkcs8(sa.private_key),
+    pemToPkcs8(sa.private_key).buffer as ArrayBuffer,
     { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
     false,
     ["sign"],
@@ -132,7 +133,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
     return json({ error: "method_not_allowed" }, 405);
   }
 
-  let supabase;
+  let supabase: SupabaseClient;
   try {
     supabase = serviceClient();
   } catch {
@@ -289,7 +290,9 @@ Deno.serve(async (req: Request): Promise<Response> => {
       .eq("channel", channel)
       .eq("enabled", false)
       .in("user_id", recipientIds);
-    const optedOut = new Set((prefs ?? []).map((p) => p.user_id as string));
+    const optedOut = new Set(
+      (prefs ?? []).map((p: { user_id: string }) => p.user_id as string),
+    );
     return recipientIds.filter((id) => !optedOut.has(id));
   }
 

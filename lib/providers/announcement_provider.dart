@@ -37,11 +37,12 @@ class AnnouncementState {
     bool? isLoading,
     String? error,
     bool clearError = false,
-  }) => AnnouncementState(
-    announcements: announcements ?? this.announcements,
-    isLoading:     isLoading     ?? this.isLoading,
-    error:         clearError ? null : (error ?? this.error),
-  );
+  }) =>
+      AnnouncementState(
+        announcements: announcements ?? this.announcements,
+        isLoading: isLoading ?? this.isLoading,
+        error: clearError ? null : (error ?? this.error),
+      );
 }
 
 class AnnouncementNotifier extends StateNotifier<AnnouncementState> {
@@ -59,11 +60,13 @@ class AnnouncementNotifier extends StateNotifier<AnnouncementState> {
     }
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      final q = _client.from('announcements').select().eq('tenant_id', tenantId) as dynamic;
+      final q = _client.from('announcements').select().eq('tenant_id', tenantId)
+          as dynamic;
       final rows = await q.order('created_at', ascending: false);
       state = state.copyWith(
         isLoading: false,
-        announcements: rows.map<Announcement>((r) => Announcement.fromJson(r)).toList(),
+        announcements:
+            rows.map<Announcement>((r) => Announcement.fromJson(r)).toList(),
       );
     } on PostgrestException {
       state = state.copyWith(isLoading: false);
@@ -85,8 +88,7 @@ class AnnouncementNotifier extends StateNotifier<AnnouncementState> {
       final exists =
           await SyncQueue.rowExists(db, 'announcements', tenantId, id);
       final baseRev = exists
-          ? await SyncQueue.currentRevision(
-              db, 'announcements', tenantId, id)
+          ? await SyncQueue.currentRevision(db, 'announcements', tenantId, id)
           : 0;
 
       await db.transaction(() async {
@@ -147,8 +149,8 @@ class AnnouncementNotifier extends StateNotifier<AnnouncementState> {
       final db = _ref.read(appDatabaseProvider);
       final engine = _ref.read(syncEngineProvider);
       final nowIso = DateTime.now().toUtc().toIso8601String();
-      final baseRev = await SyncQueue.currentRevision(
-          db, 'announcements', tenantId, id);
+      final baseRev =
+          await SyncQueue.currentRevision(db, 'announcements', tenantId, id);
 
       await db.transaction(() async {
         await SyncEngine.softDeleteLocalRow(
@@ -174,8 +176,7 @@ class AnnouncementNotifier extends StateNotifier<AnnouncementState> {
       unawaited(engine?.syncNow() ?? Future.value());
 
       state = state.copyWith(
-        announcements:
-            state.announcements.where((a) => a.id != id).toList());
+          announcements: state.announcements.where((a) => a.id != id).toList());
     } catch (e) {
       state = state.copyWith(error: e.toString());
     }
@@ -195,8 +196,8 @@ class AnnouncementNotifier extends StateNotifier<AnnouncementState> {
       final updated = a.copyWith(isPinned: !a.isPinned);
       final nowIso = DateTime.now().toUtc().toIso8601String();
       final data = {...updated.toJson(), 'id': id, 'tenant_id': tenantId};
-      final baseRev = await SyncQueue.currentRevision(
-          db, 'announcements', tenantId, id);
+      final baseRev =
+          await SyncQueue.currentRevision(db, 'announcements', tenantId, id);
 
       await db.transaction(() async {
         await SyncEngine.writeLocalRow(
@@ -223,8 +224,8 @@ class AnnouncementNotifier extends StateNotifier<AnnouncementState> {
       unawaited(engine?.syncNow() ?? Future.value());
 
       state = state.copyWith(
-        announcements: state.announcements
-            .map((x) => x.id == id ? updated : x).toList(),
+        announcements:
+            state.announcements.map((x) => x.id == id ? updated : x).toList(),
       );
     } catch (e) {
       state = state.copyWith(error: e.toString());

@@ -99,7 +99,7 @@ class _MasterAdminShellState extends State<MasterAdminShell> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -160,9 +160,8 @@ class _MasterAdminShellState extends State<MasterAdminShell> {
                       title: Text(
                         item.label,
                         style: AppTypography.bodyMedium.copyWith(
-                          fontWeight: selected
-                              ? FontWeight.bold
-                              : FontWeight.normal,
+                          fontWeight:
+                              selected ? FontWeight.bold : FontWeight.normal,
                           color: selected
                               ? AppColors.primary
                               : AppColors.textPrimary,
@@ -170,7 +169,7 @@ class _MasterAdminShellState extends State<MasterAdminShell> {
                       ),
                       selected: selected,
                       selectedTileColor:
-                          AppColors.primary.withOpacity(0.08),
+                          AppColors.primary.withValues(alpha: 0.08),
                       onTap: () {
                         setState(() => _index = i);
                         Navigator.of(context).pop();

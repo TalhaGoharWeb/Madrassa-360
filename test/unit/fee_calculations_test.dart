@@ -50,11 +50,15 @@ void main() {
     test('drafts are excluded; transfers count as non-income', () {
       final state = FinanceState(ledger: [
         _entry(kind: LedgerKind.income, amount: 1000),
-        _entry(kind: LedgerKind.income, amount: 500,
+        _entry(
+            kind: LedgerKind.income,
+            amount: 500,
             status: DocStatus.draft), // not real money yet
         _entry(kind: LedgerKind.expense, amount: 300),
-        _entry(kind: LedgerKind.expense, amount: 700,
-            status: DocStatus.void), // void is final but not posted
+        _entry(
+            kind: LedgerKind.expense,
+            amount: 700,
+            status: DocStatus.voided), // void is final but not posted
         _entry(kind: LedgerKind.transfer, amount: 200),
       ]);
       expect(state.totalIncome, 1000);
@@ -81,8 +85,7 @@ void main() {
     test('byKind partitions the full ledger (including drafts)', () {
       final state = FinanceState(ledger: [
         _entry(kind: LedgerKind.income, amount: 100),
-        _entry(kind: LedgerKind.income, amount: 200,
-            status: DocStatus.draft),
+        _entry(kind: LedgerKind.income, amount: 200, status: DocStatus.draft),
         _entry(kind: LedgerKind.expense, amount: 50),
       ]);
       expect(state.byKind(LedgerKind.income).length, 2);
@@ -151,22 +154,22 @@ void main() {
 
     test('partially_paid db value round-trips', () {
       expect(InvoiceStatus.partiallyPaid.dbValue, 'partially_paid');
-      expect(InvoiceStatusX.fromDb('partially_paid'),
-          InvoiceStatus.partiallyPaid);
+      expect(
+          InvoiceStatus.fromDb('partially_paid'), InvoiceStatus.partiallyPaid);
     });
 
     test('isFinal covers paid/cancelled/void only', () {
       expect(InvoiceStatus.paid.isFinal, isTrue);
       expect(InvoiceStatus.cancelled.isFinal, isTrue);
-      expect(InvoiceStatus.void.isFinal, isTrue);
+      expect(InvoiceStatus.voided.isFinal, isTrue);
       expect(InvoiceStatus.issued.isFinal, isFalse);
       expect(InvoiceStatus.partiallyPaid.isFinal, isFalse);
       expect(InvoiceStatus.overdue.isFinal, isFalse);
     });
 
     test('unknown status string falls back to draft (never crashes)', () {
-      expect(InvoiceStatusX.fromDb('bogus'), InvoiceStatus.draft);
-      expect(InvoiceStatusX.fromDb(null), InvoiceStatus.draft);
+      expect(InvoiceStatus.fromDb('bogus'), InvoiceStatus.draft);
+      expect(InvoiceStatus.fromDb(null), InvoiceStatus.draft);
     });
   });
 
@@ -174,10 +177,10 @@ void main() {
     test('percentage vs fixed db values', () {
       expect(DiscountKind.percentage.dbValue, 'percentage');
       expect(DiscountKind.fixed.dbValue, 'fixed');
-      expect(DiscountKindX.fromDb('percentage'), DiscountKind.percentage);
-      expect(DiscountKindX.fromDb('fixed'), DiscountKind.fixed);
+      expect(DiscountKind.fromDb('percentage'), DiscountKind.percentage);
+      expect(DiscountKind.fromDb('fixed'), DiscountKind.fixed);
       // unknown -> fixed (the safer default: a bounded amount, not a ratio)
-      expect(DiscountKindX.fromDb('bogus'), DiscountKind.fixed);
+      expect(DiscountKind.fromDb('bogus'), DiscountKind.fixed);
     });
 
     test('discount serialises type, value and applied status', () {
@@ -219,15 +222,14 @@ void main() {
   group('Payment enums', () {
     test('bank_transfer db value is explicit, not the enum name', () {
       expect(PaymentMethod.bankTransfer.dbValue, 'bank_transfer');
-      expect(PaymentMethodX.fromDb('bank_transfer'),
-          PaymentMethod.bankTransfer);
+      expect(PaymentMethod.fromDb('bank_transfer'), PaymentMethod.bankTransfer);
       expect(PaymentMethod.cash.dbValue, 'cash');
     });
 
     test('draft is not final; posted and void are', () {
       expect(DocStatus.draft.isFinal, isFalse);
       expect(DocStatus.posted.isFinal, isTrue);
-      expect(DocStatus.void.isFinal, isTrue);
+      expect(DocStatus.voided.isFinal, isTrue);
     });
   });
 }

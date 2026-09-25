@@ -75,8 +75,7 @@ class AttendanceRecordNotifier extends AsyncNotifier<void> {
   Future<void> save(List<AttendanceRecord> records) async {
     final tenantId = ref.read(currentTenantIdProvider);
     if (tenantId == null) {
-      state = AsyncError(
-          StateError('No active tenant'), StackTrace.current);
+      state = AsyncError(StateError('No active tenant'), StackTrace.current);
       return;
     }
     final repo = ref.read(attendanceRepositoryProvider);

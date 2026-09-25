@@ -87,8 +87,8 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
                     ),
                     Text(
                       'v${AppConfig.appVersion}',
-                      style:
-                          AppTypography.bodySmall.copyWith(color: Colors.white70),
+                      style: AppTypography.bodySmall
+                          .copyWith(color: Colors.white70),
                     ),
                   ],
                 ),
@@ -116,7 +116,8 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
 
                   _SectionCard(
                     accent: headerColor,
-                    header: _isUrdu ? 'منصوبے کے بارے میں' : 'About the Product',
+                    header:
+                        _isUrdu ? 'منصوبے کے بارے میں' : 'About the Product',
                     headerIcon: Icons.info_outline,
                     child: Text(
                       _isUrdu ? _descUrdu : _descEnglish,
@@ -195,8 +196,7 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
                         ],
                       ),
                     ),
-                  if (branding?.hasContact == true)
-                    const SizedBox(height: 16),
+                  if (branding?.hasContact == true) const SizedBox(height: 16),
 
                   // ── App Info ─────────────────────────
 
@@ -227,8 +227,8 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
                       children: [
                         Text(
                           AppConfig.appNameEnglish,
-                          style: AppTypography.bodySmall.copyWith(
-                              color: AppColors.textSecondary),
+                          style: AppTypography.bodySmall
+                              .copyWith(color: AppColors.textSecondary),
                         ),
                         const SizedBox(height: 24),
                       ],
@@ -342,7 +342,7 @@ class _SectionCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 3),
           ),
@@ -355,7 +355,7 @@ class _SectionCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
-              color: accent.withOpacity(0.06),
+              color: accent.withValues(alpha: 0.06),
               borderRadius:
                   const BorderRadius.vertical(top: Radius.circular(16)),
             ),
@@ -397,7 +397,7 @@ class _ContactButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: color.withOpacity(0.08),
+      color: color.withValues(alpha: 0.08),
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: onTap,
@@ -409,7 +409,7 @@ class _ContactButton extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.15),
+                  color: color.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(icon, color: color, size: 22),
@@ -420,8 +420,8 @@ class _ContactButton extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(label,
-                        style: AppTypography.titleMedium
-                            .copyWith(color: color)),
+                        style:
+                            AppTypography.titleMedium.copyWith(color: color)),
                     Text(subtitle,
                         style: AppTypography.bodySmall
                             .copyWith(color: AppColors.textSecondary)),
@@ -429,7 +429,7 @@ class _ContactButton extends StatelessWidget {
                 ),
               ),
               Icon(Icons.arrow_back_ios,
-                  size: 14, color: color.withOpacity(0.6)),
+                  size: 14, color: color.withValues(alpha: 0.6)),
             ],
           ),
         ),

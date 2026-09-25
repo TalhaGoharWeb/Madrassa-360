@@ -8,7 +8,7 @@
 
 import 'dart:typed_data';
 
-import '../data/local/app_database.dart';
+import '../../data/local/app_database.dart';
 import 'data/report_data.dart';
 import 'documents/admin_reports.dart';
 import 'documents/student_documents.dart';
@@ -32,10 +32,8 @@ class ReportsService {
 
   final AppDatabase _db;
 
-  Future<ReportContext> _context(
-      String reportId, ReportParams params) async {
-    final branding =
-        await loadReportBranding(_db, params.tenantId);
+  Future<ReportContext> _context(String reportId, ReportParams params) async {
+    final branding = await loadReportBranding(_db, params.tenantId);
     return ReportContext(
       data: ReportData(_db),
       branding: branding,
@@ -45,8 +43,7 @@ class ReportsService {
     );
   }
 
-  Future<Uint8List> generatePdf(
-      String reportId, ReportParams params) async {
+  Future<Uint8List> generatePdf(String reportId, ReportParams params) async {
     final ctx = await _context(reportId, params);
     switch (reportId) {
       // ── student documents ──
@@ -90,8 +87,7 @@ class ReportsService {
   /// CSV text (UTF-8 with BOM) for tabular reports.
   ///
   /// Throws [StateError] when the report is not tabular.
-  Future<String> generateCsv(
-      String reportId, ReportParams params) async {
+  Future<String> generateCsv(String reportId, ReportParams params) async {
     final ctx = await _context(reportId, params);
     if (!ctx.definition.tabular) {
       throw StateError('Report $reportId has no tabular export.');
@@ -106,8 +102,7 @@ class ReportsService {
   /// XLSX bytes for tabular reports.
   ///
   /// Throws [StateError] when the report is not tabular.
-  Future<Uint8List> generateXlsx(
-      String reportId, ReportParams params) async {
+  Future<Uint8List> generateXlsx(String reportId, ReportParams params) async {
     final ctx = await _context(reportId, params);
     if (!ctx.definition.tabular) {
       throw StateError('Report $reportId has no tabular export.');
@@ -116,8 +111,7 @@ class ReportsService {
     if (tables == null) {
       throw StateError('Report $reportId has no tabular export.');
     }
-    final bytes =
-        ExcelExport.build(tables, branding: ctx.branding);
+    final bytes = ExcelExport.build(tables, branding: ctx.branding);
     return Uint8List.fromList(bytes);
   }
 }

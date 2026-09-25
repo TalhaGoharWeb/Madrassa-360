@@ -28,7 +28,6 @@
 
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:drift/drift.dart';
 import 'package:flutter/material.dart';
@@ -93,8 +92,7 @@ class ReportBranding {
   /// Contact line for the header, e.g. "فون: 0300-1234567".
   String? get contactLine {
     final parts = <String>[
-      if (phone != null && phone!.trim().isNotEmpty)
-        'فون: ${phone!.trim()}',
+      if (phone != null && phone!.trim().isNotEmpty) 'فون: ${phone!.trim()}',
       if (email != null && email!.trim().isNotEmpty) email!.trim(),
     ];
     return parts.isEmpty ? null : parts.join('   |   ');
@@ -110,13 +108,11 @@ Future<ReportBranding> loadReportBranding(
   String tenantId,
 ) async {
   try {
-    final rows = await db
-        .customSelect(
-          'SELECT payload FROM tenant_settings_cache '
-          'WHERE tenant_id = ? LIMIT 1',
-          variables: [Variable.withString(tenantId)],
-        )
-        .get();
+    final rows = await db.customSelect(
+      'SELECT payload FROM tenant_settings_cache '
+      'WHERE tenant_id = ? LIMIT 1',
+      variables: [Variable.withString(tenantId)],
+    ).get();
     if (rows.isNotEmpty) {
       final payload = rows.first.data['payload'] as String?;
       if (payload != null && payload.isNotEmpty) {
@@ -124,11 +120,9 @@ Future<ReportBranding> loadReportBranding(
         // Tolerate writers that cache a flat map (tenant keys at top
         // level) instead of the {tenant, settings} envelope.
         final tenantRaw = decoded['tenant'];
-        final tenant = tenantRaw is Map
-            ? tenantRaw.cast<String, dynamic>()
-            : decoded;
-        final settings =
-            (decoded['settings'] as Map?)?.cast<String, dynamic>();
+        final tenant =
+            tenantRaw is Map ? tenantRaw.cast<String, dynamic>() : decoded;
+        final settings = (decoded['settings'] as Map?)?.cast<String, dynamic>();
         final branding = TenantBranding.fromRows(tenant, settings);
         final logo = await _loadCachedLogo(tenantId);
         return ReportBranding.fromTenantBranding(branding, logoBytes: logo);
@@ -148,8 +142,8 @@ Future<ReportBranding> loadReportBranding(
 Future<Uint8List?> _loadCachedLogo(String tenantId) async {
   try {
     final support = await getApplicationSupportDirectory();
-    final file = File(p.join(
-        support.path, 'Madrassa360', 'branding', tenantId, 'logo.png'));
+    final file = File(
+        p.join(support.path, 'Madrassa360', 'branding', tenantId, 'logo.png'));
     if (await file.exists()) return await file.readAsBytes();
   } catch (_) {
     // ignore — emblem fallback

@@ -76,8 +76,7 @@ void main() {
   // ── Module gating on navigation ───────────────────────────────
 
   group('buildNavTabs module gating', () {
-    List<NavTab> tabs(Set<String> perms, Set<String>? modules) =>
-        buildNavTabs(
+    List<NavTab> tabs(Set<String> perms, Set<String>? modules) => buildNavTabs(
           perms: perms,
           enabledModules: modules,
           dashboardBuilder: () => const SizedBox(),
@@ -92,8 +91,7 @@ void main() {
 
     List<String> labels(List<NavTab> t) => t.map((e) => e.label).toList();
 
-    test('tenant with only students+attendance+fees never sees library UI',
-        () {
+    test('tenant with only students+attendance+fees never sees library UI', () {
       final perms = {
         AppPermissions.viewStudents,
         AppPermissions.markAttendance,
@@ -151,8 +149,8 @@ void main() {
       expect(urduTimeAgo(now), 'ابھی');
       expect(urduTimeAgo(now.subtract(const Duration(minutes: 10))),
           '10 منٹ پہلے');
-      expect(urduTimeAgo(now.subtract(const Duration(hours: 3))),
-          '3 گھنٹے پہلے');
+      expect(
+          urduTimeAgo(now.subtract(const Duration(hours: 3))), '3 گھنٹے پہلے');
       expect(urduTimeAgo(now.subtract(const Duration(days: 1))), 'کل');
     });
   });
@@ -165,8 +163,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            tenantBrandingProvider
-                .overrideWith((ref) async => _testBranding()),
+            tenantBrandingProvider.overrideWith((ref) async => _testBranding()),
           ],
           child: const MaterialApp(
             home: Scaffold(body: TenantNameText()),
@@ -183,8 +180,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            tenantBrandingProvider
-                .overrideWith((ref) async => _testBranding()),
+            tenantBrandingProvider.overrideWith((ref) async => _testBranding()),
           ],
           child: const MaterialApp(
             home: Scaffold(body: TenantLogo()),

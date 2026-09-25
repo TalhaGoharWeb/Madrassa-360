@@ -32,17 +32,14 @@ void main() {
     });
 
     test('cancelled -> neutral textSecondary', () {
-      expect(
-          MaStatusChip.colorFor('cancelled'), AppColors.textSecondary);
+      expect(MaStatusChip.colorFor('cancelled'), AppColors.textSecondary);
     });
 
-    test('grace_period is NOT explicitly mapped -> falls back to neutral',
-        () {
+    test('grace_period is NOT explicitly mapped -> falls back to neutral', () {
       // Real behaviour read from the switch: 'grace_period' hits default.
       // If the product wants grace visibly distinct, the switch must grow
       // a case — this test documents the current gap.
-      expect(MaStatusChip.colorFor('grace_period'),
-          AppColors.textSecondary);
+      expect(MaStatusChip.colorFor('grace_period'), AppColors.textSecondary);
     });
 
     test('unknown statuses degrade to neutral, never crash', () {
@@ -73,9 +70,16 @@ void main() {
 
     test('vocabulary is exactly the six CHECK values', () {
       expect(allStatuses.length, 6);
-      expect(allStatuses,
-          containsAll(['trial', 'active', 'grace_period', 'expired',
-            'suspended', 'cancelled']));
+      expect(
+          allStatuses,
+          containsAll([
+            'trial',
+            'active',
+            'grace_period',
+            'expired',
+            'suspended',
+            'cancelled'
+          ]));
     });
 
     test('provisioned and blocked partition the vocabulary', () {

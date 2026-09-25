@@ -8,7 +8,7 @@
 /// Report families shown as tabs in the hub.
 enum ReportCategory {
   student, // طلبہ — per-student documents & statements
-  admin,   // انتظامیہ — registers & summaries
+  admin, // انتظامیہ — registers & summaries
 }
 
 /// Filter + generation parameters for one report run.
@@ -19,7 +19,7 @@ class ReportParams {
   final String? darjaId;
   final String? examId;
   final DateTime? from; // inclusive, date part only
-  final DateTime? to;   // inclusive, date part only
+  final DateTime? to; // inclusive, date part only
 
   const ReportParams({
     required this.tenantId,
@@ -35,8 +35,8 @@ class ReportParams {
   static String? _d(DateTime? d) => d == null
       ? null
       : '${d.year.toString().padLeft(4, '0')}-'
-        '${d.month.toString().padLeft(2, '0')}-'
-        '${d.day.toString().padLeft(2, '0')}';
+          '${d.month.toString().padLeft(2, '0')}-'
+          '${d.day.toString().padLeft(2, '0')}';
 
   String? get fromIso => _d(from);
   String? get toIso => _d(to);
@@ -57,6 +57,7 @@ class ReportDefinition {
   final bool needsDarja;
   final bool needsExam;
   final bool needsDateRange;
+
   /// True when CSV/XLSX export is meaningful (tabular data).
   final bool tabular;
 

@@ -26,7 +26,7 @@ import 'dart:async';
 
 import 'package:drift/drift.dart';
 
-import '../../data/local/app_database.dart';
+import '../../data/local/app_database.dart' hide SyncQueue;
 import '../../core/sync/sync_engine.dart';
 import '../models/student.dart';
 
@@ -62,8 +62,7 @@ class LocalStudentRepository implements IStudentRepository {
   /// the decoded `data` JSON (flat, server-shaped) plus nested
   /// `darjas`/`classes` join maps for the names.
   Student _fromRow(Map<String, dynamic> r) {
-    final data =
-        (r['_data'] as Map<String, dynamic>?) ?? const {};
+    final data = (r['_data'] as Map<String, dynamic>?) ?? const {};
     return Student.fromJson({
       ...data,
       'darjas': {'name': r['darja_name']},
@@ -82,7 +81,7 @@ class LocalStudentRepository implements IStudentRepository {
 
   // `is_active` lives in the data JSON (SQLite json_extract maps JSON
   // true → 1, covering both bool and int encodings).
-  static const _liveFilter = "s.deleted_at IS NULL "
+  static const _liveFilter = 's.deleted_at IS NULL '
       "AND (json_extract(s.data, '\$.is_active') IS NULL "
       "OR json_extract(s.data, '\$.is_active') = 1) ";
 
@@ -127,8 +126,7 @@ class LocalStudentRepository implements IStudentRepository {
       );
 
   @override
-  Future<Student?> getStudentById(String id,
-      {required String tenantId}) async {
+  Future<Student?> getStudentById(String id, {required String tenantId}) async {
     final rows = await LocalRows.query(
       _db,
       'SELECT $_select WHERE s.tenant_id = ? AND s.id = ? '
@@ -145,11 +143,10 @@ class LocalStudentRepository implements IStudentRepository {
   Future<Student> upsertStudent(Student student,
       {required String tenantId}) async {
     final nowIso = DateTime.now().toUtc().toIso8601String();
-    final exists = await SyncQueue.rowExists(
-        _db, 'students', tenantId, student.id);
+    final exists =
+        await SyncQueue.rowExists(_db, 'students', tenantId, student.id);
     final baseRev = exists
-        ? await SyncQueue.currentRevision(
-            _db, 'students', tenantId, student.id)
+        ? await SyncQueue.currentRevision(_db, 'students', tenantId, student.id)
         : 0;
 
     // Server-shaped payload kept in the envelope's data JSON and queued.

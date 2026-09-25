@@ -18,204 +18,331 @@ Map<String, dynamic> _clean(Map<String, dynamic> m) {
 // Enums (dbValue matches the SQL CHECK constraints)
 // ─────────────────────────────────────────────
 
-enum LedgerKind { income, expense, transfer }
+enum LedgerKind {
+  income,
+  expense,
+  transfer;
+
+  static LedgerKind fromDb(String? v) => LedgerKind.values
+      .firstWhere((e) => e.name == v, orElse: () => LedgerKind.expense);
+}
 
 extension LedgerKindX on LedgerKind {
   String get dbValue => name;
   String get urduLabel {
     switch (this) {
-      case LedgerKind.income:  return 'آمدن';
-      case LedgerKind.expense: return 'اخراجات';
-      case LedgerKind.transfer: return 'منتقلی';
+      case LedgerKind.income:
+        return 'آمدن';
+      case LedgerKind.expense:
+        return 'اخراجات';
+      case LedgerKind.transfer:
+        return 'منتقلی';
     }
   }
+
   bool get isIncome => this == LedgerKind.income;
-  static LedgerKind fromDb(String? v) => LedgerKind.values.firstWhere(
-      (e) => e.name == v, orElse: () => LedgerKind.expense);
 }
 
 enum TransactionCategory {
-  donation, zakat, sadqa, salary, fee, refund, other,
+  donation,
+  zakat,
+  sadqa,
+  salary,
+  fee,
+  refund,
+  other,
+  ;
+
+  static TransactionCategory fromDb(String? v) => TransactionCategory.values
+      .firstWhere((e) => e.name == v, orElse: () => TransactionCategory.other);
 }
 
 extension TransactionCategoryX on TransactionCategory {
   String get dbValue => name;
   String get urduLabel {
     switch (this) {
-      case TransactionCategory.donation: return 'عطیہ';
-      case TransactionCategory.zakat:    return 'زکوٰۃ';
-      case TransactionCategory.sadqa:    return 'صدقہ';
-      case TransactionCategory.salary:   return 'تنخواہ';
-      case TransactionCategory.fee:      return 'فیس';
-      case TransactionCategory.refund:   return 'واپسی';
-      case TransactionCategory.other:    return 'دیگر';
+      case TransactionCategory.donation:
+        return 'عطیہ';
+      case TransactionCategory.zakat:
+        return 'زکوٰۃ';
+      case TransactionCategory.sadqa:
+        return 'صدقہ';
+      case TransactionCategory.salary:
+        return 'تنخواہ';
+      case TransactionCategory.fee:
+        return 'فیس';
+      case TransactionCategory.refund:
+        return 'واپسی';
+      case TransactionCategory.other:
+        return 'دیگر';
     }
   }
-  static TransactionCategory fromDb(String? v) =>
-      TransactionCategory.values.firstWhere(
-          (e) => e.name == v, orElse: () => TransactionCategory.other);
 }
 
-enum PaymentMethod { cash, bankTransfer, jazzcash, easypaisa, cheque, other }
+enum PaymentMethod {
+  cash,
+  bankTransfer,
+  jazzcash,
+  easypaisa,
+  cheque,
+  other;
+
+  static PaymentMethod fromDb(String? v) {
+    switch (v) {
+      case 'cash':
+        return PaymentMethod.cash;
+      case 'bank_transfer':
+        return PaymentMethod.bankTransfer;
+      case 'jazzcash':
+        return PaymentMethod.jazzcash;
+      case 'easypaisa':
+        return PaymentMethod.easypaisa;
+      case 'cheque':
+        return PaymentMethod.cheque;
+      default:
+        return PaymentMethod.other;
+    }
+  }
+}
 
 extension PaymentMethodX on PaymentMethod {
   String get dbValue {
     switch (this) {
-      case PaymentMethod.bankTransfer: return 'bank_transfer';
-      default: return name;
+      case PaymentMethod.bankTransfer:
+        return 'bank_transfer';
+      default:
+        return name;
     }
   }
+
   String get urduLabel {
     switch (this) {
-      case PaymentMethod.cash:         return 'نقد';
-      case PaymentMethod.bankTransfer: return 'بینک ٹرانسفر';
-      case PaymentMethod.jazzcash:     return 'جاز کیش';
-      case PaymentMethod.easypaisa:    return 'ایزی پیسہ';
-      case PaymentMethod.cheque:       return 'چیک';
-      case PaymentMethod.other:        return 'دیگر';
-    }
-  }
-  static PaymentMethod fromDb(String? v) {
-    switch (v) {
-      case 'cash': return PaymentMethod.cash;
-      case 'bank_transfer': return PaymentMethod.bankTransfer;
-      case 'jazzcash': return PaymentMethod.jazzcash;
-      case 'easypaisa': return PaymentMethod.easypaisa;
-      case 'cheque': return PaymentMethod.cheque;
-      default: return PaymentMethod.other;
+      case PaymentMethod.cash:
+        return 'نقد';
+      case PaymentMethod.bankTransfer:
+        return 'بینک ٹرانسفر';
+      case PaymentMethod.jazzcash:
+        return 'جاز کیش';
+      case PaymentMethod.easypaisa:
+        return 'ایزی پیسہ';
+      case PaymentMethod.cheque:
+        return 'چیک';
+      case PaymentMethod.other:
+        return 'دیگر';
     }
   }
 }
 
 /// Lifecycle of a financial document. Posted/void rows are IMMUTABLE
 /// (DB-enforced); corrections happen via reversal entries.
-enum DocStatus { draft, approved, posted, void }
+enum DocStatus {
+  draft,
+  approved,
+  posted,
+  voided;
+
+  static DocStatus fromDb(String? v) => DocStatus.values
+      .firstWhere((e) => e.dbValue == v, orElse: () => DocStatus.draft);
+}
 
 extension DocStatusX on DocStatus {
-  String get dbValue => name;
+  String get dbValue => this == DocStatus.voided ? 'void' : name;
   String get urduLabel {
     switch (this) {
-      case DocStatus.draft:    return 'مسودہ';
-      case DocStatus.approved: return 'منظور شدہ';
-      case DocStatus.posted:   return 'حتمی';
-      case DocStatus.void:     return 'منسوخ';
+      case DocStatus.draft:
+        return 'مسودہ';
+      case DocStatus.approved:
+        return 'منظور شدہ';
+      case DocStatus.posted:
+        return 'حتمی';
+      case DocStatus.voided:
+        return 'منسوخ';
     }
   }
-  bool get isFinal => this == DocStatus.posted || this == DocStatus.void;
-  static DocStatus fromDb(String? v) => DocStatus.values.firstWhere(
-      (e) => e.name == v, orElse: () => DocStatus.draft);
+
+  bool get isFinal => this == DocStatus.posted || this == DocStatus.voided;
 }
 
 enum InvoiceStatus {
-  draft, issued, partiallyPaid, paid, overdue, cancelled, void,
+  draft,
+  issued,
+  partiallyPaid,
+  paid,
+  overdue,
+  cancelled,
+  voided,
+  ;
+
+  static InvoiceStatus fromDb(String? v) {
+    switch (v) {
+      case 'partially_paid':
+        return InvoiceStatus.partiallyPaid;
+      case 'draft':
+        return InvoiceStatus.draft;
+      case 'issued':
+        return InvoiceStatus.issued;
+      case 'paid':
+        return InvoiceStatus.paid;
+      case 'overdue':
+        return InvoiceStatus.overdue;
+      case 'cancelled':
+        return InvoiceStatus.cancelled;
+      case 'void':
+        return InvoiceStatus.voided;
+      default:
+        return InvoiceStatus.draft;
+    }
+  }
 }
 
 extension InvoiceStatusX on InvoiceStatus {
   String get dbValue {
     switch (this) {
-      case InvoiceStatus.partiallyPaid: return 'partially_paid';
-      default: return name;
+      case InvoiceStatus.partiallyPaid:
+        return 'partially_paid';
+      case InvoiceStatus.voided:
+        return 'void';
+      default:
+        return name;
     }
   }
+
   String get urduLabel {
     switch (this) {
-      case InvoiceStatus.draft:         return 'مسودہ';
-      case InvoiceStatus.issued:        return 'جاری';
-      case InvoiceStatus.partiallyPaid: return 'جزوی ادا';
-      case InvoiceStatus.paid:          return 'ادا شدہ';
-      case InvoiceStatus.overdue:       return 'واجب الادا';
-      case InvoiceStatus.cancelled:     return 'منسوخ';
-      case InvoiceStatus.void:          return 'کالعدم';
+      case InvoiceStatus.draft:
+        return 'مسودہ';
+      case InvoiceStatus.issued:
+        return 'جاری';
+      case InvoiceStatus.partiallyPaid:
+        return 'جزوی ادا';
+      case InvoiceStatus.paid:
+        return 'ادا شدہ';
+      case InvoiceStatus.overdue:
+        return 'واجب الادا';
+      case InvoiceStatus.cancelled:
+        return 'منسوخ';
+      case InvoiceStatus.voided:
+        return 'کالعدم';
     }
   }
+
   bool get isFinal =>
       this == InvoiceStatus.paid ||
       this == InvoiceStatus.cancelled ||
-      this == InvoiceStatus.void;
-  static InvoiceStatus fromDb(String? v) {
-    switch (v) {
-      case 'partially_paid': return InvoiceStatus.partiallyPaid;
-      case 'draft': return InvoiceStatus.draft;
-      case 'issued': return InvoiceStatus.issued;
-      case 'paid': return InvoiceStatus.paid;
-      case 'overdue': return InvoiceStatus.overdue;
-      case 'cancelled': return InvoiceStatus.cancelled;
-      case 'void': return InvoiceStatus.void;
-      default: return InvoiceStatus.draft;
-    }
-  }
+      this == InvoiceStatus.voided;
 }
 
-enum DiscountKind { percentage, fixed }
+enum DiscountKind {
+  percentage,
+  fixed;
+
+  static DiscountKind fromDb(String? v) => DiscountKind.values
+      .firstWhere((e) => e.name == v, orElse: () => DiscountKind.fixed);
+}
 
 extension DiscountKindX on DiscountKind {
   String get dbValue => name;
   String get urduLabel =>
       this == DiscountKind.percentage ? 'فیصد' : 'مقررہ رقم';
-  static DiscountKind fromDb(String? v) => DiscountKind.values.firstWhere(
-      (e) => e.name == v, orElse: () => DiscountKind.fixed);
 }
 
-enum DiscountStatus { draft, applied, void }
+enum DiscountStatus {
+  draft,
+  applied,
+  voided;
+
+  static DiscountStatus fromDb(String? v) => DiscountStatus.values
+      .firstWhere((e) => e.name == v, orElse: () => DiscountStatus.draft);
+}
 
 extension DiscountStatusX on DiscountStatus {
-  String get dbValue => name;
-  static DiscountStatus fromDb(String? v) => DiscountStatus.values.firstWhere(
-      (e) => e.name == v, orElse: () => DiscountStatus.draft);
+  String get dbValue => this == DiscountStatus.voided ? 'void' : name;
 }
 
-enum ScholarshipStatus { active, expired, revoked }
+enum ScholarshipStatus {
+  active,
+  expired,
+  revoked;
+
+  static ScholarshipStatus fromDb(String? v) => ScholarshipStatus.values
+      .firstWhere((e) => e.name == v, orElse: () => ScholarshipStatus.active);
+}
 
 extension ScholarshipStatusX on ScholarshipStatus {
   String get dbValue => name;
   String get urduLabel {
     switch (this) {
-      case ScholarshipStatus.active:  return 'فعال';
-      case ScholarshipStatus.expired: return 'ختم شدہ';
-      case ScholarshipStatus.revoked: return 'واپس شدہ';
+      case ScholarshipStatus.active:
+        return 'فعال';
+      case ScholarshipStatus.expired:
+        return 'ختم شدہ';
+      case ScholarshipStatus.revoked:
+        return 'واپس شدہ';
     }
   }
-  static ScholarshipStatus fromDb(String? v) =>
-      ScholarshipStatus.values.firstWhere(
-          (e) => e.name == v, orElse: () => ScholarshipStatus.active);
 }
 
-enum AccountType { asset, liability, equity, income, expense }
+enum AccountType {
+  asset,
+  liability,
+  equity,
+  income,
+  expense;
+
+  static AccountType fromDb(String? v) => AccountType.values
+      .firstWhere((e) => e.name == v, orElse: () => AccountType.asset);
+}
 
 extension AccountTypeX on AccountType {
   String get dbValue => name;
   String get urduLabel {
     switch (this) {
-      case AccountType.asset:     return 'اثاثہ';
-      case AccountType.liability:  return 'ذمہ داری';
-      case AccountType.equity:     return 'سرمایہ';
-      case AccountType.income:     return 'آمدن';
-      case AccountType.expense:    return 'اخراجات';
+      case AccountType.asset:
+        return 'اثاثہ';
+      case AccountType.liability:
+        return 'ذمہ داری';
+      case AccountType.equity:
+        return 'سرمایہ';
+      case AccountType.income:
+        return 'آمدن';
+      case AccountType.expense:
+        return 'اخراجات';
     }
   }
-  static AccountType fromDb(String? v) => AccountType.values.firstWhere(
-      (e) => e.name == v, orElse: () => AccountType.asset);
 }
 
-enum FeeFrequency { monthly, quarterly, annual, oneTime }
+enum FeeFrequency {
+  monthly,
+  quarterly,
+  annual,
+  oneTime;
 
-extension FeeFrequencyX on FeeFrequency {
-  String get dbValue =>
-      this == FeeFrequency.oneTime ? 'one_time' : name;
-  String get urduLabel {
-    switch (this) {
-      case FeeFrequency.monthly:   return 'ماہانہ';
-      case FeeFrequency.quarterly: return 'سہ ماہی';
-      case FeeFrequency.annual:     return 'سالانہ';
-      case FeeFrequency.oneTime:   return 'یک مشت';
-    }
-  }
   static FeeFrequency fromDb(String? v) {
     switch (v) {
-      case 'monthly': return FeeFrequency.monthly;
-      case 'quarterly': return FeeFrequency.quarterly;
-      case 'annual': return FeeFrequency.annual;
-      default: return FeeFrequency.oneTime;
+      case 'monthly':
+        return FeeFrequency.monthly;
+      case 'quarterly':
+        return FeeFrequency.quarterly;
+      case 'annual':
+        return FeeFrequency.annual;
+      default:
+        return FeeFrequency.oneTime;
+    }
+  }
+}
+
+extension FeeFrequencyX on FeeFrequency {
+  String get dbValue => this == FeeFrequency.oneTime ? 'one_time' : name;
+  String get urduLabel {
+    switch (this) {
+      case FeeFrequency.monthly:
+        return 'ماہانہ';
+      case FeeFrequency.quarterly:
+        return 'سہ ماہی';
+      case FeeFrequency.annual:
+        return 'سالانہ';
+      case FeeFrequency.oneTime:
+        return 'یک مشت';
     }
   }
 }
@@ -261,7 +388,7 @@ class Account {
         code: (_s(j['code']) ?? ''),
         name: (_s(j['name']) ?? ''),
         nameUrdu: _s(j['name_urdu']),
-        accountType: AccountTypeX.fromDb(_s(j['account_type'])),
+        accountType: AccountType.fromDb(_s(j['account_type'])),
         parentId: _s(j['parent_id']),
         isActive: (j['is_active'] as bool?) ?? true,
         openingBalance: _d(j['opening_balance']),
@@ -336,14 +463,14 @@ class LedgerTransaction {
         id: _s(j['id']),
         tenantId: (_s(j['tenant_id']) ?? ''),
         entryDate: _dt(j['entry_date']) ?? DateTime.now(),
-        kind: LedgerKindX.fromDb(_s(j['kind'])),
-        category: TransactionCategoryX.fromDb(_s(j['category'])),
+        kind: LedgerKind.fromDb(_s(j['kind'])),
+        category: TransactionCategory.fromDb(_s(j['category'])),
         amount: _d(j['amount']),
         accountId: _s(j['account_id']),
         description: _s(j['description']),
         referenceType: _s(j['reference_type']),
         referenceId: _s(j['reference_id']),
-        status: DocStatusX.fromDb(_s(j['status'])),
+        status: DocStatus.fromDb(_s(j['status'])),
         postedAt: _dt(j['posted_at']),
         createdBy: _s(j['created_by']),
         approvedBy: _s(j['approved_by']),
@@ -414,14 +541,14 @@ class IncomeEntry {
   factory IncomeEntry.fromJson(Map<String, dynamic> j) => IncomeEntry(
         id: _s(j['id']),
         tenantId: (_s(j['tenant_id']) ?? ''),
-        sourceType: TransactionCategoryX.fromDb(_s(j['source_type'])),
+        sourceType: TransactionCategory.fromDb(_s(j['source_type'])),
         donorName: _s(j['donor_name']),
         amount: _d(j['amount']),
         accountId: _s(j['account_id']),
         receivedDate: _dt(j['received_date']) ?? DateTime.now(),
         receiptNumber: _s(j['receipt_number']),
         description: _s(j['description']),
-        status: DocStatusX.fromDb(_s(j['status'])),
+        status: DocStatus.fromDb(_s(j['status'])),
         postedAt: _dt(j['posted_at']),
         createdBy: _s(j['created_by']),
         approvedBy: _s(j['approved_by']),
@@ -494,7 +621,7 @@ class ExpenseEntry {
         expenseDate: _dt(j['expense_date']) ?? DateTime.now(),
         receiptUrl: _s(j['receipt_url']),
         description: _s(j['description']),
-        status: DocStatusX.fromDb(_s(j['status'])),
+        status: DocStatus.fromDb(_s(j['status'])),
         postedAt: _dt(j['posted_at']),
         createdBy: _s(j['created_by']),
         approvedBy: _s(j['approved_by']),
@@ -614,7 +741,7 @@ class FeeItem {
         name: (_s(j['name']) ?? ''),
         nameUrdu: _s(j['name_urdu']),
         amount: _d(j['amount']),
-        frequency: FeeFrequencyX.fromDb(_s(j['frequency'])),
+        frequency: FeeFrequency.fromDb(_s(j['frequency'])),
         isActive: (j['is_active'] as bool?) ?? true,
         createdBy: _s(j['created_by']),
         updatedBy: _s(j['updated_by']),
@@ -697,7 +824,8 @@ class Invoice {
       id: _s(j['id']),
       tenantId: (_s(j['tenant_id']) ?? ''),
       studentId: (_s(j['student_id']) ?? ''),
-      studentName: student != null ? _s(student['name']) : _s(j['student_name']),
+      studentName:
+          student != null ? _s(student['name']) : _s(j['student_name']),
       feeStructureId: _s(j['fee_structure_id']),
       invoiceNumber: _s(j['invoice_number']),
       billingMonth: _s(j['billing_month']),
@@ -709,7 +837,7 @@ class Invoice {
       total: _d(j['total']),
       amountPaid: _d(j['amount_paid']),
       balanceDue: _d(j['balance_due']),
-      status: InvoiceStatusX.fromDb(_s(j['status'])),
+      status: InvoiceStatus.fromDb(_s(j['status'])),
       reversedById: _s(j['reversed_by_id']),
       notes: _s(j['notes']),
       createdBy: _s(j['created_by']),
@@ -836,14 +964,15 @@ class Payment {
       id: _s(j['id']),
       tenantId: (_s(j['tenant_id']) ?? ''),
       studentId: _s(j['student_id']),
-      studentName: student != null ? _s(student['name']) : _s(j['student_name']),
+      studentName:
+          student != null ? _s(student['name']) : _s(j['student_name']),
       invoiceId: _s(j['invoice_id']),
       accountId: _s(j['account_id']),
       amount: _d(j['amount']),
       paymentDate: _dt(j['payment_date']) ?? DateTime.now(),
-      method: PaymentMethodX.fromDb(_s(j['method'])),
+      method: PaymentMethod.fromDb(_s(j['method'])),
       receiptNumber: _s(j['receipt_number']),
-      status: DocStatusX.fromDb(_s(j['status'])),
+      status: DocStatus.fromDb(_s(j['status'])),
       postedAt: _dt(j['posted_at']),
       notes: _s(j['notes']),
       createdBy: _s(j['created_by']),
@@ -951,7 +1080,7 @@ class Refund {
         amount: _d(j['amount']),
         reason: (_s(j['reason']) ?? ''),
         refundDate: _dt(j['refund_date']) ?? DateTime.now(),
-        status: DocStatusX.fromDb(_s(j['status'])),
+        status: DocStatus.fromDb(_s(j['status'])),
         postedAt: _dt(j['posted_at']),
         createdBy: _s(j['created_by']),
         approvedBy: _s(j['approved_by']),
@@ -1013,10 +1142,10 @@ class Discount {
         tenantId: (_s(j['tenant_id']) ?? ''),
         studentId: _s(j['student_id']),
         invoiceId: _s(j['invoice_id']),
-        discountType: DiscountKindX.fromDb(_s(j['discount_type'])),
+        discountType: DiscountKind.fromDb(_s(j['discount_type'])),
         value: _d(j['value']),
         reason: _s(j['reason']),
-        status: DiscountStatusX.fromDb(_s(j['status'])),
+        status: DiscountStatus.fromDb(_s(j['status'])),
         appliedAt: _dt(j['applied_at']),
         createdBy: _s(j['created_by']),
         approvedBy: _s(j['approved_by']),
@@ -1084,7 +1213,7 @@ class Scholarship {
       discountPercent: _d(j['discount_percent']),
       startDate: _dt(j['start_date']) ?? DateTime.now(),
       endDate: _dt(j['end_date']),
-      status: ScholarshipStatusX.fromDb(_s(j['status'])),
+      status: ScholarshipStatus.fromDb(_s(j['status'])),
       createdBy: _s(j['created_by']),
       approvedBy: _s(j['approved_by']),
       updatedBy: _s(j['updated_by']),

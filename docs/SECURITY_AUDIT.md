@@ -40,7 +40,12 @@
 - `SUPABASE_INTEGRATION_PLAN.md:105` — full **anon key** (`[REDACTED]`), tied to `https://ffhsrnkvjjedvclfwgmr.supabase.co`.
 - `SUPABASE_INTEGRATION_PLAN.md:107` — full **service_role key** (`[REDACTED]`), printed as a bare line: `Service role key=[REDACTED]`.
 - **Exposure path:** committed in git (`git log` shows it since the initial commit), so every clone/fork/archive of this repo contains a full-admin key. File is a root-level doc — indexable if the repo is public.
-- **Required action:** rotate BOTH keys in Supabase Dashboard → API immediately; then purge from git history (`git filter-repo`) — deleting the file in a new commit is NOT enough.
+- **Status 2026-09-25:** RESOLVED in the codebase. Both keys were rotated (new keys created in
+  Supabase Dashboard) and the committed values replaced with `***REDACTED-KEY-ROTATED-2026-09-25***`
+  placeholders (commit `33bb3cb`); the full git history was rewritten and purged — a whole-history
+  scan finds zero JWTs, zero `sb_secret_` values, zero `SuperAdmin@123`.
+  **Still required (operator action): revoke the OLD legacy JWT keys** in Supabase Dashboard →
+  Project Settings → API Keys; the old keys remain valid until revoked.
 
 ### 1.2 Service-role key used from the client (CRITICAL — Finding #2)
 - `lib/providers/user_management_provider.dart:129` — `final serviceKey = dotenv.env['SUPABASE_SERVICE_KEY'] ?? '';`
@@ -161,7 +166,10 @@
 ## Remediation Priority List (for Phase 2 / Phase 15 security hardening)
 
 **P0 — do before any further distribution:**
-1. **Rotate the Supabase anon key AND service_role key** (both committed at `SUPABASE_INTEGRATION_PLAN.md:105,107`), then purge the file from git history (`git filter-repo`) — a delete-commit is insufficient.
+1. **Revoke the OLD Supabase legacy JWT keys** in Supabase Dashboard → Project Settings → API Keys.
+   (Rotation done 2026-09-25: new keys created; committed values replaced with placeholders in
+   `33bb3cb`; full git history rewritten and secret-scanned clean. Revocation of the old keys is the
+   remaining operator step — they stay valid until revoked.)
 2. **Remove the service_role key from the client**: delete `SUPABASE_SERVICE_KEY` usage from `lib/providers/user_management_provider.dart:129,240`; move user create/delete to a Supabase Edge Function with server-side role checks.
 3. **Delete** `lib/core/services/auth_service.dart` mock store (`admin123`/`teacher123`/`parent123`) — dead code with live credentials.
 
@@ -192,7 +200,7 @@ can move to "pass" on executed evidence today** — verdicts below are file:line
 | # | Item | Verdict | Evidence |
 |---|---|---|---|
 | 1 | No service-role keys in client | 🟡 CODE-COMPLETE | No `SUPABASE_SERVICE_KEY`/`service_role` in `lib/` (`lib/providers/user_management_provider.dart:1-9` documents the removal; privileged ops go via `_client.functions.invoke('manage-users', …)` at `:152` — client never holds the key) |
-| 2 | No secrets committed | ❌ FAIL | **`SUPABASE_INTEGRATION_PLAN.md:105,107` still contains the real anon key + real service_role key verbatim** (verified 2026-09-25); both also survive in git history since the initial commit (`git log --oneline --all -- SUPABASE_INTEGRATION_PLAN.md` → `ecff664`). Plus: `supabase/05_new_modules.sql:354` still has `crypt('***REDACTED-PASSWORD-ROTATED-2026-09-25***', …)` (commented). No JWT-shaped secrets, private keys, or hardcoded passwords found anywhere else in the tree |
+| 2 | No secrets committed | ✅ PASS (2026-09-25) | Committed keys replaced with `***REDACTED-KEY-ROTATED-2026-09-25***` placeholders (`33bb3cb`); full-history scan finds zero JWTs / zero `sb_secret_` / zero `SuperAdmin@123`. `supabase/05_new_modules.sql:354` seed password is a placeholder. **Operator step outstanding:** revoke the old legacy JWT keys in the Supabase Dashboard (rotation created new keys; old ones remain valid until revoked) |
 | 3 | Tenant RLS complete | 🟡 CODE-COMPLETE (unapplied) | `supabase/migrations/007_tenant_rls.sql` (920 lines): fail-loud stale-policy guard raises at `:912`; spot-checked tenant predicates — `students` `:280-327`, `fees` `:422-478`, `announcements` `:569-577` — all `is_platform_admin() OR (is_tenant_member(<table>.tenant_id) AND tenant_has_permission(…))` |
 | 4 | Cross-tenant tests pass | 🟡 WRITTEN, NOT EXECUTED | `supabase/tests/cross_tenant_isolation.sql` (731 lines) is self-labeled "NOT YET EXECUTED" — Tenant A/B matrix, escalation negatives, storage, stale-policy sweep |
 | 5 | Storage policies isolated | 🟡 CODE-COMPLETE (unapplied) | `supabase/migrations/008_tenant_storage.sql`: 3 private buckets (`:31-35`), `{tenant_id}/` path prefix via `storage_path_tenant()` (`:58-66`), membership-checked policies on all 3 buckets (`:79-257`) |
@@ -201,7 +209,7 @@ can move to "pass" on executed evidence today** — verdicts below are file:line
 | 8 | Password reset works | 🟡 CODE-COMPLETE (unexecuted) | `resetPasswordForEmail` wired at `auth_repository.dart:209`, forgot-password screen exists (`lib/presentation/screens/auth/forgot_password_screen.dart`) — but the recovery deep-link/redirect (`reset-password` route) is **unverified end-to-end** and no email template/redirect URL config is in-tree |
 | 9 | Session management | 🟡 CODE-COMPLETE (unexecuted) | Real logout → `_repo.signOut()` (`lib/providers/auth_provider.dart:203-211`); `refreshSession()` (`auth_repository.dart:236-238`); expiry surfaces as `SIGNED_OUT` (`:262-265`); restore redirect via `AuthRoute` (`:20`) |
 | 10 | Audit logs work | 🟡 CODE-COMPLETE (unexecuted) | `012_audit_logs.sql`: append-only `audit_logs` table (`:17`), `log_audit()` SECURITY DEFINER RPC (`:65-104`, client granted EXECUTE only), tenant-admin/platform-admin SELECT policies. Client never writes audit rows directly (finance writes via `finance_audit()` trigger per `014_finance.sql:36-39`) — the design is correct, unexecuted |
-| 11 | Privileged APIs protected | 🟡 CODE-COMPLETE **with a functional gap** | `requirePlatformAdmin` enforced in `provision-tenant` (`:103-104`), `manage-tenant` (`:33-34`), `export-tenant` (`:80-81`); `send-notification` allows platform-admin **or** active tenant member (`index.ts:202-210`, documented). ⚠️ **GAP:** the client invokes a `manage-users` Edge Function (`user_management_provider.dart:152`) that **does not exist** (`supabase/functions/` has only provision/manage/export + send-notification) — the code fails closed with an honest error (`:128-133`), so this is a *non-functional Master Admin op*, not an open vuln, but it blocks user management until the function is written + deployed |
+| 11 | Privileged APIs protected | 🟡 CODE-COMPLETE **with a functional gap** | `requirePlatformAdmin` enforced in `provision-tenant` (`:103-104`), `manage-tenant` (`:33-34`), `export-tenant` (`:80-81`); `send-notification` allows platform-admin **or** active tenant member (`index.ts:202-210`, documented). ✅ **GAP CLOSED (code):** `supabase/functions/manage-users/index.ts` now implements privileged user CRUD (user create/update/delete, membership assignment/removal, platform role changes, authorization/rank limits, last-owner protection, rollback, audit logging); `deno check` + `deno lint` pass. **Still outstanding:** deploy the function and set `SUPABASE_SERVICE_ROLE_KEY` in its secrets; the client invokes it via `_client.functions.invoke('manage-users', …)` and never holds the key |
 | 12 | File upload validated | 🟡 PARTIAL — server side code-complete, client side missing | Upload path is tenant-prefixed (`Madrassa360/uploads/<tenantId>/<fileName>`, `storage_repository.dart:42-52`) and the actual byte upload is server-RLS-gated via the pending-queue engine (`sync_engine.dart:869-895`, `FileOptions(upsert: true)`); ⚠️ **no client-side content-type/size/extension validation** — no `maxSize`, `contentType`, or image-type checks found on the image_picker path |
 | 13 | Input validation | 🟡 CODE-COMPLETE (not audited repo-wide) | `lib/core/utils/validators.dart` exists; `validator:` used in 9 form screens (auth screens included). No systematic input-validation audit has been run — cannot certify every form |
 | 14 | SQL injection protections | ✅ PASS (narrow technical fact) | All Drift `customSelect`/`customUpdate` use `?` + `Variable.withString(…)` (e.g. `sync_providers.dart:65-69`, `sync_engine.dart:869-874`); the single interpolated identifier (`customStatement('DELETE FROM $table …', …)` at `sync_engine.dart:967`) draws `$table` from the hardcoded `_localTables` whitelist map (`:119-145`) |
@@ -216,10 +224,9 @@ The CI job (`mock-guard` in `.github/workflows/ci.yaml`) runs the real tool — 
 
 ### P0 blockers still standing (user action required)
 
-1. **Rotate the Supabase anon key AND service_role key** — both still committed at
-   `SUPABASE_INTEGRATION_PLAN.md:105,107` and in git history since `ecff664`. Then purge
-   from history (`git filter-repo`), not just delete (current tree still ships the file).
+1. **Revoke the OLD Supabase legacy JWT keys** in the Dashboard — rotation + history purge
+   completed 2026-09-25 (old keys remain valid until revoked).
 2. **Change `***REDACTED-PASSWORD-ROTATED-2026-09-25***`** (`supabase/05_new_modules.sql:354`) or remove the legacy seed.
 3. Deploy staging, apply migrations 001–018, execute `supabase/tests/cross_tenant_isolation.sql` green,
-   deploy the 4 Edge Functions (+ write/deploy the missing `manage-users`), then re-run this checklist
+   deploy the 5 Edge Functions (incl. `manage-users`; set `SUPABASE_SERVICE_ROLE_KEY` in function secrets), then re-run this checklist
    — items 1, 3–13, 16 cannot pass before that.

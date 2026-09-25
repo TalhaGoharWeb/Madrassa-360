@@ -11,11 +11,12 @@ import 'madrasa_management_screen.dart';
 /// lib/presentation/screens/master_admin/ (route '/master', gated by
 /// MasterAdminGuard). Kept only because other code may still reference it —
 /// do not build new features here; use MasterDashboardScreen instead.
-@deprecated
+@Deprecated('Use MasterDashboardScreen instead')
 class SuperAdminDashboardScreen extends StatefulWidget {
   const SuperAdminDashboardScreen({super.key});
   @override
-  State<SuperAdminDashboardScreen> createState() => _SuperAdminDashboardScreenState();
+  State<SuperAdminDashboardScreen> createState() =>
+      _SuperAdminDashboardScreenState();
 }
 
 class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
@@ -37,10 +38,12 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
       final user = ref.watch(authProvider).user;
       final madrasas = madrasaState.madrasas;
 
-      final total   = madrasas.length;
-      final active  = madrasas.where((m) => m.isActive).length;
-      final premium = madrasas.where((m) => m.subscriptionPlan == 'premium').length;
-      final standard = madrasas.where((m) => m.subscriptionPlan == 'standard').length;
+      final total = madrasas.length;
+      final active = madrasas.where((m) => m.isActive).length;
+      final premium =
+          madrasas.where((m) => m.subscriptionPlan == 'premium').length;
+      final standard =
+          madrasas.where((m) => m.subscriptionPlan == 'standard').length;
 
       return Scaffold(
         backgroundColor: AppColors.background,
@@ -64,20 +67,23 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(children: [
-                          const Icon(Icons.account_balance, color: Colors.white70, size: 28),
+                          const Icon(Icons.account_balance,
+                              color: Colors.white70, size: 28),
                           const SizedBox(width: 10),
                           Text('سپر ایڈمن پینل',
-                              style: AppTypography.headingSmall.copyWith(color: Colors.white)),
+                              style: AppTypography.headingSmall
+                                  .copyWith(color: Colors.white)),
                         ]),
                         const SizedBox(height: 6),
                         Text('مدرسہ 360 — فرنچائز نیٹ ورک',
-                            style: AppTypography.bodyMedium.copyWith(color: Colors.white60)),
+                            style: AppTypography.bodyMedium
+                                .copyWith(color: Colors.white60)),
                         if (user != null)
                           Padding(
                             padding: const EdgeInsets.only(top: 4),
                             child: Text(user.email,
-                                style: AppTypography.labelSmall.copyWith(
-                                    color: Colors.white38)),
+                                style: AppTypography.labelSmall
+                                    .copyWith(color: Colors.white38)),
                           ),
                       ],
                     ),
@@ -129,7 +135,8 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
                     TextButton.icon(
                       icon: const Icon(Icons.arrow_forward, size: 16),
                       label: const Text('سب دیکھیں'),
-                      onPressed: () => Navigator.push(context,
+                      onPressed: () => Navigator.push(
+                          context,
                           MaterialPageRoute(
                               builder: (_) => const MadrasaManagementScreen())),
                     ),
@@ -158,8 +165,8 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
                           size: 64, color: AppColors.textSecondary),
                       const SizedBox(height: 12),
                       Text('کوئی مدرسہ نہیں',
-                          style: AppTypography.bodyLarge.copyWith(
-                              color: AppColors.textSecondary)),
+                          style: AppTypography.bodyLarge
+                              .copyWith(color: AppColors.textSecondary)),
                       const SizedBox(height: 8),
                       ElevatedButton.icon(
                         icon: const Icon(Icons.add),
@@ -167,7 +174,8 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
                         style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF1A237E),
                             foregroundColor: Colors.white),
-                        onPressed: () => Navigator.push(context,
+                        onPressed: () => Navigator.push(
+                            context,
                             MaterialPageRoute(
                                 builder: (_) =>
                                     const MadrasaManagementScreen())),
@@ -192,14 +200,11 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
                         leading: CircleAvatar(
                           backgroundColor: const Color(0xFF1A237E),
                           child: Text(
-                            m.nameUrdu.isNotEmpty
-                                ? m.nameUrdu[0]
-                                : 'م',
+                            m.nameUrdu.isNotEmpty ? m.nameUrdu[0] : 'م',
                             style: const TextStyle(color: Colors.white),
                           ),
                         ),
-                        title: Text(m.nameUrdu,
-                            style: AppTypography.bodyLarge),
+                        title: Text(m.nameUrdu, style: AppTypography.bodyLarge),
                         subtitle: Text(
                           '${m.cityUrdu} • ${m.planLabel}',
                           style: AppTypography.labelSmall
@@ -210,8 +215,8 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
                               horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
                             color: m.isActive
-                                ? AppColors.success.withOpacity(0.1)
-                                : AppColors.error.withOpacity(0.1),
+                                ? AppColors.success.withValues(alpha: 0.1)
+                                : AppColors.error.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
@@ -252,8 +257,9 @@ class _StatCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 8, offset: const Offset(0, 2))
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2))
         ],
       ),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -261,14 +267,13 @@ class _StatCard extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10)),
           child: Icon(icon, color: color, size: 22),
         ),
         const SizedBox(width: 12),
         Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(value,
-              style: AppTypography.headingSmall.copyWith(color: color)),
+          Text(value, style: AppTypography.headingSmall.copyWith(color: color)),
           Text(label,
               style: AppTypography.labelSmall
                   .copyWith(color: AppColors.textSecondary)),

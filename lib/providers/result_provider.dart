@@ -53,8 +53,7 @@ final allResultsProvider = FutureProvider<List<StudentResult>>((ref) async {
   final repo = ref.watch(resultRepositoryProvider);
   final results = <StudentResult>[];
   for (final exam in exams) {
-    final examResults =
-        await repo.getExamResults(exam.id, tenantId: tenantId);
+    final examResults = await repo.getExamResults(exam.id, tenantId: tenantId);
     results.addAll(examResults);
   }
   return results;

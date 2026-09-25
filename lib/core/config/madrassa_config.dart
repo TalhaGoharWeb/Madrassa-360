@@ -15,8 +15,7 @@ import 'app_config.dart';
 
 /// @deprecated Use [tenantBrandingProvider] for institution identity.
 /// Kept for build metadata only; contains no tenant-specific values.
-@Deprecated(
-    'Institution identity is tenant-driven now. '
+@Deprecated('Institution identity is tenant-driven now. '
     'Use tenantBrandingProvider instead of MadrassaConfig.')
 class MadrassaConfig {
   MadrassaConfig._(); // static-only class

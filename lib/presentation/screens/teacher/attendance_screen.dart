@@ -61,25 +61,6 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
 
   static String _dateStr(DateTime d) => d.toIso8601String().substring(0, 10);
 
-  @override
-  void initState() {
-    super.initState();
-    // Auto-select the teacher's class once assignments resolve, and
-    // re-resolve if the assignment list changes underneath us.
-    ref.listen(teacherAssignedClassesProvider, (_, next) {
-      next.whenData((classes) {
-        if (!mounted) return;
-        final ids = classes.map((c) => c.id).toList();
-        if (_classId != null && ids.contains(_classId)) return;
-        final initial = widget.initialClassId;
-        final pick = (initial != null && ids.contains(initial))
-            ? initial
-            : (ids.isNotEmpty ? ids.first : null);
-        if (pick != _classId) setState(() => _classId = pick);
-      });
-    });
-  }
-
   // ── helpers ────────────────────────────────────────────────
 
   /// Merge sparse overrides over the loaded records.
@@ -214,7 +195,23 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
   // ── build ──────────────────────────────────────────────────
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
+    // Auto-select the teacher's class once assignments resolve, and
+    // re-resolve if the assignment list changes underneath us.
+    // Declarative (not ref.listen): the provider may already hold data
+    // when this build runs, and ref.listen only fires on later changes —
+    // plus ref.listen is illegal in initState in Riverpod 2.x.
+    // (Mutating _classId during build is safe: the build already reflects it.)
+    final assigned = ref.watch(teacherAssignedClassesProvider).valueOrNull;
+    if (assigned != null) {
+      final ids = assigned.map((c) => c.id).toList();
+      if (_classId == null || !ids.contains(_classId)) {
+        final initial = widget.initialClassId;
+        _classId = (initial != null && ids.contains(initial))
+            ? initial
+            : (ids.isNotEmpty ? ids.first : null);
+      }
+    }
     final tenantId = ref.watch(currentTenantIdProvider);
 
     // Sibling-owned provider (see import note). Defensive read so this file
@@ -279,8 +276,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
           Expanded(
             child: Text(
               '${AppStrings.pendingSyncBanner}: $count',
-              style:
-                  AppTypography.labelMedium.copyWith(color: Colors.white),
+              style: AppTypography.labelMedium.copyWith(color: Colors.white),
             ),
           ),
         ],
@@ -297,7 +293,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
       ),
       child: async.when(
         loading: () => const Padding(
@@ -321,11 +317,9 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
               padding: const EdgeInsets.symmetric(vertical: 12),
               child: Row(
                 children: [
-                  const Icon(Icons.class_,
-                      color: AppColors.primary, size: 20),
+                  const Icon(Icons.class_, color: AppColors.primary, size: 20),
                   const SizedBox(width: 8),
-                  Text(classes.first.name,
-                      style: AppTypography.titleMedium),
+                  Text(classes.first.name, style: AppTypography.titleMedium),
                 ],
               ),
             );
@@ -382,8 +376,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline,
-                size: 48, color: AppColors.error),
+            const Icon(Icons.error_outline, size: 48, color: AppColors.error),
             const SizedBox(height: 12),
             Text(AppStrings.error, style: AppTypography.titleMedium),
             const SizedBox(height: 8),
@@ -391,8 +384,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
               onPressed: _classId == null
                   ? null
                   : () => ref.invalidate(classAttendanceProvider(
-                      AttendanceParams(
-                          classId: _classId!, date: _date))),
+                      AttendanceParams(classId: _classId!, date: _date))),
               child: Text(AppStrings.refresh),
             ),
           ],
@@ -422,7 +414,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
             Icon(
               Icons.people_outline,
               size: 64,
-              color: AppColors.textSecondary.withOpacity(0.5),
+              color: AppColors.textSecondary.withValues(alpha: 0.5),
             ),
             const SizedBox(height: 16),
             Text(
@@ -454,7 +446,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -471,7 +463,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Icon(
@@ -549,7 +541,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Center(
@@ -587,7 +579,8 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                   style: AppTypography.labelMedium),
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.present,
-                side: BorderSide(color: AppColors.present.withOpacity(0.4)),
+                side:
+                    BorderSide(color: AppColors.present.withValues(alpha: 0.4)),
               ),
             ),
           ),
@@ -600,7 +593,8 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                   style: AppTypography.labelMedium),
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.absent,
-                side: BorderSide(color: AppColors.absent.withOpacity(0.4)),
+                side:
+                    BorderSide(color: AppColors.absent.withValues(alpha: 0.4)),
               ),
             ),
           ),
@@ -609,8 +603,8 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
             child: OutlinedButton.icon(
               onPressed: _edits.isEmpty ? null : _clearEdits,
               icon: const Icon(Icons.clear_all, size: 18),
-              label: Text(AppStrings.clearEdits,
-                  style: AppTypography.labelMedium),
+              label:
+                  Text(AppStrings.clearEdits, style: AppTypography.labelMedium),
             ),
           ),
         ],
@@ -643,8 +637,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
     final canSave = !_saving && base != null && base.isNotEmpty;
     return FloatingActionButton.extended(
       heroTag: 'attendance_save_fab',
-      onPressed:
-          (canSave && base != null) ? () => _saveAttendance(base) : null,
+      onPressed: canSave ? () => _saveAttendance(base) : null,
       icon: _saving
           ? const SizedBox(
               width: 18,
@@ -685,7 +678,7 @@ class _AttendanceRow extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: Material(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
         child: InkWell(
           onTap: onTap,
@@ -695,7 +688,7 @@ class _AttendanceRow extends StatelessWidget {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: color.withOpacity(0.3),
+                color: color.withValues(alpha: 0.3),
                 width: 1,
               ),
             ),
@@ -710,7 +703,7 @@ class _AttendanceRow extends StatelessWidget {
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: color.withOpacity(0.3),
+                        color: color.withValues(alpha: 0.3),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -746,7 +739,7 @@ class _AttendanceRow extends StatelessWidget {
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.1),
+                          color: AppColors.primary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
@@ -762,8 +755,8 @@ class _AttendanceRow extends StatelessWidget {
 
                 // Status badge
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: color,
                     borderRadius: BorderRadius.circular(20),

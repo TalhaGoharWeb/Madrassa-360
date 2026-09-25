@@ -30,7 +30,7 @@ import 'dart:async';
 import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../data/local/app_database.dart';
+import '../../data/local/app_database.dart' hide SyncQueue;
 import '../../core/sync/sync_engine.dart';
 import '../../core/services/supabase_service.dart';
 import '../models/attendance_record.dart';
@@ -96,8 +96,7 @@ class LocalAttendanceRepository implements IAttendanceRepository {
       String teacherId, String dateStr) {
     // `_data` is the decoded attendance_records.data JSON (server-shaped
     // for pulled rows, model-shaped for locally written rows).
-    final d =
-        (r['_data'] as Map<String, dynamic>?) ?? const {};
+    final d = (r['_data'] as Map<String, dynamic>?) ?? const {};
     return AttendanceRecord(
       id: r['aid'] as String?,
       tenantId: (d['tenant_id'] ?? r['tenant_id'] ?? '') as String,
@@ -145,9 +144,7 @@ class LocalAttendanceRepository implements IAttendanceRepository {
         Variable.withString(classId),
       ],
     );
-    return rows
-        .map((r) => _fromRow(r, classId, teacherId, dateStr))
-        .toList();
+    return rows.map((r) => _fromRow(r, classId, teacherId, dateStr)).toList();
   }
 
   @override

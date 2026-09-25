@@ -135,8 +135,9 @@ final parentResultsProvider = FutureProvider<List<SubjectResult>>((ref) async {
 /// Attendance records for one of the parent's own children.
 /// The [ParentAttendanceArgs.studentId] is re-checked against the
 /// guardian link — a forged id that isn't the caller's child returns [].
-final parentAttendanceProvider = FutureProvider.family<List<AttendanceRecord>,
-    ParentAttendanceArgs>((ref, args) async {
+final parentAttendanceProvider =
+    FutureProvider.family<List<AttendanceRecord>, ParentAttendanceArgs>(
+        (ref, args) async {
   final tenantId = ref.watch(currentTenantIdProvider);
   final childIds = await ref.watch(parentChildIdsProvider.future);
   if (tenantId == null || !childIds.contains(args.studentId)) {

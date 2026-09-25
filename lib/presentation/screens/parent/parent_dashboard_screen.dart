@@ -22,8 +22,7 @@ class ParentDashboardScreen extends ConsumerStatefulWidget {
       _ParentDashboardScreenState();
 }
 
-class _ParentDashboardScreenState
-    extends ConsumerState<ParentDashboardScreen> {
+class _ParentDashboardScreenState extends ConsumerState<ParentDashboardScreen> {
   String? _selectedChildId;
 
   @override
@@ -87,18 +86,17 @@ class _ParentDashboardScreenState
           final feeDue = fees.fold<double>(
               0, (sum, f) => sum + (f.amountDue - f.amountPaid));
 
-          final todayStr =
-              DateTime.now().toIso8601String().substring(0, 10);
-          final todayRecords = attendance
-              .where((a) => a.date == todayStr)
-              .toList();
+          final todayStr = DateTime.now().toIso8601String().substring(0, 10);
+          final todayRecords =
+              attendance.where((a) => a.date == todayStr).toList();
 
           return SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Child selector (only when more than one child)
-                if (children.length > 1) _buildChildSelector(children, selected),
+                if (children.length > 1)
+                  _buildChildSelector(children, selected),
 
                 // Child Profile Card
                 _buildChildProfileCard(selected, attendancePct, resultPct),
@@ -152,13 +150,11 @@ class _ParentDashboardScreenState
             child: FilterChip(
               label: Text(child.name),
               selected: isSelected,
-              onSelected: (_) =>
-                  setState(() => _selectedChildId = child.id),
-              selectedColor: AppColors.primary.withOpacity(0.2),
+              onSelected: (_) => setState(() => _selectedChildId = child.id),
+              selectedColor: AppColors.primary.withValues(alpha: 0.2),
               checkmarkColor: AppColors.primary,
               labelStyle: AppTypography.labelMedium.copyWith(
-                color:
-                    isSelected ? AppColors.primary : AppColors.textSecondary,
+                color: isSelected ? AppColors.primary : AppColors.textSecondary,
               ),
             ),
           );
@@ -173,9 +169,8 @@ class _ParentDashboardScreenState
     final attendanceLabel = attendancePct == null
         ? 'حاضری —'
         : 'حاضری ${attendancePct.toStringAsFixed(0)}٪';
-    final resultLabel = resultPct == null
-        ? 'نتائج —'
-        : 'اوسط ${resultPct.toStringAsFixed(0)}٪';
+    final resultLabel =
+        resultPct == null ? 'نتائج —' : 'اوسط ${resultPct.toStringAsFixed(0)}٪';
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(20),
@@ -188,7 +183,7 @@ class _ParentDashboardScreenState
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.3),
+            color: AppColors.primary.withValues(alpha: 0.3),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -201,7 +196,7 @@ class _ParentDashboardScreenState
             width: 70,
             height: 70,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white.withValues(alpha: 0.2),
               shape: BoxShape.circle,
               border: Border.all(color: Colors.white30, width: 2),
             ),
@@ -215,7 +210,7 @@ class _ParentDashboardScreenState
             ),
           ),
           const SizedBox(width: 16),
-          
+
           // Child Info
           Expanded(
             child: Column(
@@ -229,9 +224,10 @@ class _ParentDashboardScreenState
                 ),
                 const SizedBox(height: 4),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: Colors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -252,7 +248,7 @@ class _ParentDashboardScreenState
               ],
             ),
           ),
-          
+
           // More Options
           IconButton(
             onPressed: () {},
@@ -300,9 +296,8 @@ class _ParentDashboardScreenState
             child: _buildStatCard(
               icon: Icons.assessment,
               label: 'امتحانی نمبر',
-              value: resultPct == null
-                  ? '—'
-                  : '${resultPct.toStringAsFixed(0)}%',
+              value:
+                  resultPct == null ? '—' : '${resultPct.toStringAsFixed(0)}%',
               color: AppColors.primary,
             ),
           ),
@@ -333,7 +328,7 @@ class _ParentDashboardScreenState
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -344,7 +339,7 @@ class _ParentDashboardScreenState
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, color: color, size: 20),
@@ -380,7 +375,7 @@ class _ParentDashboardScreenState
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.1),
+                  color: statusColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
@@ -415,7 +410,7 @@ class _ParentDashboardScreenState
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(
@@ -468,15 +463,15 @@ class _ParentDashboardScreenState
   }
 
   /// Explicit empty state — never invented rows.
-  Widget _buildEmptySection(
-      {required IconData icon, required String message}) {
+  Widget _buildEmptySection({required IconData icon, required String message}) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       child: Center(
         child: Column(
           children: [
             Icon(icon,
-                size: 48, color: AppColors.textSecondary.withOpacity(0.5)),
+                size: 48,
+                color: AppColors.textSecondary.withValues(alpha: 0.5)),
             const SizedBox(height: 12),
             Text(
               message,

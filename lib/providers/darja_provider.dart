@@ -40,12 +40,13 @@ class DarjaState {
     bool? isLoading,
     String? error,
     bool clearError = false,
-  }) => DarjaState(
-    darjas:    darjas    ?? this.darjas,
-    sections:  sections  ?? this.sections,
-    isLoading: isLoading ?? this.isLoading,
-    error:     clearError ? null : (error ?? this.error),
-  );
+  }) =>
+      DarjaState(
+        darjas: darjas ?? this.darjas,
+        sections: sections ?? this.sections,
+        isLoading: isLoading ?? this.isLoading,
+        error: clearError ? null : (error ?? this.error),
+      );
 }
 
 class DarjaNotifier extends StateNotifier<DarjaState> {
@@ -58,21 +59,27 @@ class DarjaNotifier extends StateNotifier<DarjaState> {
   Future<void> loadAll({String? madrasaId}) async {
     final tenantId = _ref.read(currentTenantIdProvider);
     if (tenantId == null) {
-      state = state.copyWith(isLoading: false, darjas: const [], sections: const []);
+      state = state
+          .copyWith(isLoading: false, darjas: const [], sections: const []);
       return;
     }
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      final q = _client.from('darjas').select().eq('tenant_id', tenantId) as dynamic;
+      final q =
+          _client.from('darjas').select().eq('tenant_id', tenantId) as dynamic;
       final rows = await q.order('order_index');
       final darjas = rows.map<Darja>((r) => Darja.fromJson(r)).toList();
 
-      final sq = _client.from('darja_sections').select().eq('tenant_id', tenantId) as dynamic;
+      final sq = _client
+          .from('darja_sections')
+          .select()
+          .eq('tenant_id', tenantId) as dynamic;
       final srows = await sq.order('name_urdu');
-      final sections = srows.map<DarjaSection>((r) => DarjaSection.fromJson(r)).toList();
+      final sections =
+          srows.map<DarjaSection>((r) => DarjaSection.fromJson(r)).toList();
 
-      state = state.copyWith(
-        isLoading: false, darjas: darjas, sections: sections);
+      state =
+          state.copyWith(isLoading: false, darjas: darjas, sections: sections);
     } on PostgrestException {
       state = state.copyWith(isLoading: false);
     } catch (_) {
@@ -82,15 +89,55 @@ class DarjaNotifier extends StateNotifier<DarjaState> {
   }
 
   List<Darja> _defaults(String tenantId) => [
-    Darja(tenantId: tenantId, nameUrdu: 'ناظرہ', nameEnglish: 'Nazra', level: 'nazra', orderIndex: 1),
-    Darja(tenantId: tenantId, nameUrdu: 'حفظ', nameEnglish: 'Hifz', level: 'hifz', orderIndex: 2),
-    Darja(tenantId: tenantId, nameUrdu: 'درجہ اول', nameEnglish: 'Class 1', level: 'dars_e_nizami', orderIndex: 3),
-    Darja(tenantId: tenantId, nameUrdu: 'درجہ دوم', nameEnglish: 'Class 2', level: 'dars_e_nizami', orderIndex: 4),
-    Darja(tenantId: tenantId, nameUrdu: 'درجہ سوم', nameEnglish: 'Class 3', level: 'dars_e_nizami', orderIndex: 5),
-    Darja(tenantId: tenantId, nameUrdu: 'درجہ چہارم', nameEnglish: 'Class 4', level: 'dars_e_nizami', orderIndex: 6),
-    Darja(tenantId: tenantId, nameUrdu: 'درجہ پنجم', nameEnglish: 'Class 5', level: 'dars_e_nizami', orderIndex: 7),
-    Darja(tenantId: tenantId, nameUrdu: 'تخصص', nameEnglish: 'Takhassus', level: 'takhassus', orderIndex: 8),
-  ];
+        Darja(
+            tenantId: tenantId,
+            nameUrdu: 'ناظرہ',
+            nameEnglish: 'Nazra',
+            level: 'nazra',
+            orderIndex: 1),
+        Darja(
+            tenantId: tenantId,
+            nameUrdu: 'حفظ',
+            nameEnglish: 'Hifz',
+            level: 'hifz',
+            orderIndex: 2),
+        Darja(
+            tenantId: tenantId,
+            nameUrdu: 'درجہ اول',
+            nameEnglish: 'Class 1',
+            level: 'dars_e_nizami',
+            orderIndex: 3),
+        Darja(
+            tenantId: tenantId,
+            nameUrdu: 'درجہ دوم',
+            nameEnglish: 'Class 2',
+            level: 'dars_e_nizami',
+            orderIndex: 4),
+        Darja(
+            tenantId: tenantId,
+            nameUrdu: 'درجہ سوم',
+            nameEnglish: 'Class 3',
+            level: 'dars_e_nizami',
+            orderIndex: 5),
+        Darja(
+            tenantId: tenantId,
+            nameUrdu: 'درجہ چہارم',
+            nameEnglish: 'Class 4',
+            level: 'dars_e_nizami',
+            orderIndex: 6),
+        Darja(
+            tenantId: tenantId,
+            nameUrdu: 'درجہ پنجم',
+            nameEnglish: 'Class 5',
+            level: 'dars_e_nizami',
+            orderIndex: 7),
+        Darja(
+            tenantId: tenantId,
+            nameUrdu: 'تخصص',
+            nameEnglish: 'Takhassus',
+            level: 'takhassus',
+            orderIndex: 8),
+      ];
 
   Future<String?> createDarja(Darja d) async {
     final tenantId = _ref.read(currentTenantIdProvider);
@@ -101,8 +148,7 @@ class DarjaNotifier extends StateNotifier<DarjaState> {
       final id = d.id ?? const Uuid().v4();
       final nowIso = DateTime.now().toUtc().toIso8601String();
       final data = {...d.toJson(), 'id': id, 'tenant_id': tenantId};
-      final exists =
-          await SyncQueue.rowExists(db, 'darjas', tenantId, id);
+      final exists = await SyncQueue.rowExists(db, 'darjas', tenantId, id);
       final baseRev = exists
           ? await SyncQueue.currentRevision(db, 'darjas', tenantId, id)
           : 0;
@@ -183,7 +229,9 @@ class DarjaNotifier extends StateNotifier<DarjaState> {
       unawaited(engine?.syncNow() ?? Future.value());
 
       state = state.copyWith(
-          darjas: state.darjas.map((x) => x.id == id ? Darja.fromJson(data) : x).toList());
+          darjas: state.darjas
+              .map((x) => x.id == id ? Darja.fromJson(data) : x)
+              .toList());
       return null;
     } catch (e) {
       state = state.copyWith(error: e.toString());
@@ -246,8 +294,7 @@ class DarjaNotifier extends StateNotifier<DarjaState> {
       final exists =
           await SyncQueue.rowExists(db, 'darja_sections', tenantId, id);
       final baseRev = exists
-          ? await SyncQueue.currentRevision(
-              db, 'darja_sections', tenantId, id)
+          ? await SyncQueue.currentRevision(db, 'darja_sections', tenantId, id)
           : 0;
 
       await db.transaction(() async {
@@ -274,8 +321,8 @@ class DarjaNotifier extends StateNotifier<DarjaState> {
       engine?.notifyLocalChange();
       unawaited(engine?.syncNow() ?? Future.value());
 
-      state = state.copyWith(
-          sections: [...state.sections, DarjaSection.fromJson(data)]);
+      state = state
+          .copyWith(sections: [...state.sections, DarjaSection.fromJson(data)]);
       return null;
     } catch (e) {
       state = state.copyWith(error: e.toString());
@@ -293,8 +340,8 @@ class DarjaNotifier extends StateNotifier<DarjaState> {
       final db = _ref.read(appDatabaseProvider);
       final engine = _ref.read(syncEngineProvider);
       final nowIso = DateTime.now().toUtc().toIso8601String();
-      final baseRev = await SyncQueue.currentRevision(
-          db, 'darja_sections', tenantId, id);
+      final baseRev =
+          await SyncQueue.currentRevision(db, 'darja_sections', tenantId, id);
 
       await db.transaction(() async {
         await SyncEngine.softDeleteLocalRow(
@@ -330,8 +377,8 @@ class DarjaNotifier extends StateNotifier<DarjaState> {
       state.sections.where((s) => s.darjaId == darjaId).toList();
 }
 
-final darjaProvider =
-    StateNotifierProvider<DarjaNotifier, DarjaState>((ref) => DarjaNotifier(ref));
+final darjaProvider = StateNotifierProvider<DarjaNotifier, DarjaState>(
+    (ref) => DarjaNotifier(ref));
 
-final darjaListProvider = Provider<List<Darja>>(
-    (ref) => ref.watch(darjaProvider).darjas);
+final darjaListProvider =
+    Provider<List<Darja>>((ref) => ref.watch(darjaProvider).darjas);

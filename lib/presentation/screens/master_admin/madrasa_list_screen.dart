@@ -93,9 +93,7 @@ class _MadrasaListScreenState extends State<MadrasaListScreen> {
     try {
       var query = _client
           .from('tenants')
-          .select(
-              'id, tenant_code, name, name_urdu, city, status, created_at')
-          .order('created_at', ascending: false);
+          .select('id, tenant_code, name, name_urdu, city, status, created_at');
 
       if (_status != 'all') {
         query = query.eq('status', _status);
@@ -107,7 +105,9 @@ class _MadrasaListScreenState extends State<MadrasaListScreen> {
       }
 
       final from = _tenants.length;
-      final rows = await query.range(from, from + _pageSize - 1);
+      final rows = await query
+          .order('created_at', ascending: false)
+          .range(from, from + _pageSize - 1);
       if (rows.length < _pageSize) _hasMore = false;
       _tenants.addAll(rows);
     } catch (e) {
@@ -160,7 +160,7 @@ class _MadrasaListScreenState extends State<MadrasaListScreen> {
               return ChoiceChip(
                 label: Text(s == 'all' ? 'All' : s),
                 selected: selected,
-                selectedColor: AppColors.primary.withOpacity(0.15),
+                selectedColor: AppColors.primary.withValues(alpha: 0.15),
                 onSelected: (_) {
                   setState(() => _status = s);
                   _refresh();
@@ -220,11 +220,11 @@ class _MadrasaListScreenState extends State<MadrasaListScreen> {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
+                color: AppColors.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.account_balance,
-                  color: AppColors.primary),
+              child:
+                  const Icon(Icons.account_balance, color: AppColors.primary),
             ),
             title: Text(
               (t['name'] as String?) ?? '—',
