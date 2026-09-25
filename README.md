@@ -9,7 +9,7 @@
 ![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20iOS%20%7C%20Web%20%7C%20Desktop-lightgrey?style=for-the-badge)
 
 <p align="center">
-  <b>المرکز الاسلامی قصور — اسلامی تعلیمی اداروں اور مدارس کے لیے مکمل اور جدید ERP نظام</b><br>
+  <b> اسلامی تعلیمی اداروں اور مدارس کے لیے مکمل اور جدید ERP نظام</b><br>
   <i>A unified, enterprise-grade Islamic educational ERP and administration system with native Urdu RTL support.</i>
 </p>
 
@@ -19,7 +19,7 @@
 
 ## 📖 Overview
 
-**Madrasa 360** (Al Markaz al Islami Kasur) is a modern management system crafted specifically for Islamic seminaries, madaris, and schools. Built with **Flutter** and powered by **Supabase**, it brings digitized administration to traditional institutions with native **Urdu Nastaleeq typography**, full **Right-to-Left (RTL)** layout, strict **Role-Based Access Control (RBAC)**, and multi-tenant capabilities.
+**Madrasa 360**  is a modern management system crafted specifically for Islamic seminaries, madaris, and schools. Built with **Flutter** and powered by **Supabase**, it brings digitized administration to traditional institutions with native **Urdu Nastaleeq typography**, full **Right-to-Left (RTL)** layout, strict **Role-Based Access Control (RBAC)**, and multi-tenant capabilities.
 
 ---
 
@@ -200,5 +200,5 @@ Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for more details
 ---
 
 <div align="center">
-  Made with ❤️ for Islamic Educational Institutions
+  Made with ❤️ for Islamic Educational Institutions by 𝗠𝘂𝗵𝗮𝗺𝗺𝗮𝗱 𝗧𝗮𝗹𝗵𝗮 𝗕𝗶𝗻 𝗙𝗮𝗿𝗲𝗲𝗱.
 </div>
