@@ -1,12 +1,15 @@
 /// عملہ پروائیڈر
 /// Staff Provider — repository-backed state management
 
+import 'dart:io';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../data/models/staff.dart';
 import '../data/repositories/staff_repository.dart';
-import '../core/services/supabase_service.dart';
+import '../data/repositories/storage_repository.dart';
+import '../core/sync/sync_engine.dart';
+import '../core/sync/sync_providers.dart';
 import '../core/services/tenant_context.dart';
 
 // ─────────────────────────────────────────────
@@ -14,7 +17,10 @@ import '../core/services/tenant_context.dart';
 // ─────────────────────────────────────────────
 
 final staffRepositoryProvider = Provider<IStaffRepository>((ref) {
-  return SupabaseStaffRepository();
+  return LocalStaffRepository(
+    ref.watch(appDatabaseProvider),
+    ref.watch(syncEngineProvider),
+  );
 });
 
 // ─────────────────────────────────────────────
@@ -65,26 +71,36 @@ class StaffNotifier extends AsyncNotifier<void> {
     ref.invalidate(allStaffProvider);
   }
 
-  /// Upload a profile photo to Supabase Storage and return the public URL.
+  /// Stage a profile photo for upload and point the staff record at its
+  /// future public URL (offline-first): the bytes are staged locally and
+  /// queued in `pending_uploads`; the local 'staff' row is updated via the
+  /// repository with `_pending_upload_id` so the engine uploads the bytes
+  /// BEFORE pushing the row. Returns the (future) public URL.
   Future<String?> uploadPhoto(String staffId, XFile photo) async {
     final tenantId = ref.read(currentTenantIdProvider);
     if (tenantId == null) return null;
     try {
-      final bytes = await photo.readAsBytes();
       final ext = photo.name.split('.').last.toLowerCase();
-      final path = 'staff/$staffId.$ext';
-      await SupabaseService.client.storage
-          .from('staff-photos')
-          .uploadBinary(path, bytes,
-              fileOptions: const FileOptions(upsert: true));
-      final url = SupabaseService.client.storage
-          .from('staff-photos')
-          .getPublicUrl(path);
+      const bucket = 'staff-photos';
+      // Tenant-prefixed destination aligns with the {tenant_id}/ storage
+      // policy (the old path lacked the tenant prefix).
+      final destPath = '$tenantId/staff/$staffId.$ext';
+      final File staged = await PendingUploadQueue.stageFile(
+          tenantId, photo, '$staffId.$ext');
+      final db = ref.read(appDatabaseProvider);
+      final uploadId = await PendingUploadQueue.enqueueUpload(
+        db,
+        tenantId: tenantId,
+        stagedFile: staged,
+        bucket: bucket,
+        destPath: destPath,
+      );
+      final url = PendingUploadQueue.publicUrl(bucket, destPath);
       final repo = ref.read(staffRepositoryProvider);
       final existing = await repo.getStaffById(staffId, tenantId: tenantId);
       if (existing != null) {
         await repo.upsertStaff(existing.copyWith(photoUrl: url),
-            tenantId: tenantId);
+            tenantId: tenantId, pendingUploadId: uploadId);
         ref.invalidate(allStaffProvider);
       }
       return url;

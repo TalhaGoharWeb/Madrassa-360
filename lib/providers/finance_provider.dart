@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/services/tenant_context.dart';
 import '../data/models/finance.dart';
 import '../data/repositories/finance_repository.dart';
+import '../core/sync/sync_providers.dart';
 import 'auth_provider.dart';
 
 class FinanceState {
@@ -63,7 +64,9 @@ class FinanceState {
 
 class FinanceNotifier extends StateNotifier<FinanceState> {
   FinanceNotifier(this._ref, [IFinanceRepository? repo])
-      : _repo = repo ?? SupabaseFinanceRepository(),
+      : _repo = repo ??
+            LocalFinanceRepository(_ref.read(appDatabaseProvider),
+                _ref.read(syncEngineProvider)),
         super(const FinanceState());
 
   final Ref _ref;

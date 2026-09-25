@@ -1,8 +1,9 @@
-/// فنانس ریپوزیٹری — Phase 4 finance rebuild (014_finance.sql)
-/// Tenant-scoped Supabase access for the invoice → payment → receipt →
-/// ledger flow. Every query is scoped with an explicit [tenantId]
-/// (the provider reads it from `currentTenantIdProvider` and bails when
-/// null — RLS is the server-side backstop).
+/// فنانس ریپوزیٹری — LOCAL-FIRST (Phase 5 offline-first sync).
+///
+/// Tenant-scoped access for the invoice → payment → receipt → ledger
+/// flow. Every query is scoped with an explicit [tenantId] (the provider
+/// reads it from `currentTenantIdProvider` and bails when null — RLS is
+/// the server-side backstop).
 ///
 /// State-machine notes (enforced DB-side by RLS + triggers):
 ///  * inserts are always `draft`; posting is a separate status update
@@ -12,13 +13,44 @@
 ///    for them; corrections are reversal entries (refunds / void invoices /
 ///    reversing ledger rows);
 ///  * audit rows are written by DB triggers (public.finance_audit()).
+///
+/// Offline-first contract (Phase 5):
+///  * **READS remain remote** (Supabase selects below) — the local finance
+///    tables (`accounts`, `transactions`, `income`, `expenses`, `invoices`,
+///    `invoice_items`, `payments`, `refunds`, `discounts`, `scholarships`)
+///    are write-cache + queue support until pull is enabled.
+///  * **WRITES go to Drift + a `sync_queue` row in the SAME transaction**
+///    via [SyncEngine.writeLocalRow] / [SyncEngine.softDeleteLocalRow] +
+///    [SyncQueue.enqueue], then opportunistically trigger
+///    [SyncEngine.syncNow]. Direct Supabase writes are FORBIDDEN — the
+///    sync engine is the only writer to the server (via the `sync_apply`
+///    RPC).
+///  * Multi-step flows mirror the server sequence as separate local+queue
+///    ops (FIFO per entity preserves order; server triggers fire
+///    identically when the ops land).
+///  * Posted financial rows converge via sync; server-computed fields
+///    (receipt_number, invoice totals, ledger auto-entries, allocations)
+///    only appear AFTER the row syncs — the local model returned by a
+///    write reflects what was stored locally, not the server's computed
+///    values.
+///  * New rows use client-generated UUIDs ([Uuid.v4]) — the server ids
+///    are UUID type and the RPC requires valid UUID or empty.
+///
+/// Public method signatures are IDENTICAL to the previous Supabase
+/// implementation.
+
+import 'dart:async';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:uuid/uuid.dart';
+
+import '../../data/local/app_database.dart';
+import '../../core/sync/sync_engine.dart';
 import '../models/finance.dart';
 import '../../core/services/supabase_service.dart';
 
 // ─────────────────────────────────────────────
-// Interface
+// Interface (unchanged)
 // ─────────────────────────────────────────────
 
 abstract class IFinanceRepository {
@@ -71,8 +103,9 @@ abstract class IFinanceRepository {
       String? studentId});
   Future<Payment> getPayment(String id, {required String tenantId});
 
-  /// Full flow: insert draft → post. Returns the posted payment
-  /// (receipt_number is filled by the DB trigger).
+  /// Full flow: insert draft → post. Returns the LOCAL posted payment —
+  /// `receipt_number` is filled by the DB trigger and only appears after
+  /// the row syncs (see the doc comment at the top of this file).
   Future<Payment> recordPayment(Payment p, {required String tenantId});
   Future<void> deletePaymentDraft(String id, {required String tenantId});
   Future<List<PaymentAllocation>> getAllocationsForPayment(String paymentId,
@@ -105,14 +138,92 @@ abstract class IFinanceRepository {
 }
 
 // ─────────────────────────────────────────────
-// Supabase implementation
+// Local-first implementation
 // ─────────────────────────────────────────────
 
-class SupabaseFinanceRepository implements IFinanceRepository {
+class LocalFinanceRepository implements IFinanceRepository {
+  LocalFinanceRepository(this._db, this._engine);
+
+  final AppDatabase _db;
+
+  /// Null when logged out / no active tenant — writes still enqueue
+  /// locally and sync later; the opportunistic trigger is skipped.
+  final SyncEngine? _engine;
+
+  /// Reads stay on the server until pull is enabled (see file doc).
   SupabaseClient get _client => SupabaseService.client;
 
-  /// Status transition on a document table. [extra] carries e.g.
-  /// approved_by. RLS decides whether the transition is legal.
+  String get _nowIso => DateTime.now().toUtc().toIso8601String();
+
+  String _newId() => const Uuid().v4();
+
+  /// Indexed envelope columns per finance table (matches the sibling's
+  /// Drift schema; everything not listed keeps an empty map).
+  Map<String, Object?> _indexedFor(
+      String table, Map<String, dynamic> row) {
+    switch (table) {
+      case 'accounts':
+        return {'code': row['code']};
+      case 'discounts':
+      case 'invoice_items':
+        return {'invoice_id': row['invoice_id']};
+      case 'scholarships':
+        return {'student_id': row['student_id']};
+      default:
+        return const {};
+    }
+  }
+
+  void _notify() {
+    _engine?.notifyLocalChange();
+    unawaited(_engine?.syncNow() ?? Future.value());
+  }
+
+  /// Generic create/update: envelope upsert + queue row in ONE transaction,
+  /// returns the LOCAL model (server converges on sync).
+  Future<T> _save<T>({
+    required String table,
+    required String id,
+    required String tenantId,
+    required Map<String, dynamic> data,
+    required T Function(Map<String, dynamic>) fromData,
+  }) async {
+    final exists = await SyncQueue.rowExists(_db, table, tenantId, id);
+    final baseRev =
+        await SyncQueue.currentRevision(_db, table, tenantId, id);
+    final nowIso = _nowIso;
+    final row = <String, dynamic>{
+      ...data,
+      'id': id,
+      'tenant_id': tenantId,
+    };
+    await _db.transaction(() async {
+      await SyncEngine.writeLocalRow(
+        _db,
+        table: table,
+        id: id,
+        tenantId: tenantId,
+        indexed: _indexedFor(table, row),
+        data: row,
+      );
+      await SyncQueue.enqueue(
+        _db,
+        tenantId: tenantId,
+        entity: table,
+        entityId: id,
+        operation: exists ? 'update' : 'create',
+        payload: {...row, 'updated_at': nowIso},
+        baseRevision: baseRev,
+      );
+    });
+    _notify();
+    return fromData(row);
+  }
+
+  /// Status transition on a document table: merge {'status': to, ...?extra}
+  /// into the existing local row's data and enqueue the update. When no
+  /// local row exists, the update still enqueues with a minimal payload
+  /// (baseRevision 0) so the server converges.
   Future<Map<String, dynamic>> _transition({
     required String table,
     required String id,
@@ -120,18 +231,73 @@ class SupabaseFinanceRepository implements IFinanceRepository {
     required String to,
     Map<String, dynamic>? extra,
   }) async {
-    final payload = <String, dynamic>{'status': to, ...?extra};
-    final res = await _client
-        .from(table)
-        .update(payload)
-        .eq('tenant_id', tenantId)
-        .eq('id', id)
-        .select()
-        .single();
-    return res as Map<String, dynamic>;
+    final nowIso = _nowIso;
+    final existing = await LocalRows.byId(_db, table, tenantId, id);
+    final previous =
+        (existing?['_data'] as Map<String, dynamic>?) ?? const {};
+    final row = <String, dynamic>{
+      ...previous,
+      ...?extra,
+      'id': id,
+      'tenant_id': tenantId,
+      'status': to,
+    };
+    final baseRev = existing == null
+        ? 0
+        : (existing['server_revision'] as num?)?.toInt() ?? 0;
+    await _db.transaction(() async {
+      await SyncEngine.writeLocalRow(
+        _db,
+        table: table,
+        id: id,
+        tenantId: tenantId,
+        indexed: _indexedFor(table, row),
+        data: row,
+      );
+      await SyncQueue.enqueue(
+        _db,
+        tenantId: tenantId,
+        entity: table,
+        entityId: id,
+        operation: 'update',
+        payload: {...row, 'updated_at': nowIso},
+        baseRevision: baseRev,
+      );
+    });
+    _notify();
+    return row;
   }
 
-  // ── accounts ──
+  /// Soft-delete a draft document locally + enqueue the delete.
+  Future<void> _deleteDraft({
+    required String table,
+    required String id,
+    required String tenantId,
+  }) async {
+    final nowIso = _nowIso;
+    final baseRev =
+        await SyncQueue.currentRevision(_db, table, tenantId, id);
+    await _db.transaction(() async {
+      await SyncEngine.softDeleteLocalRow(
+        _db,
+        table: table,
+        id: id,
+        tenantId: tenantId,
+      );
+      await SyncQueue.enqueue(
+        _db,
+        tenantId: tenantId,
+        entity: table,
+        entityId: id,
+        operation: 'delete',
+        payload: {'id': id, 'tenant_id': tenantId, 'updated_at': nowIso},
+        baseRevision: baseRev,
+      );
+    });
+    _notify();
+  }
+
+  // ── accounts (reads: remote) ──
 
   @override
   Future<List<Account>> getAccounts({required String tenantId}) async {
@@ -148,37 +314,32 @@ class SupabaseFinanceRepository implements IFinanceRepository {
   @override
   Future<Account> createAccount(Account a,
       {required String tenantId}) async {
-    final res = await _client
-        .from('accounts')
-        .insert({...a.toJson(), 'tenant_id': tenantId})
-        .select()
-        .single();
-    return Account.fromJson(res);
+    return _save<Account>(
+      table: 'accounts',
+      id: _newId(),
+      tenantId: tenantId,
+      data: a.toJson(),
+      fromData: Account.fromJson,
+    );
   }
 
   @override
   Future<Account> updateAccount(Account a,
       {required String tenantId}) async {
-    final res = await _client
-        .from('accounts')
-        .update(a.toJson())
-        .eq('tenant_id', tenantId)
-        .eq('id', a.id!)
-        .select()
-        .single();
-    return Account.fromJson(res);
+    return _save<Account>(
+      table: 'accounts',
+      id: a.id!,
+      tenantId: tenantId,
+      data: a.toJson(),
+      fromData: Account.fromJson,
+    );
   }
 
   @override
-  Future<void> deleteAccount(String id, {required String tenantId}) async {
-    await _client
-        .from('accounts')
-        .delete()
-        .eq('tenant_id', tenantId)
-        .eq('id', id);
-  }
+  Future<void> deleteAccount(String id, {required String tenantId}) =>
+      _deleteDraft(table: 'accounts', id: id, tenantId: tenantId);
 
-  // ── ledger ──
+  // ── ledger (reads: remote) ──
 
   @override
   Future<List<LedgerTransaction>> getLedger(
@@ -198,34 +359,34 @@ class SupabaseFinanceRepository implements IFinanceRepository {
   @override
   Future<LedgerTransaction> createLedgerDraft(LedgerTransaction e,
       {required String tenantId}) async {
-    final res = await _client
-        .from('transactions')
-        .insert({...e.toJson(), 'tenant_id': tenantId, 'status': 'draft'})
-        .select()
-        .single();
-    return LedgerTransaction.fromJson(res);
+    return _save<LedgerTransaction>(
+      table: 'transactions',
+      id: _newId(),
+      tenantId: tenantId,
+      data: {...e.toJson(), 'status': DocStatus.draft.dbValue},
+      fromData: LedgerTransaction.fromJson,
+    );
   }
 
   @override
   Future<LedgerTransaction> postLedgerEntry(String id,
       {required String tenantId}) async {
-    final res = await _transition(
-        table: 'transactions', id: id, tenantId: tenantId, to: 'posted');
-    return LedgerTransaction.fromJson(res);
+    final row = await _transition(
+      table: 'transactions',
+      id: id,
+      tenantId: tenantId,
+      to: DocStatus.posted.dbValue,
+    );
+    return LedgerTransaction.fromJson(row);
   }
 
   @override
   Future<void> deleteLedgerDraft(String id,
       {required String tenantId}) async {
-    await _client
-        .from('transactions')
-        .delete()
-        .eq('tenant_id', tenantId)
-        .eq('id', id)
-        .eq('status', 'draft');
+    await _deleteDraft(table: 'transactions', id: id, tenantId: tenantId);
   }
 
-  // ── income ──
+  // ── income (reads: remote) ──
 
   @override
   Future<List<IncomeEntry>> getIncome({required String tenantId}) async {
@@ -242,12 +403,13 @@ class SupabaseFinanceRepository implements IFinanceRepository {
   @override
   Future<IncomeEntry> createIncome(IncomeEntry e,
       {required String tenantId}) async {
-    final res = await _client
-        .from('income')
-        .insert({...e.toJson(), 'tenant_id': tenantId, 'status': 'draft'})
-        .select()
-        .single();
-    return IncomeEntry.fromJson(res);
+    return _save<IncomeEntry>(
+      table: 'income',
+      id: _newId(),
+      tenantId: tenantId,
+      data: {...e.toJson(), 'status': DocStatus.draft.dbValue},
+      fromData: IncomeEntry.fromJson,
+    );
   }
 
   @override
@@ -256,14 +418,21 @@ class SupabaseFinanceRepository implements IFinanceRepository {
     final extra = to == DocStatus.approved && actorId != null
         ? {'approved_by': actorId}
         : null;
-    final res = await _transition(
-        table: 'income', id: id, tenantId: tenantId, to: to.dbValue, extra: extra);
-    return IncomeEntry.fromJson(res);
+    final row = await _transition(
+      table: 'income',
+      id: id,
+      tenantId: tenantId,
+      to: to.dbValue,
+      extra: extra,
+    );
+    return IncomeEntry.fromJson(row);
   }
 
   @override
   Future<IncomeEntry> recordIncome(IncomeEntry e,
       {required String tenantId, required String actorId}) async {
+    // Mirror the server sequence as separate local+queue ops (FIFO per
+    // entity preserves order; server triggers fire identically on sync).
     var row = await createIncome(e, tenantId: tenantId);
     row = await transitionIncome(row.id!, DocStatus.approved,
         tenantId: tenantId, actorId: actorId);
@@ -272,7 +441,7 @@ class SupabaseFinanceRepository implements IFinanceRepository {
     return row;
   }
 
-  // ── expenses ──
+  // ── expenses (reads: remote) ──
 
   @override
   Future<List<ExpenseEntry>> getExpenses({required String tenantId}) async {
@@ -289,12 +458,13 @@ class SupabaseFinanceRepository implements IFinanceRepository {
   @override
   Future<ExpenseEntry> createExpense(ExpenseEntry e,
       {required String tenantId}) async {
-    final res = await _client
-        .from('expenses')
-        .insert({...e.toJson(), 'tenant_id': tenantId, 'status': 'draft'})
-        .select()
-        .single();
-    return ExpenseEntry.fromJson(res);
+    return _save<ExpenseEntry>(
+      table: 'expenses',
+      id: _newId(),
+      tenantId: tenantId,
+      data: {...e.toJson(), 'status': DocStatus.draft.dbValue},
+      fromData: ExpenseEntry.fromJson,
+    );
   }
 
   @override
@@ -303,9 +473,14 @@ class SupabaseFinanceRepository implements IFinanceRepository {
     final extra = to == DocStatus.approved && actorId != null
         ? {'approved_by': actorId}
         : null;
-    final res = await _transition(
-        table: 'expenses', id: id, tenantId: tenantId, to: to.dbValue, extra: extra);
-    return ExpenseEntry.fromJson(res);
+    final row = await _transition(
+      table: 'expenses',
+      id: id,
+      tenantId: tenantId,
+      to: to.dbValue,
+      extra: extra,
+    );
+    return ExpenseEntry.fromJson(row);
   }
 
   @override
@@ -319,7 +494,7 @@ class SupabaseFinanceRepository implements IFinanceRepository {
     return row;
   }
 
-  // ── invoices ──
+  // ── invoices (reads: remote) ──
 
   static const _invoiceSelect = '*, students(name)';
 
@@ -352,45 +527,55 @@ class SupabaseFinanceRepository implements IFinanceRepository {
   @override
   Future<Invoice> createInvoice(Invoice inv, List<InvoiceItem> items,
       {required String tenantId}) async {
-    final res = await _client
-        .from('invoices')
-        .insert({...inv.toJson(), 'tenant_id': tenantId, 'status': 'draft'})
-        .select(_invoiceSelect)
-        .single();
-    final created = Invoice.fromJson(res);
-    if (items.isNotEmpty) {
-      await _client.from('invoice_items').insert(items
-          .map((i) => {
-                ...i.toJson(),
-                'tenant_id': tenantId,
-                'invoice_id': created.id,
-              })
-          .toList());
+    // 1. invoice header (client-generated UUID — the RPC requires valid
+    //    UUID or empty; totals recompute server-side via triggers).
+    final invoiceId = _newId();
+    final invoice = await _save<Invoice>(
+      table: 'invoices',
+      id: invoiceId,
+      tenantId: tenantId,
+      data: {
+        ...inv.toJson(),
+        'status': InvoiceStatus.draft.dbValue,
+      },
+      fromData: Invoice.fromJson,
+    );
+    // 2. line items, each its own local+queue op (FIFO per entity keeps
+    //    header-before-items order on the wire).
+    for (final item in items) {
+      await _save<InvoiceItem>(
+        table: 'invoice_items',
+        id: _newId(),
+        tenantId: tenantId,
+        data: {
+          ...item.toJson(),
+          'invoice_id': invoiceId,
+        },
+        fromData: InvoiceItem.fromJson,
+      );
     }
-    // Re-read: triggers recomputed subtotal/total server-side.
-    return getInvoice(created.id!, tenantId: tenantId);
+    return invoice;
   }
 
   @override
   Future<Invoice> transitionInvoice(String id, InvoiceStatus to,
       {required String tenantId}) async {
-    final res = await _transition(
-        table: 'invoices', id: id, tenantId: tenantId, to: to.dbValue);
-    return Invoice.fromJson(res);
+    final row = await _transition(
+      table: 'invoices',
+      id: id,
+      tenantId: tenantId,
+      to: to.dbValue,
+    );
+    return Invoice.fromJson(row);
   }
 
   @override
   Future<void> deleteInvoiceDraft(String id,
       {required String tenantId}) async {
-    await _client
-        .from('invoices')
-        .delete()
-        .eq('tenant_id', tenantId)
-        .eq('id', id)
-        .eq('status', 'draft');
+    await _deleteDraft(table: 'invoices', id: id, tenantId: tenantId);
   }
 
-  // ── payments ──
+  // ── payments (reads: remote) ──
 
   static const _paymentSelect = '*, students(name)';
 
@@ -422,32 +607,31 @@ class SupabaseFinanceRepository implements IFinanceRepository {
   @override
   Future<Payment> recordPayment(Payment p,
       {required String tenantId}) async {
-    // 1. insert draft (DB trigger fills receipt_number)
-    final inserted = await _client
-        .from('payments')
-        .insert({...p.toJson(), 'tenant_id': tenantId, 'status': 'draft'})
-        .select(_paymentSelect)
-        .single();
-    final draft = Payment.fromJson(inserted);
-    // 2. post → trigger creates ledger entry + allocation + invoice update
-    await _transition(
-        table: 'payments',
-        id: draft.id!,
-        tenantId: tenantId,
-        to: 'posted');
-    // 3. re-read the posted row (posted_at filled server-side)
-    return getPayment(draft.id!, tenantId: tenantId);
+    // 1. insert draft locally + enqueue. receipt_number arrives from the
+    //    DB trigger on sync — it is NOT in the local model returned here.
+    final row = await _save<Payment>(
+      table: 'payments',
+      id: _newId(),
+      tenantId: tenantId,
+      data: {...p.toJson(), 'status': DocStatus.draft.dbValue},
+      fromData: Payment.fromJson,
+    );
+    // 2. post locally + enqueue → when this op lands, the server trigger
+    //    creates the ledger entry + allocation + invoice update, exactly
+    //    as in the old direct-write flow.
+    final posted = await _transition(
+      table: 'payments',
+      id: row.id!,
+      tenantId: tenantId,
+      to: DocStatus.posted.dbValue,
+    );
+    return Payment.fromJson(posted);
   }
 
   @override
   Future<void> deletePaymentDraft(String id,
       {required String tenantId}) async {
-    await _client
-        .from('payments')
-        .delete()
-        .eq('tenant_id', tenantId)
-        .eq('id', id)
-        .eq('status', 'draft');
+    await _deleteDraft(table: 'payments', id: id, tenantId: tenantId);
   }
 
   @override
@@ -463,7 +647,7 @@ class SupabaseFinanceRepository implements IFinanceRepository {
         .toList();
   }
 
-  // ── refunds ──
+  // ── refunds (reads: remote) ──
 
   @override
   Future<List<Refund>> getRefunds({required String tenantId}) async {
@@ -479,12 +663,13 @@ class SupabaseFinanceRepository implements IFinanceRepository {
 
   @override
   Future<Refund> createRefund(Refund r, {required String tenantId}) async {
-    final res = await _client
-        .from('refunds')
-        .insert({...r.toJson(), 'tenant_id': tenantId, 'status': 'draft'})
-        .select()
-        .single();
-    return Refund.fromJson(res);
+    return _save<Refund>(
+      table: 'refunds',
+      id: _newId(),
+      tenantId: tenantId,
+      data: {...r.toJson(), 'status': DocStatus.draft.dbValue},
+      fromData: Refund.fromJson,
+    );
   }
 
   @override
@@ -493,23 +678,23 @@ class SupabaseFinanceRepository implements IFinanceRepository {
     final extra = to == DocStatus.approved && actorId != null
         ? {'approved_by': actorId}
         : null;
-    final res = await _transition(
-        table: 'refunds', id: id, tenantId: tenantId, to: to.dbValue, extra: extra);
-    return Refund.fromJson(res);
+    final row = await _transition(
+      table: 'refunds',
+      id: id,
+      tenantId: tenantId,
+      to: to.dbValue,
+      extra: extra,
+    );
+    return Refund.fromJson(row);
   }
 
   @override
   Future<void> deleteRefundDraft(String id,
       {required String tenantId}) async {
-    await _client
-        .from('refunds')
-        .delete()
-        .eq('tenant_id', tenantId)
-        .eq('id', id)
-        .eq('status', 'draft');
+    await _deleteDraft(table: 'refunds', id: id, tenantId: tenantId);
   }
 
-  // ── discounts ──
+  // ── discounts (reads: remote) ──
 
   @override
   Future<List<Discount>> getDiscounts({required String tenantId,
@@ -528,34 +713,34 @@ class SupabaseFinanceRepository implements IFinanceRepository {
   @override
   Future<Discount> createDiscount(Discount d,
       {required String tenantId}) async {
-    final res = await _client
-        .from('discounts')
-        .insert({...d.toJson(), 'tenant_id': tenantId, 'status': 'draft'})
-        .select()
-        .single();
-    return Discount.fromJson(res);
+    return _save<Discount>(
+      table: 'discounts',
+      id: _newId(),
+      tenantId: tenantId,
+      data: {...d.toJson(), 'status': DiscountStatus.draft.dbValue},
+      fromData: Discount.fromJson,
+    );
   }
 
   @override
   Future<Discount> applyDiscount(String id,
       {required String tenantId}) async {
-    final res = await _transition(
-        table: 'discounts', id: id, tenantId: tenantId, to: 'applied');
-    return Discount.fromJson(res);
+    final row = await _transition(
+      table: 'discounts',
+      id: id,
+      tenantId: tenantId,
+      to: DiscountStatus.applied.dbValue,
+    );
+    return Discount.fromJson(row);
   }
 
   @override
   Future<void> deleteDiscountDraft(String id,
       {required String tenantId}) async {
-    await _client
-        .from('discounts')
-        .delete()
-        .eq('tenant_id', tenantId)
-        .eq('id', id)
-        .eq('status', 'draft');
+    await _deleteDraft(table: 'discounts', id: id, tenantId: tenantId);
   }
 
-  // ── scholarships ──
+  // ── scholarships (reads: remote) ──
 
   @override
   Future<List<Scholarship>> getScholarships({required String tenantId,
@@ -574,28 +759,28 @@ class SupabaseFinanceRepository implements IFinanceRepository {
   @override
   Future<Scholarship> createScholarship(Scholarship s,
       {required String tenantId}) async {
-    final res = await _client
-        .from('scholarships')
-        .insert({...s.toJson(), 'tenant_id': tenantId})
-        .select('*, students(name)')
-        .single();
-    return Scholarship.fromJson(res);
+    return _save<Scholarship>(
+      table: 'scholarships',
+      id: _newId(),
+      tenantId: tenantId,
+      data: s.toJson(),
+      fromData: Scholarship.fromJson,
+    );
   }
 
   @override
   Future<Scholarship> updateScholarship(Scholarship s,
       {required String tenantId}) async {
-    final res = await _client
-        .from('scholarships')
-        .update(s.toJson())
-        .eq('tenant_id', tenantId)
-        .eq('id', s.id!)
-        .select('*, students(name)')
-        .single();
-    return Scholarship.fromJson(res);
+    return _save<Scholarship>(
+      table: 'scholarships',
+      id: s.id!,
+      tenantId: tenantId,
+      data: s.toJson(),
+      fromData: Scholarship.fromJson,
+    );
   }
 
-  // ── fee structures ──
+  // ── fee structures (reads: remote; no local write path in this phase) ──
 
   @override
   Future<List<FeeStructure>> getFeeStructures(

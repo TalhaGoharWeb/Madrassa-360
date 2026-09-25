@@ -1,13 +1,17 @@
 /// طلباء پروائیڈر
 /// Student Provider — repository-backed state management
 
+import 'dart:async';
+import 'dart:io';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:uuid/uuid.dart';
 import '../data/models/student.dart';
 import '../data/repositories/student_repository.dart';
+import '../data/repositories/storage_repository.dart';
+import '../core/sync/sync_engine.dart';
 import '../core/sync/sync_providers.dart';
-import '../core/services/supabase_service.dart';
 import '../core/services/tenant_context.dart';
 
 // ─────────────────────────────────────────────
@@ -101,30 +105,74 @@ class StudentNotifier extends AsyncNotifier<void> {
     }
   }
 
-  /// Upload a profile photo to Supabase Storage and return the public URL.
-  /// Saves the URL back onto the Student record.
+  /// Stage a profile photo for upload and point the student record at its
+  /// future public URL (offline-first): the bytes are staged locally and
+  /// queued in `pending_uploads`; the local 'students' row is updated via
+  /// writeLocalRow + a queued 'update' whose payload carries
+  /// '_pending_upload_id', so the engine uploads the bytes BEFORE pushing
+  /// the row. Returns the (future) public URL.
   Future<String?> uploadPhoto(String studentId, XFile photo) async {
     final tenantId = ref.read(currentTenantIdProvider);
     if (tenantId == null) return null;
     try {
-      final bytes = await photo.readAsBytes();
       final ext = photo.name.split('.').last.toLowerCase();
-      final path = 'students/$studentId.$ext';
-      await SupabaseService.client.storage
-          .from('student-photos')
-          .uploadBinary(path, bytes,
-              fileOptions: const FileOptions(upsert: true));
-      final url = SupabaseService.client.storage
-          .from('student-photos')
-          .getPublicUrl(path);
-      // Persist photo_url on the student record
-      final repo = ref.read(studentRepositoryProvider);
-      final existing = await repo.getStudentById(studentId, tenantId: tenantId);
-      if (existing != null) {
-        await repo.upsertStudent(existing.copyWith(photoUrl: url),
-            tenantId: tenantId);
-        ref.invalidate(allStudentsProvider);
-      }
+      const bucket = 'student-photos';
+      // Tenant-prefixed destination aligns with the {tenant_id}/ storage
+      // policy (the old path lacked the tenant prefix).
+      final destPath = '$tenantId/students/$studentId.$ext';
+      final File staged = await PendingUploadQueue.stageFile(
+          tenantId, photo, '$studentId.$ext');
+      final db = ref.read(appDatabaseProvider);
+      final uploadId = await PendingUploadQueue.enqueueUpload(
+        db,
+        tenantId: tenantId,
+        stagedFile: staged,
+        bucket: bucket,
+        destPath: destPath,
+      );
+      final url = PendingUploadQueue.publicUrl(bucket, destPath);
+      final engine = ref.read(syncEngineProvider);
+      final row = await LocalRows.byId(db, 'students', tenantId, studentId);
+      if (row == null) return null;
+      final nowIso = DateTime.now().toUtc().toIso8601String();
+      final data = <String, dynamic>{
+        ...(row['_data'] as Map<String, dynamic>),
+        'photo_url': url,
+      };
+      final baseRev = await SyncQueue.currentRevision(
+          db, 'students', tenantId, studentId);
+      await db.transaction(() async {
+        await SyncEngine.writeLocalRow(
+          db,
+          table: 'students',
+          id: studentId,
+          tenantId: tenantId,
+          indexed: {
+            'name': row['name'],
+            'roll_no': row['roll_no'],
+            'class_id': row['class_id'],
+          },
+          data: data,
+        );
+        await SyncQueue.enqueue(
+          db,
+          tenantId: tenantId,
+          entity: 'students',
+          entityId: studentId,
+          operation: 'update',
+          payload: {
+            ...data,
+            'id': studentId,
+            'tenant_id': tenantId,
+            'updated_at': nowIso,
+            '_pending_upload_id': uploadId,
+          },
+          baseRevision: baseRev,
+        );
+      });
+      engine?.notifyLocalChange();
+      unawaited(engine?.syncNow() ?? Future.value());
+      ref.invalidate(allStudentsProvider);
       return url;
     } catch (_) {
       return null;

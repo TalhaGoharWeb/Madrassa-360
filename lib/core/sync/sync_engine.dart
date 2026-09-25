@@ -80,10 +80,12 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:drift/drift.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../data/local/app_database.dart';
@@ -101,6 +103,14 @@ const Set<String> financialEntities = {
   'payments',
   'transactions',
   'refunds',
+  // Mirrors the server's v_financial list in 016_sync.sql (the server's
+  // `financial` flag stays authoritative; this covers a missing flag).
+  'accounts',
+  'income',
+  'expenses',
+  'discounts',
+  'scholarships',
+  'invoice_items',
 };
 
 /// Local Drift table per queue entity name.
@@ -117,6 +127,18 @@ const Map<String, String> _localTables = {
   // NOTE: 'fees' has NO local table in the sibling's contract — the fee
   // repository enqueues writes (push works; 'fees' is RPC-whitelisted)
   // but keeps reads remote (documented in fee_repository.dart).
+  'staff': 'staff',
+  'darja_sections': 'darja_sections',
+  'library_books': 'library_books',
+  'book_issues': 'book_issues',
+  'accounts': 'accounts',
+  'transactions': 'transactions',
+  'income': 'income',
+  'expenses': 'expenses',
+  'refunds': 'refunds',
+  'discounts': 'discounts',
+  'scholarships': 'scholarships',
+  'invoice_items': 'invoice_items',
 };
 
 /// Server table per queue entity name (differs only for attendance).
@@ -130,9 +152,30 @@ const Map<String, String> _serverTables = {
   'announcements': 'announcements',
   'invoices': 'invoices',
   'payments': 'payments',
+  'staff': 'staff',
+  'darja_sections': 'darja_sections',
+  'library_books': 'library_books',
+  'book_issues': 'book_issues',
+  'accounts': 'accounts',
+  'transactions': 'transactions',
+  'income': 'income',
+  'expenses': 'expenses',
+  'refunds': 'refunds',
+  'discounts': 'discounts',
+  'scholarships': 'scholarships',
+  'invoice_items': 'invoice_items',
 };
 
 /// Entities pulled from the server (all have local tables).
+///
+/// Reads for the newly-added entities ('staff', 'darja_sections',
+/// 'library_books', 'book_issues', 'accounts', 'transactions', 'income',
+/// 'expenses', 'refunds', 'discounts', 'scholarships', 'invoice_items')
+/// INTENTIONALLY stay remote: their server tables may lack the
+/// `server_version` watermark column and migration 016 was never applied
+/// here, so there is no watermark to pull against. The local tables are
+/// the write-cache + queue support. Pull for them can be enabled once
+/// staging is green.
 const List<String> _pullEntities = [
   'students',
   'classes',
@@ -703,12 +746,25 @@ class SyncEngine {
   }
 
   /// Push one claimed row through the `sync_apply` RPC.
+  ///
+  /// ORDERING RULE: file bytes must reach the bucket BEFORE any DB row
+  /// referencing the future public URL is pushed. A queue row carrying a
+  /// `_pending_upload_id` payload key is not releasable until its upload
+  /// is done — the RPC must never see a URL the server cannot resolve yet.
   Future<void> _pushRow(_QueueRow row) async {
+    final uploadId = row.payload['_pending_upload_id'];
+    if (uploadId is String && uploadId.isNotEmpty) {
+      if (!await _ensureUploadDone(uploadId)) {
+        // Upload not complete: keep the row queued with backoff.
+        await _recordFailure(row, 'pending upload not complete');
+        return;
+      }
+    }
     final result = await _callSyncApply(
       entity: row.entity,
       entityId: row.entityId,
       baseRevision: row.baseRevision,
-      payload: row.payload,
+      payload: _rpcPayload(row),
       op: row.rpcOp,
     );
     if (result == null) {
@@ -763,6 +819,77 @@ class SyncEngine {
       return {'ok': false, 'reason': 'bad_rpc_shape'};
     } catch (_) {
       return null;
+    }
+  }
+
+  /// The payload actually sent to the RPC: engine-local metadata keys
+  /// (everything starting with '_', e.g. `_pending_upload_id`) are
+  /// stripped — the server must never see them.
+  static Map<String, dynamic> _rpcPayload(_QueueRow row) {
+    final payload = Map<String, dynamic>.from(row.payload);
+    payload.removeWhere((k, _) => k.startsWith('_'));
+    return payload;
+  }
+
+  /// Ensures the storage upload behind [uploadId] has completed.
+  ///
+  /// Returns true when the `pending_uploads` row is missing or already
+  /// `done` (nothing to wait for); performs the storage op
+  /// (`upload`: `uploadBinary` with upsert; `delete`: `remove`) and marks
+  /// the row `done` on success; on any error marks it `failed` with
+  /// `retry_count + 1` and returns false.
+  Future<bool> _ensureUploadDone(String uploadId) async {
+    final rows = await _db
+        .customSelect(
+          'SELECT * FROM pending_uploads WHERE id = ? LIMIT 1',
+          variables: [Variable.withString(uploadId)],
+        )
+        .get();
+    if (rows.isEmpty) return true; // unknown upload: nothing to wait for
+    final data = rows.first.data;
+    if ('${data['status']}' == 'done') return true;
+
+    final op = '${data['op']}';
+    final bucket = '${data['bucket']}';
+    final destPath = '${data['dest_path']}';
+    final localPath = data['local_path'] as String?;
+    try {
+      if (op == 'upload') {
+        if (localPath == null || localPath.isEmpty) {
+          throw StateError('pending upload $uploadId has no local_path');
+        }
+        final bytes = await File(localPath).readAsBytes();
+        await SupabaseService.client.storage
+            .from(bucket)
+            .uploadBinary(
+              destPath,
+              bytes,
+              fileOptions: const FileOptions(upsert: true),
+            );
+      } else if (op == 'delete') {
+        await SupabaseService.client.storage.from(bucket).remove([destPath]);
+      } else {
+        throw StateError('unknown pending upload op: $op');
+      }
+      await _db.customUpdate(
+        "UPDATE pending_uploads SET status = 'done', error = NULL "
+        'WHERE id = ?',
+        variables: [Variable.withString(uploadId)],
+      );
+      return true;
+    } catch (e) {
+      final attempts = ((data['retry_count'] as num?)?.toInt() ?? 0) + 1;
+      await _db.customUpdate(
+        'UPDATE pending_uploads SET status = ?, retry_count = ?, error = ? '
+        'WHERE id = ?',
+        variables: [
+          Variable.withString('failed'),
+          Variable.withInt(attempts),
+          Variable.withString('$e'),
+          Variable.withString(uploadId),
+        ],
+      );
+      return false;
     }
   }
 
@@ -930,7 +1057,7 @@ class SyncEngine {
       entity: row.entity,
       entityId: row.entityId,
       baseRevision: serverRevision,
-      payload: row.payload,
+      payload: _rpcPayload(row),
       op: row.rpcOp,
     );
     if (retry != null && retry['ok'] == true) {

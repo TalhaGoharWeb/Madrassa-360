@@ -1,10 +1,24 @@
 /// درجہ فراہم کنندہ
-/// Darja Provider — class/level management
+/// Darja Provider — LOCAL-FIRST (Phase 5 offline-first sync).
+///
+/// `loadAll()` stays REMOTE (Supabase reads, with the `_defaults`
+/// fallback). All writes (createDarja / updateDarja / deleteDarja /
+/// createSection / deleteSection) go to the local Drift envelope
+/// tables (`darjas`, `darja_sections`) + a `sync_queue` row in the
+/// SAME transaction via [SyncEngine.writeLocalRow] /
+/// [SyncEngine.softDeleteLocalRow] + [SyncQueue.enqueue], then
+/// opportunistically trigger [SyncEngine.syncNow]. The sync engine is
+/// the only writer to the server (via the `sync_apply` RPC).
+
+import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:uuid/uuid.dart';
 import '../core/services/supabase_service.dart';
 import '../core/services/tenant_context.dart';
+import '../core/sync/sync_engine.dart';
+import '../core/sync/sync_providers.dart';
 import '../data/models/darja.dart';
 
 class DarjaState {
@@ -82,62 +96,234 @@ class DarjaNotifier extends StateNotifier<DarjaState> {
     final tenantId = _ref.read(currentTenantIdProvider);
     if (tenantId == null) return 'No active tenant';
     try {
-      final payload = <String, dynamic>{...d.toJson(), 'tenant_id': tenantId};
-      final data = await _client.from('darjas').insert(payload).select().single();
-      state = state.copyWith(
-          darjas: [...state.darjas, Darja.fromJson(data)]);
+      final db = _ref.read(appDatabaseProvider);
+      final engine = _ref.read(syncEngineProvider);
+      final id = d.id ?? const Uuid().v4();
+      final nowIso = DateTime.now().toUtc().toIso8601String();
+      final data = {...d.toJson(), 'id': id, 'tenant_id': tenantId};
+      final exists =
+          await SyncQueue.rowExists(db, 'darjas', tenantId, id);
+      final baseRev = exists
+          ? await SyncQueue.currentRevision(db, 'darjas', tenantId, id)
+          : 0;
+
+      await db.transaction(() async {
+        await SyncEngine.writeLocalRow(
+          db,
+          table: 'darjas',
+          id: id,
+          tenantId: tenantId,
+          indexed: {
+            'name': d.nameEnglish.isNotEmpty ? d.nameEnglish : d.nameUrdu,
+          },
+          data: data,
+        );
+
+        await SyncQueue.enqueue(
+          db,
+          tenantId: tenantId,
+          entity: 'darjas',
+          entityId: id,
+          operation: exists ? 'update' : 'create',
+          payload: {...data, 'updated_at': nowIso},
+          baseRevision: baseRev,
+        );
+      });
+
+      engine?.notifyLocalChange();
+      unawaited(engine?.syncNow() ?? Future.value());
+
+      state = state.copyWith(darjas: [...state.darjas, Darja.fromJson(data)]);
       return null;
-    } catch (_) {
-      final opt = Darja(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        tenantId: tenantId,
-        nameUrdu: d.nameUrdu, nameEnglish: d.nameEnglish,
-        level: d.level, orderIndex: d.orderIndex,
-      );
-      state = state.copyWith(darjas: [...state.darjas, opt]);
-      return null;
+    } catch (e) {
+      // Local write is the source of truth — only reach here on a
+      // genuine local failure.
+      state = state.copyWith(error: e.toString());
+      return e.toString();
     }
   }
 
   Future<String?> updateDarja(Darja d) async {
     if (d.id == null) return null;
+    final tenantId = _ref.read(currentTenantIdProvider);
+    if (tenantId == null) return 'No active tenant';
     try {
-      await _client.from('darjas').update(d.toJson()).eq('id', d.id!);
-    } catch (_) {}
-    state = state.copyWith(
-        darjas: state.darjas.map((x) => x.id == d.id ? d : x).toList());
-    return null;
+      final db = _ref.read(appDatabaseProvider);
+      final engine = _ref.read(syncEngineProvider);
+      final id = d.id!;
+      final nowIso = DateTime.now().toUtc().toIso8601String();
+      final data = {...d.toJson(), 'id': id, 'tenant_id': tenantId};
+      final baseRev =
+          await SyncQueue.currentRevision(db, 'darjas', tenantId, id);
+
+      await db.transaction(() async {
+        await SyncEngine.writeLocalRow(
+          db,
+          table: 'darjas',
+          id: id,
+          tenantId: tenantId,
+          indexed: {
+            'name': d.nameEnglish.isNotEmpty ? d.nameEnglish : d.nameUrdu,
+          },
+          data: data,
+        );
+
+        await SyncQueue.enqueue(
+          db,
+          tenantId: tenantId,
+          entity: 'darjas',
+          entityId: id,
+          operation: 'update',
+          payload: {...data, 'updated_at': nowIso},
+          baseRevision: baseRev,
+        );
+      });
+
+      engine?.notifyLocalChange();
+      unawaited(engine?.syncNow() ?? Future.value());
+
+      state = state.copyWith(
+          darjas: state.darjas.map((x) => x.id == id ? Darja.fromJson(data) : x).toList());
+      return null;
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+      return e.toString();
+    }
   }
 
   Future<void> deleteDarja(String id) async {
-    try { await _client.from('darjas').delete().eq('id', id); } catch (_) {}
-    state = state.copyWith(
-        darjas: state.darjas.where((d) => d.id != id).toList());
+    final tenantId = _ref.read(currentTenantIdProvider);
+    if (tenantId == null) {
+      state = state.copyWith(error: 'No active tenant');
+      return;
+    }
+    try {
+      final db = _ref.read(appDatabaseProvider);
+      final engine = _ref.read(syncEngineProvider);
+      final nowIso = DateTime.now().toUtc().toIso8601String();
+      final baseRev =
+          await SyncQueue.currentRevision(db, 'darjas', tenantId, id);
+
+      await db.transaction(() async {
+        await SyncEngine.softDeleteLocalRow(
+          db,
+          table: 'darjas',
+          id: id,
+          tenantId: tenantId,
+          dataPatch: {'is_active': false},
+        );
+
+        await SyncQueue.enqueue(
+          db,
+          tenantId: tenantId,
+          entity: 'darjas',
+          entityId: id,
+          operation: 'delete',
+          payload: {'id': id, 'tenant_id': tenantId, 'updated_at': nowIso},
+          baseRevision: baseRev,
+        );
+      });
+
+      engine?.notifyLocalChange();
+      unawaited(engine?.syncNow() ?? Future.value());
+
+      state = state.copyWith(
+          darjas: state.darjas.where((d) => d.id != id).toList());
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+    }
   }
 
   Future<String?> createSection(DarjaSection s) async {
     final tenantId = _ref.read(currentTenantIdProvider);
     if (tenantId == null) return 'No active tenant';
     try {
-      final payload = <String, dynamic>{...s.toJson(), 'tenant_id': tenantId};
-      final data = await _client.from('darja_sections').insert(payload).select().single();
-      state = state.copyWith(sections: [...state.sections, DarjaSection.fromJson(data)]);
+      final db = _ref.read(appDatabaseProvider);
+      final engine = _ref.read(syncEngineProvider);
+      final id = s.id ?? const Uuid().v4();
+      final nowIso = DateTime.now().toUtc().toIso8601String();
+      final data = {...s.toJson(), 'id': id, 'tenant_id': tenantId};
+      final exists =
+          await SyncQueue.rowExists(db, 'darja_sections', tenantId, id);
+      final baseRev = exists
+          ? await SyncQueue.currentRevision(
+              db, 'darja_sections', tenantId, id)
+          : 0;
+
+      await db.transaction(() async {
+        await SyncEngine.writeLocalRow(
+          db,
+          table: 'darja_sections',
+          id: id,
+          tenantId: tenantId,
+          indexed: {'darja_id': s.darjaId},
+          data: data,
+        );
+
+        await SyncQueue.enqueue(
+          db,
+          tenantId: tenantId,
+          entity: 'darja_sections',
+          entityId: id,
+          operation: exists ? 'update' : 'create',
+          payload: {...data, 'updated_at': nowIso},
+          baseRevision: baseRev,
+        );
+      });
+
+      engine?.notifyLocalChange();
+      unawaited(engine?.syncNow() ?? Future.value());
+
+      state = state.copyWith(
+          sections: [...state.sections, DarjaSection.fromJson(data)]);
       return null;
-    } catch (_) {
-      final opt = DarjaSection(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        tenantId: tenantId,
-        darjaId: s.darjaId, nameUrdu: s.nameUrdu,
-      );
-      state = state.copyWith(sections: [...state.sections, opt]);
-      return null;
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+      return e.toString();
     }
   }
 
   Future<void> deleteSection(String id) async {
-    try { await _client.from('darja_sections').delete().eq('id', id); } catch (_) {}
-    state = state.copyWith(
-        sections: state.sections.where((s) => s.id != id).toList());
+    final tenantId = _ref.read(currentTenantIdProvider);
+    if (tenantId == null) {
+      state = state.copyWith(error: 'No active tenant');
+      return;
+    }
+    try {
+      final db = _ref.read(appDatabaseProvider);
+      final engine = _ref.read(syncEngineProvider);
+      final nowIso = DateTime.now().toUtc().toIso8601String();
+      final baseRev = await SyncQueue.currentRevision(
+          db, 'darja_sections', tenantId, id);
+
+      await db.transaction(() async {
+        await SyncEngine.softDeleteLocalRow(
+          db,
+          table: 'darja_sections',
+          id: id,
+          tenantId: tenantId,
+          dataPatch: {'is_active': false},
+        );
+
+        await SyncQueue.enqueue(
+          db,
+          tenantId: tenantId,
+          entity: 'darja_sections',
+          entityId: id,
+          operation: 'delete',
+          payload: {'id': id, 'tenant_id': tenantId, 'updated_at': nowIso},
+          baseRevision: baseRev,
+        );
+      });
+
+      engine?.notifyLocalChange();
+      unawaited(engine?.syncNow() ?? Future.value());
+
+      state = state.copyWith(
+          sections: state.sections.where((s) => s.id != id).toList());
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+    }
   }
 
   List<DarjaSection> sectionsForDarja(String darjaId) =>

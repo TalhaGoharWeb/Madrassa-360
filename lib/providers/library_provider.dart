@@ -1,7 +1,22 @@
 /// کتب خانہ فراہم کنندہ
+/// Library Provider — LOCAL-FIRST (Phase 5 offline-first sync).
+///
+/// `load()` stays REMOTE (Supabase reads). All writes (addBook /
+/// issueBook / returnBook / deleteBook) go to the local Drift envelope
+/// tables (`library_books`, `book_issues`) + a `sync_queue` row in the
+/// SAME transaction via [SyncEngine.writeLocalRow] /
+/// [SyncEngine.softDeleteLocalRow] + [SyncQueue.enqueue], then
+/// opportunistically trigger [SyncEngine.syncNow]. The sync engine is
+/// the only writer to the server (via the `sync_apply` RPC).
+
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 import '../core/services/supabase_service.dart';
 import '../core/services/tenant_context.dart';
+import '../core/sync/sync_engine.dart';
+import '../core/sync/sync_providers.dart';
 import '../data/models/library.dart';
 
 class LibraryState {
@@ -55,64 +70,244 @@ class LibraryNotifier extends StateNotifier<LibraryState> {
   Future<String?> addBook(LibraryBook b) async {
     final tenantId = _ref.read(currentTenantIdProvider);
     if (tenantId == null) return 'No active tenant';
+    state = state.copyWith(isLoading: true, clearError: true);
     try {
-      final payload = <String, dynamic>{...b.toJson(), 'tenant_id': tenantId};
-      final data = await _c.from('library_books').insert(payload).select().single();
-      state = state.copyWith(books: [...state.books, LibraryBook.fromJson(data)]);
-      return null;
-    } catch (_) {
-      final opt = LibraryBook(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        tenantId: tenantId, madrasaId: b.madrasaId, title: b.title, author: b.author,
-        subject: b.subject, totalCopies: b.totalCopies,
-        availableCopies: b.totalCopies,
+      final db = _ref.read(appDatabaseProvider);
+      final engine = _ref.read(syncEngineProvider);
+      final id = b.id ?? const Uuid().v4();
+      final nowIso = DateTime.now().toUtc().toIso8601String();
+      final data = {...b.toJson(), 'id': id, 'tenant_id': tenantId};
+      final exists =
+          await SyncQueue.rowExists(db, 'library_books', tenantId, id);
+      final baseRev = exists
+          ? await SyncQueue.currentRevision(
+              db, 'library_books', tenantId, id)
+          : 0;
+
+      await db.transaction(() async {
+        await SyncEngine.writeLocalRow(
+          db,
+          table: 'library_books',
+          id: id,
+          tenantId: tenantId,
+          indexed: {'title': b.title},
+          data: data,
+        );
+
+        await SyncQueue.enqueue(
+          db,
+          tenantId: tenantId,
+          entity: 'library_books',
+          entityId: id,
+          operation: exists ? 'update' : 'create',
+          payload: {...data, 'updated_at': nowIso},
+          baseRevision: baseRev,
+        );
+      });
+
+      engine?.notifyLocalChange();
+      unawaited(engine?.syncNow() ?? Future.value());
+
+      state = state.copyWith(
+        isLoading: false,
+        books: [...state.books, LibraryBook.fromJson(data)],
       );
-      state = state.copyWith(books: [...state.books, opt]);
       return null;
+    } catch (e) {
+      // Local write is the source of truth — only reach here on a
+      // genuine local failure.
+      state = state.copyWith(isLoading: false, error: e.toString());
+      return e.toString();
     }
   }
 
+  /// Issues a book: ONE transaction doing TWO local writes — the
+  /// `book_issues` insert + its queue row, AND the `library_books`
+  /// update (available_copies − 1, current value read from state) +
+  /// its queue row — then state updates from the local models.
   Future<String?> issueBook(BookIssue issue) async {
     final tenantId = _ref.read(currentTenantIdProvider);
     if (tenantId == null) return 'No active tenant';
+    state = state.copyWith(isLoading: true, clearError: true);
     try {
-      final payload = <String, dynamic>{...issue.toJson(), 'tenant_id': tenantId};
-      final data = await _c.from('book_issues').insert(payload).select().single();
-      state = state.copyWith(issues: [BookIssue.fromJson(data), ...state.issues]);
-      // Decrease available copies
+      final db = _ref.read(appDatabaseProvider);
+      final engine = _ref.read(syncEngineProvider);
+      final issueId = issue.id ?? const Uuid().v4();
+      final nowIso = DateTime.now().toUtc().toIso8601String();
+      final issueData = {
+        ...issue.toJson(),
+        'id': issueId,
+        'tenant_id': tenantId,
+      };
+      final issueBaseRev = await SyncQueue.currentRevision(
+          db, 'book_issues', tenantId, issueId);
+
+      // Current available count comes from state (remote-loaded list).
       final book = state.books.firstWhere((b) => b.id == issue.bookId);
-      await _c.from('library_books').update({
-        'available_copies': book.availableCopies - 1
-      }).eq('id', book.id!);
+      final bookId = book.id!;
+      final newAvailable = book.availableCopies - 1;
+      final bookData = {
+        ...book.toJson(),
+        'id': bookId,
+        'tenant_id': tenantId,
+        'available_copies': newAvailable,
+      };
+      final bookBaseRev = await SyncQueue.currentRevision(
+          db, 'library_books', tenantId, bookId);
+
+      await db.transaction(() async {
+        // 1) the issue record + its queue row
+        await SyncEngine.writeLocalRow(
+          db,
+          table: 'book_issues',
+          id: issueId,
+          tenantId: tenantId,
+          indexed: {'book_id': issue.bookId},
+          data: issueData,
+        );
+
+        await SyncQueue.enqueue(
+          db,
+          tenantId: tenantId,
+          entity: 'book_issues',
+          entityId: issueId,
+          operation: 'create',
+          payload: {...issueData, 'updated_at': nowIso},
+          baseRevision: issueBaseRev,
+        );
+
+        // 2) the book's decremented available_copies + its queue row
+        await SyncEngine.writeLocalRow(
+          db,
+          table: 'library_books',
+          id: bookId,
+          tenantId: tenantId,
+          indexed: {'title': book.title},
+          data: bookData,
+        );
+
+        await SyncQueue.enqueue(
+          db,
+          tenantId: tenantId,
+          entity: 'library_books',
+          entityId: bookId,
+          operation: 'update',
+          payload: {...bookData, 'updated_at': nowIso},
+          baseRevision: bookBaseRev,
+        );
+      });
+
+      engine?.notifyLocalChange();
+      unawaited(engine?.syncNow() ?? Future.value());
+
+      state = state.copyWith(
+        isLoading: false,
+        issues: [BookIssue.fromJson(issueData), ...state.issues],
+        books: state.books
+            .map((b) => b.id == bookId ? LibraryBook.fromJson(bookData) : b)
+            .toList(),
+      );
       return null;
-    } catch (e) { return e.toString(); }
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      return e.toString();
+    }
   }
 
   Future<String?> returnBook(String issueId, {double? fine}) async {
+    final tenantId = _ref.read(currentTenantIdProvider);
+    if (tenantId == null) return 'No active tenant';
     try {
-      await _c.from('book_issues').update({
+      final db = _ref.read(appDatabaseProvider);
+      final engine = _ref.read(syncEngineProvider);
+      final nowIso = DateTime.now().toUtc().toIso8601String();
+      final existing =
+          state.issues.firstWhere((i) => i.id == issueId);
+      final data = {
+        ...existing.toJson(),
+        'id': issueId,
+        'tenant_id': tenantId,
         'is_returned': true,
-        'returned_at': DateTime.now().toIso8601String(),
+        'returned_at': nowIso,
         if (fine != null) 'fine': fine,
-      }).eq('id', issueId);
+      };
+      final baseRev = await SyncQueue.currentRevision(
+          db, 'book_issues', tenantId, issueId);
+
+      await db.transaction(() async {
+        await SyncEngine.writeLocalRow(
+          db,
+          table: 'book_issues',
+          id: issueId,
+          tenantId: tenantId,
+          indexed: {'book_id': existing.bookId},
+          data: data,
+        );
+
+        await SyncQueue.enqueue(
+          db,
+          tenantId: tenantId,
+          entity: 'book_issues',
+          entityId: issueId,
+          operation: 'update',
+          payload: {...data, 'updated_at': nowIso},
+          baseRevision: baseRev,
+        );
+      });
+
+      engine?.notifyLocalChange();
+      unawaited(engine?.syncNow() ?? Future.value());
+
       state = state.copyWith(
-        issues: state.issues.map((i) => i.id == issueId
-            ? BookIssue(
-                id: i.id, tenantId: i.tenantId, madrasaId: i.madrasaId, bookId: i.bookId,
-                bookTitle: i.bookTitle, borrowerId: i.borrowerId,
-                borrowerName: i.borrowerName, borrowerType: i.borrowerType,
-                issuedAt: i.issuedAt, dueAt: i.dueAt,
-                returnedAt: DateTime.now(), fine: fine, isReturned: true,
-              )
-            : i).toList(),
+        issues: state.issues
+            .map((i) => i.id == issueId ? BookIssue.fromJson(data) : i)
+            .toList(),
       );
       return null;
     } catch (e) { return e.toString(); }
   }
 
   Future<void> deleteBook(String id) async {
-    try { await _c.from('library_books').delete().eq('id', id); } catch (_) {}
-    state = state.copyWith(books: state.books.where((b) => b.id != id).toList());
+    final tenantId = _ref.read(currentTenantIdProvider);
+    if (tenantId == null) {
+      state = state.copyWith(error: 'No active tenant');
+      return;
+    }
+    try {
+      final db = _ref.read(appDatabaseProvider);
+      final engine = _ref.read(syncEngineProvider);
+      final nowIso = DateTime.now().toUtc().toIso8601String();
+      final baseRev = await SyncQueue.currentRevision(
+          db, 'library_books', tenantId, id);
+
+      await db.transaction(() async {
+        await SyncEngine.softDeleteLocalRow(
+          db,
+          table: 'library_books',
+          id: id,
+          tenantId: tenantId,
+          dataPatch: {'is_active': false},
+        );
+
+        await SyncQueue.enqueue(
+          db,
+          tenantId: tenantId,
+          entity: 'library_books',
+          entityId: id,
+          operation: 'delete',
+          payload: {'id': id, 'tenant_id': tenantId, 'updated_at': nowIso},
+          baseRevision: baseRev,
+        );
+      });
+
+      engine?.notifyLocalChange();
+      unawaited(engine?.syncNow() ?? Future.value());
+
+      state = state.copyWith(
+          books: state.books.where((b) => b.id != id).toList());
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+    }
   }
 
   List<BookIssue> get activeIssues =>

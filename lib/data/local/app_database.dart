@@ -255,6 +255,358 @@ class Announcements extends Table {
       ];
 }
 
+/// عملہ — staff directory.
+@DataClassName('LocalStaff')
+class Staffs extends Table {
+  @override
+  String get tableName => 'staff';
+
+  TextColumn get id => text()();
+  TextColumn get tenantId => text()();
+  TextColumn get name => text()();
+  TextColumn get designation => text().nullable()();
+  IntColumn get revision => integer().withDefault(const Constant(1))();
+  IntColumn get serverRevision => integer().nullable()();
+  IntColumn get updatedAt => integer()();
+  IntColumn get deletedAt => integer().nullable()();
+  TextColumn get data => text().withDefault(const Constant('{}'))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+
+  @override
+  List<Index> get indexes => [
+        Index('idx_staff_tenant',
+            'CREATE INDEX idx_staff_tenant ON staff (tenant_id)'),
+        Index('idx_staff_name',
+            'CREATE INDEX idx_staff_name ON staff (tenant_id, name)'),
+      ];
+}
+
+/// درجے کے حصے — sections within a darja.
+@DataClassName('LocalDarjaSection')
+class DarjaSections extends Table {
+  @override
+  String get tableName => 'darja_sections';
+
+  TextColumn get id => text()();
+  TextColumn get tenantId => text()();
+  TextColumn get darjaId => text()();
+  IntColumn get revision => integer().withDefault(const Constant(1))();
+  IntColumn get serverRevision => integer().nullable()();
+  IntColumn get updatedAt => integer()();
+  IntColumn get deletedAt => integer().nullable()();
+  TextColumn get data => text().withDefault(const Constant('{}'))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+
+  @override
+  List<Index> get indexes => [
+        Index('idx_darja_sections_tenant',
+            'CREATE INDEX idx_darja_sections_tenant ON darja_sections (tenant_id)'),
+        Index('idx_darja_sections_darja',
+            'CREATE INDEX idx_darja_sections_darja ON darja_sections (tenant_id, darja_id)'),
+      ];
+}
+
+/// لائبریری کی کتابیں — library catalog.
+@DataClassName('LocalLibraryBook')
+class LibraryBooks extends Table {
+  @override
+  String get tableName => 'library_books';
+
+  TextColumn get id => text()();
+  TextColumn get tenantId => text()();
+  TextColumn get title => text()();
+  IntColumn get revision => integer().withDefault(const Constant(1))();
+  IntColumn get serverRevision => integer().nullable()();
+  IntColumn get updatedAt => integer()();
+  IntColumn get deletedAt => integer().nullable()();
+  TextColumn get data => text().withDefault(const Constant('{}'))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+
+  @override
+  List<Index> get indexes => [
+        Index('idx_library_books_tenant',
+            'CREATE INDEX idx_library_books_tenant ON library_books (tenant_id)'),
+        Index('idx_library_books_title',
+            'CREATE INDEX idx_library_books_title ON library_books (tenant_id, title)'),
+      ];
+}
+
+/// کتابوں کا اجرا — book lending records.
+@DataClassName('LocalBookIssue')
+class BookIssues extends Table {
+  @override
+  String get tableName => 'book_issues';
+
+  TextColumn get id => text()();
+  TextColumn get tenantId => text()();
+  TextColumn get bookId => text()();
+  IntColumn get revision => integer().withDefault(const Constant(1))();
+  IntColumn get serverRevision => integer().nullable()();
+  IntColumn get updatedAt => integer()();
+  IntColumn get deletedAt => integer().nullable()();
+  TextColumn get data => text().withDefault(const Constant('{}'))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+
+  @override
+  List<Index> get indexes => [
+        Index('idx_book_issues_tenant',
+            'CREATE INDEX idx_book_issues_tenant ON book_issues (tenant_id)'),
+        Index('idx_book_issues_book',
+            'CREATE INDEX idx_book_issues_book ON book_issues (tenant_id, book_id)'),
+      ];
+}
+
+/// اکاؤنٹس — chart of accounts.
+@DataClassName('LocalAccount')
+class Accounts extends Table {
+  @override
+  String get tableName => 'accounts';
+
+  TextColumn get id => text()();
+  TextColumn get tenantId => text()();
+  TextColumn get code => text()();
+  IntColumn get revision => integer().withDefault(const Constant(1))();
+  IntColumn get serverRevision => integer().nullable()();
+  IntColumn get updatedAt => integer()();
+  IntColumn get deletedAt => integer().nullable()();
+  TextColumn get data => text().withDefault(const Constant('{}'))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+
+  @override
+  List<Index> get indexes => [
+        Index('idx_accounts_tenant',
+            'CREATE INDEX idx_accounts_tenant ON accounts (tenant_id)'),
+        Index('idx_accounts_code',
+            'CREATE INDEX idx_accounts_code ON accounts (tenant_id, code)'),
+      ];
+}
+
+/// لین دین — journal transactions.
+@DataClassName('LocalTransaction')
+class Transactions extends Table {
+  @override
+  String get tableName => 'transactions';
+
+  TextColumn get id => text()();
+  TextColumn get tenantId => text()();
+  IntColumn get revision => integer().withDefault(const Constant(1))();
+  IntColumn get serverRevision => integer().nullable()();
+  IntColumn get updatedAt => integer()();
+  IntColumn get deletedAt => integer().nullable()();
+  TextColumn get data => text().withDefault(const Constant('{}'))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+
+  @override
+  List<Index> get indexes => [
+        Index('idx_transactions_tenant',
+            'CREATE INDEX idx_transactions_tenant ON transactions (tenant_id)'),
+      ];
+}
+
+/// آمدنی — income entries.
+@DataClassName('LocalIncome')
+class IncomeEntries extends Table {
+  @override
+  String get tableName => 'income';
+
+  TextColumn get id => text()();
+  TextColumn get tenantId => text()();
+  IntColumn get revision => integer().withDefault(const Constant(1))();
+  IntColumn get serverRevision => integer().nullable()();
+  IntColumn get updatedAt => integer()();
+  IntColumn get deletedAt => integer().nullable()();
+  TextColumn get data => text().withDefault(const Constant('{}'))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+
+  @override
+  List<Index> get indexes => [
+        Index('idx_income_tenant',
+            'CREATE INDEX idx_income_tenant ON income (tenant_id)'),
+      ];
+}
+
+/// اخراجات — expense entries.
+@DataClassName('LocalExpense')
+class ExpenseEntries extends Table {
+  @override
+  String get tableName => 'expenses';
+
+  TextColumn get id => text()();
+  TextColumn get tenantId => text()();
+  IntColumn get revision => integer().withDefault(const Constant(1))();
+  IntColumn get serverRevision => integer().nullable()();
+  IntColumn get updatedAt => integer()();
+  IntColumn get deletedAt => integer().nullable()();
+  TextColumn get data => text().withDefault(const Constant('{}'))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+
+  @override
+  List<Index> get indexes => [
+        Index('idx_expenses_tenant',
+            'CREATE INDEX idx_expenses_tenant ON expenses (tenant_id)'),
+      ];
+}
+
+/// رقم کی واپسی — fee refunds.
+@DataClassName('LocalRefund')
+class Refunds extends Table {
+  @override
+  String get tableName => 'refunds';
+
+  TextColumn get id => text()();
+  TextColumn get tenantId => text()();
+  IntColumn get revision => integer().withDefault(const Constant(1))();
+  IntColumn get serverRevision => integer().nullable()();
+  IntColumn get updatedAt => integer()();
+  IntColumn get deletedAt => integer().nullable()();
+  TextColumn get data => text().withDefault(const Constant('{}'))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+
+  @override
+  List<Index> get indexes => [
+        Index('idx_refunds_tenant',
+            'CREATE INDEX idx_refunds_tenant ON refunds (tenant_id)'),
+      ];
+}
+
+/// رعایتیں — invoice discounts.
+@DataClassName('LocalDiscount')
+class Discounts extends Table {
+  @override
+  String get tableName => 'discounts';
+
+  TextColumn get id => text()();
+  TextColumn get tenantId => text()();
+  TextColumn get invoiceId => text().nullable()();
+  IntColumn get revision => integer().withDefault(const Constant(1))();
+  IntColumn get serverRevision => integer().nullable()();
+  IntColumn get updatedAt => integer()();
+  IntColumn get deletedAt => integer().nullable()();
+  TextColumn get data => text().withDefault(const Constant('{}'))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+
+  @override
+  List<Index> get indexes => [
+        Index('idx_discounts_tenant',
+            'CREATE INDEX idx_discounts_tenant ON discounts (tenant_id)'),
+        Index('idx_discounts_invoice',
+            'CREATE INDEX idx_discounts_invoice ON discounts (tenant_id, invoice_id)'),
+      ];
+}
+
+/// وظائف — scholarships.
+@DataClassName('LocalScholarship')
+class Scholarships extends Table {
+  @override
+  String get tableName => 'scholarships';
+
+  TextColumn get id => text()();
+  TextColumn get tenantId => text()();
+  TextColumn get studentId => text().nullable()();
+  IntColumn get revision => integer().withDefault(const Constant(1))();
+  IntColumn get serverRevision => integer().nullable()();
+  IntColumn get updatedAt => integer()();
+  IntColumn get deletedAt => integer().nullable()();
+  TextColumn get data => text().withDefault(const Constant('{}'))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+
+  @override
+  List<Index> get indexes => [
+        Index('idx_scholarships_tenant',
+            'CREATE INDEX idx_scholarships_tenant ON scholarships (tenant_id)'),
+        Index('idx_scholarships_student',
+            'CREATE INDEX idx_scholarships_student ON scholarships (tenant_id, student_id)'),
+      ];
+}
+
+/// بل کی مدات — invoice line items.
+@DataClassName('LocalInvoiceItem')
+class InvoiceItems extends Table {
+  @override
+  String get tableName => 'invoice_items';
+
+  TextColumn get id => text()();
+  TextColumn get tenantId => text()();
+  TextColumn get invoiceId => text()();
+  IntColumn get revision => integer().withDefault(const Constant(1))();
+  IntColumn get serverRevision => integer().nullable()();
+  IntColumn get updatedAt => integer()();
+  IntColumn get deletedAt => integer().nullable()();
+  TextColumn get data => text().withDefault(const Constant('{}'))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+
+  @override
+  List<Index> get indexes => [
+        Index('idx_invoice_items_tenant',
+            'CREATE INDEX idx_invoice_items_tenant ON invoice_items (tenant_id)'),
+        Index('idx_invoice_items_invoice',
+            'CREATE INDEX idx_invoice_items_invoice ON invoice_items (tenant_id, invoice_id)'),
+      ];
+}
+
+/// زیر التواء اپ لوڈز — files queued for Supabase Storage.
+/// A sync_queue row may reference a pending upload through the
+/// `_pending_upload_id` payload key; the sync engine must not push that
+/// row until the upload is done (see `_ensureUploadDone`).
+@DataClassName('LocalPendingUpload')
+class PendingUploads extends Table {
+  @override
+  String get tableName => 'pending_uploads';
+
+  TextColumn get id => text()();
+  TextColumn get tenantId => text()();
+  // 'upload' | 'delete' — spelled out like SyncQueue's operation column.
+  TextColumn get op => text().customConstraint(
+        "NOT NULL CHECK (\"op\" IN ('upload', 'delete'))",
+      )();
+  TextColumn get localPath => text().nullable()(); // null for delete ops
+  TextColumn get bucket => text()();
+  TextColumn get destPath => text()();
+  // 'pending' | 'uploading' | 'failed' | 'done'
+  TextColumn get status => text().customConstraint(
+        "NOT NULL DEFAULT 'pending' CHECK (\"status\" IN "
+        "('pending', 'uploading', 'failed', 'done'))",
+      )();
+  IntColumn get retryCount => integer().withDefault(const Constant(0))();
+  TextColumn get error => text().nullable()();
+  IntColumn get createdAt => integer()(); // epoch millis
+
+  @override
+  Set<Column> get primaryKey => {id};
+
+  @override
+  List<Index> get indexes => [
+        Index('idx_pending_uploads_status',
+            'CREATE INDEX idx_pending_uploads_status ON '
+            'pending_uploads (tenant_id, status)'),
+      ];
+}
+
+
 // ─────────────────────────────────────────────
 // Sync-engine tables
 // ─────────────────────────────────────────────
@@ -828,6 +1180,653 @@ class AnnouncementsDao extends DatabaseAccessor<AppDatabase>
       });
 }
 
+@DriftAccessor(tables: [Staffs])
+class StaffsDao extends DatabaseAccessor<AppDatabase>
+    with _$StaffsDaoMixin {
+  StaffsDao(super.db);
+
+  Future<void> upsert(StaffsCompanion entry) =>
+      into(db.staffs).insertOnConflictUpdate(entry);
+
+  Future<LocalStaff?> getById(String id, String tenantId) =>
+      (select(db.staffs)
+            ..where((t) =>
+                t.id.equals(id) &
+                t.tenantId.equals(tenantId) &
+                t.deletedAt.isNull()))
+          .getSingleOrNull();
+
+  Future<List<LocalStaff>> listByTenant(String tenantId) =>
+      (select(db.staffs)
+            ..where((t) =>
+                t.tenantId.equals(tenantId) & t.deletedAt.isNull())
+            ..orderBy([
+              (t) => OrderingTerm(
+                  expression: t.updatedAt, mode: OrderingMode.desc)
+            ]))
+          .get();
+
+  Stream<List<LocalStaff>> watchByTenant(String tenantId) =>
+      (select(db.staffs)
+            ..where((t) =>
+                t.tenantId.equals(tenantId) & t.deletedAt.isNull())
+            ..orderBy([
+              (t) => OrderingTerm(
+                  expression: t.updatedAt, mode: OrderingMode.desc)
+            ]))
+          .watch();
+
+  Future<void> markClean(String id, String tenantId) => transaction(() async {
+        final row = await (select(db.staffs)
+              ..where(
+                  (t) => t.id.equals(id) & t.tenantId.equals(tenantId)))
+            .getSingleOrNull();
+        if (row == null) return;
+        await (update(db.staffs)
+              ..where(
+                  (t) => t.id.equals(id) & t.tenantId.equals(tenantId)))
+            .write(StaffsCompanion(serverRevision: Value(row.revision)));
+      });
+}
+
+@DriftAccessor(tables: [DarjaSections])
+class DarjaSectionsDao extends DatabaseAccessor<AppDatabase>
+    with _$DarjaSectionsDaoMixin {
+  DarjaSectionsDao(super.db);
+
+  Future<void> upsert(DarjaSectionsCompanion entry) =>
+      into(db.darjaSections).insertOnConflictUpdate(entry);
+
+  Future<LocalDarjaSection?> getById(String id, String tenantId) =>
+      (select(db.darjaSections)
+            ..where((t) =>
+                t.id.equals(id) &
+                t.tenantId.equals(tenantId) &
+                t.deletedAt.isNull()))
+          .getSingleOrNull();
+
+  Future<List<LocalDarjaSection>> listByTenant(String tenantId) =>
+      (select(db.darjaSections)
+            ..where((t) =>
+                t.tenantId.equals(tenantId) & t.deletedAt.isNull())
+            ..orderBy([
+              (t) => OrderingTerm(
+                  expression: t.updatedAt, mode: OrderingMode.desc)
+            ]))
+          .get();
+
+  Stream<List<LocalDarjaSection>> watchByTenant(String tenantId) =>
+      (select(db.darjaSections)
+            ..where((t) =>
+                t.tenantId.equals(tenantId) & t.deletedAt.isNull())
+            ..orderBy([
+              (t) => OrderingTerm(
+                  expression: t.updatedAt, mode: OrderingMode.desc)
+            ]))
+          .watch();
+
+  Future<void> markClean(String id, String tenantId) => transaction(() async {
+        final row = await (select(db.darjaSections)
+              ..where(
+                  (t) => t.id.equals(id) & t.tenantId.equals(tenantId)))
+            .getSingleOrNull();
+        if (row == null) return;
+        await (update(db.darjaSections)
+              ..where(
+                  (t) => t.id.equals(id) & t.tenantId.equals(tenantId)))
+            .write(DarjaSectionsCompanion(serverRevision: Value(row.revision)));
+      });
+}
+
+@DriftAccessor(tables: [LibraryBooks])
+class LibraryBooksDao extends DatabaseAccessor<AppDatabase>
+    with _$LibraryBooksDaoMixin {
+  LibraryBooksDao(super.db);
+
+  Future<void> upsert(LibraryBooksCompanion entry) =>
+      into(db.libraryBooks).insertOnConflictUpdate(entry);
+
+  Future<LocalLibraryBook?> getById(String id, String tenantId) =>
+      (select(db.libraryBooks)
+            ..where((t) =>
+                t.id.equals(id) &
+                t.tenantId.equals(tenantId) &
+                t.deletedAt.isNull()))
+          .getSingleOrNull();
+
+  Future<List<LocalLibraryBook>> listByTenant(String tenantId) =>
+      (select(db.libraryBooks)
+            ..where((t) =>
+                t.tenantId.equals(tenantId) & t.deletedAt.isNull())
+            ..orderBy([
+              (t) => OrderingTerm(
+                  expression: t.updatedAt, mode: OrderingMode.desc)
+            ]))
+          .get();
+
+  Stream<List<LocalLibraryBook>> watchByTenant(String tenantId) =>
+      (select(db.libraryBooks)
+            ..where((t) =>
+                t.tenantId.equals(tenantId) & t.deletedAt.isNull())
+            ..orderBy([
+              (t) => OrderingTerm(
+                  expression: t.updatedAt, mode: OrderingMode.desc)
+            ]))
+          .watch();
+
+  Future<void> markClean(String id, String tenantId) => transaction(() async {
+        final row = await (select(db.libraryBooks)
+              ..where(
+                  (t) => t.id.equals(id) & t.tenantId.equals(tenantId)))
+            .getSingleOrNull();
+        if (row == null) return;
+        await (update(db.libraryBooks)
+              ..where(
+                  (t) => t.id.equals(id) & t.tenantId.equals(tenantId)))
+            .write(LibraryBooksCompanion(serverRevision: Value(row.revision)));
+      });
+}
+
+@DriftAccessor(tables: [BookIssues])
+class BookIssuesDao extends DatabaseAccessor<AppDatabase>
+    with _$BookIssuesDaoMixin {
+  BookIssuesDao(super.db);
+
+  Future<void> upsert(BookIssuesCompanion entry) =>
+      into(db.bookIssues).insertOnConflictUpdate(entry);
+
+  Future<LocalBookIssue?> getById(String id, String tenantId) =>
+      (select(db.bookIssues)
+            ..where((t) =>
+                t.id.equals(id) &
+                t.tenantId.equals(tenantId) &
+                t.deletedAt.isNull()))
+          .getSingleOrNull();
+
+  Future<List<LocalBookIssue>> listByTenant(String tenantId) =>
+      (select(db.bookIssues)
+            ..where((t) =>
+                t.tenantId.equals(tenantId) & t.deletedAt.isNull())
+            ..orderBy([
+              (t) => OrderingTerm(
+                  expression: t.updatedAt, mode: OrderingMode.desc)
+            ]))
+          .get();
+
+  Stream<List<LocalBookIssue>> watchByTenant(String tenantId) =>
+      (select(db.bookIssues)
+            ..where((t) =>
+                t.tenantId.equals(tenantId) & t.deletedAt.isNull())
+            ..orderBy([
+              (t) => OrderingTerm(
+                  expression: t.updatedAt, mode: OrderingMode.desc)
+            ]))
+          .watch();
+
+  Future<void> markClean(String id, String tenantId) => transaction(() async {
+        final row = await (select(db.bookIssues)
+              ..where(
+                  (t) => t.id.equals(id) & t.tenantId.equals(tenantId)))
+            .getSingleOrNull();
+        if (row == null) return;
+        await (update(db.bookIssues)
+              ..where(
+                  (t) => t.id.equals(id) & t.tenantId.equals(tenantId)))
+            .write(BookIssuesCompanion(serverRevision: Value(row.revision)));
+      });
+}
+
+@DriftAccessor(tables: [Accounts])
+class AccountsDao extends DatabaseAccessor<AppDatabase>
+    with _$AccountsDaoMixin {
+  AccountsDao(super.db);
+
+  Future<void> upsert(AccountsCompanion entry) =>
+      into(db.accounts).insertOnConflictUpdate(entry);
+
+  Future<LocalAccount?> getById(String id, String tenantId) =>
+      (select(db.accounts)
+            ..where((t) =>
+                t.id.equals(id) &
+                t.tenantId.equals(tenantId) &
+                t.deletedAt.isNull()))
+          .getSingleOrNull();
+
+  Future<List<LocalAccount>> listByTenant(String tenantId) =>
+      (select(db.accounts)
+            ..where((t) =>
+                t.tenantId.equals(tenantId) & t.deletedAt.isNull())
+            ..orderBy([
+              (t) => OrderingTerm(
+                  expression: t.updatedAt, mode: OrderingMode.desc)
+            ]))
+          .get();
+
+  Stream<List<LocalAccount>> watchByTenant(String tenantId) =>
+      (select(db.accounts)
+            ..where((t) =>
+                t.tenantId.equals(tenantId) & t.deletedAt.isNull())
+            ..orderBy([
+              (t) => OrderingTerm(
+                  expression: t.updatedAt, mode: OrderingMode.desc)
+            ]))
+          .watch();
+
+  Future<void> markClean(String id, String tenantId) => transaction(() async {
+        final row = await (select(db.accounts)
+              ..where(
+                  (t) => t.id.equals(id) & t.tenantId.equals(tenantId)))
+            .getSingleOrNull();
+        if (row == null) return;
+        await (update(db.accounts)
+              ..where(
+                  (t) => t.id.equals(id) & t.tenantId.equals(tenantId)))
+            .write(AccountsCompanion(serverRevision: Value(row.revision)));
+      });
+}
+
+@DriftAccessor(tables: [Transactions])
+class TransactionsDao extends DatabaseAccessor<AppDatabase>
+    with _$TransactionsDaoMixin {
+  TransactionsDao(super.db);
+
+  Future<void> upsert(TransactionsCompanion entry) =>
+      into(db.transactions).insertOnConflictUpdate(entry);
+
+  Future<LocalTransaction?> getById(String id, String tenantId) =>
+      (select(db.transactions)
+            ..where((t) =>
+                t.id.equals(id) &
+                t.tenantId.equals(tenantId) &
+                t.deletedAt.isNull()))
+          .getSingleOrNull();
+
+  Future<List<LocalTransaction>> listByTenant(String tenantId) =>
+      (select(db.transactions)
+            ..where((t) =>
+                t.tenantId.equals(tenantId) & t.deletedAt.isNull())
+            ..orderBy([
+              (t) => OrderingTerm(
+                  expression: t.updatedAt, mode: OrderingMode.desc)
+            ]))
+          .get();
+
+  Stream<List<LocalTransaction>> watchByTenant(String tenantId) =>
+      (select(db.transactions)
+            ..where((t) =>
+                t.tenantId.equals(tenantId) & t.deletedAt.isNull())
+            ..orderBy([
+              (t) => OrderingTerm(
+                  expression: t.updatedAt, mode: OrderingMode.desc)
+            ]))
+          .watch();
+
+  Future<void> markClean(String id, String tenantId) => transaction(() async {
+        final row = await (select(db.transactions)
+              ..where(
+                  (t) => t.id.equals(id) & t.tenantId.equals(tenantId)))
+            .getSingleOrNull();
+        if (row == null) return;
+        await (update(db.transactions)
+              ..where(
+                  (t) => t.id.equals(id) & t.tenantId.equals(tenantId)))
+            .write(TransactionsCompanion(serverRevision: Value(row.revision)));
+      });
+}
+
+@DriftAccessor(tables: [IncomeEntries])
+class IncomeEntriesDao extends DatabaseAccessor<AppDatabase>
+    with _$IncomeEntriesDaoMixin {
+  IncomeEntriesDao(super.db);
+
+  Future<void> upsert(IncomeEntriesCompanion entry) =>
+      into(db.incomeEntries).insertOnConflictUpdate(entry);
+
+  Future<LocalIncome?> getById(String id, String tenantId) =>
+      (select(db.incomeEntries)
+            ..where((t) =>
+                t.id.equals(id) &
+                t.tenantId.equals(tenantId) &
+                t.deletedAt.isNull()))
+          .getSingleOrNull();
+
+  Future<List<LocalIncome>> listByTenant(String tenantId) =>
+      (select(db.incomeEntries)
+            ..where((t) =>
+                t.tenantId.equals(tenantId) & t.deletedAt.isNull())
+            ..orderBy([
+              (t) => OrderingTerm(
+                  expression: t.updatedAt, mode: OrderingMode.desc)
+            ]))
+          .get();
+
+  Stream<List<LocalIncome>> watchByTenant(String tenantId) =>
+      (select(db.incomeEntries)
+            ..where((t) =>
+                t.tenantId.equals(tenantId) & t.deletedAt.isNull())
+            ..orderBy([
+              (t) => OrderingTerm(
+                  expression: t.updatedAt, mode: OrderingMode.desc)
+            ]))
+          .watch();
+
+  Future<void> markClean(String id, String tenantId) => transaction(() async {
+        final row = await (select(db.incomeEntries)
+              ..where(
+                  (t) => t.id.equals(id) & t.tenantId.equals(tenantId)))
+            .getSingleOrNull();
+        if (row == null) return;
+        await (update(db.incomeEntries)
+              ..where(
+                  (t) => t.id.equals(id) & t.tenantId.equals(tenantId)))
+            .write(IncomeEntriesCompanion(serverRevision: Value(row.revision)));
+      });
+}
+
+@DriftAccessor(tables: [ExpenseEntries])
+class ExpenseEntriesDao extends DatabaseAccessor<AppDatabase>
+    with _$ExpenseEntriesDaoMixin {
+  ExpenseEntriesDao(super.db);
+
+  Future<void> upsert(ExpenseEntriesCompanion entry) =>
+      into(db.expenseEntries).insertOnConflictUpdate(entry);
+
+  Future<LocalExpense?> getById(String id, String tenantId) =>
+      (select(db.expenseEntries)
+            ..where((t) =>
+                t.id.equals(id) &
+                t.tenantId.equals(tenantId) &
+                t.deletedAt.isNull()))
+          .getSingleOrNull();
+
+  Future<List<LocalExpense>> listByTenant(String tenantId) =>
+      (select(db.expenseEntries)
+            ..where((t) =>
+                t.tenantId.equals(tenantId) & t.deletedAt.isNull())
+            ..orderBy([
+              (t) => OrderingTerm(
+                  expression: t.updatedAt, mode: OrderingMode.desc)
+            ]))
+          .get();
+
+  Stream<List<LocalExpense>> watchByTenant(String tenantId) =>
+      (select(db.expenseEntries)
+            ..where((t) =>
+                t.tenantId.equals(tenantId) & t.deletedAt.isNull())
+            ..orderBy([
+              (t) => OrderingTerm(
+                  expression: t.updatedAt, mode: OrderingMode.desc)
+            ]))
+          .watch();
+
+  Future<void> markClean(String id, String tenantId) => transaction(() async {
+        final row = await (select(db.expenseEntries)
+              ..where(
+                  (t) => t.id.equals(id) & t.tenantId.equals(tenantId)))
+            .getSingleOrNull();
+        if (row == null) return;
+        await (update(db.expenseEntries)
+              ..where(
+                  (t) => t.id.equals(id) & t.tenantId.equals(tenantId)))
+            .write(ExpenseEntriesCompanion(serverRevision: Value(row.revision)));
+      });
+}
+
+@DriftAccessor(tables: [Refunds])
+class RefundsDao extends DatabaseAccessor<AppDatabase>
+    with _$RefundsDaoMixin {
+  RefundsDao(super.db);
+
+  Future<void> upsert(RefundsCompanion entry) =>
+      into(db.refunds).insertOnConflictUpdate(entry);
+
+  Future<LocalRefund?> getById(String id, String tenantId) =>
+      (select(db.refunds)
+            ..where((t) =>
+                t.id.equals(id) &
+                t.tenantId.equals(tenantId) &
+                t.deletedAt.isNull()))
+          .getSingleOrNull();
+
+  Future<List<LocalRefund>> listByTenant(String tenantId) =>
+      (select(db.refunds)
+            ..where((t) =>
+                t.tenantId.equals(tenantId) & t.deletedAt.isNull())
+            ..orderBy([
+              (t) => OrderingTerm(
+                  expression: t.updatedAt, mode: OrderingMode.desc)
+            ]))
+          .get();
+
+  Stream<List<LocalRefund>> watchByTenant(String tenantId) =>
+      (select(db.refunds)
+            ..where((t) =>
+                t.tenantId.equals(tenantId) & t.deletedAt.isNull())
+            ..orderBy([
+              (t) => OrderingTerm(
+                  expression: t.updatedAt, mode: OrderingMode.desc)
+            ]))
+          .watch();
+
+  Future<void> markClean(String id, String tenantId) => transaction(() async {
+        final row = await (select(db.refunds)
+              ..where(
+                  (t) => t.id.equals(id) & t.tenantId.equals(tenantId)))
+            .getSingleOrNull();
+        if (row == null) return;
+        await (update(db.refunds)
+              ..where(
+                  (t) => t.id.equals(id) & t.tenantId.equals(tenantId)))
+            .write(RefundsCompanion(serverRevision: Value(row.revision)));
+      });
+}
+
+@DriftAccessor(tables: [Discounts])
+class DiscountsDao extends DatabaseAccessor<AppDatabase>
+    with _$DiscountsDaoMixin {
+  DiscountsDao(super.db);
+
+  Future<void> upsert(DiscountsCompanion entry) =>
+      into(db.discounts).insertOnConflictUpdate(entry);
+
+  Future<LocalDiscount?> getById(String id, String tenantId) =>
+      (select(db.discounts)
+            ..where((t) =>
+                t.id.equals(id) &
+                t.tenantId.equals(tenantId) &
+                t.deletedAt.isNull()))
+          .getSingleOrNull();
+
+  Future<List<LocalDiscount>> listByTenant(String tenantId) =>
+      (select(db.discounts)
+            ..where((t) =>
+                t.tenantId.equals(tenantId) & t.deletedAt.isNull())
+            ..orderBy([
+              (t) => OrderingTerm(
+                  expression: t.updatedAt, mode: OrderingMode.desc)
+            ]))
+          .get();
+
+  Stream<List<LocalDiscount>> watchByTenant(String tenantId) =>
+      (select(db.discounts)
+            ..where((t) =>
+                t.tenantId.equals(tenantId) & t.deletedAt.isNull())
+            ..orderBy([
+              (t) => OrderingTerm(
+                  expression: t.updatedAt, mode: OrderingMode.desc)
+            ]))
+          .watch();
+
+  Future<void> markClean(String id, String tenantId) => transaction(() async {
+        final row = await (select(db.discounts)
+              ..where(
+                  (t) => t.id.equals(id) & t.tenantId.equals(tenantId)))
+            .getSingleOrNull();
+        if (row == null) return;
+        await (update(db.discounts)
+              ..where(
+                  (t) => t.id.equals(id) & t.tenantId.equals(tenantId)))
+            .write(DiscountsCompanion(serverRevision: Value(row.revision)));
+      });
+}
+
+@DriftAccessor(tables: [Scholarships])
+class ScholarshipsDao extends DatabaseAccessor<AppDatabase>
+    with _$ScholarshipsDaoMixin {
+  ScholarshipsDao(super.db);
+
+  Future<void> upsert(ScholarshipsCompanion entry) =>
+      into(db.scholarships).insertOnConflictUpdate(entry);
+
+  Future<LocalScholarship?> getById(String id, String tenantId) =>
+      (select(db.scholarships)
+            ..where((t) =>
+                t.id.equals(id) &
+                t.tenantId.equals(tenantId) &
+                t.deletedAt.isNull()))
+          .getSingleOrNull();
+
+  Future<List<LocalScholarship>> listByTenant(String tenantId) =>
+      (select(db.scholarships)
+            ..where((t) =>
+                t.tenantId.equals(tenantId) & t.deletedAt.isNull())
+            ..orderBy([
+              (t) => OrderingTerm(
+                  expression: t.updatedAt, mode: OrderingMode.desc)
+            ]))
+          .get();
+
+  Stream<List<LocalScholarship>> watchByTenant(String tenantId) =>
+      (select(db.scholarships)
+            ..where((t) =>
+                t.tenantId.equals(tenantId) & t.deletedAt.isNull())
+            ..orderBy([
+              (t) => OrderingTerm(
+                  expression: t.updatedAt, mode: OrderingMode.desc)
+            ]))
+          .watch();
+
+  Future<void> markClean(String id, String tenantId) => transaction(() async {
+        final row = await (select(db.scholarships)
+              ..where(
+                  (t) => t.id.equals(id) & t.tenantId.equals(tenantId)))
+            .getSingleOrNull();
+        if (row == null) return;
+        await (update(db.scholarships)
+              ..where(
+                  (t) => t.id.equals(id) & t.tenantId.equals(tenantId)))
+            .write(ScholarshipsCompanion(serverRevision: Value(row.revision)));
+      });
+}
+
+@DriftAccessor(tables: [InvoiceItems])
+class InvoiceItemsDao extends DatabaseAccessor<AppDatabase>
+    with _$InvoiceItemsDaoMixin {
+  InvoiceItemsDao(super.db);
+
+  Future<void> upsert(InvoiceItemsCompanion entry) =>
+      into(db.invoiceItems).insertOnConflictUpdate(entry);
+
+  Future<LocalInvoiceItem?> getById(String id, String tenantId) =>
+      (select(db.invoiceItems)
+            ..where((t) =>
+                t.id.equals(id) &
+                t.tenantId.equals(tenantId) &
+                t.deletedAt.isNull()))
+          .getSingleOrNull();
+
+  Future<List<LocalInvoiceItem>> listByTenant(String tenantId) =>
+      (select(db.invoiceItems)
+            ..where((t) =>
+                t.tenantId.equals(tenantId) & t.deletedAt.isNull())
+            ..orderBy([
+              (t) => OrderingTerm(
+                  expression: t.updatedAt, mode: OrderingMode.desc)
+            ]))
+          .get();
+
+  Stream<List<LocalInvoiceItem>> watchByTenant(String tenantId) =>
+      (select(db.invoiceItems)
+            ..where((t) =>
+                t.tenantId.equals(tenantId) & t.deletedAt.isNull())
+            ..orderBy([
+              (t) => OrderingTerm(
+                  expression: t.updatedAt, mode: OrderingMode.desc)
+            ]))
+          .watch();
+
+  Future<void> markClean(String id, String tenantId) => transaction(() async {
+        final row = await (select(db.invoiceItems)
+              ..where(
+                  (t) => t.id.equals(id) & t.tenantId.equals(tenantId)))
+            .getSingleOrNull();
+        if (row == null) return;
+        await (update(db.invoiceItems)
+              ..where(
+                  (t) => t.id.equals(id) & t.tenantId.equals(tenantId)))
+            .write(InvoiceItemsCompanion(serverRevision: Value(row.revision)));
+      });
+}
+
+@DriftAccessor(tables: [PendingUploads])
+class PendingUploadsDao extends DatabaseAccessor<AppDatabase>
+    with _$PendingUploadsDaoMixin {
+  PendingUploadsDao(super.db);
+
+  Future<void> upsert(PendingUploadsCompanion entry) =>
+      into(db.pendingUploads).insertOnConflictUpdate(entry);
+
+  Future<LocalPendingUpload?> getById(String id, String tenantId) =>
+      (select(db.pendingUploads)
+            ..where((t) =>
+                t.id.equals(id) & t.tenantId.equals(tenantId)))
+          .getSingleOrNull();
+
+  /// Atomically claims this tenant's pending uploads, oldest first,
+  /// flipping them to `uploading` so concurrent workers never double-send.
+  Future<List<LocalPendingUpload>> claimPending(String tenantId,
+      {int limit = 10}) {
+    return transaction(() async {
+      final rows = await (select(db.pendingUploads)
+            ..where((t) =>
+                t.tenantId.equals(tenantId) & t.status.equals('pending'))
+            ..orderBy([(t) => OrderingTerm(expression: t.createdAt)])
+            ..limit(limit))
+          .get();
+      for (final row in rows) {
+        await (update(db.pendingUploads)
+              ..where((t) => t.id.equals(row.id)))
+            .write(
+                const PendingUploadsCompanion(status: Value('uploading')));
+      }
+      return rows;
+    });
+  }
+
+  Future<void> markDone(String id) async {
+    await (update(db.pendingUploads)..where((t) => t.id.equals(id)))
+        .write(const PendingUploadsCompanion(
+      status: Value('done'),
+      error: Value(null),
+    ));
+  }
+
+  Future<void> markFailed(String id, String error) =>
+      transaction(() async {
+        final row = await (select(db.pendingUploads)
+              ..where((t) => t.id.equals(id)))
+            .getSingleOrNull();
+        if (row == null) return;
+        await (update(db.pendingUploads)..where((t) => t.id.equals(id)))
+            .write(PendingUploadsCompanion(
+          status: const Value('failed'),
+          retryCount: Value(row.retryCount + 1),
+          error: Value(error),
+        ));
+      });
+}
+
+
 // ─────────────────────────────────────────────
 // Sync-engine DAOs
 // ─────────────────────────────────────────────
@@ -1083,6 +2082,19 @@ class SyncConflictDao extends DatabaseAccessor<AppDatabase>
     Exams,
     Results,
     Announcements,
+    Staffs,
+    DarjaSections,
+    LibraryBooks,
+    BookIssues,
+    Accounts,
+    Transactions,
+    IncomeEntries,
+    ExpenseEntries,
+    Refunds,
+    Discounts,
+    Scholarships,
+    InvoiceItems,
+    PendingUploads,
     TenantSettingsCache,
     SyncQueue,
     SyncConflicts,
@@ -1098,6 +2110,19 @@ class SyncConflictDao extends DatabaseAccessor<AppDatabase>
     ExamsDao,
     ResultsDao,
     AnnouncementsDao,
+    StaffsDao,
+    DarjaSectionsDao,
+    LibraryBooksDao,
+    BookIssuesDao,
+    AccountsDao,
+    TransactionsDao,
+    IncomeEntriesDao,
+    ExpenseEntriesDao,
+    RefundsDao,
+    DiscountsDao,
+    ScholarshipsDao,
+    InvoiceItemsDao,
+    PendingUploadsDao,
     TenantSettingsDao,
     SyncQueueDao,
     SyncStateDao,
