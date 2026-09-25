@@ -61,14 +61,12 @@ final pendingSyncCountProvider = StreamProvider<int>((ref) async* {
   }
 
   Future<int> count() async {
-    final rows = await db
-        .customSelect(
-          'SELECT COUNT(*) AS n FROM sync_queue WHERE tenant_id = ? '
-          "AND sync_status IN ('pending','in_progress','failed',"
-          "'dead_letter')",
-          variables: [Variable.withString(tenantId)],
-        )
-        .get();
+    final rows = await db.customSelect(
+      'SELECT COUNT(*) AS n FROM sync_queue WHERE tenant_id = ? '
+      "AND sync_status IN ('pending','in_progress','failed',"
+      "'dead_letter')",
+      variables: [Variable.withString(tenantId)],
+    ).get();
     if (rows.isEmpty) return 0;
     return (rows.first.data['n'] as num?)?.toInt() ?? 0;
   }
@@ -81,14 +79,15 @@ final pendingSyncCountProvider = StreamProvider<int>((ref) async* {
       ref.state = AsyncData(await count());
     } catch (_) {/* provider already disposed */}
   });
-  ref.onDispose(sub?.cancel);
+  ref.onDispose(() {
+    sub?.cancel();
+  });
 });
 
 /// Unresolved sync conflicts for the active tenant (manual review queue).
 /// The sibling's `sync_conflicts` table uses `resolved` INT 0/1 (no status
 /// column); conflict id is the integer PK.
-final syncConflictsProvider =
-    StreamProvider<List<SyncConflict>>((ref) async* {
+final syncConflictsProvider = StreamProvider<List<SyncConflict>>((ref) async* {
   final db = ref.watch(appDatabaseProvider);
   final tenantId = ref.watch(currentTenantIdProvider);
   if (tenantId == null) {
@@ -97,13 +96,11 @@ final syncConflictsProvider =
   }
 
   Future<List<SyncConflict>> load() async {
-    final rows = await db
-        .customSelect(
-          'SELECT * FROM sync_conflicts WHERE tenant_id = ? '
-          'AND resolved = 0 ORDER BY created_at DESC',
-          variables: [Variable.withString(tenantId)],
-        )
-        .get();
+    final rows = await db.customSelect(
+      'SELECT * FROM sync_conflicts WHERE tenant_id = ? '
+      'AND resolved = 0 ORDER BY created_at DESC',
+      variables: [Variable.withString(tenantId)],
+    ).get();
     return rows.map((r) => SyncConflict.fromRow(r.data)).toList();
   }
 
@@ -114,7 +111,9 @@ final syncConflictsProvider =
       ref.state = AsyncData(await load());
     } catch (_) {/* provider already disposed */}
   });
-  ref.onDispose(sub?.cancel);
+  ref.onDispose(() {
+    sub?.cancel();
+  });
 });
 
 /// When the last successful full sync (push + pull) finished. Emits null

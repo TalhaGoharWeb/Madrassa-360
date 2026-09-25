@@ -1,10 +1,10 @@
 /// حاضری کی حالت
 /// Attendance Status Enum
 enum AttendanceStatus {
-  present,  // حاضر - Green
-  absent,   // غیر حاضر - Red
-  leave,    // چھٹی - Yellow/Amber
-  late,     // تاخیر سے حاضر - Blue (Phase 5: teacher attendance selector)
+  present, // حاضر - Green
+  absent, // غیر حاضر - Red
+  leave, // چھٹی - Yellow/Amber
+  late, // تاخیر سے حاضر - Blue (Phase 5: teacher attendance selector)
 }
 
 /// Extension for AttendanceStatus to get Urdu labels and colors

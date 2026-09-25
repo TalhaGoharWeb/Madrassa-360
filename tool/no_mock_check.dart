@@ -78,7 +78,7 @@ void main(List<String> args) {
         if (tokenPatterns[t].hasMatch(line)) {
           violations++;
           stdout.writeln(
-              'VIOLATION ${rel}:${i + 1} — banned token "${_bannedTokens[t]}"\n'
+              'VIOLATION $rel:${i + 1} — banned token "${_bannedTokens[t]}"\n'
               '    ${line.trim()}');
           break; // one report per line is enough
         }
@@ -89,8 +89,7 @@ void main(List<String> args) {
   stdout.writeln(
       'no-mock-check: scanned $filesScanned files, $violations violation(s).');
   if (violations > 0) {
-    stderr.writeln(
-        'no-mock-check FAILED: mock-ish identifiers found in lib/. '
+    stderr.writeln('no-mock-check FAILED: mock-ish identifiers found in lib/. '
         'Remove them, or add "// $_allowMarker" with a justification.');
     exit(1);
   }

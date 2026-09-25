@@ -26,9 +26,9 @@ class _DarjaScreenState extends State<DarjaScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) =>
-        _ref?.read(darjaProvider.notifier).loadAll(
-            madrasaId: widget.madrasaId));
+    WidgetsBinding.instance.addPostFrameCallback((_) => _ref
+        ?.read(darjaProvider.notifier)
+        .loadAll(madrasaId: widget.madrasaId));
   }
 
   @override
@@ -63,31 +63,29 @@ class _DarjaScreenState extends State<DarjaScreen> {
             ? const Center(child: CircularProgressIndicator())
             : darjas.isEmpty
                 ? Center(
-                    child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                        Icon(Icons.class_outlined,
-                            size: 64, color: AppColors.textSecondary),
-                        const SizedBox(height: 12),
-                        Text('کوئی درجہ نہیں',
-                            style: AppTypography.bodyLarge.copyWith(
-                                color: AppColors.textSecondary)),
-                      ]))
+                    child: Column(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(Icons.class_outlined,
+                        size: 64, color: AppColors.textSecondary),
+                    const SizedBox(height: 12),
+                    Text('کوئی درجہ نہیں',
+                        style: AppTypography.bodyLarge
+                            .copyWith(color: AppColors.textSecondary)),
+                  ]))
                 : ListView(
                     padding: const EdgeInsets.all(16),
                     children: [
                       for (final level in levels)
                         if (grouped.containsKey(level)) ...[
-                          _LevelHeader(
-                              _levelLabel(level),
-                              _levelColors[level] ??
-                                  AppColors.primary),
+                          _LevelHeader(_levelLabel(level),
+                              _levelColors[level] ?? AppColors.primary),
                           const SizedBox(height: 8),
-                          for (final darja
-                              in grouped[level]!) ...[
-                            _DarjaCard(darja, ref,
-                                _levelColors[level] ??
-                                    AppColors.primary, context, widget.madrasaId),
+                          for (final darja in grouped[level]!) ...[
+                            _DarjaCard(
+                                darja,
+                                ref,
+                                _levelColors[level] ?? AppColors.primary,
+                                context,
+                                widget.madrasaId),
                             const SizedBox(height: 10),
                           ],
                           const SizedBox(height: 8),
@@ -100,11 +98,16 @@ class _DarjaScreenState extends State<DarjaScreen> {
 
   String _levelLabel(String level) {
     switch (level) {
-      case 'nazra': return 'ناظرہ';
-      case 'hifz': return 'حفظ';
-      case 'dars_e_nizami': return 'درس نظامی';
-      case 'takhassus': return 'تخصص';
-      default: return level;
+      case 'nazra':
+        return 'ناظرہ';
+      case 'hifz':
+        return 'حفظ';
+      case 'dars_e_nizami':
+        return 'درس نظامی';
+      case 'takhassus':
+        return 'تخصص';
+      default:
+        return level;
     }
   }
 
@@ -119,7 +122,8 @@ class _DarjaScreenState extends State<DarjaScreen> {
       builder: (dCtx) => StatefulBuilder(builder: (dCtx, setS) {
         return AlertDialog(
           title: Text('نیا درجہ', style: AppTypography.titleMedium),
-          content: SingleChildScrollView(child: Column(
+          content: SingleChildScrollView(
+              child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               _field(nameUCtrl, 'نام (اردو)'),
@@ -131,7 +135,8 @@ class _DarjaScreenState extends State<DarjaScreen> {
                 items: const [
                   DropdownMenuItem(value: 'nazra', child: Text('ناظرہ')),
                   DropdownMenuItem(value: 'hifz', child: Text('حفظ')),
-                  DropdownMenuItem(value: 'dars_e_nizami', child: Text('درس نظامی')),
+                  DropdownMenuItem(
+                      value: 'dars_e_nizami', child: Text('درس نظامی')),
                   DropdownMenuItem(value: 'takhassus', child: Text('تخصص')),
                 ],
                 onChanged: (v) => setS(() => level = v!),
@@ -141,7 +146,9 @@ class _DarjaScreenState extends State<DarjaScreen> {
             ],
           )),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(dCtx), child: const Text('منسوخ')),
+            TextButton(
+                onPressed: () => Navigator.pop(dCtx),
+                child: const Text('منسوخ')),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
@@ -149,13 +156,13 @@ class _DarjaScreenState extends State<DarjaScreen> {
               onPressed: () async {
                 Navigator.pop(dCtx);
                 await ref.read(darjaProvider.notifier).createDarja(Darja(
-                  nameUrdu: nameUCtrl.text,
-                  nameEnglish: nameECtrl.text,
-                  level: level,
-                  tenantId: ref.read(currentTenantIdProvider) ?? '',
-                  madrasaId: widget.madrasaId,
-                  capacity: int.tryParse(capCtrl.text) ?? 30,
-                ));
+                      nameUrdu: nameUCtrl.text,
+                      nameEnglish: nameECtrl.text,
+                      level: level,
+                      tenantId: ref.read(currentTenantIdProvider) ?? '',
+                      madrasaId: widget.madrasaId,
+                      capacity: int.tryParse(capCtrl.text) ?? 30,
+                    ));
               },
               child: const Text('شامل'),
             ),
@@ -166,13 +173,14 @@ class _DarjaScreenState extends State<DarjaScreen> {
   }
 
   Widget _field(TextEditingController ctrl, String label) => Padding(
-    padding: const EdgeInsets.only(bottom: 12),
-    child: TextField(
-      controller: ctrl,
-      textDirection: TextDirection.rtl,
-      decoration: InputDecoration(labelText: label, border: const OutlineInputBorder()),
-    ),
-  );
+        padding: const EdgeInsets.only(bottom: 12),
+        child: TextField(
+          controller: ctrl,
+          textDirection: TextDirection.rtl,
+          decoration: InputDecoration(
+              labelText: label, border: const OutlineInputBorder()),
+        ),
+      );
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -186,10 +194,10 @@ class _LevelHeader extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(10)),
-      child: Text(label,
-          style: AppTypography.titleSmall.copyWith(color: color)),
+      child:
+          Text(label, style: AppTypography.titleSmall.copyWith(color: color)),
     );
   }
 }
@@ -205,40 +213,45 @@ class _DarjaCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final sections = ref.read(darjaProvider.notifier).sectionsForDarja(darja.id ?? '');
+    final sections =
+        ref.read(darjaProvider.notifier).sectionsForDarja(darja.id ?? '');
 
     return Card(
       elevation: 1,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       child: ExpansionTile(
         leading: CircleAvatar(
-          backgroundColor: color.withOpacity(0.15),
+          backgroundColor: color.withValues(alpha: 0.15),
           child: Text(
             '${darja.orderIndex}',
-            style: AppTypography.bodyLarge.copyWith(
-                color: color, fontWeight: FontWeight.bold),
+            style: AppTypography.bodyLarge
+                .copyWith(color: color, fontWeight: FontWeight.bold),
           ),
         ),
         title: Text(darja.nameUrdu,
-            style: AppTypography.bodyLarge.copyWith(fontWeight: FontWeight.w600)),
+            style:
+                AppTypography.bodyLarge.copyWith(fontWeight: FontWeight.w600)),
         subtitle: Text(
           '${darja.nameEnglish} • گنجائش: ${darja.capacity}',
-          style: AppTypography.labelSmall.copyWith(color: AppColors.textSecondary),
+          style:
+              AppTypography.labelSmall.copyWith(color: AppColors.textSecondary),
         ),
         trailing: Row(mainAxisSize: MainAxisSize.min, children: [
           IconButton(
             icon: Icon(Icons.delete_outline, color: AppColors.error, size: 20),
-            onPressed: () => ref.read(darjaProvider.notifier).deleteDarja(darja.id ?? ''),
+            onPressed: () =>
+                ref.read(darjaProvider.notifier).deleteDarja(darja.id ?? ''),
           ),
         ]),
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               if (sections.isEmpty)
                 Text('کوئی سیکشن نہیں',
-                    style: AppTypography.labelMedium.copyWith(
-                        color: AppColors.textSecondary)),
+                    style: AppTypography.labelMedium
+                        .copyWith(color: AppColors.textSecondary)),
               for (final sec in sections)
                 ListTile(
                   dense: true,
@@ -247,8 +260,9 @@ class _DarjaCard extends StatelessWidget {
                   trailing: IconButton(
                     icon: Icon(Icons.remove_circle_outline,
                         color: AppColors.error, size: 18),
-                    onPressed: () =>
-                        ref.read(darjaProvider.notifier).deleteSection(sec.id ?? ''),
+                    onPressed: () => ref
+                        .read(darjaProvider.notifier)
+                        .deleteSection(sec.id ?? ''),
                   ),
                 ),
               const SizedBox(height: 6),
@@ -281,8 +295,7 @@ class _DarjaCard extends StatelessWidget {
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(dCtx),
-              child: const Text('منسوخ')),
+              onPressed: () => Navigator.pop(dCtx), child: const Text('منسوخ')),
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(dCtx);

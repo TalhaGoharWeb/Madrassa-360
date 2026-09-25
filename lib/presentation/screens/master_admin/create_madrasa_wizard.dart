@@ -78,9 +78,23 @@ class _CreateMadrasaWizardState extends State<CreateMadrasaWizard> {
   @override
   void dispose() {
     for (final c in [
-      _name, _nameUrdu, _address, _city, _district, _province, _country,
-      _phone, _email, _website, _principal, _regNumber, _timezone,
-      _adminName, _adminEmail, _adminPassword, _adminPasswordConfirm,
+      _name,
+      _nameUrdu,
+      _address,
+      _city,
+      _district,
+      _province,
+      _country,
+      _phone,
+      _email,
+      _website,
+      _principal,
+      _regNumber,
+      _timezone,
+      _adminName,
+      _adminEmail,
+      _adminPassword,
+      _adminPasswordConfirm,
     ]) {
       c.dispose();
     }
@@ -101,7 +115,8 @@ class _CreateMadrasaWizardState extends State<CreateMadrasaWizard> {
     try {
       final plans = await _client
           .from('license_plans')
-          .select('id, name, description, max_students, max_users, price_monthly')
+          .select(
+              'id, name, description, max_students, max_users, price_monthly')
           .eq('is_active', true)
           .order('price_monthly');
       _plans = List<Map<String, dynamic>>.from(plans);
@@ -194,7 +209,8 @@ class _CreateMadrasaWizardState extends State<CreateMadrasaWizard> {
     };
 
     try {
-      final res = await _client.functions.invoke('provision-tenant', body: body);
+      final res =
+          await _client.functions.invoke('provision-tenant', body: body);
       final data = res.data;
       String? code;
       if (data is Map) {
@@ -358,9 +374,8 @@ class _CreateMadrasaWizardState extends State<CreateMadrasaWizard> {
         decoration: InputDecoration(labelText: label),
         validator: validator ??
             (required
-                ? (v) => (v == null || v.trim().isEmpty)
-                    ? 'یہ خانہ ضروری ہے'
-                    : null
+                ? (v) =>
+                    (v == null || v.trim().isEmpty) ? 'یہ خانہ ضروری ہے' : null
                 : null),
       ),
     );
@@ -387,14 +402,13 @@ class _CreateMadrasaWizardState extends State<CreateMadrasaWizard> {
           ],
         ),
         _field(_phone, 'فون / Phone', keyboard: TextInputType.phone),
-        _field(_email, 'ای میل / Email',
-            keyboard: TextInputType.emailAddress,
+        _field(_email, 'ای میل / Email', keyboard: TextInputType.emailAddress,
             validator: (v) {
-              if (v == null || v.trim().isEmpty) return null;
-              return RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(v.trim())
-                  ? null
-                  : 'درست ای میل لکھیں';
-            }),
+          if (v == null || v.trim().isEmpty) return null;
+          return RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(v.trim())
+              ? null
+              : 'درست ای میل لکھیں';
+        }),
         _field(_website, 'ویب سائٹ / Website'),
         _field(_principal, 'پرنسپل کا نام / Principal'),
         _field(_regNumber, 'رجسٹریشن نمبر'),
@@ -407,8 +421,7 @@ class _CreateMadrasaWizardState extends State<CreateMadrasaWizard> {
       children: [
         DropdownButtonFormField<String>(
           value: _language,
-          decoration:
-              const InputDecoration(labelText: 'زبان / Language'),
+          decoration: const InputDecoration(labelText: 'زبان / Language'),
           items: const [
             DropdownMenuItem(value: 'ur', child: Text('اردو (Urdu)')),
             DropdownMenuItem(value: 'en', child: Text('English')),
@@ -421,8 +434,7 @@ class _CreateMadrasaWizardState extends State<CreateMadrasaWizard> {
         const SizedBox(height: 12),
         DropdownButtonFormField<String>(
           value: _currency,
-          decoration:
-              const InputDecoration(labelText: 'کرنسی / Currency'),
+          decoration: const InputDecoration(labelText: 'کرنسی / Currency'),
           items: const [
             DropdownMenuItem(value: 'PKR', child: Text('PKR — روپیہ')),
             DropdownMenuItem(value: 'USD', child: Text('USD — ڈالر')),
@@ -499,8 +511,8 @@ class _CreateMadrasaWizardState extends State<CreateMadrasaWizard> {
         Row(
           children: [
             TextButton(
-              onPressed: () => setState(() => _modules.addAll(
-                  _catalog.map((m) => m['module'] as String))),
+              onPressed: () => setState(() =>
+                  _modules.addAll(_catalog.map((m) => m['module'] as String))),
               child: const Text('سب منتخب کریں'),
             ),
             TextButton(
@@ -553,8 +565,7 @@ class _CreateMadrasaWizardState extends State<CreateMadrasaWizard> {
             decoration: InputDecoration(
               labelText: 'پاس ورڈ / Password *',
               suffixIcon: IconButton(
-                icon: Icon(
-                    _obscure1 ? Icons.visibility : Icons.visibility_off),
+                icon: Icon(_obscure1 ? Icons.visibility : Icons.visibility_off),
                 onPressed: () => setState(() => _obscure1 = !_obscure1),
               ),
             ),
@@ -587,8 +598,7 @@ class _CreateMadrasaWizardState extends State<CreateMadrasaWizard> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                Text(_strengthLabel(strength),
-                    style: AppTypography.bodySmall),
+                Text(_strengthLabel(strength), style: AppTypography.bodySmall),
               ],
             ),
           ),
@@ -600,22 +610,20 @@ class _CreateMadrasaWizardState extends State<CreateMadrasaWizard> {
             decoration: InputDecoration(
               labelText: 'پاس ورڈ کی تصدیق / Confirm *',
               suffixIcon: IconButton(
-                icon: Icon(
-                    _obscure2 ? Icons.visibility : Icons.visibility_off),
+                icon: Icon(_obscure2 ? Icons.visibility : Icons.visibility_off),
                 onPressed: () => setState(() => _obscure2 = !_obscure2),
               ),
             ),
-            validator: (v) => v != _adminPassword.text
-                ? 'پاس ورڈ مماثل نہیں'
-                : null,
+            validator: (v) =>
+                v != _adminPassword.text ? 'پاس ورڈ مماثل نہیں' : null,
           ),
         ),
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: AppColors.warning.withOpacity(0.1),
+            color: AppColors.warning.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: AppColors.warning.withOpacity(0.4)),
+            border: Border.all(color: AppColors.warning.withValues(alpha: 0.4)),
           ),
           child: Row(
             children: [
@@ -679,11 +687,11 @@ class _CreateMadrasaWizardState extends State<CreateMadrasaWizard> {
               width: 96,
               height: 96,
               decoration: BoxDecoration(
-                color: AppColors.success.withOpacity(0.12),
+                color: AppColors.success.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.check,
-                  color: AppColors.success, size: 56),
+              child:
+                  const Icon(Icons.check, color: AppColors.success, size: 56),
             ),
             const SizedBox(height: 24),
             Text('مدرسہ تیار ہے!',
@@ -697,8 +705,7 @@ class _CreateMadrasaWizardState extends State<CreateMadrasaWizard> {
                   children: [
                     _successRow('Tenant code', _provisionedCode ?? '—'),
                     const Divider(),
-                    _successRow(
-                        'Admin email', _provisionedEmail ?? '—'),
+                    _successRow('Admin email', _provisionedEmail ?? '—'),
                     const Divider(),
                     _successRow('Status', 'trial'),
                   ],
@@ -748,8 +755,7 @@ class _CreateMadrasaWizardState extends State<CreateMadrasaWizard> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.error_outline,
-                size: 72, color: AppColors.error),
+            const Icon(Icons.error_outline, size: 72, color: AppColors.error),
             const SizedBox(height: 20),
             Text('مدرسہ نہیں بن سکا',
                 style: AppTypography.headingSmall
@@ -759,7 +765,7 @@ class _CreateMadrasaWizardState extends State<CreateMadrasaWizard> {
               width: double.infinity,
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppColors.error.withOpacity(0.08),
+                color: AppColors.error.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: SelectableText(
@@ -772,8 +778,7 @@ class _CreateMadrasaWizardState extends State<CreateMadrasaWizard> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 OutlinedButton(
-                  onPressed: () =>
-                      setState(() => _provisionError = null),
+                  onPressed: () => setState(() => _provisionError = null),
                   child: const Text('تفصیلات درست کریں'),
                 ),
                 const SizedBox(width: 12),

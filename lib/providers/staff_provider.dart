@@ -8,7 +8,6 @@ import 'package:image_picker/image_picker.dart';
 import '../data/models/staff.dart';
 import '../data/repositories/staff_repository.dart';
 import '../data/repositories/storage_repository.dart';
-import '../core/sync/sync_engine.dart';
 import '../core/sync/sync_providers.dart';
 import '../core/services/tenant_context.dart';
 
@@ -85,8 +84,8 @@ class StaffNotifier extends AsyncNotifier<void> {
       // Tenant-prefixed destination aligns with the {tenant_id}/ storage
       // policy (the old path lacked the tenant prefix).
       final destPath = '$tenantId/staff/$staffId.$ext';
-      final File staged = await PendingUploadQueue.stageFile(
-          tenantId, photo, '$staffId.$ext');
+      final File staged =
+          await PendingUploadQueue.stageFile(tenantId, photo, '$staffId.$ext');
       final db = ref.read(appDatabaseProvider);
       final uploadId = await PendingUploadQueue.enqueueUpload(
         db,

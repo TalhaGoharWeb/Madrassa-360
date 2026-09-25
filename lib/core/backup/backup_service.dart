@@ -35,6 +35,7 @@
 
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
 import 'package:drift/drift.dart';
@@ -84,8 +85,8 @@ class BackupManifest {
     }
     return BackupManifest(
       tenantId: kv['tenant_id'] ?? '',
-      exportedAt:
-          DateTime.tryParse(kv['exported_at'] ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
+      exportedAt: DateTime.tryParse(kv['exported_at'] ?? '') ??
+          DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
       appVersion: kv['app_version'] ?? 'unknown',
       schemaVersion: int.tryParse(kv['schema_version'] ?? '') ?? -1,
       rowCounts: rowCounts,
@@ -335,9 +336,8 @@ class BackupService {
   Future<Map<String, int>> _tableRowCounts(AppDatabase db) async {
     final counts = <String, int>{};
     for (final table in await _userTables(db)) {
-      final rows = await db
-          .customSelect('SELECT COUNT(*) AS c FROM "$table"')
-          .get();
+      final rows =
+          await db.customSelect('SELECT COUNT(*) AS c FROM "$table"').get();
       counts[table] = ((rows.first.data['c'] as num?)?.toInt() ?? 0);
     }
     return counts;
@@ -411,8 +411,7 @@ class BackupService {
     }
     // Cheap pre-check: SQLite files start with a fixed 16-byte magic.
     final header = await file.openRead(0, 16).first;
-    if (utf8.decode(header, allowMalformed: true) !=
-        'SQLite format 3\u0000') {
+    if (utf8.decode(header, allowMalformed: true) != 'SQLite format 3\u0000') {
       return BackupVerification(
           path: path, valid: false, reasons: ['not_a_sqlite_file']);
     }
@@ -434,9 +433,8 @@ class BackupService {
       }
 
       final kv = <String, String>{};
-      final mrows = await db
-          .customSelect('SELECT key, value FROM $manifestTable')
-          .get();
+      final mrows =
+          await db.customSelect('SELECT key, value FROM $manifestTable').get();
       for (final r in mrows) {
         kv['${r.data['key']}'] = '${r.data['value']}';
       }
@@ -464,7 +462,8 @@ class BackupService {
       // Row counts — recompute only for tables the manifest knows about,
       // so a backup from a newer schema (extra tables) fails on the
       // schema check above, not here.
-      if (reasons.isEmpty || !reasons.any((r) => r.startsWith('schema_mismatch'))) {
+      if (reasons.isEmpty ||
+          !reasons.any((r) => r.startsWith('schema_mismatch'))) {
         for (final entry in manifest.rowCounts.entries) {
           if (!tables.contains(entry.key)) {
             reasons.add('table_missing_in_file:${entry.key}');
@@ -580,9 +579,7 @@ class BackupService {
       // Re-open through the provider machinery so _instance is memoized
       // again for the rest of the app.
       final fresh = await openDatabase();
-      final check = await fresh
-          .customSelect('PRAGMA integrity_check')
-          .get();
+      final check = await fresh.customSelect('PRAGMA integrity_check').get();
       final ok = check.isNotEmpty &&
           '${check.first.data.values.first}'.toLowerCase() == 'ok';
       if (!ok) {
@@ -628,9 +625,8 @@ class BackupService {
   /// metadata and cloud-copy status. Fully offline; the cloud status is
   /// read from the local `pending_uploads` table.
   Future<List<BackupMetadata>> listBackups({String? directory}) async {
-    final dir = directory == null
-        ? await defaultBackupDir()
-        : Directory(directory);
+    final dir =
+        directory == null ? await defaultBackupDir() : Directory(directory);
     if (!await dir.exists()) return [];
 
     final out = <BackupMetadata>[];
@@ -676,16 +672,14 @@ class BackupService {
   /// [fileName], or null when no cloud copy was ever enqueued.
   Future<String?> _cloudStatusFor(String fileName) async {
     final destPath = '$_tenantId/backups/$fileName';
-    final rows = await _db
-        .customSelect(
-          'SELECT status FROM pending_uploads WHERE tenant_id = ? '
-          'AND dest_path = ? ORDER BY created_at DESC LIMIT 1',
-          variables: [
-            Variable.withString(_tenantId),
-            Variable.withString(destPath),
-          ],
-        )
-        .get();
+    final rows = await _db.customSelect(
+      'SELECT status FROM pending_uploads WHERE tenant_id = ? '
+      'AND dest_path = ? ORDER BY created_at DESC LIMIT 1',
+      variables: [
+        Variable.withString(_tenantId),
+        Variable.withString(destPath),
+      ],
+    ).get();
     if (rows.isEmpty) return null;
     return '${rows.first.data['status']}';
   }

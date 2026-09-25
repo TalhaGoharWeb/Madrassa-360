@@ -8,7 +8,6 @@
 /// Empty data → null (callers render the standard empty notice / write
 /// headers only). Zeros are never synthesised.
 
-import '../data/report_data.dart';
 import '../data/report_models.dart';
 import '../report_context.dart';
 
@@ -159,12 +158,8 @@ class TabularData {
         for (final pay in payments)
           [
             pay.paymentDate ?? _dash,
-            pay.studentId == null
-                ? _dash
-                : (names[pay.studentId] ?? _dash),
-            pay.invoiceId == null
-                ? _dash
-                : (invNo[pay.invoiceId] ?? _dash),
+            pay.studentId == null ? _dash : (names[pay.studentId] ?? _dash),
+            pay.invoiceId == null ? _dash : (invNo[pay.invoiceId] ?? _dash),
             fmtMoney(pay.amount),
             pay.method ?? _dash,
           ],
@@ -237,12 +232,19 @@ class TabularData {
       return const ReportTable(
         sheetName: 'Results',
         titleUr: 'امتحانی نتائج',
-        headers: ['پوزیشن', 'رول نمبر', 'نام', 'حاصل کردہ', 'کل', 'فیصد', 'گریڈ'],
+        headers: [
+          'پوزیشن',
+          'رول نمبر',
+          'نام',
+          'حاصل کردہ',
+          'کل',
+          'فیصد',
+          'گریڈ'
+        ],
         rows: [],
       );
     }
-    final outcomes =
-        await ctx.data.examOutcomes(ctx.params.tenantId, examId);
+    final outcomes = await ctx.data.examOutcomes(ctx.params.tenantId, examId);
     return ReportTable(
       sheetName: 'Results',
       titleUr: 'امتحانی نتائج',
@@ -270,21 +272,18 @@ class TabularData {
     );
   }
 
-  static Future<ReportTable> _academicPerformance(
-      ReportContext ctx) async {
+  static Future<ReportTable> _academicPerformance(ReportContext ctx) async {
     final p = ctx.params;
     final exams = await ctx.data.exams(p.tenantId, classId: p.classId);
-    final roster =
-        await ctx.data.students(p.tenantId, classId: p.classId, darjaId: p.darjaId);
+    final roster = await ctx.data
+        .students(p.tenantId, classId: p.classId, darjaId: p.darjaId);
     final agg = <String, _Perf>{};
     for (final ex in exams) {
       final outcomes = await ctx.data.examOutcomes(p.tenantId, ex.id);
       for (final o in outcomes) {
         if (o.percentage == null) continue;
         final a = agg.putIfAbsent(
-            o.studentId,
-            () => _Perf(
-                name: o.studentName, rollNo: o.rollNo));
+            o.studentId, () => _Perf(name: o.studentName, rollNo: o.rollNo));
         a.sum += o.percentage!;
         a.count++;
       }
@@ -332,8 +331,7 @@ class TabularData {
       titleUr: 'حاضری رپورٹ',
       headers: const ['تاریخ', 'حاضری'],
       rows: [
-        for (final m in marks)
-          [m.date, urduStatus[m.status] ?? m.status],
+        for (final m in marks) [m.date, urduStatus[m.status] ?? m.status],
       ],
     );
   }
@@ -383,9 +381,7 @@ class TabularData {
               pay.paymentDate ?? _dash,
               fmtMoney(pay.amount),
               pay.method ?? _dash,
-              pay.invoiceId == null
-                  ? _dash
-                  : (invNo[pay.invoiceId] ?? _dash),
+              pay.invoiceId == null ? _dash : (invNo[pay.invoiceId] ?? _dash),
               pay.notes ?? _dash,
             ],
         ],
@@ -410,9 +406,8 @@ class TabularData {
     for (final i in invoices) {
       if (!inClass.contains(i.studentId)) continue;
       billed[i.studentId] = (billed[i.studentId] ?? 0) + i.total;
-      paid[i.studentId] = (paid[i.studentId] ?? 0) +
-          i.amountPaid +
-          i.discountTotal;
+      paid[i.studentId] =
+          (paid[i.studentId] ?? 0) + i.amountPaid + i.discountTotal;
     }
     for (final pay in payments) {
       final sid = pay.studentId;

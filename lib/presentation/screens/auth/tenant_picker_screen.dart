@@ -35,8 +35,7 @@ class TenantPickerScreen extends ConsumerStatefulWidget {
   const TenantPickerScreen({super.key});
 
   @override
-  ConsumerState<TenantPickerScreen> createState() =>
-      _TenantPickerScreenState();
+  ConsumerState<TenantPickerScreen> createState() => _TenantPickerScreenState();
 }
 
 class _TenantPickerScreenState extends ConsumerState<TenantPickerScreen> {
@@ -101,8 +100,7 @@ class _TenantPickerScreenState extends ConsumerState<TenantPickerScreen> {
                 ),
                 const SizedBox(height: 24),
                 ElevatedButton.icon(
-                  onPressed: () =>
-                      ref.invalidate(tenantMembershipsProvider),
+                  onPressed: () => ref.invalidate(tenantMembershipsProvider),
                   icon: const Icon(Icons.refresh),
                   label: const Text('دوبارہ کوشش کریں'),
                 ),
@@ -139,16 +137,16 @@ class _TenantPickerScreenState extends ConsumerState<TenantPickerScreen> {
                   leading: m.logoUrl != null && m.logoUrl!.isNotEmpty
                       ? CircleAvatar(
                           backgroundImage: NetworkImage(m.logoUrl!),
-                          backgroundColor: AppColors.primary.withOpacity(0.1),
+                          backgroundColor:
+                              AppColors.primary.withValues(alpha: 0.1),
                         )
                       : CircleAvatar(
                           backgroundColor:
-                              AppColors.primary.withOpacity(0.1),
+                              AppColors.primary.withValues(alpha: 0.1),
                           child: const Icon(Icons.mosque,
                               color: AppColors.primary),
                         ),
-                  title: Text(m.tenantName,
-                      style: AppTypography.titleMedium),
+                  title: Text(m.tenantName, style: AppTypography.titleMedium),
                   subtitle: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [

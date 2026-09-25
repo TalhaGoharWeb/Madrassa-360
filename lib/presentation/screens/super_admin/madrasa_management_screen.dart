@@ -10,7 +10,8 @@ import '../../../providers/madrasa_provider.dart';
 /// lib/presentation/screens/master_admin/ (route '/master', gated by
 /// MasterAdminGuard). Kept only because other code may still reference it —
 /// do not build new features here.
-@deprecated
+@Deprecated(
+    'Use the Master Admin screens under lib/presentation/screens/master_admin/ instead')
 class MadrasaManagementScreen extends StatefulWidget {
   const MadrasaManagementScreen({super.key});
   @override
@@ -38,9 +39,7 @@ class _MadrasaManagementScreenState extends State<MadrasaManagementScreen> {
           .where((m) =>
               _search.isEmpty ||
               m.nameUrdu.contains(_search) ||
-              m.nameEnglish
-                  .toLowerCase()
-                  .contains(_search.toLowerCase()) ||
+              m.nameEnglish.toLowerCase().contains(_search.toLowerCase()) ||
               m.cityUrdu.contains(_search))
           .toList();
 
@@ -71,10 +70,9 @@ class _MadrasaManagementScreenState extends State<MadrasaManagementScreen> {
               decoration: InputDecoration(
                 hintText: 'تلاش کریں...',
                 hintStyle: const TextStyle(color: Colors.white54),
-                prefixIcon:
-                    const Icon(Icons.search, color: Colors.white54),
+                prefixIcon: const Icon(Icons.search, color: Colors.white54),
                 filled: true,
-                fillColor: Colors.white.withOpacity(0.15),
+                fillColor: Colors.white.withValues(alpha: 0.15),
                 border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none),
@@ -83,29 +81,24 @@ class _MadrasaManagementScreenState extends State<MadrasaManagementScreen> {
           ),
 
           if (state.isLoading)
-            const Expanded(
-                child: Center(child: CircularProgressIndicator())),
+            const Expanded(child: Center(child: CircularProgressIndicator())),
 
           if (!state.isLoading)
             Expanded(
               child: filtered.isEmpty
                   ? Center(
-                      child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                          Icon(Icons.account_balance_outlined,
-                              size: 64,
-                              color: AppColors.textSecondary),
-                          const SizedBox(height: 12),
-                          Text('کوئی مدرسہ نہیں',
-                              style: AppTypography.bodyLarge.copyWith(
-                                  color: AppColors.textSecondary)),
-                        ]))
+                      child: Column(mainAxisSize: MainAxisSize.min, children: [
+                      Icon(Icons.account_balance_outlined,
+                          size: 64, color: AppColors.textSecondary),
+                      const SizedBox(height: 12),
+                      Text('کوئی مدرسہ نہیں',
+                          style: AppTypography.bodyLarge
+                              .copyWith(color: AppColors.textSecondary)),
+                    ]))
                   : ListView.builder(
                       padding: const EdgeInsets.all(16),
                       itemCount: filtered.length,
-                      itemBuilder: (ctx, i) =>
-                          _MadrasaCard(filtered[i], ref),
+                      itemBuilder: (ctx, i) => _madrasaCard(filtered[i], ref),
                     ),
             ),
         ]),
@@ -113,7 +106,7 @@ class _MadrasaManagementScreenState extends State<MadrasaManagementScreen> {
     });
   }
 
-  Widget _MadrasaCard(Madrasa m, WidgetRef ref) {
+  Widget _madrasaCard(Madrasa m, WidgetRef ref) {
     Color planColor = AppColors.info;
     if (m.subscriptionPlan == 'premium') planColor = Colors.amber[700]!;
     if (m.subscriptionPlan == 'standard') planColor = AppColors.primary;
@@ -121,8 +114,7 @@ class _MadrasaManagementScreenState extends State<MadrasaManagementScreen> {
     return Card(
       elevation: 1,
       margin: const EdgeInsets.only(bottom: 12),
-      shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -151,14 +143,12 @@ class _MadrasaManagementScreenState extends State<MadrasaManagementScreen> {
                   ]),
             ),
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                  color: planColor.withOpacity(0.1),
+                  color: planColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20)),
               child: Text(m.planLabel,
-                  style:
-                      AppTypography.labelSmall.copyWith(color: planColor)),
+                  style: AppTypography.labelSmall.copyWith(color: planColor)),
             ),
           ]),
           const SizedBox(height: 10),
@@ -189,14 +179,12 @@ class _MadrasaManagementScreenState extends State<MadrasaManagementScreen> {
             ),
             Text(m.isActive ? 'فعال' : 'غیرفعال',
                 style: AppTypography.labelMedium.copyWith(
-                    color:
-                        m.isActive ? AppColors.success : AppColors.error)),
+                    color: m.isActive ? AppColors.success : AppColors.error)),
             const Spacer(),
             IconButton(
               icon: const Icon(Icons.edit_outlined),
               color: AppColors.primary,
-              onPressed: () =>
-                  _showMadrasaDialog(context, ref, madrasa: m),
+              onPressed: () => _showMadrasaDialog(context, ref, madrasa: m),
             ),
             IconButton(
               icon: const Icon(Icons.delete_outline),
@@ -212,20 +200,13 @@ class _MadrasaManagementScreenState extends State<MadrasaManagementScreen> {
   Future<void> _showMadrasaDialog(BuildContext context, WidgetRef ref,
       {Madrasa? madrasa}) async {
     final isEdit = madrasa != null;
-    final nameUCtrl =
-        TextEditingController(text: madrasa?.nameUrdu ?? '');
-    final nameECtrl =
-        TextEditingController(text: madrasa?.nameEnglish ?? '');
-    final cityUCtrl =
-        TextEditingController(text: madrasa?.cityUrdu ?? '');
-    final cityECtrl =
-        TextEditingController(text: madrasa?.cityEnglish ?? '');
-    final phoneCtrl =
-        TextEditingController(text: madrasa?.phone ?? '');
-    final emailCtrl =
-        TextEditingController(text: madrasa?.email ?? '');
-    final branchCtrl =
-        TextEditingController(text: madrasa?.branchCode ?? '');
+    final nameUCtrl = TextEditingController(text: madrasa?.nameUrdu ?? '');
+    final nameECtrl = TextEditingController(text: madrasa?.nameEnglish ?? '');
+    final cityUCtrl = TextEditingController(text: madrasa?.cityUrdu ?? '');
+    final cityECtrl = TextEditingController(text: madrasa?.cityEnglish ?? '');
+    final phoneCtrl = TextEditingController(text: madrasa?.phone ?? '');
+    final emailCtrl = TextEditingController(text: madrasa?.email ?? '');
+    final branchCtrl = TextEditingController(text: madrasa?.branchCode ?? '');
     String plan = madrasa?.subscriptionPlan ?? 'basic';
 
     await showDialog(
@@ -235,9 +216,7 @@ class _MadrasaManagementScreenState extends State<MadrasaManagementScreen> {
           title: Text(isEdit ? 'مدرسہ ترمیم' : 'نیا مدرسہ',
               style: AppTypography.titleMedium),
           content: SingleChildScrollView(
-            child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
               _field(nameUCtrl, 'نام (اردو)'),
               _field(nameECtrl, 'نام (انگریزی)'),
               _field(cityUCtrl, 'شہر (اردو)'),
@@ -249,14 +228,11 @@ class _MadrasaManagementScreenState extends State<MadrasaManagementScreen> {
               DropdownButtonFormField<String>(
                 value: plan,
                 decoration: const InputDecoration(
-                    labelText: 'سبسکرپشن پلان',
-                    border: OutlineInputBorder()),
+                    labelText: 'سبسکرپشن پلان', border: OutlineInputBorder()),
                 items: const [
                   DropdownMenuItem(value: 'basic', child: Text('بیسک')),
-                  DropdownMenuItem(
-                      value: 'standard', child: Text('اسٹینڈرڈ')),
-                  DropdownMenuItem(
-                      value: 'premium', child: Text('پریمیم')),
+                  DropdownMenuItem(value: 'standard', child: Text('اسٹینڈرڈ')),
+                  DropdownMenuItem(value: 'premium', child: Text('پریمیم')),
                 ],
                 onChanged: (v) => setS(() => plan = v!),
               ),
@@ -330,8 +306,7 @@ class _MadrasaManagementScreenState extends State<MadrasaManagementScreen> {
               onPressed: () => Navigator.pop(ctx, false),
               child: const Text('نہیں')),
           TextButton(
-              style:
-                  TextButton.styleFrom(foregroundColor: AppColors.error),
+              style: TextButton.styleFrom(foregroundColor: AppColors.error),
               onPressed: () => Navigator.pop(ctx, true),
               child: const Text('ہاں، حذف')),
         ],

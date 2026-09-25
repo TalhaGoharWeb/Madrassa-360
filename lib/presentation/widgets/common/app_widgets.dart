@@ -39,7 +39,7 @@ class AppCard extends StatelessWidget {
         border: border,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: elevation ?? 10,
             offset: const Offset(0, 2),
           ),
@@ -105,16 +105,18 @@ class StatCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(icon, color: color, size: 24),
               ),
               if (trend != null)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: (isUp ? AppColors.success : AppColors.error).withOpacity(0.1),
+                    color: (isUp ? AppColors.success : AppColors.error)
+                        .withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
@@ -182,13 +184,13 @@ class EmptyState extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
+                color: AppColors.primary.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 icon,
                 size: 64,
-                color: AppColors.primary.withOpacity(0.5),
+                color: AppColors.primary.withValues(alpha: 0.5),
               ),
             ),
             const SizedBox(height: 24),
@@ -246,7 +248,7 @@ class SearchField extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -269,7 +271,8 @@ class SearchField extends StatelessWidget {
                 )
               : null,
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         ),
       ),
     );
@@ -337,10 +340,10 @@ class StatusBadge extends StatelessWidget {
         vertical: isLarge ? 8 : 4,
       ),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(isLarge ? 12 : 8),
         border: Border.all(
-          color: color.withOpacity(0.3),
+          color: color.withValues(alpha: 0.3),
           width: 1,
         ),
       ),
@@ -353,7 +356,9 @@ class StatusBadge extends StatelessWidget {
           ],
           Text(
             label,
-            style: (isLarge ? AppTypography.labelLarge : AppTypography.labelSmall).copyWith(
+            style:
+                (isLarge ? AppTypography.labelLarge : AppTypography.labelSmall)
+                    .copyWith(
               color: color,
               fontWeight: FontWeight.bold,
             ),
@@ -443,7 +448,7 @@ class InfoTile extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: (iconColor ?? AppColors.primary).withOpacity(0.1),
+              color: (iconColor ?? AppColors.primary).withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
@@ -495,7 +500,7 @@ class LoadingOverlay extends StatelessWidget {
         child,
         if (isLoading)
           Container(
-            color: Colors.black.withOpacity(0.3),
+            color: Colors.black.withValues(alpha: 0.3),
             child: Center(
               child: Container(
                 padding: const EdgeInsets.all(24),

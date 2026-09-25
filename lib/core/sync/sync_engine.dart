@@ -249,7 +249,6 @@ int _nowMs() => DateTime.now().toUtc().millisecondsSinceEpoch;
 
 /// ISO-8601 UTC string — the timestamp format inside sync payloads and
 /// for conflict recency comparison ("latest valid revision wins").
-String _nowIso() => DateTime.now().toUtc().toIso8601String();
 
 // ─────────────────────────────────────────────
 // Public models / events
@@ -308,8 +307,7 @@ class SyncConflict {
   String get status => resolved ? 'resolved' : 'unresolved';
 
   DateTime get createdAt =>
-      DateTime.fromMillisecondsSinceEpoch(createdAtMs, isUtc: true)
-          .toLocal();
+      DateTime.fromMillisecondsSinceEpoch(createdAtMs, isUtc: true).toLocal();
 
   /// Payload safe to re-enqueue (review metadata stripped).
   Map<String, dynamic> get cleanLocalPayload => {
@@ -332,8 +330,7 @@ class SyncConflict {
       tenantId: (r['tenant_id'] ?? '') as String,
       entity: (r['entity'] ?? '') as String,
       entityId: (r['entity_id'] ?? '') as String,
-      localPayload:
-          _decode(r['local_payload_json'] as String?) ?? const {},
+      localPayload: _decode(r['local_payload_json'] as String?) ?? const {},
       serverPayload: _decode(r['server_payload_json'] as String?),
       serverRevision: (r['server_revision'] as num?)?.toInt() ?? 0,
       resolved: ((r['resolved'] as num?)?.toInt() ?? 0) == 1,
@@ -403,16 +400,14 @@ class LocalRows {
     String id,
   ) async {
     try {
-      final rows = await db
-          .customSelect(
-            'SELECT * FROM $table WHERE id = ? AND tenant_id = ? '
-            'AND deleted_at IS NULL LIMIT 1',
-            variables: [
-              Variable.withString(id),
-              Variable.withString(tenantId),
-            ],
-          )
-          .get();
+      final rows = await db.customSelect(
+        'SELECT * FROM $table WHERE id = ? AND tenant_id = ? '
+        'AND deleted_at IS NULL LIMIT 1',
+        variables: [
+          Variable.withString(id),
+          Variable.withString(tenantId),
+        ],
+      ).get();
       if (rows.isEmpty) return null;
       return _withData(rows.first.data);
     } catch (_) {
@@ -428,8 +423,7 @@ class LocalRows {
     List<Variable> variables = const [],
   ]) async {
     try {
-      final rows =
-          await db.customSelect(sql, variables: variables).get();
+      final rows = await db.customSelect(sql, variables: variables).get();
       return rows.map((r) => _withData(r.data)).toList();
     } catch (_) {
       return [];
@@ -485,15 +479,13 @@ class SyncQueue {
     String id,
   ) async {
     try {
-      final rows = await db
-          .customSelect(
-            'SELECT 1 FROM $table WHERE id = ? AND tenant_id = ? LIMIT 1',
-            variables: [
-              Variable.withString(id),
-              Variable.withString(tenantId),
-            ],
-          )
-          .get();
+      final rows = await db.customSelect(
+        'SELECT 1 FROM $table WHERE id = ? AND tenant_id = ? LIMIT 1',
+        variables: [
+          Variable.withString(id),
+          Variable.withString(tenantId),
+        ],
+      ).get();
       return rows.isNotEmpty;
     } catch (_) {
       return false;
@@ -509,16 +501,14 @@ class SyncQueue {
     String id,
   ) async {
     try {
-      final rows = await db
-          .customSelect(
-            'SELECT server_revision FROM $table '
-            'WHERE id = ? AND tenant_id = ? LIMIT 1',
-            variables: [
-              Variable.withString(id),
-              Variable.withString(tenantId),
-            ],
-          )
-          .get();
+      final rows = await db.customSelect(
+        'SELECT server_revision FROM $table '
+        'WHERE id = ? AND tenant_id = ? LIMIT 1',
+        variables: [
+          Variable.withString(id),
+          Variable.withString(tenantId),
+        ],
+      ).get();
       if (rows.isEmpty) return 0;
       return (rows.first.data['server_revision'] as num?)?.toInt() ?? 0;
     } catch (_) {
@@ -639,8 +629,7 @@ class SyncEngine {
     _connectivitySub = Connectivity().onConnectivityChanged.listen(
       (dynamic event) {
         final results = event is List ? event : [event];
-        final online =
-            results.any((r) => r != ConnectivityResult.none);
+        final online = results.any((r) => r != ConnectivityResult.none);
         if (online) _fireAndForget(syncNow(), 'syncNow');
       },
       onError: (Object e, StackTrace st) {
@@ -737,18 +726,16 @@ class SyncEngine {
   /// queue); `dead_letter` rows are never auto-retried.
   Future<List<String>> _pendingEntities() async {
     final now = _nowMs();
-    final rows = await _db
-        .customSelect(
-          'SELECT entity FROM sync_queue '
-          "WHERE tenant_id = ? AND sync_status IN ('pending','failed') "
-          'AND (next_retry_at IS NULL OR next_retry_at <= ?) '
-          'GROUP BY entity ORDER BY MIN(created_at)',
-          variables: [
-            Variable.withString(_tenantId),
-            Variable.withInt(now),
-          ],
-        )
-        .get();
+    final rows = await _db.customSelect(
+      'SELECT entity FROM sync_queue '
+      "WHERE tenant_id = ? AND sync_status IN ('pending','failed') "
+      'AND (next_retry_at IS NULL OR next_retry_at <= ?) '
+      'GROUP BY entity ORDER BY MIN(created_at)',
+      variables: [
+        Variable.withString(_tenantId),
+        Variable.withInt(now),
+      ],
+    ).get();
     return rows.map((r) => (r.data['entity'] ?? '') as String).toList();
   }
 
@@ -762,7 +749,7 @@ class SyncEngine {
       'UPDATE sync_queue SET sync_status = ?, next_retry_at = ? '
       'WHERE operation_id IN ('
       '  SELECT operation_id FROM sync_queue '
-      "  WHERE tenant_id = ? AND entity = ? "
+      '  WHERE tenant_id = ? AND entity = ? '
       "  AND sync_status IN ('pending','failed') "
       '  AND (next_retry_at IS NULL OR next_retry_at <= ?) '
       '  ORDER BY created_at LIMIT ?'
@@ -779,17 +766,15 @@ class SyncEngine {
   }
 
   Future<List<_QueueRow>> _claimedRows(String entity) async {
-    final rows = await _db
-        .customSelect(
-          'SELECT * FROM sync_queue '
-          "WHERE tenant_id = ? AND entity = ? AND sync_status = 'in_progress' "
-          'ORDER BY created_at',
-          variables: [
-            Variable.withString(_tenantId),
-            Variable.withString(entity),
-          ],
-        )
-        .get();
+    final rows = await _db.customSelect(
+      'SELECT * FROM sync_queue '
+      "WHERE tenant_id = ? AND entity = ? AND sync_status = 'in_progress' "
+      'ORDER BY created_at',
+      variables: [
+        Variable.withString(_tenantId),
+        Variable.withString(entity),
+      ],
+    ).get();
     return rows.map((r) => _QueueRow.fromData(r.data)).toList();
   }
 
@@ -869,15 +854,13 @@ class SyncEngine {
     Duration timeout = const Duration(seconds: 30),
   }) async {
     try {
-      final raw = await SupabaseService.client
-          .rpc('sync_apply', params: {
-            'p_entity': entity,
-            'p_entity_id': entityId,
-            'p_base_revision': baseRevision,
-            'p_payload': payload,
-            'p_op': op,
-          })
-          .timeout(timeout);
+      final raw = await SupabaseService.client.rpc('sync_apply', params: {
+        'p_entity': entity,
+        'p_entity_id': entityId,
+        'p_base_revision': baseRevision,
+        'p_payload': payload,
+        'p_op': op,
+      }).timeout(timeout);
       if (raw is Map) return Map<String, dynamic>.from(raw);
       return {'ok': false, 'reason': 'bad_rpc_shape'};
     } catch (_) {
@@ -902,12 +885,10 @@ class SyncEngine {
   /// the row `done` on success; on any error marks it `failed` with
   /// `retry_count + 1` and returns false.
   Future<bool> _ensureUploadDone(String uploadId) async {
-    final rows = await _db
-        .customSelect(
-          'SELECT * FROM pending_uploads WHERE id = ? LIMIT 1',
-          variables: [Variable.withString(uploadId)],
-        )
-        .get();
+    final rows = await _db.customSelect(
+      'SELECT * FROM pending_uploads WHERE id = ? LIMIT 1',
+      variables: [Variable.withString(uploadId)],
+    ).get();
     if (rows.isEmpty) return true; // unknown upload: nothing to wait for
     final data = rows.first.data;
     if ('${data['status']}' == 'done') return true;
@@ -922,9 +903,7 @@ class SyncEngine {
           throw StateError('pending upload $uploadId has no local_path');
         }
         final bytes = await File(localPath).readAsBytes();
-        await SupabaseService.client.storage
-            .from(bucket)
-            .uploadBinary(
+        await SupabaseService.client.storage.from(bucket).uploadBinary(
               destPath,
               bytes,
               fileOptions: const FileOptions(upsert: true),
@@ -1069,8 +1048,7 @@ class SyncEngine {
   ///   3. If the retry still conflicts → park in `sync_conflicts`.
   ///   4. If the server row is gone (`deleted` reason / null row) → take
   ///      the server state: drop the local row, queue → done.
-  Future<void> _handleConflict(
-      _QueueRow row, Map<String, dynamic> rpc) async {
+  Future<void> _handleConflict(_QueueRow row, Map<String, dynamic> rpc) async {
     final reason = '${rpc['reason'] ?? 'conflict'}';
     final serverFinancial = rpc['financial'] == true;
     final isFinancial = isFinancialConflict(
@@ -1124,8 +1102,7 @@ class SyncEngine {
       op: row.rpcOp,
     );
     if (retry != null && retry['ok'] == true) {
-      final newRev =
-          (retry['new_revision'] as num?)?.toInt() ?? serverRevision;
+      final newRev = (retry['new_revision'] as num?)?.toInt() ?? serverRevision;
       await _markDone(row, newRev);
       return;
     }
@@ -1142,8 +1119,8 @@ class SyncEngine {
     await _db.transaction(() async {
       await _insertConflict(row, latest, latestRev,
           reason: 'conflict_after_rebase', financial: false);
-      await _parkQueueRow(row.operationId,
-          'conflict persisted after rebase — held for review');
+      await _parkQueueRow(
+          row.operationId, 'conflict persisted after rebase — held for review');
     });
   }
 
@@ -1188,8 +1165,8 @@ class SyncEngine {
       ..add('entity', row.entity)
       ..add('entity_id', row.entityId)
       ..add('local_payload_json', jsonEncode(localWithMeta))
-      ..add('server_payload_json',
-          serverRow == null ? '' : jsonEncode(serverRow))
+      ..add(
+          'server_payload_json', serverRow == null ? '' : jsonEncode(serverRow))
       ..add('server_revision', serverRevision)
       ..add('created_at', _nowMs())
       ..add('resolved', 0);
@@ -1202,16 +1179,14 @@ class SyncEngine {
   // ── conflict review actions (used by conflict_review_screen.dart) ──
 
   Future<SyncConflict?> _getConflict(int id) async {
-    final rows = await _db
-        .customSelect(
-          'SELECT * FROM sync_conflicts WHERE id = ? AND tenant_id = ? '
-          'LIMIT 1',
-          variables: [
-            Variable.withInt(id),
-            Variable.withString(_tenantId),
-          ],
-        )
-        .get();
+    final rows = await _db.customSelect(
+      'SELECT * FROM sync_conflicts WHERE id = ? AND tenant_id = ? '
+      'LIMIT 1',
+      variables: [
+        Variable.withInt(id),
+        Variable.withString(_tenantId),
+      ],
+    ).get();
     if (rows.isEmpty) return null;
     return SyncConflict.fromRow(rows.first.data);
   }
@@ -1221,8 +1196,7 @@ class SyncEngine {
   Future<void> resolveConflictKeepServer(int conflictId) async {
     final conflict = await _getConflict(conflictId);
     if (conflict == null || conflict.resolved) return;
-    final serverTable =
-        _serverTables[conflict.entity] ?? conflict.entity;
+    final serverTable = _serverTables[conflict.entity] ?? conflict.entity;
     Map<String, dynamic>? serverRow;
     try {
       final res = await SupabaseService.client
@@ -1255,7 +1229,7 @@ class SyncEngine {
       await _db.customUpdate(
         "UPDATE sync_queue SET sync_status = 'done', last_error = NULL, "
         'next_retry_at = NULL '
-        "WHERE tenant_id = ? AND entity = ? AND entity_id = ? "
+        'WHERE tenant_id = ? AND entity = ? AND entity_id = ? '
         "AND sync_status <> 'done'",
         variables: [
           Variable.withString(_tenantId),
@@ -1281,8 +1255,7 @@ class SyncEngine {
     }
     int freshBase = conflict.serverRevision;
     if (freshBase == 0) {
-      final serverTable =
-          _serverTables[conflict.entity] ?? conflict.entity;
+      final serverTable = _serverTables[conflict.entity] ?? conflict.entity;
       try {
         final res = await SupabaseService.client
             .from(serverTable)
@@ -1432,35 +1405,31 @@ class SyncEngine {
 
   /// Entity ids the pull side must not touch for [entity].
   Future<Set<String>> _protectedEntityIds(String entity) async {
-    final rows = await _db
-        .customSelect(
-          'SELECT entity_id FROM sync_queue WHERE tenant_id = ? '
-          "AND entity = ? AND sync_status <> 'done' "
-          'UNION '
-          'SELECT entity_id FROM sync_conflicts WHERE tenant_id = ? '
-          'AND entity = ? AND resolved = 0',
-          variables: [
-            Variable.withString(_tenantId),
-            Variable.withString(entity),
-            Variable.withString(_tenantId),
-            Variable.withString(entity),
-          ],
-        )
-        .get();
+    final rows = await _db.customSelect(
+      'SELECT entity_id FROM sync_queue WHERE tenant_id = ? '
+      "AND entity = ? AND sync_status <> 'done' "
+      'UNION '
+      'SELECT entity_id FROM sync_conflicts WHERE tenant_id = ? '
+      'AND entity = ? AND resolved = 0',
+      variables: [
+        Variable.withString(_tenantId),
+        Variable.withString(entity),
+        Variable.withString(_tenantId),
+        Variable.withString(entity),
+      ],
+    ).get();
     return rows.map((r) => '${r.data['entity_id']}').toSet();
   }
 
   Future<int> _getWatermark(String entity) async {
-    final rows = await _db
-        .customSelect(
-          'SELECT last_server_version FROM sync_state '
-          'WHERE entity = ? AND tenant_id = ? LIMIT 1',
-          variables: [
-            Variable.withString(entity),
-            Variable.withString(_tenantId),
-          ],
-        )
-        .get();
+    final rows = await _db.customSelect(
+      'SELECT last_server_version FROM sync_state '
+      'WHERE entity = ? AND tenant_id = ? LIMIT 1',
+      variables: [
+        Variable.withString(entity),
+        Variable.withString(_tenantId),
+      ],
+    ).get();
     if (rows.isEmpty) return 0;
     return (rows.first.data['last_server_version'] as num?)?.toInt() ?? 0;
   }
@@ -1485,21 +1454,6 @@ class SyncEngine {
   // ── envelope writes ────────────────────────────────────────
 
   /// Next local `revision` for an envelope row (starts at 1).
-  Future<int> _nextLocalRevision(String table, String id) async {
-    try {
-      final rows = await _db
-          .customSelect(
-            'SELECT revision FROM $table WHERE id = ? LIMIT 1',
-            variables: [Variable.withString(id)],
-          )
-          .get();
-      if (rows.isEmpty) return 1;
-      return ((rows.first.data['revision'] as num?)?.toInt() ?? 0) + 1;
-    } catch (_) {
-      return 1;
-    }
-  }
-
   /// Local-first write of a user edit: upserts the envelope row (indexed
   /// columns + `data` JSON), bumps the local `revision`, refreshes
   /// `updated_at`, and PRESERVES `server_revision` (only a successful push
@@ -1529,12 +1483,10 @@ class SyncEngine {
   static Future<int> _localRevisionOf(
       AppDatabase db, String table, String id) async {
     try {
-      final rows = await db
-          .customSelect(
-            'SELECT revision FROM $table WHERE id = ? LIMIT 1',
-            variables: [Variable.withString(id)],
-          )
-          .get();
+      final rows = await db.customSelect(
+        'SELECT revision FROM $table WHERE id = ? LIMIT 1',
+        variables: [Variable.withString(id)],
+      ).get();
       if (rows.isEmpty) return 1;
       return ((rows.first.data['revision'] as num?)?.toInt() ?? 0) + 1;
     } catch (_) {
@@ -1574,8 +1526,7 @@ class SyncEngine {
       // the server row is live again.
       cs.add('deleted_at', deletedAtMs);
     }
-    final sets =
-        cs.cols.where((c) => c != 'id').map((c) => '$c = excluded.$c');
+    final sets = cs.cols.where((c) => c != 'id').map((c) => '$c = excluded.$c');
     // Columns NOT in the list are never touched: local writes preserve
     // server_revision/deleted_at; pull passes them explicitly.
     await db.customInsert(
@@ -1599,16 +1550,14 @@ class SyncEngine {
     Map<String, dynamic> data = {};
     var rev = 1;
     try {
-      final rows = await db
-          .customSelect(
-            'SELECT data, revision FROM $table '
-            'WHERE id = ? AND tenant_id = ? LIMIT 1',
-            variables: [
-              Variable.withString(id),
-              Variable.withString(tenantId),
-            ],
-          )
-          .get();
+      final rows = await db.customSelect(
+        'SELECT data, revision FROM $table '
+        'WHERE id = ? AND tenant_id = ? LIMIT 1',
+        variables: [
+          Variable.withString(id),
+          Variable.withString(tenantId),
+        ],
+      ).get();
       if (rows.isNotEmpty) {
         try {
           data = Map<String, dynamic>.from(
@@ -1639,8 +1588,7 @@ class SyncEngine {
   /// optimistic `revision`.
   ///
   /// No-op for entities without a local table (e.g. `fees`).
-  Future<void> _applyServerRow(
-      String entity, Map<String, dynamic> row) async {
+  Future<void> _applyServerRow(String entity, Map<String, dynamic> row) async {
     final table = _localTables[entity];
     if (table == null) return;
     final id = '${row['id']}';

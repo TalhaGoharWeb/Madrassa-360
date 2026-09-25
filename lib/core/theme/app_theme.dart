@@ -12,7 +12,7 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
-      
+
       // Color Scheme
       colorScheme: ColorScheme.fromSeed(
         seedColor: AppColors.primary,
@@ -26,10 +26,10 @@ class AppTheme {
         error: AppColors.error,
         onError: Colors.white,
       ),
-      
+
       // Scaffold
       scaffoldBackgroundColor: AppColors.background,
-      
+
       // AppBar Theme
       appBarTheme: AppBarTheme(
         backgroundColor: AppColors.primary,
@@ -39,7 +39,7 @@ class AppTheme {
         titleTextStyle: AppTypography.appBarTitle,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      
+
       // Bottom Navigation Bar Theme
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
         backgroundColor: AppColors.surface,
@@ -50,9 +50,9 @@ class AppTheme {
         selectedLabelStyle: AppTypography.navLabel,
         unselectedLabelStyle: AppTypography.navLabel,
       ),
-      
+
       // Card Theme
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: AppColors.surface,
         elevation: 2,
         margin: const EdgeInsets.all(8),
@@ -60,7 +60,7 @@ class AppTheme {
           borderRadius: BorderRadius.circular(12),
         ),
       ),
-      
+
       // Elevated Button Theme
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
@@ -74,14 +74,14 @@ class AppTheme {
           textStyle: AppTypography.buttonText,
         ),
       ),
-      
+
       // Floating Action Button Theme
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         elevation: 4,
       ),
-      
+
       // Input Decoration Theme
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
@@ -102,11 +102,13 @@ class AppTheme {
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.error),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         labelStyle: AppTypography.bodyMedium,
-        hintStyle: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary),
+        hintStyle:
+            AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary),
       ),
-      
+
       // ListTile Theme
       listTileTheme: ListTileThemeData(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -117,14 +119,14 @@ class AppTheme {
           borderRadius: BorderRadius.circular(8),
         ),
       ),
-      
+
       // Divider Theme
       dividerTheme: const DividerThemeData(
         color: AppColors.divider,
         thickness: 1,
         space: 1,
       ),
-      
+
       // Text Theme with Urdu Font
       textTheme: TextTheme(
         headlineLarge: AppTypography.headingLarge,
@@ -140,17 +142,18 @@ class AppTheme {
         labelMedium: AppTypography.labelMedium,
         labelSmall: AppTypography.labelSmall,
       ),
-      
+
       // Icon Theme
       iconTheme: const IconThemeData(
         color: AppColors.textPrimary,
         size: 24,
       ),
-      
+
       // Snackbar Theme
       snackBarTheme: SnackBarThemeData(
         backgroundColor: AppColors.textPrimary,
-        contentTextStyle: AppTypography.bodyMedium.copyWith(color: Colors.white),
+        contentTextStyle:
+            AppTypography.bodyMedium.copyWith(color: Colors.white),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
         ),

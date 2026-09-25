@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide DateUtils;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
@@ -37,61 +37,61 @@ class _StudentListScreenState extends State<StudentListScreen> {
   @override
   Widget build(BuildContext context) {
     return Consumer(builder: (context, ref, _) {
-    _ref = ref;
-    final studentsAsync = ref.watch(allStudentsProvider);
-    final students = studentsAsync.valueOrNull ?? [];
+      _ref = ref;
+      final studentsAsync = ref.watch(allStudentsProvider);
+      final students = studentsAsync.valueOrNull ?? [];
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(AppStrings.students),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.filter_list),
-            onPressed: _showFilterSheet,
-          ),
-        ],
-      ),
-      body: studentsAsync.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : studentsAsync.hasError
-              ? Center(
-                  child: Text(
-                    'طلباء لوڈ کرنے میں خطا',
-                    style: AppTypography.bodyMedium,
-                  ),
-                )
-              : Column(
-          children: [
-            // Search Bar
-            SearchField(
-              controller: _searchController,
-              hintText: 'طالب علم تلاش کریں...',
-              onChanged: (value) => setState(() {}),
-              onFilterTap: _showFilterSheet,
-            ),
-            
-            // Filter Chips
-            _buildFilterChips(),
-            
-            // Stats Row
-            _buildStatsRow(students),
-            
-            // Student List
-            Expanded(
-              child: _buildStudentList(students),
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(AppStrings.students),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.filter_list),
+              onPressed: _showFilterSheet,
             ),
           ],
         ),
-      floatingActionButton: FloatingActionButton.extended(
-        heroTag: 'student_list_add_fab',
-        onPressed: _showNewAdmissionDialog,
-        icon: const Icon(Icons.person_add),
-        label: Text(
-          'نیا داخلہ',
-          style: AppTypography.buttonText,
+        body: studentsAsync.isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : studentsAsync.hasError
+                ? Center(
+                    child: Text(
+                      'طلباء لوڈ کرنے میں خطا',
+                      style: AppTypography.bodyMedium,
+                    ),
+                  )
+                : Column(
+                    children: [
+                      // Search Bar
+                      SearchField(
+                        controller: _searchController,
+                        hintText: 'طالب علم تلاش کریں...',
+                        onChanged: (value) => setState(() {}),
+                        onFilterTap: _showFilterSheet,
+                      ),
+
+                      // Filter Chips
+                      _buildFilterChips(),
+
+                      // Stats Row
+                      _buildStatsRow(students),
+
+                      // Student List
+                      Expanded(
+                        child: _buildStudentList(students),
+                      ),
+                    ],
+                  ),
+        floatingActionButton: FloatingActionButton.extended(
+          heroTag: 'student_list_add_fab',
+          onPressed: _showNewAdmissionDialog,
+          icon: const Icon(Icons.person_add),
+          label: Text(
+            'نیا داخلہ',
+            style: AppTypography.buttonText,
+          ),
         ),
-      ),
-    );
+      );
     });
   }
 
@@ -126,7 +126,7 @@ class _StudentListScreenState extends State<StudentListScreen> {
               onSelected: (selected) {
                 setState(() => _selectedFilter = filter['id']!);
               },
-              selectedColor: AppColors.primary.withOpacity(0.2),
+              selectedColor: AppColors.primary.withValues(alpha: 0.2),
               checkmarkColor: AppColors.primary,
               labelStyle: AppTypography.labelMedium.copyWith(
                 color: isSelected ? AppColors.primary : AppColors.textSecondary,
@@ -143,9 +143,11 @@ class _StudentListScreenState extends State<StudentListScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         children: [
-          _buildMiniStat(Icons.people, '${students.length}', 'کل طلباء', AppColors.primary),
+          _buildMiniStat(Icons.people, '${students.length}', 'کل طلباء',
+              AppColors.primary),
           const SizedBox(width: 12),
-          _buildMiniStat(Icons.check_circle, '—', 'فیس مکمل', AppColors.success),
+          _buildMiniStat(
+              Icons.check_circle, '—', 'فیس مکمل', AppColors.success),
           const SizedBox(width: 12),
           _buildMiniStat(Icons.warning, '—', 'فیس باقی', AppColors.error),
         ],
@@ -153,12 +155,13 @@ class _StudentListScreenState extends State<StudentListScreen> {
     );
   }
 
-  Widget _buildMiniStat(IconData icon, String value, String label, Color color) {
+  Widget _buildMiniStat(
+      IconData icon, String value, String label, Color color) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
@@ -186,20 +189,20 @@ class _StudentListScreenState extends State<StudentListScreen> {
 
   Widget _buildStudentList(List<Student> students) {
     var filteredStudents = students;
-    
+
     // Apply class filter
     if (_selectedFilter != 'all') {
       filteredStudents = filteredStudents
           .where((s) => s.className == _selectedFilter)
           .toList();
     }
-    
+
     // Apply search filter
     final searchQuery = _searchController.text.toLowerCase();
     if (searchQuery.isNotEmpty) {
       filteredStudents = filteredStudents.where((s) {
         return s.name.toLowerCase().contains(searchQuery) ||
-               s.fatherName.toLowerCase().contains(searchQuery);
+            s.fatherName.toLowerCase().contains(searchQuery);
       }).toList();
     }
 
@@ -233,7 +236,7 @@ class _StudentListScreenState extends State<StudentListScreen> {
             width: 50,
             height: 50,
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Center(
@@ -246,7 +249,7 @@ class _StudentListScreenState extends State<StudentListScreen> {
             ),
           ),
           const SizedBox(width: 12),
-          
+
           // Info
           Expanded(
             child: Column(
@@ -265,18 +268,19 @@ class _StudentListScreenState extends State<StudentListScreen> {
                   children: [
                     _buildTag(student.className, AppColors.primary),
                     const SizedBox(width: 8),
-                    _buildTag('رول: ${student.rollNo}', AppColors.textSecondary),
+                    _buildTag(
+                        'رول: ${student.rollNo}', AppColors.textSecondary),
                   ],
                 ),
               ],
             ),
           ),
-          
+
           // Darja badge
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: AppColors.info.withOpacity(0.1),
+              color: AppColors.info.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
@@ -293,7 +297,7 @@ class _StudentListScreenState extends State<StudentListScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
@@ -352,8 +356,14 @@ class _StudentListScreenState extends State<StudentListScreen> {
                       {'id': 'درجہ رابعہ (چوتھا سال)', 'label': 'درجہ رابعہ'},
                       {'id': 'درجہ خامسہ (پانچواں سال)', 'label': 'درجہ خامسہ'},
                       {'id': 'درجہ سادسہ (چھٹا سال)', 'label': 'درجہ سادسہ'},
-                      {'id': 'درجہ سابِعہ (ساتواں سال)', 'label': 'درجہ سابِعہ'},
-                      {'id': 'دورہ حدیث (آٹھواں سال/آخری سال)', 'label': 'دورہ حدیث'},
+                      {
+                        'id': 'درجہ سابِعہ (ساتواں سال)',
+                        'label': 'درجہ سابِعہ'
+                      },
+                      {
+                        'id': 'دورہ حدیث (آٹھواں سال/آخری سال)',
+                        'label': 'دورہ حدیث'
+                      },
                     ].map((classItem) {
                       final isSelected = tempSelectedClass == classItem['id'];
                       return FilterChip(
@@ -361,10 +371,11 @@ class _StudentListScreenState extends State<StudentListScreen> {
                         selected: isSelected,
                         onSelected: (selected) {
                           setState(() {
-                            tempSelectedClass = selected ? classItem['id']! : 'all';
+                            tempSelectedClass =
+                                selected ? classItem['id']! : 'all';
                           });
                         },
-                        selectedColor: AppColors.primary.withOpacity(0.2),
+                        selectedColor: AppColors.primary.withValues(alpha: 0.2),
                         checkmarkColor: AppColors.primary,
                       );
                     }).toList(),
@@ -375,25 +386,45 @@ class _StudentListScreenState extends State<StudentListScreen> {
                   Wrap(
                     spacing: 8,
                     children: [
-                      {'label': 'ادا شدہ', 'value': 'paid', 'color': AppColors.success},
-                      {'label': 'جزوی', 'value': 'partial', 'color': AppColors.warning},
-                      {'label': 'زیر التواء', 'value': 'pending', 'color': AppColors.info},
-                      {'label': 'واجب الادا', 'value': 'pastDue', 'color': AppColors.error},
+                      {
+                        'label': 'ادا شدہ',
+                        'value': 'paid',
+                        'color': AppColors.success
+                      },
+                      {
+                        'label': 'جزوی',
+                        'value': 'partial',
+                        'color': AppColors.warning
+                      },
+                      {
+                        'label': 'زیر التواء',
+                        'value': 'pending',
+                        'color': AppColors.info
+                      },
+                      {
+                        'label': 'واجب الادا',
+                        'value': 'pastDue',
+                        'color': AppColors.error
+                      },
                     ].map((feeItem) {
-                      final isSelected = tempSelectedFeeStatuses.contains(feeItem['value']);
+                      final isSelected =
+                          tempSelectedFeeStatuses.contains(feeItem['value']);
                       return FilterChip(
                         label: Text(feeItem['label'] as String),
                         selected: isSelected,
                         onSelected: (selected) {
                           setState(() {
                             if (selected) {
-                              tempSelectedFeeStatuses.add(feeItem['value'] as String);
+                              tempSelectedFeeStatuses
+                                  .add(feeItem['value'] as String);
                             } else {
-                              tempSelectedFeeStatuses.remove(feeItem['value'] as String);
+                              tempSelectedFeeStatuses
+                                  .remove(feeItem['value'] as String);
                             }
                           });
                         },
-                        selectedColor: (feeItem['color'] as Color).withOpacity(0.2),
+                        selectedColor:
+                            (feeItem['color'] as Color).withValues(alpha: 0.2),
                         checkmarkColor: feeItem['color'] as Color,
                       );
                     }).toList(),
@@ -471,13 +502,13 @@ class _StudentListScreenState extends State<StudentListScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  
+
                   // Profile
                   Container(
                     width: 80,
                     height: 80,
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.1),
+                      color: AppColors.primary.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
                     child: Center(
@@ -497,10 +528,10 @@ class _StudentListScreenState extends State<StudentListScreen> {
                       color: AppColors.textSecondary,
                     ),
                   ),
-                  
+
                   const SizedBox(height: 24),
                   const Divider(),
-                  
+
                   // Info Tiles
                   InfoTile(
                     icon: Icons.class_,
@@ -524,9 +555,9 @@ class _StudentListScreenState extends State<StudentListScreen> {
                       label: 'پتہ',
                       value: student.address!,
                     ),
-                  
+
                   const SizedBox(height: 24),
-                  
+
                   // Action Buttons
                   Row(
                     children: [
@@ -577,208 +608,223 @@ class _StudentListScreenState extends State<StudentListScreen> {
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
-            children: [
-              // Photo Picker
-              Center(
-                child: GestureDetector(
-                  onTap: () async {
-                    final img = await ImagePicker().pickImage(
-                        source: ImageSource.gallery, imageQuality: 70);
-                    if (img != null) setState(() => pickedPhoto = img);
-                  },
-                  child: CircleAvatar(
-                    radius: 40,
-                    backgroundColor: AppColors.primary.withOpacity(0.1),
-                    backgroundImage: pickedPhoto != null
-                        ? FileImage(File(pickedPhoto!.path))
-                        : null,
-                    child: pickedPhoto == null
-                        ? const Icon(Icons.add_a_photo,
-                            color: AppColors.primary, size: 30)
-                        : null,
+              children: [
+                // Photo Picker
+                Center(
+                  child: GestureDetector(
+                    onTap: () async {
+                      final img = await ImagePicker().pickImage(
+                          source: ImageSource.gallery, imageQuality: 70);
+                      if (img != null) setState(() => pickedPhoto = img);
+                    },
+                    child: CircleAvatar(
+                      radius: 40,
+                      backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                      backgroundImage: pickedPhoto != null
+                          ? FileImage(File(pickedPhoto!.path))
+                          : null,
+                      child: pickedPhoto == null
+                          ? const Icon(Icons.add_a_photo,
+                              color: AppColors.primary, size: 30)
+                          : null,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              // Student Name
-              TextFormField(
-                controller: nameController,
-                decoration: const InputDecoration(
-                  labelText: 'طالب علم کا نام',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.person),
+                const SizedBox(height: 16),
+                // Student Name
+                TextFormField(
+                  controller: nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'طالب علم کا نام',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.person),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'نام درج کریں';
+                    }
+                    return null;
+                  },
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'نام درج کریں';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-              // Father Name
-              TextFormField(
-                controller: fatherNameController,
-                decoration: const InputDecoration(
-                  labelText: 'والد کا نام',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.family_restroom),
+                // Father Name
+                TextFormField(
+                  controller: fatherNameController,
+                  decoration: const InputDecoration(
+                    labelText: 'والد کا نام',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.family_restroom),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'والد کا نام درج کریں';
+                    }
+                    return null;
+                  },
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'والد کا نام درج کریں';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-              // Phone Number
-              TextFormField(
-                controller: phoneController,
-                keyboardType: TextInputType.phone,
-                decoration: const InputDecoration(
-                  labelText: 'فون نمبر',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.phone),
+                // Phone Number
+                TextFormField(
+                  controller: phoneController,
+                  keyboardType: TextInputType.phone,
+                  decoration: const InputDecoration(
+                    labelText: 'فون نمبر',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.phone),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'فون نمبر درج کریں';
+                    }
+                    return null;
+                  },
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'فون نمبر درج کریں';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-              // Class Selection
-              DropdownButtonFormField<String>(
-                value: selectedClass,
-                decoration: const InputDecoration(
-                  labelText: 'جماعت',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.class_),
+                // Class Selection
+                DropdownButtonFormField<String>(
+                  value: selectedClass,
+                  decoration: const InputDecoration(
+                    labelText: 'جماعت',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.class_),
+                  ),
+                  items: [
+                    'درجہ اولیٰ (اول سال)',
+                    'درجہ ثانیہ (دوسرا سال)',
+                    'درجہ ثالثہ (تیسرا سال)',
+                    'درجہ رابعہ (چوتھا سال)',
+                    'درجہ خامسہ (پانچواں سال)',
+                    'درجہ سادسہ (چھٹا سال)',
+                    'درجہ سابِعہ (ساتواں سال)',
+                    'دورہ حدیث (آٹھواں سال/آخری سال)',
+                  ].map((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(value),
+                    );
+                  }).toList(),
+                  onChanged: (value) => setState(() => selectedClass = value!),
                 ),
-                items: [
-                  'درجہ اولیٰ (اول سال)',
-                  'درجہ ثانیہ (دوسرا سال)',
-                  'درجہ ثالثہ (تیسرا سال)',
-                  'درجہ رابعہ (چوتھا سال)',
-                  'درجہ خامسہ (پانچواں سال)',
-                  'درجہ سادسہ (چھٹا سال)',
-                  'درجہ سابِعہ (ساتواں سال)',
-                  'دورہ حدیث (آٹھواں سال/آخری سال)',
-                ].map((String value) {
-                  return DropdownMenuItem<String>(
-                    value: value,
-                    child: Text(value),
-                  );
-                }).toList(),
-                onChanged: (value) => setState(() => selectedClass = value!),
-              ),
-              const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-              // Section Selection
-              DropdownButtonFormField<String>(
-                value: selectedSection,
-                decoration: const InputDecoration(
-                  labelText: 'سیکشن',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.group),
+                // Section Selection
+                DropdownButtonFormField<String>(
+                  value: selectedSection,
+                  decoration: const InputDecoration(
+                    labelText: 'سیکشن',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.group),
+                  ),
+                  items: ['الف', 'ب', 'ج', 'د'].map((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(value),
+                    );
+                  }).toList(),
+                  onChanged: (value) =>
+                      setState(() => selectedSection = value!),
                 ),
-                items: ['الف', 'ب', 'ج', 'د'].map((String value) {
-                  return DropdownMenuItem<String>(
-                    value: value,
-                    child: Text(value),
-                  );
-                }).toList(),
-                onChanged: (value) => setState(() => selectedSection = value!),
-              ),
-              const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-              // Address (Optional)
-              TextFormField(
-                controller: addressController,
-                maxLines: 2,
-                decoration: const InputDecoration(
-                  labelText: 'پتہ (اختیاری)',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.location_on),
+                // Address (Optional)
+                TextFormField(
+                  controller: addressController,
+                  maxLines: 2,
+                  decoration: const InputDecoration(
+                    labelText: 'پتہ (اختیاری)',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.location_on),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('منسوخ کریں'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (nameController.text.isNotEmpty &&
-                  fatherNameController.text.isNotEmpty) {
-                try {
-                  showDialog(
-                    context: context,
-                    barrierDismissible: false,
-                    builder: (_) => const Center(child: CircularProgressIndicator()),
-                  );
-                  final student = Student(
-                    id: const Uuid().v4(),
-                    rollNo: '',
-                    name: nameController.text.trim(),
-                    fatherName: fatherNameController.text.trim(),
-                    darjaId: selectedClass,
-                    darjaName: selectedClass,
-                    classId: selectedClass,
-                    className: selectedClass,
-                    phone: phoneController.text.trim().isEmpty
-                        ? null
-                        : phoneController.text.trim(),
-                    address: addressController.text.trim().isEmpty
-                        ? null
-                        : addressController.text.trim(),
-                  );
-                  final saved = await _ref!.read(studentNotifierProvider.notifier).save(student);
-                  if (pickedPhoto != null) {
-                    await _ref!.read(studentNotifierProvider.notifier).uploadPhoto(saved.id, pickedPhoto!);
-                  }
-                  if (context.mounted) {
-                    Navigator.pop(context); // close loader
-                    Navigator.pop(context); // close dialog
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                      content: Text('${nameController.text} کا داخلہ کامیابی سے ہو گیا'),
-                      backgroundColor: Colors.green,
-                    ));
-                  }
-                } catch (e) {
-                  if (context.mounted) {
-                    Navigator.pop(context); // close loader
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                      content: Text('خطا: $e'),
-                      backgroundColor: Colors.red,
-                    ));
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('منسوخ کریں'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (nameController.text.isNotEmpty &&
+                    fatherNameController.text.isNotEmpty) {
+                  try {
+                    showDialog(
+                      context: context,
+                      barrierDismissible: false,
+                      builder: (_) =>
+                          const Center(child: CircularProgressIndicator()),
+                    );
+                    final tenantId = _ref!.read(currentTenantIdProvider);
+                    if (tenantId == null) {
+                      throw StateError('No active tenant');
+                    }
+                    final student = Student(
+                      id: const Uuid().v4(),
+                      tenantId: tenantId,
+                      rollNo: '',
+                      name: nameController.text.trim(),
+                      fatherName: fatherNameController.text.trim(),
+                      darjaId: selectedClass,
+                      darjaName: selectedClass,
+                      classId: selectedClass,
+                      className: selectedClass,
+                      phone: phoneController.text.trim().isEmpty
+                          ? null
+                          : phoneController.text.trim(),
+                      address: addressController.text.trim().isEmpty
+                          ? null
+                          : addressController.text.trim(),
+                    );
+                    final saved = await _ref!
+                        .read(studentNotifierProvider.notifier)
+                        .save(student);
+                    if (pickedPhoto != null) {
+                      await _ref!
+                          .read(studentNotifierProvider.notifier)
+                          .uploadPhoto(saved.id, pickedPhoto!);
+                    }
+                    if (context.mounted) {
+                      Navigator.pop(context); // close loader
+                      Navigator.pop(context); // close dialog
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                        content: Text(
+                            '${nameController.text} کا داخلہ کامیابی سے ہو گیا'),
+                        backgroundColor: Colors.green,
+                      ));
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      Navigator.pop(context); // close loader
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                        content: Text('خطا: $e'),
+                        backgroundColor: Colors.red,
+                      ));
+                    }
                   }
                 }
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+              ),
+              child: const Text('داخلہ لیں'),
             ),
-            child: const Text('داخلہ لیں'),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
-  );
+    );
   }
 
   void _showEditStudentDialog(Student student) {
-    final TextEditingController nameController = TextEditingController(text: student.name);
-    final TextEditingController fatherNameController = TextEditingController(text: student.fatherName);
-    final TextEditingController phoneController = TextEditingController(text: student.phone ?? '');
+    final TextEditingController nameController =
+        TextEditingController(text: student.name);
+    final TextEditingController fatherNameController =
+        TextEditingController(text: student.fatherName);
+    final TextEditingController phoneController =
+        TextEditingController(text: student.phone ?? '');
 
     const validClasses = [
       'درجہ اولیٰ (اول سال)',
@@ -793,7 +839,7 @@ class _StudentListScreenState extends State<StudentListScreen> {
     String selectedClass = validClasses.contains(student.className)
         ? student.className
         : validClasses.first;
-    
+
     // ignore: unused_local_variable
     String selectedSection = 'الف'; // track section selection
 
@@ -811,176 +857,193 @@ class _StudentListScreenState extends State<StudentListScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-              // Photo Picker
-              Center(
-                child: GestureDetector(
-                  onTap: () async {
-                    final img = await ImagePicker().pickImage(
-                        source: ImageSource.gallery, imageQuality: 70);
-                    if (img != null) setState(() => pickedPhoto = img);
-                  },
-                  child: Stack(
-                    children: [
-                      CircleAvatar(
-                        radius: 40,
-                        backgroundColor: AppColors.primary.withOpacity(0.1),
-                        backgroundImage: pickedPhoto != null
-                            ? FileImage(File(pickedPhoto!.path))
-                            : (student.photoUrl != null
-                                ? NetworkImage(student.photoUrl!) as ImageProvider
-                                : null),
-                        child: (pickedPhoto == null && student.photoUrl == null)
-                            ? Text(student.name[0],
-                                style: AppTypography.headingMedium
-                                    .copyWith(color: AppColors.primary))
-                            : null,
-                      ),
-                      Positioned(
-                        bottom: 0, right: 0,
-                        child: Container(
-                          decoration: const BoxDecoration(
-                            color: AppColors.primary, shape: BoxShape.circle),
-                          child: const Icon(Icons.edit, color: Colors.white, size: 16),
+                // Photo Picker
+                Center(
+                  child: GestureDetector(
+                    onTap: () async {
+                      final img = await ImagePicker().pickImage(
+                          source: ImageSource.gallery, imageQuality: 70);
+                      if (img != null) setState(() => pickedPhoto = img);
+                    },
+                    child: Stack(
+                      children: [
+                        CircleAvatar(
+                          radius: 40,
+                          backgroundColor:
+                              AppColors.primary.withValues(alpha: 0.1),
+                          backgroundImage: pickedPhoto != null
+                              ? FileImage(File(pickedPhoto!.path))
+                              : (student.photoUrl != null
+                                  ? NetworkImage(student.photoUrl!)
+                                      as ImageProvider
+                                  : null),
+                          child:
+                              (pickedPhoto == null && student.photoUrl == null)
+                                  ? Text(student.name[0],
+                                      style: AppTypography.headingMedium
+                                          .copyWith(color: AppColors.primary))
+                                  : null,
                         ),
-                      ),
-                    ],
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: Container(
+                            decoration: const BoxDecoration(
+                                color: AppColors.primary,
+                                shape: BoxShape.circle),
+                            child: const Icon(Icons.edit,
+                                color: Colors.white, size: 16),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: nameController,
-                decoration: const InputDecoration(
-                  labelText: 'طالب علم کا نام',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.person),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'طالب علم کا نام',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.person),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'نام درج کریں';
+                    }
+                    return null;
+                  },
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'نام درج کریں';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-              // Father Name
-              TextFormField(
-                controller: fatherNameController,
-                decoration: const InputDecoration(
-                  labelText: 'والد کا نام',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.family_restroom),
+                // Father Name
+                TextFormField(
+                  controller: fatherNameController,
+                  decoration: const InputDecoration(
+                    labelText: 'والد کا نام',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.family_restroom),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'والد کا نام درج کریں';
+                    }
+                    return null;
+                  },
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'والد کا نام درج کریں';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-              // Phone Number
-              TextFormField(
-                controller: phoneController,
-                keyboardType: TextInputType.phone,
-                decoration: const InputDecoration(
-                  labelText: 'فون نمبر',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.phone),
+                // Phone Number
+                TextFormField(
+                  controller: phoneController,
+                  keyboardType: TextInputType.phone,
+                  decoration: const InputDecoration(
+                    labelText: 'فون نمبر',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.phone),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'فون نمبر درج کریں';
+                    }
+                    return null;
+                  },
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'فون نمبر درج کریں';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-              // Class Selection
-              DropdownButtonFormField<String>(
-                value: selectedClass,
-                decoration: const InputDecoration(
-                  labelText: 'جماعت',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.class_),
+                // Class Selection
+                DropdownButtonFormField<String>(
+                  value: selectedClass,
+                  decoration: const InputDecoration(
+                    labelText: 'جماعت',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.class_),
+                  ),
+                  items: validClasses.map((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(value),
+                    );
+                  }).toList(),
+                  onChanged: (value) => setState(() => selectedClass = value!),
                 ),
-                items: validClasses.map((String value) {
-                  return DropdownMenuItem<String>(
-                    value: value,
-                    child: Text(value),
-                  );
-                }).toList(),
-                onChanged: (value) => setState(() => selectedClass = value!),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('منسوخ کریں'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (nameController.text.isNotEmpty &&
-                  fatherNameController.text.isNotEmpty) {
-                try {
-                  showDialog(
-                    context: context,
-                    barrierDismissible: false,
-                    builder: (_) => const Center(child: CircularProgressIndicator()),
-                  );
-                  final updated = Student(
-                    id: student.id,
-                    rollNo: student.rollNo,
-                    name: nameController.text.trim(),
-                    fatherName: fatherNameController.text.trim(),
-                    darjaId: selectedClass,
-                    darjaName: selectedClass,
-                    classId: selectedClass,
-                    className: selectedClass,
-                    phone: phoneController.text.trim().isEmpty
-                        ? null
-                        : phoneController.text.trim(),
-                    address: student.address,
-                    photoUrl: student.photoUrl,
-                    isActive: student.isActive,
-                  );
-                  final saved = await _ref!.read(studentNotifierProvider.notifier).save(updated);
-                  if (pickedPhoto != null) {
-                    await _ref!.read(studentNotifierProvider.notifier).uploadPhoto(saved.id, pickedPhoto!);
-                  }
-                  if (context.mounted) {
-                    Navigator.pop(context); // close loader
-                    Navigator.pop(context); // close dialog
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                      content: Text('${nameController.text} کی معلومات ترمیم کر دی گئیں'),
-                      backgroundColor: Colors.green,
-                    ));
-                  }
-                } catch (e) {
-                  if (context.mounted) {
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                      content: Text('خطا: $e'),
-                      backgroundColor: Colors.red,
-                    ));
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('منسوخ کریں'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (nameController.text.isNotEmpty &&
+                    fatherNameController.text.isNotEmpty) {
+                  try {
+                    showDialog(
+                      context: context,
+                      barrierDismissible: false,
+                      builder: (_) =>
+                          const Center(child: CircularProgressIndicator()),
+                    );
+                    final tenantId = _ref!.read(currentTenantIdProvider);
+                    if (tenantId == null) {
+                      throw StateError('No active tenant');
+                    }
+                    final updated = Student(
+                      id: student.id,
+                      tenantId: tenantId,
+                      rollNo: student.rollNo,
+                      name: nameController.text.trim(),
+                      fatherName: fatherNameController.text.trim(),
+                      darjaId: selectedClass,
+                      darjaName: selectedClass,
+                      classId: selectedClass,
+                      className: selectedClass,
+                      phone: phoneController.text.trim().isEmpty
+                          ? null
+                          : phoneController.text.trim(),
+                      address: student.address,
+                      photoUrl: student.photoUrl,
+                      isActive: student.isActive,
+                    );
+                    final saved = await _ref!
+                        .read(studentNotifierProvider.notifier)
+                        .save(updated);
+                    if (pickedPhoto != null) {
+                      await _ref!
+                          .read(studentNotifierProvider.notifier)
+                          .uploadPhoto(saved.id, pickedPhoto!);
+                    }
+                    if (context.mounted) {
+                      Navigator.pop(context); // close loader
+                      Navigator.pop(context); // close dialog
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                        content: Text(
+                            '${nameController.text} کی معلومات ترمیم کر دی گئیں'),
+                        backgroundColor: Colors.green,
+                      ));
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                        content: Text('خطا: $e'),
+                        backgroundColor: Colors.red,
+                      ));
+                    }
                   }
                 }
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+              ),
+              child: const Text('ترمیم کریں'),
             ),
-            child: const Text('ترمیم کریں'),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
-  );
+    );
   }
 
   void _showFeeDialog(Student student) {
@@ -1008,200 +1071,205 @@ class _StudentListScreenState extends State<StudentListScreen> {
       context: context,
       builder: (dialogContext) => Consumer(
         builder: (context, ref, _) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: Text(
-            '${student.name} کی فیس',
-            style: AppTypography.titleLarge,
-          ),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-            children: [
-              // Current Fee Status
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.info,
-                      color: AppColors.primary,
-                      size: 20,
+          builder: (context, setState) => AlertDialog(
+            title: Text(
+              '${student.name} کی فیس',
+              style: AppTypography.titleLarge,
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Current Fee Status
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'طالب علم: ${student.name}',
-                        style: AppTypography.bodyMedium.copyWith(
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.info,
                           color: AppColors.primary,
+                          size: 20,
                         ),
-                      ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'طالب علم: ${student.name}',
+                            style: AppTypography.bodyMedium.copyWith(
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
+                  ),
+                  const SizedBox(height: 16),
 
-              // Fee Type
-              DropdownButtonFormField<String>(
-                value: selectedFeeType,
-                decoration: const InputDecoration(
-                  labelText: 'فیس کی قسم',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.category),
-                ),
-                items: [
-                  'ماہانہ فیس',
-                  'داخلہ فیس',
-                  'امتحان فیس',
-                  'دیگر',
-                ].map((String value) {
-                  return DropdownMenuItem<String>(
-                    value: value,
-                    child: Text(value),
-                  );
-                }).toList(),
-                onChanged: (value) => setState(() => selectedFeeType = value!),
-              ),
-              const SizedBox(height: 16),
+                  // Fee Type
+                  DropdownButtonFormField<String>(
+                    value: selectedFeeType,
+                    decoration: const InputDecoration(
+                      labelText: 'فیس کی قسم',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.category),
+                    ),
+                    items: [
+                      'ماہانہ فیس',
+                      'داخلہ فیس',
+                      'امتحان فیس',
+                      'دیگر',
+                    ].map((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    }).toList(),
+                    onChanged: (value) =>
+                        setState(() => selectedFeeType = value!),
+                  ),
+                  const SizedBox(height: 16),
 
-              // Month
-              DropdownButtonFormField<String>(
-                value: selectedMonth,
-                decoration: const InputDecoration(
-                  labelText: 'ماہ',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.calendar_month),
-                ),
-                items: monthOptions.map((String value) {
-                  return DropdownMenuItem<String>(
-                    value: value,
-                    child: Text(value),
-                  );
-                }).toList(),
-                onChanged: (value) => setState(() => selectedMonth = value!),
-              ),
-              const SizedBox(height: 16),
+                  // Month
+                  DropdownButtonFormField<String>(
+                    value: selectedMonth,
+                    decoration: const InputDecoration(
+                      labelText: 'ماہ',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.calendar_month),
+                    ),
+                    items: monthOptions.map((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    }).toList(),
+                    onChanged: (value) =>
+                        setState(() => selectedMonth = value!),
+                  ),
+                  const SizedBox(height: 16),
 
-              // Amount
-              TextFormField(
-                controller: amountController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'رقم',
-                  border: OutlineInputBorder(),
-                  prefixText: 'ر ',
-                  prefixIcon: Icon(Icons.attach_money),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'رقم درج کریں';
-                  }
-                  final amount = double.tryParse(value);
+                  // Amount
+                  TextFormField(
+                    controller: amountController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'رقم',
+                      border: OutlineInputBorder(),
+                      prefixText: 'ر ',
+                      prefixIcon: Icon(Icons.attach_money),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'رقم درج کریں';
+                      }
+                      final amount = double.tryParse(value);
+                      if (amount == null || amount <= 0) {
+                        return 'درست رقم درج کریں';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Description
+                  TextFormField(
+                    controller: descriptionController,
+                    maxLines: 2,
+                    decoration: const InputDecoration(
+                      labelText: 'تفصیل (اختیاری)',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.description),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('منسوخ کریں'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  final amount = double.tryParse(amountController.text);
                   if (amount == null || amount <= 0) {
-                    return 'درست رقم درج کریں';
+                    ScaffoldMessenger.of(screenContext).showSnackBar(
+                      const SnackBar(content: Text('درست رقم درج کریں')),
+                    );
+                    return;
                   }
-                  return null;
+                  // Phase 6 (mock purge): real collection — persists the payment
+                  // through FeeNotifier (local Drift DB + sync queue). Never a
+                  // fake success snackbar again.
+                  final monthIdx = monthOptions.indexOf(selectedMonth);
+                  final monthValue = monthValues[monthIdx < 0 ? 0 : monthIdx];
+                  final fees =
+                      ref.read(feesByStudentProvider(student.id)).valueOrNull ??
+                          const <Fee>[];
+                  Fee? existing;
+                  for (final f in fees) {
+                    if (f.month == monthValue) {
+                      existing = f;
+                      break;
+                    }
+                  }
+                  final nowPaid = DateTime.now();
+                  final todayStr =
+                      '${nowPaid.year}-${nowPaid.month.toString().padLeft(2, '0')}-${nowPaid.day.toString().padLeft(2, '0')}';
+                  final messenger = ScaffoldMessenger.of(screenContext);
+                  try {
+                    final Fee record;
+                    if (existing != null) {
+                      record = existing.copyWith(
+                        amountPaid: existing.amountPaid + amount,
+                        paidDate: todayStr,
+                      );
+                    } else {
+                      final tenantId = ref.read(currentTenantIdProvider);
+                      if (tenantId == null) {
+                        throw StateError('No active tenant');
+                      }
+                      record = Fee(
+                        id: const Uuid().v4(),
+                        tenantId: tenantId,
+                        studentId: student.id,
+                        studentName: student.name,
+                        studentClass: student.className,
+                        month: monthValue,
+                        amountDue: amount,
+                        amountPaid: amount,
+                        dueDate: todayStr,
+                        paidDate: todayStr,
+                        status: FeeStatus.paid,
+                      );
+                    }
+                    await ref.read(feeNotifierProvider.notifier).save(record);
+                    if (dialogContext.mounted) Navigator.pop(dialogContext);
+                    messenger.showSnackBar(
+                      SnackBar(
+                        content: Text(
+                            'ر $amount کی $selectedFeeType کامیابی سے وصول کر لی گئی'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  } catch (_) {
+                    messenger.showSnackBar(
+                      const SnackBar(content: Text('فیس وصول کرنے میں خطا')),
+                    );
+                  }
                 },
-              ),
-              const SizedBox(height: 16),
-
-              // Description
-              TextFormField(
-                controller: descriptionController,
-                maxLines: 2,
-                decoration: const InputDecoration(
-                  labelText: 'تفصیل (اختیاری)',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.description),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.success,
                 ),
+                child: const Text('وصول کریں'),
               ),
             ],
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('منسوخ کریں'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final amount = double.tryParse(amountController.text);
-              if (amount == null || amount <= 0) {
-                ScaffoldMessenger.of(screenContext).showSnackBar(
-                  const SnackBar(content: Text('درست رقم درج کریں')),
-                );
-                return;
-              }
-              // Phase 6 (mock purge): real collection — persists the payment
-              // through FeeNotifier (local Drift DB + sync queue). Never a
-              // fake success snackbar again.
-              final monthIdx = monthOptions.indexOf(selectedMonth);
-              final monthValue = monthValues[monthIdx < 0 ? 0 : monthIdx];
-              final fees =
-                  ref.read(feesByStudentProvider(student.id)).valueOrNull ??
-                      const <Fee>[];
-              Fee? existing;
-              for (final f in fees) {
-                if (f.month == monthValue) {
-                  existing = f;
-                  break;
-                }
-              }
-              final nowPaid = DateTime.now();
-              final todayStr =
-                  '${nowPaid.year}-${nowPaid.month.toString().padLeft(2, '0')}-${nowPaid.day.toString().padLeft(2, '0')}';
-              try {
-                final Fee record;
-                if (existing != null) {
-                  record = existing.copyWith(
-                    amountPaid: existing.amountPaid + amount,
-                    paidDate: todayStr,
-                  );
-                } else {
-                  final tenantId = ref.read(currentTenantIdProvider);
-                  if (tenantId == null) throw StateError('No active tenant');
-                  record = Fee(
-                    id: const Uuid().v4(),
-                    tenantId: tenantId,
-                    studentId: student.id,
-                    studentName: student.name,
-                    studentClass: student.className,
-                    month: monthValue,
-                    amountDue: amount,
-                    amountPaid: amount,
-                    dueDate: todayStr,
-                    paidDate: todayStr,
-                    status: FeeStatus.paid,
-                  );
-                }
-                await ref.read(feeNotifierProvider.notifier).save(record);
-                if (dialogContext.mounted) Navigator.pop(dialogContext);
-                ScaffoldMessenger.of(screenContext).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                        'ر $amount کی $selectedFeeType کامیابی سے وصول کر لی گئی'),
-                    backgroundColor: Colors.green,
-                  ),
-                );
-              } catch (_) {
-                ScaffoldMessenger.of(screenContext).showSnackBar(
-                  const SnackBar(content: Text('فیس وصول کرنے میں خطا')),
-                );
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.success,
-            ),
-            child: const Text('وصول کریں'),
-          ),
-        ],
       ),
-        ),
-      ),
-  );
+    );
   }
 }

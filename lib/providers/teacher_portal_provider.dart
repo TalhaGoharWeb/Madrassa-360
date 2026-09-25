@@ -98,8 +98,7 @@ final teacherAssignmentsProvider =
         .eq('tenant_id', tenantId)
         .eq('is_active', true);
     return (rows as List)
-        .map((r) =>
-            TeacherClassAssignment.fromJson(r as Map<String, dynamic>))
+        .map((r) => TeacherClassAssignment.fromJson(r as Map<String, dynamic>))
         .toList();
   } catch (_) {
     return <TeacherClassAssignment>[];
@@ -184,8 +183,9 @@ final teacherTodayPresentProvider = FutureProvider<int>((ref) async {
   final today = DateTime.now();
   var total = 0;
   for (final id in classIds) {
-    final records = await ref
-        .watch(classAttendanceProvider(AttendanceParams(classId: id, date: today)).future);
+    final records = await ref.watch(
+        classAttendanceProvider(AttendanceParams(classId: id, date: today))
+            .future);
     total += records.where((r) => r.status == AttendanceStatus.present).length;
   }
   return total;

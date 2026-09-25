@@ -66,14 +66,13 @@ void main() {
     });
 
     test('row counts coerce num -> int', () {
-      final m = BackupManifest.fromRows(
-          _manifestKv(rowCounts: '{"invoices":2.0}'));
+      final m =
+          BackupManifest.fromRows(_manifestKv(rowCounts: '{"invoices":2.0}'));
       expect(m.rowCounts['invoices'], 2);
     });
 
     test('non-map row_counts JSON -> empty counts', () {
-      final m =
-          BackupManifest.fromRows(_manifestKv(rowCounts: '[]'));
+      final m = BackupManifest.fromRows(_manifestKv(rowCounts: '[]'));
       expect(m.rowCounts, isEmpty);
     });
 
@@ -86,10 +85,10 @@ void main() {
 
   group('canonicalRowJson (checksum canonicalization)', () {
     test('sorts keys so insertion order cannot change the hash', () {
-      final a = canonicalRowJson(
-          {'total': 1500, 'status': 'issued', 'id': 'abc'});
-      final b = canonicalRowJson(
-          {'id': 'abc', 'total': 1500, 'status': 'issued'});
+      final a =
+          canonicalRowJson({'total': 1500, 'status': 'issued', 'id': 'abc'});
+      final b =
+          canonicalRowJson({'id': 'abc', 'total': 1500, 'status': 'issued'});
       expect(a, b);
       expect(a, '{"id":"abc","status":"issued","total":1500}');
     });
@@ -112,8 +111,8 @@ void main() {
     test('single table, single row -> fixed digest', () {
       // Mirrors _dataChecksum exactly: 'table:<name>\n' then one
       // canonical-row-JSON line per row.
-      final rowJson = canonicalRowJson(
-          {'total': 1500, 'status': 'issued', 'id': 'abc'});
+      final rowJson =
+          canonicalRowJson({'total': 1500, 'status': 'issued', 'id': 'abc'});
       final bytes = utf8.encode('table:invoices\n$rowJson\n');
       expect(sha256.convert(bytes).toString(),
           'd73d50a7973748178703b7e3f4e7c9c3a564367abe8e1bc5b2228976ed3d0d19');
@@ -122,12 +121,8 @@ void main() {
     test('row order changes the digest (rowid order matters)', () {
       final r1 = canonicalRowJson({'id': 'a'});
       final r2 = canonicalRowJson({'id': 'b'});
-      final h1 = sha256
-          .convert(utf8.encode('table:t\n$r1\n$r2\n'))
-          .toString();
-      final h2 = sha256
-          .convert(utf8.encode('table:t\n$r2\n$r1\n'))
-          .toString();
+      final h1 = sha256.convert(utf8.encode('table:t\n$r1\n$r2\n')).toString();
+      final h2 = sha256.convert(utf8.encode('table:t\n$r2\n$r1\n')).toString();
       expect(h1, isNot(h2));
     });
 
@@ -155,8 +150,7 @@ void main() {
       expect(tampered.dataSha256, isNotEmpty);
     });
 
-    test('requiredManifestKeys names the six keys verifyBackup enforces',
-        () {
+    test('requiredManifestKeys names the six keys verifyBackup enforces', () {
       expect(
           BackupService.requiredManifestKeys,
           containsAll([

@@ -46,7 +46,7 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:drift/drift.dart';
+import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -60,7 +60,6 @@ import 'package:madrasa_360/core/errors/app_exceptions.dart';
 import 'package:madrasa_360/core/services/tenant_context.dart';
 import 'package:madrasa_360/core/sync/sync_providers.dart';
 import 'package:madrasa_360/data/local/app_database.dart';
-import 'package:madrasa_360/data/local/database_provider.dart';
 import 'package:madrasa_360/data/models/attendance_record.dart';
 import 'package:madrasa_360/data/models/attendance_status.dart';
 import 'package:madrasa_360/data/models/fee.dart';
@@ -107,7 +106,7 @@ class _FakeAuthRepository extends AuthRepository {
       _events.add(sb.AuthState(sb.AuthChangeEvent.signedIn, null));
       return _user!;
     }
-    throw const AuthenticationException('غلط ای میل یا پاس ورڈ');
+    throw const AuthenticationException(userMessageUr: 'غلط ای میل یا پاس ورڈ');
   }
 
   @override
@@ -299,9 +298,7 @@ void main() {
               tenantId: tenantId!,
             );
 
-    await container
-        .read(attendanceRecordNotifierProvider.notifier)
-        .save([
+    await container.read(attendanceRecordNotifierProvider.notifier).save([
       AttendanceRecord(
         tenantId: tenantId,
         studentId: student.id,

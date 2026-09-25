@@ -13,6 +13,7 @@
 
 import 'package:flutter/material.dart';
 
+import 'package:madrasa_360/core/errors/app_exceptions.dart';
 import 'package:madrasa_360/core/observability/app_logger.dart';
 
 export 'package:madrasa_360/core/errors/app_exceptions.dart';
@@ -37,7 +38,8 @@ class ErrorHandler {
   }
 
   /// Show error dialog
-  static void showErrorDialog(BuildContext context, String message, {String? title}) {
+  static void showErrorDialog(BuildContext context, String message,
+      {String? title}) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(

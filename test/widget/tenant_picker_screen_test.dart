@@ -30,6 +30,7 @@ import 'fake_auth_repository.dart';
 
 void main() {
   setUpAll(() async {
+    SharedPreferences.setMockInitialValues({});
     // Dummy init: only needed so SupabaseService.client exists.
     await Supabase.initialize(
       url: 'http://127.0.0.1:54321',
@@ -69,8 +70,8 @@ void main() {
     final container = ProviderContainer(
       overrides: [
         authRepositoryProvider.overrideWithValue(fakeAuth),
-        tenantMembershipsProvider.overrideWithValue(
-          AsyncValue.data(memberships()),
+        tenantMembershipsProvider.overrideWith(
+          (ref) async => memberships(),
         ),
         appDatabaseProvider.overrideWithValue(db),
       ],
@@ -99,7 +100,8 @@ void main() {
       expect(find.byType(ListTile), findsNWidgets(2));
     });
 
-    testWidgets('tapping a tile selects the tenant, persists it, and enters the app',
+    testWidgets(
+        'tapping a tile selects the tenant, persists it, and enters the app',
         (tester) async {
       final container = await pumpPicker(tester);
 
@@ -121,8 +123,8 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           authRepositoryProvider.overrideWithValue(fakeAuth),
-          tenantMembershipsProvider.overrideWithValue(
-            const AsyncValue.data(<TenantMembership>[]),
+          tenantMembershipsProvider.overrideWith(
+            (ref) async => <TenantMembership>[],
           ),
           appDatabaseProvider.overrideWithValue(db),
         ],

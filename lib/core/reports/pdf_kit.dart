@@ -20,13 +20,13 @@ import 'report_branding.dart';
 import 'urdu_pdf.dart';
 
 PdfColor _pdf(Color c) => PdfColor(
-      ((c.value >> 16) & 0xFF) / 255.0,
-      ((c.value >> 8) & 0xFF) / 255.0,
-      (c.value & 0xFF) / 255.0,
-      ((c.value >> 24) & 0xFF) / 255.0,
+      ((c.toARGB32() >> 16) & 0xFF) / 255.0,
+      ((c.toARGB32() >> 8) & 0xFF) / 255.0,
+      (c.toARGB32() & 0xFF) / 255.0,
+      ((c.toARGB32() >> 24) & 0xFF) / 255.0,
     );
 
-ui.Color _ui(Color c) => ui.Color(c.value);
+ui.Color _ui(Color c) => ui.Color(c.toARGB32());
 
 /// Async build context handed to every report builder.
 class PdfBuildScope {
@@ -55,9 +55,9 @@ class PdfBuildScope {
   PdfBuildScope._({
     required this.branding,
     required this.urdu,
-    required PdfColor primary,
-    required PdfColor secondary,
-    required PdfColor accent,
+    required this.primary,
+    required this.secondary,
+    required this.accent,
     required pw.Widget nameUr,
     required pw.Widget? addrUr,
     required pw.Widget? contactUr,
@@ -67,10 +67,7 @@ class PdfBuildScope {
     required String titleEn,
     required String? subtitleEn,
     required bool bare,
-  })  : primary = primary,
-        secondary = secondary,
-        accent = accent,
-        _nameUr = nameUr,
+  })  : _nameUr = nameUr,
         _addrUr = addrUr,
         _contactUr = contactUr,
         _logo = logo,
@@ -207,8 +204,8 @@ class PdfBuildScope {
                     branding.name,
                     style: pw.TextStyle(fontSize: 9, color: muted),
                   ),
-                  if (_addrUr != null) _addrUr!,
-                  if (_contactUr != null) _contactUr!,
+                  if (_addrUr != null) _addrUr,
+                  if (_contactUr != null) _contactUr,
                 ],
               ),
             ),
@@ -221,10 +218,10 @@ class PdfBuildScope {
                   _titleEn,
                   style: pw.TextStyle(fontSize: 9, color: muted),
                 ),
-                if (_subtitleUr != null) _subtitleUr!,
+                if (_subtitleUr != null) _subtitleUr,
                 if (_subtitleEn != null)
                   pw.Text(
-                    _subtitleEn!,
+                    _subtitleEn,
                     style: pw.TextStyle(fontSize: 8, color: muted),
                   ),
               ],
@@ -313,12 +310,11 @@ class PdfBuildScope {
     bool bold = false,
   }) {
     if (UrduPdf.isUrdu(text)) {
-      return u(text, size: size + 1, color: color, maxWidth: maxWidth, bold: bold);
+      return u(text,
+          size: size + 1, color: color, maxWidth: maxWidth, bold: bold);
     }
     return Future.value(e(text,
-        size: size,
-        color: color == null ? null : _pdf(color),
-        bold: bold));
+        size: size, color: color == null ? null : _pdf(color), bold: bold));
   }
 
   /// Section heading: Urdu title + primary rule.
@@ -331,8 +327,8 @@ class PdfBuildScope {
             pw.Expanded(
               child: pw.Align(
                 alignment: pw.Alignment.centerRight,
-                child: await u(titleUr, size: 13, bold: true,
-                    color: branding.primary),
+                child: await u(titleUr,
+                    size: 13, bold: true, color: branding.primary),
               ),
             ),
           ],
@@ -362,12 +358,10 @@ class PdfBuildScope {
         children: [
           pw.Align(
             alignment: pw.Alignment.center,
-            child: await u(messageUr,
-                size: 13, color: const Color(0xFF616161)),
+            child: await u(messageUr, size: 13, color: const Color(0xFF616161)),
           ),
           pw.SizedBox(height: 4),
-          e(messageEn,
-              size: 9, color: muted, align: pw.TextAlign.center),
+          e(messageEn, size: 9, color: muted, align: pw.TextAlign.center),
         ],
       ),
     );
@@ -389,9 +383,7 @@ class PdfBuildScope {
   }) async {
     final isRtl = rtl ?? headers.every(UrduPdf.isUrdu);
     final h = isRtl ? headers.reversed.toList() : headers;
-    final b = rows
-        .map((r) => isRtl ? r.reversed.toList() : r)
-        .toList();
+    final b = rows.map((r) => isRtl ? r.reversed.toList() : r).toList();
 
     Future<pw.Widget> cell(String text, {required bool header}) async {
       final w = await auto(
@@ -419,8 +411,7 @@ class PdfBuildScope {
         cells.add(await cell(c, header: false));
       }
       bodyRows.add(pw.TableRow(
-        decoration:
-            zebraOn ? pw.BoxDecoration(color: zebra) : null,
+        decoration: zebraOn ? pw.BoxDecoration(color: zebra) : null,
         children: cells,
       ));
       zebraOn = !zebraOn;
@@ -453,16 +444,14 @@ class PdfBuildScope {
         pw.Expanded(
           child: pw.Container(
             margin: const pw.EdgeInsets.symmetric(horizontal: 4),
-            padding: const pw.EdgeInsets.symmetric(
-                vertical: 8, horizontal: 6),
+            padding: const pw.EdgeInsets.symmetric(vertical: 8, horizontal: 6),
             decoration: pw.BoxDecoration(
               border: pw.Border.all(color: primary, width: 1),
               borderRadius: pw.BorderRadius.circular(6),
             ),
             child: pw.Column(
               children: [
-                await u(s.labelUr, size: 10,
-                    color: const Color(0xFF616161)),
+                await u(s.labelUr, size: 10, color: const Color(0xFF616161)),
                 pw.SizedBox(height: 2),
                 e(s.valueEn,
                     size: 14,
@@ -470,8 +459,8 @@ class PdfBuildScope {
                     color: primary,
                     align: pw.TextAlign.center),
                 if (s.subEn != null)
-                  e(s.subEn!, size: 8, color: muted,
-                      align: pw.TextAlign.center),
+                  e(s.subEn!,
+                      size: 8, color: muted, align: pw.TextAlign.center),
               ],
             ),
           ),
@@ -492,8 +481,7 @@ class PdfBuildScope {
               pw.SizedBox(height: 36),
               pw.Container(height: 1, color: ink),
               pw.SizedBox(height: 4),
-              await u(label, size: 10,
-                  color: const Color(0xFF616161)),
+              await u(label, size: 10, color: const Color(0xFF616161)),
             ],
           ),
         ),

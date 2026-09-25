@@ -43,10 +43,8 @@ class AppStrings {
   static const String noActiveTenant = 'کوئی فعال مدرسہ منتخب نہیں';
   static const String savedOffline =
       'آف لائن محفوظ — انٹرنیٹ بحال ہوتے ہی خودکار ہم آہنگی ہو جائے گی';
-  static const String saveFailed =
-      'محفوظ کرنے میں ناکامی — دوبارہ کوشش کریں';
-  static const String pendingSyncBanner =
-      'آف لائن: ہم آہنگی کے منتظر ریکارڈز';
+  static const String saveFailed = 'محفوظ کرنے میں ناکامی — دوبارہ کوشش کریں';
+  static const String pendingSyncBanner = 'آف لائن: ہم آہنگی کے منتظر ریکارڈز';
 
   // Student Info
   static const String studentName = 'طالب علم کا نام';

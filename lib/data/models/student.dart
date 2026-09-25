@@ -17,9 +17,9 @@ class Student {
   final String name;
   final String fatherName;
   final String darjaId;
-  final String darjaName;   // joined from public.darjas
+  final String darjaName; // joined from public.darjas
   final String classId;
-  final String className;   // joined from public.classes
+  final String className; // joined from public.classes
   final String? parentUserId;
   final String? dateOfBirth;
   final String? dateOfAdmit;
@@ -77,20 +77,20 @@ class Student {
 
   /// Serialise for INSERT / UPDATE (excludes generated/read-only cols).
   Map<String, dynamic> toJson() => {
-    'tenant_id':      tenantId,
-    'roll_no':        rollNo,
-    'name':           name,
-    'father_name':    fatherName,
-    'darja_id':       darjaId,
-    'class_id':       classId,
-    'parent_user_id': parentUserId,
-    'date_of_birth':  dateOfBirth,
-    'date_of_admit':  dateOfAdmit,
-    'phone':          phone,
-    'address':        address,
-    'photo_url':      photoUrl,
-    'is_active':      isActive,
-  };
+        'tenant_id': tenantId,
+        'roll_no': rollNo,
+        'name': name,
+        'father_name': fatherName,
+        'darja_id': darjaId,
+        'class_id': classId,
+        'parent_user_id': parentUserId,
+        'date_of_birth': dateOfBirth,
+        'date_of_admit': dateOfAdmit,
+        'phone': phone,
+        'address': address,
+        'photo_url': photoUrl,
+        'is_active': isActive,
+      };
 
   Student copyWith({
     AttendanceStatus? attendanceStatus,

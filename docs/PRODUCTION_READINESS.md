@@ -54,8 +54,8 @@
 
 ## Release blockers (must clear before ANY production claim)
 
-**P0 — rotate & scrub (today):**
-1. Rotate the Supabase anon key AND service-role key (both committed verbatim in `SUPABASE_INTEGRATION_PLAN.md:105,107`), then purge from git history (`git filter-repo`) — delete-commit is not enough.
+**P0 — revoke old keys (operator action):**
+1. Revoke the OLD Supabase legacy JWT keys in Dashboard → Project Settings → API Keys. (Rotation done 2026-09-25: new keys created; committed values replaced with `***REDACTED-KEY-ROTATED-2026-09-25***` placeholders in `33bb3cb`; full git history rewritten and secret-scanned clean. Old keys remain valid until revoked.)
 2. Delete `crypt('***REDACTED-PASSWORD-ROTATED-2026-09-25***'…)` block from `05_new_modules.sql:353-354`.
 3. Remove service-role usage from the client (`user_management_provider.dart:129,240`) → Edge Function.
 
@@ -93,8 +93,8 @@ Until every §60 item above reads ✅, the project must not be described as prod
 >
 > | # | Item | Verdict |
 > |---|---|---|
-> | 1 | No service-role keys in client | 🟡 code-complete — no `SUPABASE_SERVICE_KEY` in `lib/`; privileged ops via `manage-users` Edge Function (`user_management_provider.dart:152`). Key rotation (P0) still outstanding |
-> | 2 | No secrets committed | ❌ **FAIL** — real anon + service_role keys still committed at `SUPABASE_INTEGRATION_PLAN.md:105,107` and in git history since `ecff664`; `crypt('***REDACTED-PASSWORD-ROTATED-2026-09-25***'…)` in `supabase/05_new_modules.sql:354` |
+> | 1 | No service-role keys in client | 🟡 code-complete — no `SUPABASE_SERVICE_KEY` in `lib/`; privileged ops via `manage-users` Edge Function (`user_management_provider.dart:152`). Old-key revocation (P0) still outstanding |
+> | 2 | No secrets committed | ✅ PASS (2026-09-25) — keys replaced with placeholders (`33bb3cb`); full-history scan: zero JWTs / zero `sb_secret_` / zero `SuperAdmin@123`; seed password is a placeholder. Old-key revocation still outstanding (P0) |
 > | 3 | Tenant RLS complete | 🟡 code-complete — fail-loud guard (`007_tenant_rls.sql:912`), predicates spot-checked on students/fees/announcements; written, unapplied |
 > | 4 | Cross-tenant tests pass | 🟡 written, NOT executed (`supabase/tests/cross_tenant_isolation.sql`, 731 lines, self-labeled) |
 > | 5 | Storage policies isolated | 🟡 code-complete — 3 private buckets, `{tenant_id}/` prefixes, membership-checked policies (`008_tenant_storage.sql`); written, unapplied |
@@ -103,7 +103,7 @@ Until every §60 item above reads ✅, the project must not be described as prod
 > | 8 | Password reset works | 🟡 code-complete — `resetPasswordForEmail` (`auth_repository.dart:209`); recovery deep-link unverified |
 > | 9 | Session management | 🟡 code-complete — real signOut, refresh, SIGNED_OUT-on-expiry, restore redirect; unexecuted |
 > | 10 | Audit logs work | 🟡 code-complete — append-only table + `log_audit()` SECURITY DEFINER RPC (`012_audit_logs.sql`); finance via triggers; unexecuted |
-> | 11 | Privileged APIs protected | 🟡 code-complete **with gap** — `requirePlatformAdmin` on 3 functions; ⚠️ **`manage-users` Edge Function invoked by the client does not exist** (fail-closed honest error, so not an open vuln — but Master Admin user management is non-functional until it is written + deployed) |
+> | 11 | Privileged APIs protected | 🟡 code-complete — `requirePlatformAdmin` on provision/manage/export-tenant; `manage-users` Edge Function now implemented (`deno check`/`lint` pass) but **not yet deployed**; `send-notification` allows platform-admin or active tenant member |
 > | 12 | File upload validated | 🟡 PARTIAL — server-side tenant path + RLS gate code-complete; **no client-side type/size/content-type validation** on the image_picker path |
 > | 13 | Input validation | 🟡 code-complete — `validators.dart` + `validator:` in 9 form screens; no repo-wide validation audit |
 > | 14 | SQL injection | ✅ PASS (narrow technical fact) — parameterized Drift queries; only interpolated identifier comes from a hardcoded whitelist map |

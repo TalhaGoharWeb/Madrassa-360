@@ -15,11 +15,11 @@ class Validators {
     if (value == null || value.isEmpty) {
       return 'ای میل ضروری ہے';
     }
-    
+
     final emailRegex = RegExp(
       r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
     );
-    
+
     if (!emailRegex.hasMatch(value)) {
       return 'غلط ای میل فارمیٹ';
     }
@@ -31,13 +31,13 @@ class Validators {
     if (value == null || value.isEmpty) {
       return 'فون نمبر ضروری ہے';
     }
-    
+
     // Remove spaces and dashes
     final cleanPhone = value.replaceAll(RegExp(r'[\s-]'), '');
-    
+
     // Pakistani phone numbers: 03xxxxxxxxx (11 digits) or +923xxxxxxxxx (13 chars)
     final phoneRegex = RegExp(r'^(03\d{9}|\+923\d{9})$');
-    
+
     if (!phoneRegex.hasMatch(cleanPhone)) {
       return 'غلط فون نمبر فارمیٹ (03xxxxxxxxx)';
     }
@@ -49,13 +49,13 @@ class Validators {
     if (value == null || value.isEmpty) {
       return 'شناختی کارڈ نمبر ضروری ہے';
     }
-    
+
     // Remove dashes
     final cleanCnic = value.replaceAll('-', '');
-    
+
     // CNIC: 13 digits (xxxxx-xxxxxxx-x)
     final cnicRegex = RegExp(r'^\d{13}$');
-    
+
     if (!cnicRegex.hasMatch(cleanCnic)) {
       return 'غلط شناختی کارڈ فارمیٹ (xxxxx-xxxxxxx-x)';
     }
@@ -67,7 +67,7 @@ class Validators {
     if (value == null || value.isEmpty) {
       return '${fieldName ?? "یہ فیلڈ"} ضروری ہے';
     }
-    
+
     if (value.length < length) {
       return '${fieldName ?? "یہ فیلڈ"} کم از کم $length حروف کا ہونا چاہیے';
     }
@@ -87,7 +87,7 @@ class Validators {
     if (value == null || value.isEmpty) {
       return '${fieldName ?? "یہ فیلڈ"} ضروری ہے';
     }
-    
+
     if (double.tryParse(value) == null) {
       return '${fieldName ?? "یہ فیلڈ"} صرف نمبر ہونا چاہیے';
     }
@@ -98,7 +98,7 @@ class Validators {
   static String? positiveNumber(String? value, {String? fieldName}) {
     final numericError = numeric(value, fieldName: fieldName);
     if (numericError != null) return numericError;
-    
+
     final number = double.parse(value!);
     if (number <= 0) {
       return '${fieldName ?? "یہ فیلڈ"} صفر سے زیادہ ہونا چاہیے';
@@ -107,10 +107,11 @@ class Validators {
   }
 
   /// Validate range
-  static String? range(String? value, double min, double max, {String? fieldName}) {
+  static String? range(String? value, double min, double max,
+      {String? fieldName}) {
     final numericError = numeric(value, fieldName: fieldName);
     if (numericError != null) return numericError;
-    
+
     final number = double.parse(value!);
     if (number < min || number > max) {
       return '${fieldName ?? "یہ فیلڈ"} $min اور $max کے درمیان ہونا چاہیے';
@@ -123,16 +124,16 @@ class Validators {
     if (value == null || value.isEmpty) {
       return 'پاسورڈ ضروری ہے';
     }
-    
+
     if (value.length < 6) {
       return 'پاسورڈ کم از کم 6 حروف کا ہونا چاہیے';
     }
-    
+
     // Optional: Add more complex password rules
     // if (!RegExp(r'[A-Z]').hasMatch(value)) {
     //   return 'پاسورڈ میں کم از کم ایک بڑا حرف ہونا چاہیے';
     // }
-    
+
     return null;
   }
 
@@ -141,16 +142,16 @@ class Validators {
     if (value == null || value.isEmpty) {
       return 'صارف نام ضروری ہے';
     }
-    
+
     if (value.length < 3) {
       return 'صارف نام کم از کم 3 حروف کا ہونا چاہیے';
     }
-    
+
     // Only alphanumeric and underscore
     if (!RegExp(r'^[a-zA-Z0-9_]+$').hasMatch(value)) {
       return 'صارف نام میں صرف حروف، نمبر اور (_) استعمال کر سکتے ہیں';
     }
-    
+
     return null;
   }
 
@@ -159,12 +160,12 @@ class Validators {
     if (value == null || value.isEmpty) {
       return 'رول نمبر ضروری ہے';
     }
-    
+
     // Roll number should be alphanumeric
     if (!RegExp(r'^[a-zA-Z0-9-]+$').hasMatch(value)) {
       return 'غلط رول نمبر فارمیٹ';
     }
-    
+
     return null;
   }
 

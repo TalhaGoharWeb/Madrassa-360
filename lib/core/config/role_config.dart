@@ -12,11 +12,11 @@ import '../constants/app_permissions.dart';
 // ─────────────────────────────────────────────────────────────
 
 class RoleConfig {
-  final String urduTitle;       // Shown in welcome header badge
-  final String urduGreeting;    // e.g. 'منتظمِ اعلیٰ'
+  final String urduTitle; // Shown in welcome header badge
+  final String urduGreeting; // e.g. 'منتظمِ اعلیٰ'
   final IconData icon;
-  final List<Color> gradient;   // 2-colour gradient for welcome card
-  final Color accentColor;      // For badges, icons, stats
+  final List<Color> gradient; // 2-colour gradient for welcome card
+  final Color accentColor; // For badges, icons, stats
 
   const RoleConfig({
     required this.urduTitle,
@@ -32,136 +32,135 @@ class RoleConfig {
 // ─────────────────────────────────────────────────────────────
 
 const Map<UserRole, RoleConfig> _configs = {
-
   // ── Platform ──────────────────────────────────────────────
   UserRole.superAdmin: RoleConfig(
-    urduTitle:    'سپر ایڈمن',
+    urduTitle: 'سپر ایڈمن',
     urduGreeting: 'پلیٹ فارم منتظم',
-    icon:         Icons.admin_panel_settings,
-    gradient:     [Color(0xFF4527A0), Color(0xFF1A237E)],
-    accentColor:  Color(0xFF7C4DFF),
+    icon: Icons.admin_panel_settings,
+    gradient: [Color(0xFF4527A0), Color(0xFF1A237E)],
+    accentColor: Color(0xFF7C4DFF),
   ),
   UserRole.franchiseManager: RoleConfig(
-    urduTitle:    'فرنچائز مینیجر',
+    urduTitle: 'فرنچائز مینیجر',
     urduGreeting: 'نیٹ ورک ناظر',
-    icon:         Icons.account_tree,
-    gradient:     [Color(0xFF283593), Color(0xFF0D47A1)],
-    accentColor:  Color(0xFF448AFF),
+    icon: Icons.account_tree,
+    gradient: [Color(0xFF283593), Color(0xFF0D47A1)],
+    accentColor: Color(0xFF448AFF),
   ),
 
   // ── Madrasa ────────────────────────────────────────────────
   UserRole.madrasaAdmin: RoleConfig(
-    urduTitle:    'ناظمِ مدرسہ',
+    urduTitle: 'ناظمِ مدرسہ',
     urduGreeting: 'مدرسہ انتظامیہ',
-    icon:         Icons.mosque_outlined,
-    gradient:     [AppColors.primary, AppColors.primaryDark],
-    accentColor:  AppColors.primary,
+    icon: Icons.mosque_outlined,
+    gradient: [AppColors.primary, AppColors.primaryDark],
+    accentColor: AppColors.primary,
   ),
   UserRole.admin: RoleConfig(
-    urduTitle:    'منتظم',
+    urduTitle: 'منتظم',
     urduGreeting: 'مدرسہ انتظامیہ',
-    icon:         Icons.mosque_outlined,
-    gradient:     [AppColors.primary, AppColors.primaryDark],
-    accentColor:  AppColors.primary,
+    icon: Icons.mosque_outlined,
+    gradient: [AppColors.primary, AppColors.primaryDark],
+    accentColor: AppColors.primary,
   ),
   UserRole.editor: RoleConfig(
-    urduTitle:    'ایڈیٹر',
+    urduTitle: 'ایڈیٹر',
     urduGreeting: 'ڈیٹا مینیجر',
-    icon:         Icons.edit_note,
-    gradient:     [Color(0xFF00695C), Color(0xFF004D40)],
-    accentColor:  Color(0xFF1DE9B6),
+    icon: Icons.edit_note,
+    gradient: [Color(0xFF00695C), Color(0xFF004D40)],
+    accentColor: Color(0xFF1DE9B6),
   ),
 
   // ── Academic ───────────────────────────────────────────────
   UserRole.academicManager: RoleConfig(
-    urduTitle:    'تعلیمی مینیجر',
+    urduTitle: 'تعلیمی مینیجر',
     urduGreeting: 'علمی نظام',
-    icon:         Icons.school_outlined,
-    gradient:     [Color(0xFF1565C0), Color(0xFF0D47A1)],
-    accentColor:  Color(0xFF2979FF),
+    icon: Icons.school_outlined,
+    gradient: [Color(0xFF1565C0), Color(0xFF0D47A1)],
+    accentColor: Color(0xFF2979FF),
   ),
   UserRole.teacher: RoleConfig(
-    urduTitle:    'استاذ',
+    urduTitle: 'استاذ',
     urduGreeting: 'معلّم',
-    icon:         Icons.menu_book_outlined,
-    gradient:     [Color(0xFF1976D2), Color(0xFF0288D1)],
-    accentColor:  Color(0xFF40C4FF),
+    icon: Icons.menu_book_outlined,
+    gradient: [Color(0xFF1976D2), Color(0xFF0288D1)],
+    accentColor: Color(0xFF40C4FF),
   ),
   UserRole.attendanceOfficer: RoleConfig(
-    urduTitle:    'حاضری افسر',
+    urduTitle: 'حاضری افسر',
     urduGreeting: 'حاضری رجسٹر',
-    icon:         Icons.how_to_reg_outlined,
-    gradient:     [Color(0xFF00838F), Color(0xFF006064)],
-    accentColor:  Color(0xFF18FFFF),
+    icon: Icons.how_to_reg_outlined,
+    gradient: [Color(0xFF00838F), Color(0xFF006064)],
+    accentColor: Color(0xFF18FFFF),
   ),
 
   // ── Finance ────────────────────────────────────────────────
   UserRole.accountant: RoleConfig(
-    urduTitle:    'محاسب',
+    urduTitle: 'محاسب',
     urduGreeting: 'فیس و مالیات',
-    icon:         Icons.calculate_outlined,
-    gradient:     [Color(0xFFE65100), Color(0xFFBF360C)],
-    accentColor:  Color(0xFFFF6D00),
+    icon: Icons.calculate_outlined,
+    gradient: [Color(0xFFE65100), Color(0xFFBF360C)],
+    accentColor: Color(0xFFFF6D00),
   ),
   UserRole.financeManager: RoleConfig(
-    urduTitle:    'مالیاتی مینیجر',
+    urduTitle: 'مالیاتی مینیجر',
     urduGreeting: 'مالی انتظام',
-    icon:         Icons.account_balance_outlined,
-    gradient:     [Color(0xFFEF6C00), Color(0xFFE64A19)],
-    accentColor:  Color(0xFFFF9100),
+    icon: Icons.account_balance_outlined,
+    gradient: [Color(0xFFEF6C00), Color(0xFFE64A19)],
+    accentColor: Color(0xFFFF9100),
   ),
 
   // ── Departments ────────────────────────────────────────────
   UserRole.libraryManager: RoleConfig(
-    urduTitle:    'لائبریری مینیجر',
+    urduTitle: 'لائبریری مینیجر',
     urduGreeting: 'کتب خانہ',
-    icon:         Icons.local_library_outlined,
-    gradient:     [Color(0xFF6A1B9A), Color(0xFF4A148C)],
-    accentColor:  Color(0xFFEA80FC),
+    icon: Icons.local_library_outlined,
+    gradient: [Color(0xFF6A1B9A), Color(0xFF4A148C)],
+    accentColor: Color(0xFFEA80FC),
   ),
   UserRole.hostelManager: RoleConfig(
-    urduTitle:    'ہاسٹل مینیجر',
+    urduTitle: 'ہاسٹل مینیجر',
     urduGreeting: 'رہائش انتظام',
-    icon:         Icons.home_outlined,
-    gradient:     [Color(0xFF4E342E), Color(0xFF3E2723)],
-    accentColor:  Color(0xFFBCAAA4),
+    icon: Icons.home_outlined,
+    gradient: [Color(0xFF4E342E), Color(0xFF3E2723)],
+    accentColor: Color(0xFFBCAAA4),
   ),
   UserRole.announcementManager: RoleConfig(
-    urduTitle:    'اعلان مینیجر',
+    urduTitle: 'اعلان مینیجر',
     urduGreeting: 'اطلاعات و پیغامات',
-    icon:         Icons.campaign_outlined,
-    gradient:     [Color(0xFF2E7D32), Color(0xFF1B5E20)],
-    accentColor:  Color(0xFF69F0AE),
+    icon: Icons.campaign_outlined,
+    gradient: [Color(0xFF2E7D32), Color(0xFF1B5E20)],
+    accentColor: Color(0xFF69F0AE),
   ),
   UserRole.admissionOfficer: RoleConfig(
-    urduTitle:    'داخلہ افسر',
+    urduTitle: 'داخلہ افسر',
     urduGreeting: 'داخلہ و اندراج',
-    icon:         Icons.person_add_outlined,
-    gradient:     [Color(0xFF00695C), Color(0xFF00838F)],
-    accentColor:  Color(0xFF64FFDA),
+    icon: Icons.person_add_outlined,
+    gradient: [Color(0xFF00695C), Color(0xFF00838F)],
+    accentColor: Color(0xFF64FFDA),
   ),
   UserRole.itManager: RoleConfig(
-    urduTitle:    'آئی ٹی مینیجر',
+    urduTitle: 'آئی ٹی مینیجر',
     urduGreeting: 'نظام انتظام',
-    icon:         Icons.settings_outlined,
-    gradient:     [Color(0xFF37474F), Color(0xFF263238)],
-    accentColor:  Color(0xFF78909C),
+    icon: Icons.settings_outlined,
+    gradient: [Color(0xFF37474F), Color(0xFF263238)],
+    accentColor: Color(0xFF78909C),
   ),
 
   // ── External ───────────────────────────────────────────────
   UserRole.parent: RoleConfig(
-    urduTitle:    'والدین',
+    urduTitle: 'والدین',
     urduGreeting: 'بچے کی پیشرفت',
-    icon:         Icons.family_restroom,
-    gradient:     [Color(0xFF558B2F), Color(0xFF33691E)],
-    accentColor:  Color(0xFFCCFF90),
+    icon: Icons.family_restroom,
+    gradient: [Color(0xFF558B2F), Color(0xFF33691E)],
+    accentColor: Color(0xFFCCFF90),
   ),
   UserRole.student: RoleConfig(
-    urduTitle:    'طالب علم',
+    urduTitle: 'طالب علم',
     urduGreeting: 'میری تعلیم',
-    icon:         Icons.school,
-    gradient:     [Color(0xFF00838F), Color(0xFF006064)],
-    accentColor:  Color(0xFF84FFFF),
+    icon: Icons.school,
+    gradient: [Color(0xFF00838F), Color(0xFF006064)],
+    accentColor: Color(0xFF84FFFF),
   ),
 };
 
@@ -307,8 +306,7 @@ List<NavTab> buildNavTabs({
       module: 'fees',
     ));
   }
-  if (perms.contains(AppPermissions.viewUsers) &&
-      middle.length < 3) {
+  if (perms.contains(AppPermissions.viewUsers) && middle.length < 3) {
     middle.add(NavTab(
       icon: Icons.manage_accounts_outlined,
       activeIcon: Icons.manage_accounts,

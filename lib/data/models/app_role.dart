@@ -25,33 +25,50 @@ enum Permission {
 extension PermissionX on Permission {
   String get urduLabel {
     switch (this) {
-      case Permission.viewStudents:   return 'طلباء دیکھنا';
-      case Permission.editStudents:   return 'طلباء ترمیم';
-      case Permission.viewStaff:      return 'عملہ دیکھنا';
-      case Permission.editStaff:      return 'عملہ ترمیم';
-      case Permission.viewFees:       return 'فیس دیکھنا';
-      case Permission.editFees:       return 'فیس ترمیم';
-      case Permission.viewAttendance: return 'حاضری دیکھنا';
-      case Permission.markAttendance: return 'حاضری لگانا';
-      case Permission.viewResults:    return 'نتائج دیکھنا';
-      case Permission.editResults:    return 'نتائج ترمیم';
-      case Permission.manageUsers:    return 'صارفین انتظام';
+      case Permission.viewStudents:
+        return 'طلباء دیکھنا';
+      case Permission.editStudents:
+        return 'طلباء ترمیم';
+      case Permission.viewStaff:
+        return 'عملہ دیکھنا';
+      case Permission.editStaff:
+        return 'عملہ ترمیم';
+      case Permission.viewFees:
+        return 'فیس دیکھنا';
+      case Permission.editFees:
+        return 'فیس ترمیم';
+      case Permission.viewAttendance:
+        return 'حاضری دیکھنا';
+      case Permission.markAttendance:
+        return 'حاضری لگانا';
+      case Permission.viewResults:
+        return 'نتائج دیکھنا';
+      case Permission.editResults:
+        return 'نتائج ترمیم';
+      case Permission.manageUsers:
+        return 'صارفین انتظام';
     }
   }
 
   IconData get icon {
     switch (this) {
       case Permission.viewStudents:
-      case Permission.editStudents:   return Icons.people;
+      case Permission.editStudents:
+        return Icons.people;
       case Permission.viewStaff:
-      case Permission.editStaff:      return Icons.badge;
+      case Permission.editStaff:
+        return Icons.badge;
       case Permission.viewFees:
-      case Permission.editFees:       return Icons.account_balance_wallet;
+      case Permission.editFees:
+        return Icons.account_balance_wallet;
       case Permission.viewAttendance:
-      case Permission.markAttendance: return Icons.fact_check;
+      case Permission.markAttendance:
+        return Icons.fact_check;
       case Permission.viewResults:
-      case Permission.editResults:    return Icons.assessment;
-      case Permission.manageUsers:    return Icons.manage_accounts;
+      case Permission.editResults:
+        return Icons.assessment;
+      case Permission.manageUsers:
+        return Icons.manage_accounts;
     }
   }
 }
@@ -62,11 +79,11 @@ extension PermissionX on Permission {
 
 class AppRole {
   final String? id;
-  final String name;        // DB/code key e.g. 'teacher'
-  final String nameUrdu;    // Display label e.g. 'استاد'
+  final String name; // DB/code key e.g. 'teacher'
+  final String nameUrdu; // Display label e.g. 'استاد'
   final String? description;
   final Set<Permission> permissions;
-  final bool isSystem;      // system roles cannot be deleted
+  final bool isSystem; // system roles cannot be deleted
 
   const AppRole({
     this.id,
@@ -85,22 +102,22 @@ class AppRole {
             ))
         .toSet();
     return AppRole(
-      id:          json['id'] as String?,
-      name:        json['name'] as String,
-      nameUrdu:    json['name_urdu'] as String? ?? json['name'] as String,
+      id: json['id'] as String?,
+      name: json['name'] as String,
+      nameUrdu: json['name_urdu'] as String? ?? json['name'] as String,
       description: json['description'] as String?,
       permissions: permList,
-      isSystem:    json['is_system'] as bool? ?? false,
+      isSystem: json['is_system'] as bool? ?? false,
     );
   }
 
   Map<String, dynamic> toJson() => {
-    'name':        name,
-    'name_urdu':   nameUrdu,
-    'description': description,
-    'permissions': permissions.map((p) => p.name).toList(),
-    'is_system':   isSystem,
-  };
+        'name': name,
+        'name_urdu': nameUrdu,
+        'description': description,
+        'permissions': permissions.map((p) => p.name).toList(),
+        'is_system': isSystem,
+      };
 
   AppRole copyWith({
     String? nameUrdu,
@@ -108,12 +125,12 @@ class AppRole {
     Set<Permission>? permissions,
   }) {
     return AppRole(
-      id:          id,
-      name:        name,
-      nameUrdu:    nameUrdu    ?? this.nameUrdu,
+      id: id,
+      name: name,
+      nameUrdu: nameUrdu ?? this.nameUrdu,
       description: description ?? this.description,
       permissions: permissions ?? this.permissions,
-      isSystem:    isSystem,
+      isSystem: isSystem,
     );
   }
 
@@ -126,11 +143,16 @@ class AppRole {
     nameUrdu: 'سپر ایڈمن',
     description: 'پلیٹ فارم پر مکمل اختیار',
     permissions: {
-      Permission.viewStudents,   Permission.editStudents,
-      Permission.viewStaff,      Permission.editStaff,
-      Permission.viewFees,       Permission.editFees,
-      Permission.viewAttendance, Permission.markAttendance,
-      Permission.viewResults,    Permission.editResults,
+      Permission.viewStudents,
+      Permission.editStudents,
+      Permission.viewStaff,
+      Permission.editStaff,
+      Permission.viewFees,
+      Permission.editFees,
+      Permission.viewAttendance,
+      Permission.markAttendance,
+      Permission.viewResults,
+      Permission.editResults,
       Permission.manageUsers,
     },
     isSystem: true,
@@ -141,9 +163,12 @@ class AppRole {
     nameUrdu: 'فرنچائز مینیجر',
     description: 'تمام مدارس کی نگرانی',
     permissions: {
-      Permission.viewStudents, Permission.viewStaff,
-      Permission.viewFees,     Permission.viewAttendance,
-      Permission.viewResults,  Permission.manageUsers,
+      Permission.viewStudents,
+      Permission.viewStaff,
+      Permission.viewFees,
+      Permission.viewAttendance,
+      Permission.viewResults,
+      Permission.manageUsers,
     },
     isSystem: true,
   );
@@ -154,11 +179,16 @@ class AppRole {
     nameUrdu: 'مدرسہ ایڈمن',
     description: 'مدرسے کا مکمل انتظام (ناظم / مہتمم)',
     permissions: {
-      Permission.viewStudents,   Permission.editStudents,
-      Permission.viewStaff,      Permission.editStaff,
-      Permission.viewFees,       Permission.editFees,
-      Permission.viewAttendance, Permission.markAttendance,
-      Permission.viewResults,    Permission.editResults,
+      Permission.viewStudents,
+      Permission.editStudents,
+      Permission.viewStaff,
+      Permission.editStaff,
+      Permission.viewFees,
+      Permission.editFees,
+      Permission.viewAttendance,
+      Permission.markAttendance,
+      Permission.viewResults,
+      Permission.editResults,
       Permission.manageUsers,
     },
     isSystem: true,
@@ -169,11 +199,16 @@ class AppRole {
     nameUrdu: 'منتظم',
     description: 'مکمل انتظامی اختیارات (پرانا نام)',
     permissions: {
-      Permission.viewStudents,   Permission.editStudents,
-      Permission.viewStaff,      Permission.editStaff,
-      Permission.viewFees,       Permission.editFees,
-      Permission.viewAttendance, Permission.markAttendance,
-      Permission.viewResults,    Permission.editResults,
+      Permission.viewStudents,
+      Permission.editStudents,
+      Permission.viewStaff,
+      Permission.editStaff,
+      Permission.viewFees,
+      Permission.editFees,
+      Permission.viewAttendance,
+      Permission.markAttendance,
+      Permission.viewResults,
+      Permission.editResults,
       Permission.manageUsers,
     },
     isSystem: true,
@@ -184,11 +219,15 @@ class AppRole {
     nameUrdu: 'ایڈیٹر',
     description: 'ڈیٹا درج اور ترمیم، صارف انتظام نہیں',
     permissions: {
-      Permission.viewStudents, Permission.editStudents,
+      Permission.viewStudents,
+      Permission.editStudents,
       Permission.viewStaff,
-      Permission.viewAttendance, Permission.markAttendance,
-      Permission.viewFees,       Permission.editFees,
-      Permission.viewResults,    Permission.editResults,
+      Permission.viewAttendance,
+      Permission.markAttendance,
+      Permission.viewFees,
+      Permission.editFees,
+      Permission.viewResults,
+      Permission.editResults,
     },
     isSystem: true,
   );
@@ -199,10 +238,13 @@ class AppRole {
     nameUrdu: 'تعلیمی مینیجر',
     description: 'تعلیمی ڈھانچہ، امتحانات، نتائج',
     permissions: {
-      Permission.viewStudents, Permission.editStudents,
+      Permission.viewStudents,
+      Permission.editStudents,
       Permission.viewStaff,
-      Permission.viewAttendance, Permission.markAttendance,
-      Permission.viewResults,    Permission.editResults,
+      Permission.viewAttendance,
+      Permission.markAttendance,
+      Permission.viewResults,
+      Permission.editResults,
     },
     isSystem: true,
   );
@@ -213,8 +255,10 @@ class AppRole {
     description: 'پڑھانا اور حاضری',
     permissions: {
       Permission.viewStudents,
-      Permission.viewAttendance, Permission.markAttendance,
-      Permission.viewResults,    Permission.editResults,
+      Permission.viewAttendance,
+      Permission.markAttendance,
+      Permission.viewResults,
+      Permission.editResults,
     },
     isSystem: true,
   );
@@ -225,7 +269,8 @@ class AppRole {
     description: 'تمام جماعتوں کی حاضری',
     permissions: {
       Permission.viewStudents,
-      Permission.viewAttendance, Permission.markAttendance,
+      Permission.viewAttendance,
+      Permission.markAttendance,
     },
     isSystem: true,
   );
@@ -237,7 +282,8 @@ class AppRole {
     description: 'فیس اور روزانہ لین دین',
     permissions: {
       Permission.viewStudents,
-      Permission.viewFees, Permission.editFees,
+      Permission.viewFees,
+      Permission.editFees,
     },
     isSystem: true,
   );
@@ -248,7 +294,8 @@ class AppRole {
     description: 'مکمل مالیاتی اختیار',
     permissions: {
       Permission.viewStudents,
-      Permission.viewFees, Permission.editFees,
+      Permission.viewFees,
+      Permission.editFees,
     },
     isSystem: true,
   );
@@ -283,7 +330,8 @@ class AppRole {
     nameUrdu: 'داخلہ افسر',
     description: 'نئے طلباء کا داخلہ',
     permissions: {
-      Permission.viewStudents, Permission.editStudents,
+      Permission.viewStudents,
+      Permission.editStudents,
       Permission.viewFees,
     },
     isSystem: true,
@@ -325,11 +373,21 @@ class AppRole {
 
   /// All built-in system roles in display order.
   static const List<AppRole> allSystemRoles = [
-    superAdmin, franchiseManager,
-    madrasaAdmin, editor,
-    academicManager, teacher, attendanceOfficer,
-    accountant, financeManager,
-    libraryManager, hostelManager, announcementManager, admissionOfficer, itManager,
-    parent, student,
+    superAdmin,
+    franchiseManager,
+    madrasaAdmin,
+    editor,
+    academicManager,
+    teacher,
+    attendanceOfficer,
+    accountant,
+    financeManager,
+    libraryManager,
+    hostelManager,
+    announcementManager,
+    admissionOfficer,
+    itManager,
+    parent,
+    student,
   ];
 }

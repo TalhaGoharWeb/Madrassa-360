@@ -59,8 +59,17 @@ class _MadrasaDetailScreenState extends State<MadrasaDetailScreen> {
   @override
   void dispose() {
     for (final c in [
-      _name, _nameUrdu, _phone, _email, _website, _address, _city,
-      _district, _province, _principal, _regNumber,
+      _name,
+      _nameUrdu,
+      _phone,
+      _email,
+      _website,
+      _address,
+      _city,
+      _district,
+      _province,
+      _principal,
+      _regNumber,
     ]) {
       c.dispose();
     }
@@ -139,14 +148,17 @@ class _MadrasaDetailScreenState extends State<MadrasaDetailScreen> {
     try {
       final updates = {
         'name': _name.text.trim(),
-        'name_urdu': _nameUrdu.text.trim().isEmpty ? null : _nameUrdu.text.trim(),
+        'name_urdu':
+            _nameUrdu.text.trim().isEmpty ? null : _nameUrdu.text.trim(),
         'phone': _phone.text.trim().isEmpty ? null : _phone.text.trim(),
         'email': _email.text.trim().isEmpty ? null : _email.text.trim(),
         'website': _website.text.trim().isEmpty ? null : _website.text.trim(),
         'address': _address.text.trim().isEmpty ? null : _address.text.trim(),
         'city': _city.text.trim().isEmpty ? null : _city.text.trim(),
-        'district': _district.text.trim().isEmpty ? null : _district.text.trim(),
-        'province': _province.text.trim().isEmpty ? null : _province.text.trim(),
+        'district':
+            _district.text.trim().isEmpty ? null : _district.text.trim(),
+        'province':
+            _province.text.trim().isEmpty ? null : _province.text.trim(),
         'principal_name':
             _principal.text.trim().isEmpty ? null : _principal.text.trim(),
         'registration_number':
@@ -267,8 +279,8 @@ class _MadrasaDetailScreenState extends State<MadrasaDetailScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text(
-                  'Action failed: ${e.reasonPhrase ?? e.toString()}')),
+              content:
+                  Text('Action failed: ${e.reasonPhrase ?? e.toString()}')),
         );
       }
     } catch (e) {
@@ -283,7 +295,9 @@ class _MadrasaDetailScreenState extends State<MadrasaDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) return const MaLoadingScaffold(message: 'تفصیل لوڈ ہو رہی ہے…');
+    if (_loading) {
+      return const MaLoadingScaffold(message: 'تفصیل لوڈ ہو رہی ہے…');
+    }
     if (_error != null || _tenant == null) {
       return MaErrorScaffold(
           message: _error ?? 'Tenant not found', onRetry: _load);
@@ -417,9 +431,7 @@ class _MadrasaDetailScreenState extends State<MadrasaDetailScreen> {
         controller: c,
         decoration: InputDecoration(labelText: label),
         validator: required
-            ? (v) => (v == null || v.trim().isEmpty)
-                ? 'یہ خانہ ضروری ہے'
-                : null
+            ? (v) => (v == null || v.trim().isEmpty) ? 'یہ خانہ ضروری ہے' : null
             : null,
       ),
     );
@@ -433,8 +445,7 @@ class _MadrasaDetailScreenState extends State<MadrasaDetailScreen> {
           ? 'No subscription record (table may not be provisioned yet)'
           : null,
       child: sub == null
-          ? const Text('—',
-              style: TextStyle(color: AppColors.textSecondary))
+          ? const Text('—', style: TextStyle(color: AppColors.textSecondary))
           : Column(
               children: [
                 _kv('Status', sub['status']),
@@ -460,10 +471,9 @@ class _MadrasaDetailScreenState extends State<MadrasaDetailScreen> {
                 for (final m in _catalog)
                   SwitchListTile(
                     value: _moduleState[m['module']] ?? false,
-                    onChanged: (v) =>
-                        _toggleModule(m['module'] as String, v),
-                    title: Text((m['name'] as String?) ??
-                        (m['module'] as String)),
+                    onChanged: (v) => _toggleModule(m['module'] as String, v),
+                    title:
+                        Text((m['name'] as String?) ?? (m['module'] as String)),
                     subtitle: (m['name_urdu'] as String?)?.isNotEmpty == true
                         ? Text(m['name_urdu'] as String,
                             textDirection: TextDirection.rtl)
@@ -487,33 +497,29 @@ class _MadrasaDetailScreenState extends State<MadrasaDetailScreen> {
             ElevatedButton.icon(
               icon: const Icon(Icons.play_arrow),
               label: const Text('Reactivate'),
-              style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.success),
+              style:
+                  ElevatedButton.styleFrom(backgroundColor: AppColors.success),
               onPressed: _saving
                   ? null
-                  : () => _confirmAndRunLifecycle(
-                      'reactivate', 'بحال کریں'),
+                  : () => _confirmAndRunLifecycle('reactivate', 'بحال کریں'),
             )
           else
             ElevatedButton.icon(
               icon: const Icon(Icons.pause),
               label: const Text('Suspend'),
-              style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.warning),
+              style:
+                  ElevatedButton.styleFrom(backgroundColor: AppColors.warning),
               onPressed: _saving
                   ? null
-                  : () =>
-                      _confirmAndRunLifecycle('suspend', 'معطل کریں'),
+                  : () => _confirmAndRunLifecycle('suspend', 'معطل کریں'),
             ),
           ElevatedButton.icon(
             icon: const Icon(Icons.archive_outlined),
             label: const Text('Archive'),
-            style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.error),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
             onPressed: _saving
                 ? null
-                : () =>
-                    _confirmAndRunLifecycle('archive', 'آرکائیو کریں'),
+                : () => _confirmAndRunLifecycle('archive', 'آرکائیو کریں'),
           ),
         ],
       ),

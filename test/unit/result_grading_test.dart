@@ -34,8 +34,7 @@ StudentResult _studentResult(List<SubjectResult> subjects) => StudentResult(
       subjects: subjects,
     );
 
-ExamOutcome _outcome(String id, double obtained,
-    {bool hasMarks = true}) {
+ExamOutcome _outcome(String id, double obtained, {bool hasMarks = true}) {
   final o = ExamOutcome(studentId: id, studentName: id);
   o.obtained = obtained;
   o.total = 100;
@@ -163,8 +162,7 @@ void main() {
     });
 
     test('all tied -> all rank 1', () {
-      final outs =
-          List.generate(4, (i) => _outcome('s$i', 75));
+      final outs = List.generate(4, (i) => _outcome('s$i', 75));
       assignDensePositions(outs);
       expect(outs.every((o) => o.position == 1), isTrue);
     });

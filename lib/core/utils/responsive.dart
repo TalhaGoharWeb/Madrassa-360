@@ -125,7 +125,8 @@ class ResponsiveGrid {
   }
 
   /// Calculate cross-axis count for GridView
-  static int crossAxisCount(BuildContext context, {int? mobile, int? tablet, int? desktop}) {
+  static int crossAxisCount(BuildContext context,
+      {int? mobile, int? tablet, int? desktop}) {
     return context.responsive(
       mobile: mobile ?? 2,
       tablet: tablet ?? 3,
@@ -190,10 +191,12 @@ class ResponsiveLayout extends StatelessWidget {
 /// Orientation Builder Extension
 extension OrientationExtension on BuildContext {
   /// Check if orientation is portrait
-  bool get isPortrait => MediaQuery.of(this).orientation == Orientation.portrait;
+  bool get isPortrait =>
+      MediaQuery.of(this).orientation == Orientation.portrait;
 
   /// Check if orientation is landscape
-  bool get isLandscape => MediaQuery.of(this).orientation == Orientation.landscape;
+  bool get isLandscape =>
+      MediaQuery.of(this).orientation == Orientation.landscape;
 
   /// Get value based on orientation
   T orientation<T>({

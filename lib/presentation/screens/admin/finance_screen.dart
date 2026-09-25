@@ -24,15 +24,15 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback(
-        (_) => ref.read(financeProvider.notifier).load());
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => ref.read(financeProvider.notifier).load());
   }
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(financeProvider);
-    final isAdmin = (ref.watch(authProvider).user?.role.name ?? '')
-        .contains('admin');
+    final isAdmin =
+        (ref.watch(authProvider).user?.role.name ?? '').contains('admin');
 
     final displayed = _filter == null
         ? state.ledger
@@ -90,8 +90,8 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
               : displayed.isEmpty
                   ? Center(
                       child: Text('کوئی ریکارڈ نہیں',
-                          style: AppTypography.bodyLarge.copyWith(
-                              color: AppColors.textSecondary)))
+                          style: AppTypography.bodyLarge
+                              .copyWith(color: AppColors.textSecondary)))
                   : ListView.builder(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
                       itemCount: displayed.length,
@@ -108,7 +108,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
     return FilterChip(
       label: Text(label),
       selected: selected,
-      selectedColor: AppColors.primary.withOpacity(0.15),
+      selectedColor: AppColors.primary.withValues(alpha: 0.15),
       checkmarkColor: AppColors.primary,
       onSelected: (_) => setState(() => _filter = kind),
     );
@@ -155,8 +155,8 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
                   TransactionCategory.sadqa,
                   TransactionCategory.other,
                 ]
-                    .map((c) => DropdownMenuItem(
-                        value: c, child: Text(c.urduLabel)))
+                    .map((c) =>
+                        DropdownMenuItem(value: c, child: Text(c.urduLabel)))
                     .toList(),
                 onChanged: (v) => setS(() => incomeCat = v!),
               )
@@ -166,8 +166,8 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
                 decoration: const InputDecoration(
                     labelText: 'طریقہ', border: OutlineInputBorder()),
                 items: PaymentMethod.values
-                    .map((m) => DropdownMenuItem(
-                        value: m, child: Text(m.urduLabel)))
+                    .map((m) =>
+                        DropdownMenuItem(value: m, child: Text(m.urduLabel)))
                     .toList(),
                 onChanged: (v) => setS(() => payMethod = v!),
               ),
@@ -181,19 +181,20 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
                   const DropdownMenuItem<String?>(
                       value: null, child: Text('—')),
                   for (final a in accounts)
-                    DropdownMenuItem(
-                        value: a.id, child: Text(a.name)),
+                    DropdownMenuItem(value: a.id, child: Text(a.name)),
                 ],
                 onChanged: (v) => setS(() => accountId = v),
               ),
             const SizedBox(height: 12),
             _field(amtCtrl, 'رقم (₹)'),
             _field(descCtrl, entryKind == 1 ? 'تفصیل / مد' : 'تفصیل'),
-            _field(nameCtrl, entryKind == 0
-                ? 'عطیہ دہندہ (اختیاری)'
-                : entryKind == 1
-                    ? 'وصول کنندہ (اختیاری)'
-                    : 'نوٹ (اختیاری)'),
+            _field(
+                nameCtrl,
+                entryKind == 0
+                    ? 'عطیہ دہندہ (اختیاری)'
+                    : entryKind == 1
+                        ? 'وصول کنندہ (اختیاری)'
+                        : 'نوٹ (اختیاری)'),
           ])),
           actions: [
             TextButton(
@@ -212,39 +213,30 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
                 if (entryKind == 0) {
                   err = await notifier.recordIncome(
                     sourceType: incomeCat,
-                    donorName:
-                        nameCtrl.text.isEmpty ? null : nameCtrl.text,
+                    donorName: nameCtrl.text.isEmpty ? null : nameCtrl.text,
                     amount: amount,
                     accountId: accountId,
-                    description: descCtrl.text.isEmpty
-                        ? null
-                        : descCtrl.text,
+                    description: descCtrl.text.isEmpty ? null : descCtrl.text,
                   );
                 } else if (entryKind == 1) {
                   err = await notifier.recordExpense(
-                    category: descCtrl.text.isEmpty
-                        ? 'دیگر'
-                        : descCtrl.text,
-                    recipient:
-                        nameCtrl.text.isEmpty ? null : nameCtrl.text,
+                    category: descCtrl.text.isEmpty ? 'دیگر' : descCtrl.text,
+                    recipient: nameCtrl.text.isEmpty ? null : nameCtrl.text,
                     amount: amount,
                     accountId: accountId,
-                    description: descCtrl.text.isEmpty
-                        ? null
-                        : descCtrl.text,
+                    description: descCtrl.text.isEmpty ? null : descCtrl.text,
                   );
                 } else {
                   err = await notifier.recordPayment(
                     amount: amount,
                     method: payMethod,
                     accountId: accountId,
-                    notes:
-                        nameCtrl.text.isEmpty ? null : nameCtrl.text,
+                    notes: nameCtrl.text.isEmpty ? null : nameCtrl.text,
                   );
                 }
                 if (err != null && ctx.mounted) {
-                  ScaffoldMessenger.of(ctx).showSnackBar(
-                      SnackBar(content: Text(err)));
+                  ScaffoldMessenger.of(ctx)
+                      .showSnackBar(SnackBar(content: Text(err)));
                 }
               },
               child: const Text('محفوظ'),
@@ -279,13 +271,12 @@ class _SummaryTile extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.1),
+          color: Colors.white.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(10),
         ),
         child: Column(children: [
           Text(label,
-              style: AppTypography.labelSmall
-                  .copyWith(color: Colors.white70)),
+              style: AppTypography.labelSmall.copyWith(color: Colors.white70)),
           const SizedBox(height: 4),
           Text(
             '₹${amount.toStringAsFixed(0)}',
@@ -317,7 +308,7 @@ class _LedgerCard extends StatelessWidget {
         leading: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10)),
           child: Icon(
             isIncome ? Icons.arrow_downward : Icons.arrow_upward,
@@ -326,19 +317,19 @@ class _LedgerCard extends StatelessWidget {
         ),
         title: Row(children: [
           Expanded(
-              child: Text(t.description ?? '',
-                  style: AppTypography.bodyMedium)),
+              child:
+                  Text(t.description ?? '', style: AppTypography.bodyMedium)),
           Text(
             '${isIncome ? '+' : '-'}₹${t.amount.toStringAsFixed(0)}',
-            style: AppTypography.bodyLarge.copyWith(
-                color: color, fontWeight: FontWeight.bold),
+            style: AppTypography.bodyLarge
+                .copyWith(color: color, fontWeight: FontWeight.bold),
           ),
         ]),
         subtitle: Row(children: [
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.08),
+              color: color.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(t.category.urduLabel,

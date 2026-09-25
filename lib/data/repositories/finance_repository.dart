@@ -44,7 +44,7 @@ import 'dart:async';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../data/local/app_database.dart';
+import '../../data/local/app_database.dart' hide SyncQueue;
 import '../../core/notifications/notification_triggers.dart';
 import '../../core/sync/sync_engine.dart';
 import '../models/finance.dart';
@@ -72,8 +72,7 @@ abstract class IFinanceRepository {
 
   // income / expenses (draft → approved → posted)
   Future<List<IncomeEntry>> getIncome({required String tenantId});
-  Future<IncomeEntry> createIncome(IncomeEntry e,
-      {required String tenantId});
+  Future<IncomeEntry> createIncome(IncomeEntry e, {required String tenantId});
   Future<IncomeEntry> transitionIncome(String id, DocStatus to,
       {required String tenantId, String? actorId});
 
@@ -90,8 +89,8 @@ abstract class IFinanceRepository {
       {required String tenantId, required String actorId});
 
   // invoices
-  Future<List<Invoice>> getInvoices({required String tenantId,
-      String? studentId, InvoiceStatus? status});
+  Future<List<Invoice>> getInvoices(
+      {required String tenantId, String? studentId, InvoiceStatus? status});
   Future<Invoice> getInvoice(String id, {required String tenantId});
   Future<Invoice> createInvoice(Invoice inv, List<InvoiceItem> items,
       {required String tenantId});
@@ -100,8 +99,8 @@ abstract class IFinanceRepository {
   Future<void> deleteInvoiceDraft(String id, {required String tenantId});
 
   // payments (draft → posted; posting auto-creates ledger + allocation)
-  Future<List<Payment>> getPayments({required String tenantId,
-      String? studentId});
+  Future<List<Payment>> getPayments(
+      {required String tenantId, String? studentId});
   Future<Payment> getPayment(String id, {required String tenantId});
 
   /// Full flow: insert draft → post. Returns the LOCAL posted payment —
@@ -120,14 +119,14 @@ abstract class IFinanceRepository {
   Future<void> deleteRefundDraft(String id, {required String tenantId});
 
   // discounts / scholarships / fee structures
-  Future<List<Discount>> getDiscounts({required String tenantId,
-      String? invoiceId});
+  Future<List<Discount>> getDiscounts(
+      {required String tenantId, String? invoiceId});
   Future<Discount> createDiscount(Discount d, {required String tenantId});
   Future<Discount> applyDiscount(String id, {required String tenantId});
   Future<void> deleteDiscountDraft(String id, {required String tenantId});
 
-  Future<List<Scholarship>> getScholarships({required String tenantId,
-      String? studentId});
+  Future<List<Scholarship>> getScholarships(
+      {required String tenantId, String? studentId});
   Future<Scholarship> createScholarship(Scholarship s,
       {required String tenantId});
   Future<Scholarship> updateScholarship(Scholarship s,
@@ -160,8 +159,7 @@ class LocalFinanceRepository implements IFinanceRepository {
 
   /// Indexed envelope columns per finance table (matches the sibling's
   /// Drift schema; everything not listed keeps an empty map).
-  Map<String, Object?> _indexedFor(
-      String table, Map<String, dynamic> row) {
+  Map<String, Object?> _indexedFor(String table, Map<String, dynamic> row) {
     switch (table) {
       case 'accounts':
         return {'code': row['code']};
@@ -190,8 +188,7 @@ class LocalFinanceRepository implements IFinanceRepository {
     required T Function(Map<String, dynamic>) fromData,
   }) async {
     final exists = await SyncQueue.rowExists(_db, table, tenantId, id);
-    final baseRev =
-        await SyncQueue.currentRevision(_db, table, tenantId, id);
+    final baseRev = await SyncQueue.currentRevision(_db, table, tenantId, id);
     final nowIso = _nowIso;
     final row = <String, dynamic>{
       ...data,
@@ -234,8 +231,7 @@ class LocalFinanceRepository implements IFinanceRepository {
   }) async {
     final nowIso = _nowIso;
     final existing = await LocalRows.byId(_db, table, tenantId, id);
-    final previous =
-        (existing?['_data'] as Map<String, dynamic>?) ?? const {};
+    final previous = (existing?['_data'] as Map<String, dynamic>?) ?? const {};
     final row = <String, dynamic>{
       ...previous,
       ...?extra,
@@ -276,8 +272,7 @@ class LocalFinanceRepository implements IFinanceRepository {
     required String tenantId,
   }) async {
     final nowIso = _nowIso;
-    final baseRev =
-        await SyncQueue.currentRevision(_db, table, tenantId, id);
+    final baseRev = await SyncQueue.currentRevision(_db, table, tenantId, id);
     await _db.transaction(() async {
       await SyncEngine.softDeleteLocalRow(
         _db,
@@ -313,8 +308,7 @@ class LocalFinanceRepository implements IFinanceRepository {
   }
 
   @override
-  Future<Account> createAccount(Account a,
-      {required String tenantId}) async {
+  Future<Account> createAccount(Account a, {required String tenantId}) async {
     return _save<Account>(
       table: 'accounts',
       id: _newId(),
@@ -325,8 +319,7 @@ class LocalFinanceRepository implements IFinanceRepository {
   }
 
   @override
-  Future<Account> updateAccount(Account a,
-      {required String tenantId}) async {
+  Future<Account> updateAccount(Account a, {required String tenantId}) async {
     return _save<Account>(
       table: 'accounts',
       id: a.id!,
@@ -382,8 +375,7 @@ class LocalFinanceRepository implements IFinanceRepository {
   }
 
   @override
-  Future<void> deleteLedgerDraft(String id,
-      {required String tenantId}) async {
+  Future<void> deleteLedgerDraft(String id, {required String tenantId}) async {
     await _deleteDraft(table: 'transactions', id: id, tenantId: tenantId);
   }
 
@@ -437,8 +429,7 @@ class LocalFinanceRepository implements IFinanceRepository {
     var row = await createIncome(e, tenantId: tenantId);
     row = await transitionIncome(row.id!, DocStatus.approved,
         tenantId: tenantId, actorId: actorId);
-    row = await transitionIncome(row.id!, DocStatus.posted,
-        tenantId: tenantId);
+    row = await transitionIncome(row.id!, DocStatus.posted, tenantId: tenantId);
     return row;
   }
 
@@ -490,8 +481,8 @@ class LocalFinanceRepository implements IFinanceRepository {
     var row = await createExpense(e, tenantId: tenantId);
     row = await transitionExpense(row.id!, DocStatus.approved,
         tenantId: tenantId, actorId: actorId);
-    row = await transitionExpense(row.id!, DocStatus.posted,
-        tenantId: tenantId);
+    row =
+        await transitionExpense(row.id!, DocStatus.posted, tenantId: tenantId);
     return row;
   }
 
@@ -500,8 +491,10 @@ class LocalFinanceRepository implements IFinanceRepository {
   static const _invoiceSelect = '*, students(name)';
 
   @override
-  Future<List<Invoice>> getInvoices({required String tenantId,
-      String? studentId, InvoiceStatus? status}) async {
+  Future<List<Invoice>> getInvoices(
+      {required String tenantId,
+      String? studentId,
+      InvoiceStatus? status}) async {
     var q = _client
         .from('invoices')
         .select(_invoiceSelect)
@@ -582,8 +575,7 @@ class LocalFinanceRepository implements IFinanceRepository {
   }
 
   @override
-  Future<void> deleteInvoiceDraft(String id,
-      {required String tenantId}) async {
+  Future<void> deleteInvoiceDraft(String id, {required String tenantId}) async {
     await _deleteDraft(table: 'invoices', id: id, tenantId: tenantId);
   }
 
@@ -592,8 +584,8 @@ class LocalFinanceRepository implements IFinanceRepository {
   static const _paymentSelect = '*, students(name)';
 
   @override
-  Future<List<Payment>> getPayments({required String tenantId,
-      String? studentId}) async {
+  Future<List<Payment>> getPayments(
+      {required String tenantId, String? studentId}) async {
     var q = _client
         .from('payments')
         .select(_paymentSelect)
@@ -617,8 +609,7 @@ class LocalFinanceRepository implements IFinanceRepository {
   }
 
   @override
-  Future<Payment> recordPayment(Payment p,
-      {required String tenantId}) async {
+  Future<Payment> recordPayment(Payment p, {required String tenantId}) async {
     // 1. insert draft locally + enqueue. receipt_number arrives from the
     //    DB trigger on sync — it is NOT in the local model returned here.
     final row = await _save<Payment>(
@@ -654,8 +645,7 @@ class LocalFinanceRepository implements IFinanceRepository {
   }
 
   @override
-  Future<void> deletePaymentDraft(String id,
-      {required String tenantId}) async {
+  Future<void> deletePaymentDraft(String id, {required String tenantId}) async {
     await _deleteDraft(table: 'payments', id: id, tenantId: tenantId);
   }
 
@@ -714,20 +704,16 @@ class LocalFinanceRepository implements IFinanceRepository {
   }
 
   @override
-  Future<void> deleteRefundDraft(String id,
-      {required String tenantId}) async {
+  Future<void> deleteRefundDraft(String id, {required String tenantId}) async {
     await _deleteDraft(table: 'refunds', id: id, tenantId: tenantId);
   }
 
   // ── discounts (reads: remote) ──
 
   @override
-  Future<List<Discount>> getDiscounts({required String tenantId,
-      String? invoiceId}) async {
-    var q = _client
-        .from('discounts')
-        .select()
-        .eq('tenant_id', tenantId);
+  Future<List<Discount>> getDiscounts(
+      {required String tenantId, String? invoiceId}) async {
+    var q = _client.from('discounts').select().eq('tenant_id', tenantId);
     if (invoiceId != null) q = q.eq('invoice_id', invoiceId);
     final res = await q.order('created_at', ascending: false);
     return (res as List)
@@ -748,8 +734,7 @@ class LocalFinanceRepository implements IFinanceRepository {
   }
 
   @override
-  Future<Discount> applyDiscount(String id,
-      {required String tenantId}) async {
+  Future<Discount> applyDiscount(String id, {required String tenantId}) async {
     final row = await _transition(
       table: 'discounts',
       id: id,
@@ -768,8 +753,8 @@ class LocalFinanceRepository implements IFinanceRepository {
   // ── scholarships (reads: remote) ──
 
   @override
-  Future<List<Scholarship>> getScholarships({required String tenantId,
-      String? studentId}) async {
+  Future<List<Scholarship>> getScholarships(
+      {required String tenantId, String? studentId}) async {
     var q = _client
         .from('scholarships')
         .select('*, students(name)')

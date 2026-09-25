@@ -3,10 +3,13 @@
 
 import 'package:flutter/material.dart';
 
-import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_typography.dart';
-import '../../../core/widgets/empty_state_widget.dart';
-import '../../../core/widgets/loading_widget.dart';
+import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/app_typography.dart';
+import '../../../../core/widgets/empty_state_widget.dart';
+import '../../../../core/widgets/loading_widget.dart';
+
+export '../../../../core/widgets/empty_state_widget.dart';
+export '../../../../core/widgets/loading_widget.dart';
 
 /// A KPI stat card for the dashboard stat row.
 class MaStatCard extends StatelessWidget {
@@ -36,7 +39,7 @@ class MaStatCard extends StatelessWidget {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
+                color: color.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(icon, color: color, size: 24),
@@ -69,7 +72,8 @@ class MaStatCard extends StatelessWidget {
       ),
     );
     if (onTap == null) return card;
-    return InkWell(onTap: onTap, borderRadius: BorderRadius.circular(12), child: card);
+    return InkWell(
+        onTap: onTap, borderRadius: BorderRadius.circular(12), child: card);
   }
 }
 
@@ -195,7 +199,7 @@ class MaHealthTile extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.12),
+              color: color.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
@@ -242,9 +246,9 @@ class MaStatusChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.4)),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
       ),
       child: Text(
         status.toUpperCase(),
@@ -258,8 +262,6 @@ class MaStatusChip extends StatelessWidget {
 }
 
 /// Re-export conveniences so screens import one file.
-export '../../../core/widgets/empty_state_widget.dart';
-export '../../../core/widgets/loading_widget.dart';
 
 /// Loading scaffold used by master admin screens.
 class MaLoadingScaffold extends StatelessWidget {

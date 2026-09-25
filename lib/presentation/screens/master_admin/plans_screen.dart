@@ -36,10 +36,8 @@ class _PlansScreenState extends State<PlansScreen> {
       _error = null;
     });
     try {
-      final rows = await _client
-          .from('license_plans')
-          .select()
-          .order('price_monthly');
+      final rows =
+          await _client.from('license_plans').select().order('price_monthly');
       _plans = List<Map<String, dynamic>>.from(rows);
     } catch (e) {
       _error = e.toString();
@@ -57,9 +55,10 @@ class _PlansScreenState extends State<PlansScreen> {
 
   Future<void> _toggleActive(Map<String, dynamic> plan) async {
     try {
-      await _client.from('license_plans').update(
-          {'is_active': !(plan['is_active'] as bool? ?? true)}).eq(
-          'id', plan['id']);
+      await _client
+          .from('license_plans')
+          .update({'is_active': !(plan['is_active'] as bool? ?? true)}).eq(
+              'id', plan['id']);
       _load();
     } catch (e) {
       if (mounted) {
@@ -75,16 +74,15 @@ class _PlansScreenState extends State<PlansScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('پلان حذف کریں؟'),
-        content: Text(
-            'Delete plan "$name"? This is blocked if any subscription or '
-            'license references it.'),
+        content:
+            Text('Delete plan "$name"? This is blocked if any subscription or '
+                'license references it.'),
         actions: [
           TextButton(
               onPressed: () => Navigator.of(ctx).pop(false),
               child: const Text('منسوخ')),
           ElevatedButton(
-            style:
-                ElevatedButton.styleFrom(backgroundColor: AppColors.error),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
             onPressed: () => Navigator.of(ctx).pop(true),
             child: const Text('حذف کریں'),
           ),
@@ -147,7 +145,7 @@ class _PlansScreenState extends State<PlansScreen> {
                           color: (active
                                   ? AppColors.success
                                   : AppColors.textSecondary)
-                              .withOpacity(0.12),
+                              .withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Icon(Icons.card_membership,
@@ -167,8 +165,8 @@ class _PlansScreenState extends State<PlansScreen> {
                         'صارفین: ${p['max_users'] ?? '—'}\n'
                         'ماڈیولز: $modules\n'
                         'قیمت: ${p['price_monthly'] ?? '—'}/ماہ',
-                        style: AppTypography.bodySmall.copyWith(
-                            color: AppColors.textSecondary),
+                        style: AppTypography.bodySmall
+                            .copyWith(color: AppColors.textSecondary),
                       ),
                       isThreeLine: true,
                       trailing: PopupMenuButton<String>(
@@ -182,9 +180,8 @@ class _PlansScreenState extends State<PlansScreen> {
                               value: 'edit', child: Text('ترمیم')),
                           PopupMenuItem(
                               value: 'toggle',
-                              child: Text(active
-                                  ? 'غیر فعال کریں'
-                                  : 'فعال کریں')),
+                              child:
+                                  Text(active ? 'غیر فعال کریں' : 'فعال کریں')),
                           const PopupMenuItem(
                               value: 'delete', child: Text('حذف کریں')),
                         ],
@@ -235,20 +232,23 @@ class _PlanEditorDialogState extends State<_PlanEditorDialog> {
         TextEditingController(text: (p?['max_students'] ?? '').toString());
     _maxTeachers =
         TextEditingController(text: (p?['max_teachers'] ?? '').toString());
-    _maxUsers =
-        TextEditingController(text: (p?['max_users'] ?? '').toString());
+    _maxUsers = TextEditingController(text: (p?['max_users'] ?? '').toString());
     _price =
         TextEditingController(text: (p?['price_monthly'] ?? '').toString());
     final mods = p?['enabled_modules'];
-    _modules = TextEditingController(
-        text: mods is List ? mods.join(', ') : '');
+    _modules = TextEditingController(text: mods is List ? mods.join(', ') : '');
     _isActive = p?['is_active'] as bool? ?? true;
   }
 
   @override
   void dispose() {
     for (final c in [
-      _name, _description, _maxStudents, _maxTeachers, _maxUsers, _price,
+      _name,
+      _description,
+      _maxStudents,
+      _maxTeachers,
+      _maxUsers,
+      _price,
       _modules
     ]) {
       c.dispose();
@@ -312,8 +312,7 @@ class _PlanEditorDialogState extends State<_PlanEditorDialog> {
               children: [
                 TextFormField(
                   controller: _name,
-                  decoration:
-                      const InputDecoration(labelText: 'نام / Name *'),
+                  decoration: const InputDecoration(labelText: 'نام / Name *'),
                   validator: (v) => (v == null || v.trim().isEmpty)
                       ? 'یہ خانہ ضروری ہے'
                       : null,
@@ -332,8 +331,8 @@ class _PlanEditorDialogState extends State<_PlanEditorDialog> {
                       child: TextFormField(
                         controller: _maxStudents,
                         keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                            labelText: 'Max students'),
+                        decoration:
+                            const InputDecoration(labelText: 'Max students'),
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -341,8 +340,8 @@ class _PlanEditorDialogState extends State<_PlanEditorDialog> {
                       child: TextFormField(
                         controller: _maxTeachers,
                         keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                            labelText: 'Max teachers'),
+                        decoration:
+                            const InputDecoration(labelText: 'Max teachers'),
                       ),
                     ),
                     const SizedBox(width: 8),

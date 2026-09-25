@@ -82,8 +82,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const SizedBox(height: 24),
-          const Icon(Icons.lock_reset,
-              size: 72, color: AppColors.primary),
+          const Icon(Icons.lock_reset, size: 72, color: AppColors.primary),
           const SizedBox(height: 24),
           Text(
             'اپنا رجسٹرڈ ای میل درج کریں — ہم آپ کو پاس ورڈ ری سیٹ کرنے کا لنک بھیجیں گے۔',
@@ -102,7 +101,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
             decoration: InputDecoration(
               hintText: 'اپنا ای میل درج کریں',
               hintStyle: AppTypography.bodyMedium.copyWith(
-                color: AppColors.textSecondary.withOpacity(0.5),
+                color: AppColors.textSecondary.withValues(alpha: 0.5),
               ),
               prefixIcon:
                   const Icon(Icons.email_outlined, color: AppColors.primary),
@@ -158,11 +157,11 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           width: 96,
           height: 96,
           decoration: BoxDecoration(
-            color: Colors.green.withOpacity(0.12),
+            color: Colors.green.withValues(alpha: 0.12),
             shape: BoxShape.circle,
           ),
-          child: const Icon(Icons.mark_email_read,
-              size: 48, color: Colors.green),
+          child:
+              const Icon(Icons.mark_email_read, size: 48, color: Colors.green),
         ),
         const SizedBox(height: 24),
         Text(

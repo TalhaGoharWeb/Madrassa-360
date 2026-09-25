@@ -22,7 +22,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../data/local/app_database.dart';
+import '../../data/local/app_database.dart' hide NotificationPreferences;
 import '../sync/sync_engine.dart';
 import 'notification_channel.dart';
 import 'notification_models.dart';
@@ -37,8 +37,6 @@ const int _pruneAfterMs = 7 * 24 * 60 * 60 * 1000; // 7 days
 // Parked rows (attempts exhausted) get a far-future nextRetryAt so
 // dueRows() never picks them up again; NULL keeps meaning "due now".
 const int _parkedForMs = 10 * 365 * 24 * 60 * 60 * 1000; // ~10 years
-const int _sendTimeoutSec = 30;
-const int _pruneAfterMs = 7 * 24 * 60 * 60 * 1000; // 7 days
 const int _staleSendingMs = 10 * 60 * 1000; // reclaim 'sending' older than this
 
 int _nowMs() => DateTime.now().toUtc().millisecondsSinceEpoch;
@@ -58,18 +56,16 @@ class NotificationOutboxStore {
     required String notificationId,
     required String channel,
   }) async {
-    final existing = await db
-        .customSelect(
-          'SELECT 1 FROM notification_outbox '
-          'WHERE notification_id = ? AND channel = ? '
-          "AND status IN ('pending','sending','failed') AND attempts < 5 "
-          'LIMIT 1',
-          variables: [
-            Variable.withString(notificationId),
-            Variable.withString(channel),
-          ],
-        )
-        .get();
+    final existing = await db.customSelect(
+      'SELECT 1 FROM notification_outbox '
+      'WHERE notification_id = ? AND channel = ? '
+      "AND status IN ('pending','sending','failed') AND attempts < 5 "
+      'LIMIT 1',
+      variables: [
+        Variable.withString(notificationId),
+        Variable.withString(channel),
+      ],
+    ).get();
     if (existing.isNotEmpty) return;
     await db.notificationOutboxDao.enqueue(
       NotificationOutboxCompanion.insert(
@@ -177,8 +173,7 @@ class NotificationDispatcher {
       // go back to 'failed' with an expired backoff so they retry.
       await _db.notificationOutboxDao
           .reclaimStaleSending(_tenantId, _nowMs() - _staleSendingMs);
-      final due =
-          await _db.notificationOutboxDao.dueRows(_tenantId, _nowMs());
+      final due = await _db.notificationOutboxDao.dueRows(_tenantId, _nowMs());
       for (final row in due) {
         await _dispatchRow(row);
         if (!await _isOnline()) return; // went offline mid-drain
@@ -223,11 +218,10 @@ class NotificationDispatcher {
     await dao.markSending(row.id);
     ChannelDispatchResult result;
     try {
-      result = await channel
-          .send(notification)
-          .timeout(const Duration(seconds: _sendTimeoutSec),
-              onTimeout: () => const ChannelDispatchResult.failed(
-                  'channel_timeout'));
+      result = await channel.send(notification).timeout(
+          const Duration(seconds: _sendTimeoutSec),
+          onTimeout: () =>
+              const ChannelDispatchResult.failed('channel_timeout'));
     } catch (e) {
       // Channels must not throw (contract), but the dispatcher is the
       // last line of defence — never let one row kill the drain.
@@ -247,12 +241,12 @@ class NotificationDispatcher {
           // Parked: a far-future nextRetryAt means "never auto-retry"
           // (dueRows only picks rows whose backoff has expired). The row
           // stays visible for debugging via the outbox table.
-          await dao.markFailed(row.id, attempts,
-              _nowMs() + _parkedForMs, result.reason ?? 'failed');
+          await dao.markFailed(row.id, attempts, _nowMs() + _parkedForMs,
+              result.reason ?? 'failed');
         } else {
           final backoffMs = _baseBackoffMs * (1 << (attempts - 1));
-          await dao.markFailed(row.id, attempts,
-              _nowMs() + backoffMs, result.reason ?? 'failed');
+          await dao.markFailed(row.id, attempts, _nowMs() + backoffMs,
+              result.reason ?? 'failed');
         }
         break;
     }

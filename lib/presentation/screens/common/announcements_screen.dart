@@ -20,9 +20,9 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) =>
-        _ref?.read(announcementProvider.notifier).load(
-            madrasaId: widget.madrasaId));
+    WidgetsBinding.instance.addPostFrameCallback((_) => _ref
+        ?.read(announcementProvider.notifier)
+        .load(madrasaId: widget.madrasaId));
   }
 
   @override
@@ -31,8 +31,8 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
       _ref = ref;
       final state = ref.watch(announcementProvider);
       final user = ref.watch(authProvider).user;
-      final isAdmin = user?.role.name == 'admin' ||
-          user?.role.name == 'superAdmin';
+      final isAdmin =
+          user?.role.name == 'admin' || user?.role.name == 'superAdmin';
 
       final pinned = state.announcements.where((a) => a.isPinned).toList();
       final rest = state.announcements.where((a) => !a.isPinned).toList();
@@ -78,8 +78,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                       if (rest.isNotEmpty) ...[
                         _sectionHeader('📋 تمام اعلانات'),
                         const SizedBox(height: 8),
-                        ...rest
-                            .map((a) => _AnnouncementCard(a, ref, isAdmin)),
+                        ...rest.map((a) => _AnnouncementCard(a, ref, isAdmin)),
                       ],
                     ],
                   ),
@@ -160,10 +159,14 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
 
   AnnouncementTarget _targetFromString(String s) {
     switch (s) {
-      case 'teachers': return AnnouncementTarget.teachers;
-      case 'parents': return AnnouncementTarget.parents;
-      case 'students': return AnnouncementTarget.students;
-      default: return AnnouncementTarget.all;
+      case 'teachers':
+        return AnnouncementTarget.teachers;
+      case 'parents':
+        return AnnouncementTarget.parents;
+      case 'students':
+        return AnnouncementTarget.students;
+      default:
+        return AnnouncementTarget.all;
     }
   }
 
@@ -200,8 +203,7 @@ class _AnnouncementCard extends StatelessWidget {
     return Card(
       elevation: a.isPinned ? 3 : 1,
       margin: const EdgeInsets.only(bottom: 10),
-      shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -217,11 +219,10 @@ class _AnnouncementCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20)),
               child: Text(a.target.urduLabel,
-                  style:
-                      AppTypography.labelSmall.copyWith(color: color)),
+                  style: AppTypography.labelSmall.copyWith(color: color)),
             ),
           ]),
           const SizedBox(height: 8),

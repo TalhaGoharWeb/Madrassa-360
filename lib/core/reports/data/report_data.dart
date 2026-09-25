@@ -35,8 +35,7 @@ class ReportData {
         Map<String, dynamic> decoded = const {};
         if (raw is String && raw.isNotEmpty) {
           try {
-            decoded = Map<String, dynamic>.from(
-                jsonDecode(raw) as Map);
+            decoded = Map<String, dynamic>.from(jsonDecode(raw) as Map);
           } catch (_) {
             decoded = const {};
           }
@@ -120,8 +119,7 @@ class ReportData {
     if (search != null && search.trim().isNotEmpty) {
       where.write(' AND (s.name LIKE ? OR s.roll_no LIKE ?)');
       final like = '%${search.trim()}%';
-      vars.addAll(
-          [Variable.withString(like), Variable.withString(like)]);
+      vars.addAll([Variable.withString(like), Variable.withString(like)]);
     }
     final rows = await _q(
       'SELECT $_studentSelect WHERE $where ORDER BY s.roll_no, s.name',
@@ -130,8 +128,7 @@ class ReportData {
     return rows.map(_student).toList();
   }
 
-  Future<ReportStudent?> studentById(
-      String tenantId, String studentId) async {
+  Future<ReportStudent?> studentById(String tenantId, String studentId) async {
     final rows = await _q(
       'SELECT $_studentSelect WHERE s.tenant_id = ? AND s.id = ? '
       'AND s.deleted_at IS NULL LIMIT 1',
@@ -167,8 +164,7 @@ class ReportData {
     );
     return rows
         .map((r) => ReportDarja(
-            id: r['id'] as String,
-            name: (r['name'] as String?) ?? ''))
+            id: r['id'] as String, name: (r['name'] as String?) ?? ''))
         .toList();
   }
 
@@ -198,8 +194,7 @@ class ReportData {
     String? fromIso,
     String? toIso,
   }) async {
-    final where = StringBuffer(
-        'tenant_id = ? AND deleted_at IS NULL');
+    final where = StringBuffer('tenant_id = ? AND deleted_at IS NULL');
     final vars = <Variable>[Variable.withString(tenantId)];
     if (studentId != null) {
       where.write(' AND student_id = ?');
@@ -272,8 +267,7 @@ class ReportData {
       }
     }
     final list = out.values.toList()
-      ..sort((a, b) =>
-          (a.rollNo ?? '').compareTo(b.rollNo ?? ''));
+      ..sort((a, b) => (a.rollNo ?? '').compareTo(b.rollNo ?? ''));
     return list;
   }
 
@@ -298,16 +292,14 @@ class ReportData {
       return ReportInvoice(
         id: r['id'] as String,
         studentId: (r['student_id'] as String?) ?? '',
-        invoiceNumber:
-            _s(d['invoice_number']) ?? _s(r['id'] as String),
+        invoiceNumber: _s(d['invoice_number']) ?? _s(r['id'] as String),
         billingMonth: _s(d['billing_month']),
         issueDate: _s(d['issue_date']),
         dueDate: _s(d['due_date']),
         status: ((r['status'] as String?) ?? 'unpaid').toLowerCase(),
         total: _nz(r['total']),
         amountPaid: _nz(d['amount_paid']),
-        discountTotal:
-            _nz(d['discount_total']) + _nz(d['discount']),
+        discountTotal: _nz(d['discount_total']) + _nz(d['discount']),
       );
     }).toList();
   }
@@ -333,9 +325,7 @@ class ReportData {
         studentId: _s(r['student_id'] as String?),
         invoiceId: _s(r['invoice_id'] as String?),
         amount: _nz(r['amount']),
-        paymentDate: _s(d['payment_date']) ??
-            _s(d['paid_at']) ??
-            _s(d['date']),
+        paymentDate: _s(d['payment_date']) ?? _s(d['paid_at']) ?? _s(d['date']),
         method: _s(d['method']) ?? _s(d['payment_method']),
         notes: _s(d['notes']),
       );
@@ -352,8 +342,7 @@ class ReportData {
       }
       return true;
     }).toList()
-      ..sort((a, b) =>
-          (b.paymentDate ?? '').compareTo(a.paymentDate ?? ''));
+      ..sort((a, b) => (b.paymentDate ?? '').compareTo(a.paymentDate ?? ''));
     return filtered;
   }
 
@@ -366,9 +355,7 @@ class ReportData {
     return rows.map((r) {
       final d = _d(r);
       return ReportInvoiceItem(
-        description: _s(d['description']) ??
-            _s(d['label']) ??
-            'Item',
+        description: _s(d['description']) ?? _s(d['label']) ?? 'Item',
         amount: _nz(d['line_total'] ?? d['amount']),
       );
     }).toList();
@@ -433,8 +420,7 @@ class ReportData {
   }
 
   /// Whole-exam sheet with class positions (dense ranking).
-  Future<List<ExamOutcome>> examOutcomes(
-      String tenantId, String examId) async {
+  Future<List<ExamOutcome>> examOutcomes(String tenantId, String examId) async {
     final res = await results(tenantId, examId: examId);
     if (res.isEmpty) return [];
     final roster = await students(tenantId);
@@ -505,8 +491,7 @@ class ReportData {
       }
       return true;
     }).toList()
-      ..sort((a, b) =>
-          (b.entryDate ?? '').compareTo(a.entryDate ?? ''));
+      ..sort((a, b) => (b.entryDate ?? '').compareTo(a.entryDate ?? ''));
     return list;
   }
 }

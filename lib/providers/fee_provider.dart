@@ -77,8 +77,8 @@ final feeSummaryProvider = FutureProvider<FeeSummary>((ref) async {
   final fees = await ref.watch(allFeesProvider.future);
   final paid = fees.where((f) => f.status == FeeStatus.paid).toList();
   final pending = fees
-      .where((f) =>
-          f.status == FeeStatus.pending || f.status == FeeStatus.pastDue)
+      .where(
+          (f) => f.status == FeeStatus.pending || f.status == FeeStatus.pastDue)
       .toList();
   return FeeSummary(
     totalStudents: fees.map((f) => f.studentId).toSet().length,

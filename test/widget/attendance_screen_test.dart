@@ -16,11 +16,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:madrasa_360/core/constants/app_strings.dart';
 import 'package:madrasa_360/core/services/tenant_context.dart';
 import 'package:madrasa_360/core/sync/sync_providers.dart';
 import 'package:madrasa_360/data/models/attendance_record.dart';
 import 'package:madrasa_360/data/models/attendance_status.dart';
+import 'package:madrasa_360/data/repositories/attendance_repository.dart';
 import 'package:madrasa_360/presentation/screens/teacher/attendance_screen.dart';
 import 'package:madrasa_360/providers/attendance_provider.dart';
 import 'package:madrasa_360/providers/auth_provider.dart';
@@ -59,6 +61,8 @@ class FakeAttendanceRepository implements IAttendanceRepository {
 
 void main() {
   setUpAll(() async {
+    SharedPreferences.setMockInitialValues({});
+    await initializeDateFormatting('ur');
     await Supabase.initialize(
       url: 'http://127.0.0.1:54321',
       anonKey: 'widget-test-anon-key',
@@ -110,8 +114,7 @@ void main() {
       overrides: [
         authRepositoryProvider.overrideWithValue(fakeAuth),
         currentTenantIdProvider.overrideWithValue('t1'),
-        if (signedIn)
-          currentUserProvider.overrideWithValue(fakeTeacherUser()),
+        if (signedIn) currentUserProvider.overrideWithValue(fakeTeacherUser()),
         teacherAssignedClassesProvider.overrideWith(
           (ref) async => classes,
         ),

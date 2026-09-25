@@ -79,7 +79,9 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(_isUrdu ? 'سب پڑھی ہوئی قرار دے دی گئیں' : 'All marked as read'),
+            content: Text(_isUrdu
+                ? 'سب پڑھی ہوئی قرار دے دی گئیں'
+                : 'All marked as read'),
           ),
         );
       }
@@ -87,7 +89,9 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(_isUrdu ? 'ناکام ہوا، دوبارہ کوشش کریں' : 'Failed, please retry'),
+            content: Text(_isUrdu
+                ? 'ناکام ہوا، دوبارہ کوشش کریں'
+                : 'Failed, please retry'),
           ),
         );
       }
@@ -119,7 +123,9 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(
           child: Text(
-            _isUrdu ? 'اطلاعات لوڈ نہیں ہو سکیں' : 'Could not load notifications',
+            _isUrdu
+                ? 'اطلاعات لوڈ نہیں ہو سکیں'
+                : 'Could not load notifications',
             style: AppTypography.bodyMedium,
           ),
         ),
@@ -202,8 +208,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: AppTypography.bodySmall.copyWith(
-                          fontFamily:
-                              _isUrdu ? 'JameelNooriNastaleeq' : null,
+                          fontFamily: _isUrdu ? 'JameelNooriNastaleeq' : null,
                         ),
                       ),
                     const SizedBox(height: 2),

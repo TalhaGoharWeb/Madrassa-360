@@ -50,7 +50,9 @@ class _UserManagementScreenState extends State<UserManagementScreen>
             controller: _tabController,
             tabs: const [
               Tab(text: 'صارفین', icon: Icon(Icons.manage_accounts, size: 18)),
-              Tab(text: 'کردار و اجازتیں', icon: Icon(Icons.security, size: 18)),
+              Tab(
+                  text: 'کردار و اجازتیں',
+                  icon: Icon(Icons.security, size: 18)),
             ],
           ),
         ),
@@ -85,7 +87,7 @@ class _UserAccountsTabState extends State<_UserAccountsTab> {
   Widget build(BuildContext context) {
     return Consumer(builder: (context, ref, _) {
       _ref = ref;
-      final state   = ref.watch(userManagementProvider);
+      final state = ref.watch(userManagementProvider);
       final accounts = state.accounts
           .where((a) =>
               _searchQuery.isEmpty ||
@@ -104,7 +106,8 @@ class _UserAccountsTabState extends State<_UserAccountsTab> {
                 onChanged: (v) => setState(() => _searchQuery = v),
                 decoration: InputDecoration(
                   hintText: 'نام یا ای میل تلاش کریں',
-                  prefixIcon: const Icon(Icons.search, color: AppColors.primary),
+                  prefixIcon:
+                      const Icon(Icons.search, color: AppColors.primary),
                   filled: true,
                   fillColor: AppColors.background,
                   border: OutlineInputBorder(
@@ -115,7 +118,8 @@ class _UserAccountsTabState extends State<_UserAccountsTab> {
                     borderRadius: BorderRadius.circular(12),
                     borderSide: const BorderSide(color: AppColors.divider),
                   ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 ),
               ),
             ),
@@ -126,14 +130,16 @@ class _UserAccountsTabState extends State<_UserAccountsTab> {
               child: Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.1),
+                      color: AppColors.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
                       'کل: ${accounts.length}',
-                      style: AppTypography.labelMedium.copyWith(color: AppColors.primary),
+                      style: AppTypography.labelMedium
+                          .copyWith(color: AppColors.primary),
                     ),
                   ),
                 ],
@@ -150,10 +156,12 @@ class _UserAccountsTabState extends State<_UserAccountsTab> {
                       : ListView.separated(
                           padding: const EdgeInsets.all(16),
                           itemCount: accounts.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: 10),
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 10),
                           itemBuilder: (_, i) => _AccountCard(
                             account: accounts[i],
-                            onEdit: () => _showUpsertDialog(existing: accounts[i]),
+                            onEdit: () =>
+                                _showUpsertDialog(existing: accounts[i]),
                             onDelete: () => _confirmDelete(accounts[i]),
                             onToggle: () => ref
                                 .read(userManagementProvider.notifier)
@@ -178,9 +186,12 @@ class _UserAccountsTabState extends State<_UserAccountsTab> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.people_outline, size: 64, color: AppColors.primary.withOpacity(0.3)),
+          Icon(Icons.people_outline,
+              size: 64, color: AppColors.primary.withValues(alpha: 0.3)),
           const SizedBox(height: 16),
-          Text('کوئی صارف نہیں', style: AppTypography.titleMedium.copyWith(color: AppColors.textSecondary)),
+          Text('کوئی صارف نہیں',
+              style: AppTypography.titleMedium
+                  .copyWith(color: AppColors.textSecondary)),
           const SizedBox(height: 8),
           Text('نیا صارف شامل کریں', style: AppTypography.bodySmall),
         ],
@@ -193,10 +204,10 @@ class _UserAccountsTabState extends State<_UserAccountsTab> {
         ? _ref!.read(appRolesProvider)
         : AppRole.allSystemRoles;
 
-    final nameCtrl     = TextEditingController(text: existing?.name);
-    final emailCtrl    = TextEditingController(text: existing?.email);
+    final nameCtrl = TextEditingController(text: existing?.name);
+    final emailCtrl = TextEditingController(text: existing?.email);
     final passwordCtrl = TextEditingController();
-    bool  showPassword = false;
+    bool showPassword = false;
     AppRole selectedRole = existing != null
         ? roles.firstWhere(
             (r) => r.name == existing.roleName,
@@ -209,7 +220,8 @@ class _UserAccountsTabState extends State<_UserAccountsTab> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setLocal) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: Row(
             children: [
               Icon(existing == null ? Icons.person_add : Icons.edit,
@@ -235,8 +247,9 @@ class _UserAccountsTabState extends State<_UserAccountsTab> {
                       controller: nameCtrl,
                       hint: 'جیسے: محمد یوسف',
                       icon: Icons.person,
-                      validator: (v) =>
-                          (v == null || v.trim().isEmpty) ? 'نام درج کریں' : null,
+                      validator: (v) => (v == null || v.trim().isEmpty)
+                          ? 'نام درج کریں'
+                          : null,
                     ),
                     const SizedBox(height: 16),
 
@@ -249,7 +262,9 @@ class _UserAccountsTabState extends State<_UserAccountsTab> {
                       icon: Icons.email,
                       keyboardType: TextInputType.emailAddress,
                       validator: (v) {
-                        if (v == null || v.trim().isEmpty) return 'ای میل درج کریں';
+                        if (v == null || v.trim().isEmpty) {
+                          return 'ای میل درج کریں';
+                        }
                         if (!v.contains('@')) return 'درست ای میل درج کریں';
                         return null;
                       },
@@ -307,10 +322,13 @@ class _UserAccountsTabState extends State<_UserAccountsTab> {
                         child: DropdownButton<AppRole>(
                           value: selectedRole,
                           isExpanded: true,
-                          items: roles.map((r) => DropdownMenuItem(
-                            value: r,
-                            child: Text(r.nameUrdu, style: AppTypography.bodyMedium),
-                          )).toList(),
+                          items: roles
+                              .map((r) => DropdownMenuItem(
+                                    value: r,
+                                    child: Text(r.nameUrdu,
+                                        style: AppTypography.bodyMedium),
+                                  ))
+                              .toList(),
                           onChanged: (r) {
                             if (r != null) setLocal(() => selectedRole = r);
                           },
@@ -323,18 +341,18 @@ class _UserAccountsTabState extends State<_UserAccountsTab> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.05),
+                        color: AppColors.primary.withValues(alpha: 0.05),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: AppColors.primary.withOpacity(0.2),
+                          color: AppColors.primary.withValues(alpha: 0.2),
                         ),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('اجازتیں (${selectedRole.permissions.length})',
-                              style: AppTypography.labelMedium.copyWith(
-                                  color: AppColors.primary)),
+                              style: AppTypography.labelMedium
+                                  .copyWith(color: AppColors.primary)),
                           const SizedBox(height: 8),
                           Wrap(
                             spacing: 6,
@@ -388,9 +406,12 @@ class _UserAccountsTabState extends State<_UserAccountsTab> {
                 if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                   content: Text(err == null
-                      ? (existing == null ? 'صارف شامل ہو گیا' : 'تبدیلیاں محفوظ ہو گئیں')
+                      ? (existing == null
+                          ? 'صارف شامل ہو گیا'
+                          : 'تبدیلیاں محفوظ ہو گئیں')
                       : 'خرابی: $err'),
-                  backgroundColor: err == null ? AppColors.success : AppColors.error,
+                  backgroundColor:
+                      err == null ? AppColors.success : AppColors.error,
                 ));
               },
             ),
@@ -418,7 +439,9 @@ class _UserAccountsTabState extends State<_UserAccountsTab> {
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
             onPressed: () async {
               Navigator.pop(context);
-              await _ref?.read(userManagementProvider.notifier).deleteAccount(account.id!);
+              await _ref
+                  ?.read(userManagementProvider.notifier)
+                  .deleteAccount(account.id!);
               if (!mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
@@ -427,7 +450,8 @@ class _UserAccountsTabState extends State<_UserAccountsTab> {
                 ),
               );
             },
-            child: const Text('حذف کریں', style: TextStyle(color: Colors.white)),
+            child:
+                const Text('حذف کریں', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -454,7 +478,7 @@ class _RolesTabState extends State<_RolesTab> {
     return Consumer(builder: (context, ref, _) {
       _ref = ref;
       final state = ref.watch(userManagementProvider);
-      final roles  = state.roles;
+      final roles = state.roles;
 
       return Scaffold(
         body: state.isLoading
@@ -522,10 +546,11 @@ class _RolesTabState extends State<_RolesTab> {
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
+                        color: AppColors.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Icon(Icons.security, color: AppColors.primary),
+                      child:
+                          const Icon(Icons.security, color: AppColors.primary),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -536,8 +561,8 @@ class _RolesTabState extends State<_RolesTab> {
                               style: AppTypography.titleMedium),
                           if (role.isSystem)
                             Text('بنیادی کردار',
-                                style: AppTypography.labelSmall.copyWith(
-                                    color: AppColors.info)),
+                                style: AppTypography.labelSmall
+                                    .copyWith(color: AppColors.info)),
                         ],
                       ),
                     ),
@@ -582,7 +607,8 @@ class _RolesTabState extends State<_RolesTab> {
                         Navigator.pop(ctx);
                         await _ref
                             ?.read(userManagementProvider.notifier)
-                            .updateRole(role.copyWith(permissions: permissions));
+                            .updateRole(
+                                role.copyWith(permissions: permissions));
                         if (!mounted) return;
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
@@ -609,11 +635,11 @@ class _RolesTabState extends State<_RolesTab> {
   }) {
     // Group permissions into categories
     const groups = <String, List<Permission>>{
-      'طلباء':    [Permission.viewStudents, Permission.editStudents],
-      'عملہ':     [Permission.viewStaff,    Permission.editStaff],
-      'فیس':      [Permission.viewFees,      Permission.editFees],
-      'حاضری':    [Permission.viewAttendance, Permission.markAttendance],
-      'نتائج':    [Permission.viewResults,   Permission.editResults],
+      'طلباء': [Permission.viewStudents, Permission.editStudents],
+      'عملہ': [Permission.viewStaff, Permission.editStaff],
+      'فیس': [Permission.viewFees, Permission.editFees],
+      'حاضری': [Permission.viewAttendance, Permission.markAttendance],
+      'نتائج': [Permission.viewResults, Permission.editResults],
       'انتظامیہ': [Permission.manageUsers],
     };
 
@@ -624,8 +650,8 @@ class _RolesTabState extends State<_RolesTab> {
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 10),
             child: Text(entry.key,
-                style: AppTypography.labelLarge.copyWith(
-                    color: AppColors.primary)),
+                style: AppTypography.labelLarge
+                    .copyWith(color: AppColors.primary)),
           ),
           ...entry.value.map((perm) {
             final enabled = current.contains(perm);
@@ -633,25 +659,23 @@ class _RolesTabState extends State<_RolesTab> {
               margin: const EdgeInsets.only(bottom: 8),
               decoration: BoxDecoration(
                 color: enabled
-                    ? AppColors.primary.withOpacity(0.06)
+                    ? AppColors.primary.withValues(alpha: 0.06)
                     : AppColors.surface,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: enabled
-                      ? AppColors.primary.withOpacity(0.3)
+                      ? AppColors.primary.withValues(alpha: 0.3)
                       : AppColors.divider,
                 ),
               ),
               child: SwitchListTile(
                 value: enabled,
-                onChanged:
-                    readOnly ? null : (v) => onToggle?.call(perm, v),
+                onChanged: readOnly ? null : (v) => onToggle?.call(perm, v),
                 activeColor: AppColors.primary,
                 title: Text(perm.urduLabel, style: AppTypography.bodyMedium),
                 secondary: Icon(perm.icon,
-                    color: enabled
-                        ? AppColors.primary
-                        : AppColors.textSecondary,
+                    color:
+                        enabled ? AppColors.primary : AppColors.textSecondary,
                     size: 20),
                 dense: true,
               ),
@@ -702,8 +726,9 @@ class _RolesTabState extends State<_RolesTab> {
                 controller: nameUrduCtrl,
                 hint: 'جیسے: لائبریرین',
                 icon: Icons.label_outline,
-                validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? 'اردو نام درج کریں' : null,
+                validator: (v) => (v == null || v.trim().isEmpty)
+                    ? 'اردو نام درج کریں'
+                    : null,
               ),
               const SizedBox(height: 12),
               _DialogLabel('تفصیل (اختیاری)'),
@@ -736,9 +761,8 @@ class _RolesTabState extends State<_RolesTab> {
               final newRole = AppRole(
                 name: nameCtrl.text.trim().toLowerCase().replaceAll(' ', '_'),
                 nameUrdu: nameUrduCtrl.text.trim(),
-                description: descCtrl.text.trim().isEmpty
-                    ? null
-                    : descCtrl.text.trim(),
+                description:
+                    descCtrl.text.trim().isEmpty ? null : descCtrl.text.trim(),
               );
               await _ref
                   ?.read(userManagementProvider.notifier)
@@ -786,8 +810,8 @@ class _RolesTabState extends State<_RolesTab> {
                     err == null ? AppColors.error : AppColors.warning,
               ));
             },
-            child: const Text('حذف کریں',
-                style: TextStyle(color: Colors.white)),
+            child:
+                const Text('حذف کریں', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -821,11 +845,13 @@ class _AccountCard extends StatelessWidget {
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: active ? AppColors.divider : AppColors.error.withOpacity(0.3),
+          color: active
+              ? AppColors.divider
+              : AppColors.error.withValues(alpha: 0.3),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -837,7 +863,7 @@ class _AccountCard extends StatelessWidget {
           CircleAvatar(
             radius: 24,
             backgroundColor: active
-                ? AppColors.primary.withOpacity(0.15)
+                ? AppColors.primary.withValues(alpha: 0.15)
                 : AppColors.divider,
             child: Text(
               account.initials,
@@ -869,16 +895,16 @@ class _AccountCard extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   account.email,
-                  style: AppTypography.bodySmall.copyWith(
-                      color: AppColors.textSecondary),
+                  style: AppTypography.bodySmall
+                      .copyWith(color: AppColors.textSecondary),
                   overflow: TextOverflow.ellipsis,
                 ),
                 if (!active)
                   Padding(
                     padding: const EdgeInsets.only(top: 2),
                     child: Text('غیر فعال',
-                        style: AppTypography.labelSmall.copyWith(
-                            color: AppColors.error)),
+                        style: AppTypography.labelSmall
+                            .copyWith(color: AppColors.error)),
                   ),
               ],
             ),
@@ -887,27 +913,36 @@ class _AccountCard extends StatelessWidget {
           // Actions menu
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert, color: AppColors.textSecondary),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             onSelected: (v) {
-              if (v == 'edit')   onEdit();
+              if (v == 'edit') onEdit();
               if (v == 'toggle') onToggle();
               if (v == 'delete') onDelete();
             },
             itemBuilder: (_) => [
-              const PopupMenuItem(value: 'edit',
-                  child: ListTile(dense: true,
+              const PopupMenuItem(
+                  value: 'edit',
+                  child: ListTile(
+                      dense: true,
                       leading: Icon(Icons.edit_outlined, size: 18),
                       title: Text('ترمیم'))),
-              PopupMenuItem(value: 'toggle',
-                  child: ListTile(dense: true,
+              PopupMenuItem(
+                  value: 'toggle',
+                  child: ListTile(
+                      dense: true,
                       leading: Icon(
                           active ? Icons.block : Icons.check_circle_outline,
                           size: 18,
-                          color: active ? AppColors.warning : AppColors.success),
+                          color:
+                              active ? AppColors.warning : AppColors.success),
                       title: Text(active ? 'غیر فعال کریں' : 'فعال کریں'))),
-              const PopupMenuItem(value: 'delete',
-                  child: ListTile(dense: true,
-                      leading: Icon(Icons.delete_outline, color: AppColors.error, size: 18),
+              const PopupMenuItem(
+                  value: 'delete',
+                  child: ListTile(
+                      dense: true,
+                      leading: Icon(Icons.delete_outline,
+                          color: AppColors.error, size: 18),
                       title: Text('حذف کریں',
                           style: TextStyle(color: AppColors.error)))),
             ],
@@ -939,7 +974,7 @@ class _RoleCard extends StatelessWidget {
         border: Border.all(color: AppColors.divider),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -953,7 +988,7 @@ class _RoleCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(Icons.shield_outlined,
@@ -973,20 +1008,20 @@ class _RoleCard extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 8, vertical: 2),
                             decoration: BoxDecoration(
-                              color: AppColors.info.withOpacity(0.15),
+                              color: AppColors.info.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text('بنیادی',
-                                style: AppTypography.labelSmall.copyWith(
-                                    color: AppColors.info)),
+                                style: AppTypography.labelSmall
+                                    .copyWith(color: AppColors.info)),
                           ),
                         ],
                       ],
                     ),
                     if (role.description != null)
                       Text(role.description!,
-                          style: AppTypography.bodySmall.copyWith(
-                              color: AppColors.textSecondary)),
+                          style: AppTypography.bodySmall
+                              .copyWith(color: AppColors.textSecondary)),
                   ],
                 ),
               ),
@@ -1037,7 +1072,7 @@ class _PermChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.1),
+        color: AppColors.primary.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(label,
@@ -1055,7 +1090,7 @@ class _RoleBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: AppColors.success.withOpacity(0.12),
+        color: AppColors.success.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(label,
@@ -1069,8 +1104,8 @@ class _DialogLabel extends StatelessWidget {
   const _DialogLabel(this.text);
 
   @override
-  Widget build(BuildContext context) => Text(text,
-      style: AppTypography.labelLarge);
+  Widget build(BuildContext context) =>
+      Text(text, style: AppTypography.labelLarge);
 }
 
 class _DialogField extends StatelessWidget {
@@ -1117,7 +1152,8 @@ class _DialogField extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.error),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       ),
     );
   }

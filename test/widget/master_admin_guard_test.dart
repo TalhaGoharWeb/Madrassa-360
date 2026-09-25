@@ -16,11 +16,13 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:madrasa_360/core/widgets/master_admin_guard.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() {
   setUpAll(() async {
+    SharedPreferences.setMockInitialValues({});
     await Supabase.initialize(
       url: 'http://127.0.0.1:54321',
       anonKey: 'widget-test-anon-key',

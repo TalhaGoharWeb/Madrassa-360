@@ -34,7 +34,7 @@ import 'dart:async';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../data/local/app_database.dart';
+import '../../data/local/app_database.dart' hide SyncQueue;
 import '../../core/sync/sync_engine.dart';
 import '../../core/services/supabase_service.dart';
 import '../models/fee.dart';
@@ -47,6 +47,7 @@ abstract class IFeeRepository {
   Future<List<Fee>> getAllFees({required String tenantId});
   Future<List<Fee>> getFeesByStudent(String studentId,
       {required String tenantId});
+
   /// [month] is in 'YYYY-MM' format, e.g. '2026-01'
   Future<List<Fee>> getFeesByMonth(String month, {required String tenantId});
   Future<Fee> upsertFee(Fee fee, {required String tenantId});

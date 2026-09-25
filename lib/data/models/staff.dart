@@ -12,10 +12,10 @@ class Staff {
   final String designation;
   final String phone;
   final String? department;
-  final String joiningDate;   // ISO date string 'YYYY-MM-DD'
+  final String joiningDate; // ISO date string 'YYYY-MM-DD'
   final double? salary;
   final String? cnic;
-  final String? userId;       // linked auth.users profile (nullable)
+  final String? userId; // linked auth.users profile (nullable)
   final String? photoUrl;
   final bool isActive;
 
@@ -37,36 +37,36 @@ class Staff {
 
   factory Staff.fromJson(Map<String, dynamic> json) {
     return Staff(
-      id:          json['id'] as String,
-      tenantId:    (json['tenant_id'] ?? json['madrasa_id'] ?? '') as String,
-      name:        json['name'] as String,
-      fatherName:  json['father_name'] as String,
+      id: json['id'] as String,
+      tenantId: (json['tenant_id'] ?? json['madrasa_id'] ?? '') as String,
+      name: json['name'] as String,
+      fatherName: json['father_name'] as String,
       designation: json['designation'] as String,
-      phone:       json['phone'] as String,
+      phone: json['phone'] as String,
       joiningDate: json['joining_date'] as String,
-      department:  json['department'] as String?,
-      salary:      (json['salary'] as num?)?.toDouble(),
-      cnic:        json['cnic'] as String?,
-      userId:      json['user_id'] as String?,
-      photoUrl:    json['photo_url'] as String?,
-      isActive:    json['is_active'] as bool? ?? true,
+      department: json['department'] as String?,
+      salary: (json['salary'] as num?)?.toDouble(),
+      cnic: json['cnic'] as String?,
+      userId: json['user_id'] as String?,
+      photoUrl: json['photo_url'] as String?,
+      isActive: json['is_active'] as bool? ?? true,
     );
   }
 
   Map<String, dynamic> toJson() => {
-    'tenant_id':    tenantId,
-    'name':         name,
-    'father_name':  fatherName,
-    'designation':  designation,
-    'phone':        phone,
-    'joining_date': joiningDate,
-    'department':   department,
-    'salary':       salary,
-    'cnic':         cnic,
-    'user_id':      userId,
-    'photo_url':    photoUrl,
-    'is_active':    isActive,
-  };
+        'tenant_id': tenantId,
+        'name': name,
+        'father_name': fatherName,
+        'designation': designation,
+        'phone': phone,
+        'joining_date': joiningDate,
+        'department': department,
+        'salary': salary,
+        'cnic': cnic,
+        'user_id': userId,
+        'photo_url': photoUrl,
+        'is_active': isActive,
+      };
 
   Staff copyWith({String? photoUrl, bool? isActive}) {
     return Staff(

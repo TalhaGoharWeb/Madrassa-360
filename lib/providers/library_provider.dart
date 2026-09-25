@@ -25,17 +25,24 @@ class LibraryState {
   final bool isLoading;
   final String? error;
   const LibraryState({
-    this.books = const [], this.issues = const [],
-    this.isLoading = false, this.error,
+    this.books = const [],
+    this.issues = const [],
+    this.isLoading = false,
+    this.error,
   });
   LibraryState copyWith({
-    List<LibraryBook>? books, List<BookIssue>? issues,
-    bool? isLoading, String? error, bool clearError = false,
-  }) => LibraryState(
-    books: books ?? this.books, issues: issues ?? this.issues,
-    isLoading: isLoading ?? this.isLoading,
-    error: clearError ? null : (error ?? this.error),
-  );
+    List<LibraryBook>? books,
+    List<BookIssue>? issues,
+    bool? isLoading,
+    String? error,
+    bool clearError = false,
+  }) =>
+      LibraryState(
+        books: books ?? this.books,
+        issues: issues ?? this.issues,
+        isLoading: isLoading ?? this.isLoading,
+        error: clearError ? null : (error ?? this.error),
+      );
 }
 
 class LibraryNotifier extends StateNotifier<LibraryState> {
@@ -48,23 +55,28 @@ class LibraryNotifier extends StateNotifier<LibraryState> {
   Future<void> load({String? madrasaId}) async {
     final tenantId = _ref.read(currentTenantIdProvider);
     if (tenantId == null) {
-      state = state.copyWith(isLoading: false, books: const [], issues: const []);
+      state =
+          state.copyWith(isLoading: false, books: const [], issues: const []);
       return;
     }
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      final bq = _c.from('library_books').select().eq('tenant_id', tenantId) as dynamic;
+      final bq = _c.from('library_books').select().eq('tenant_id', tenantId)
+          as dynamic;
       final brows = await bq.order('title');
 
-      final iq = _c.from('book_issues').select().eq('tenant_id', tenantId) as dynamic;
+      final iq =
+          _c.from('book_issues').select().eq('tenant_id', tenantId) as dynamic;
       final irows = await iq.order('issued_at', ascending: false);
 
       state = state.copyWith(
         isLoading: false,
-        books:  brows.map<LibraryBook>((r) => LibraryBook.fromJson(r)).toList(),
+        books: brows.map<LibraryBook>((r) => LibraryBook.fromJson(r)).toList(),
         issues: irows.map<BookIssue>((r) => BookIssue.fromJson(r)).toList(),
       );
-    } catch (_) { state = state.copyWith(isLoading: false); }
+    } catch (_) {
+      state = state.copyWith(isLoading: false);
+    }
   }
 
   Future<String?> addBook(LibraryBook b) async {
@@ -80,8 +92,7 @@ class LibraryNotifier extends StateNotifier<LibraryState> {
       final exists =
           await SyncQueue.rowExists(db, 'library_books', tenantId, id);
       final baseRev = exists
-          ? await SyncQueue.currentRevision(
-              db, 'library_books', tenantId, id)
+          ? await SyncQueue.currentRevision(db, 'library_books', tenantId, id)
           : 0;
 
       await db.transaction(() async {
@@ -139,8 +150,8 @@ class LibraryNotifier extends StateNotifier<LibraryState> {
         'id': issueId,
         'tenant_id': tenantId,
       };
-      final issueBaseRev = await SyncQueue.currentRevision(
-          db, 'book_issues', tenantId, issueId);
+      final issueBaseRev =
+          await SyncQueue.currentRevision(db, 'book_issues', tenantId, issueId);
 
       // Current available count comes from state (remote-loaded list).
       final book = state.books.firstWhere((b) => b.id == issue.bookId);
@@ -221,8 +232,7 @@ class LibraryNotifier extends StateNotifier<LibraryState> {
       final db = _ref.read(appDatabaseProvider);
       final engine = _ref.read(syncEngineProvider);
       final nowIso = DateTime.now().toUtc().toIso8601String();
-      final existing =
-          state.issues.firstWhere((i) => i.id == issueId);
+      final existing = state.issues.firstWhere((i) => i.id == issueId);
       final data = {
         ...existing.toJson(),
         'id': issueId,
@@ -231,8 +241,8 @@ class LibraryNotifier extends StateNotifier<LibraryState> {
         'returned_at': nowIso,
         if (fine != null) 'fine': fine,
       };
-      final baseRev = await SyncQueue.currentRevision(
-          db, 'book_issues', tenantId, issueId);
+      final baseRev =
+          await SyncQueue.currentRevision(db, 'book_issues', tenantId, issueId);
 
       await db.transaction(() async {
         await SyncEngine.writeLocalRow(
@@ -264,7 +274,9 @@ class LibraryNotifier extends StateNotifier<LibraryState> {
             .toList(),
       );
       return null;
-    } catch (e) { return e.toString(); }
+    } catch (e) {
+      return e.toString();
+    }
   }
 
   Future<void> deleteBook(String id) async {
@@ -277,8 +289,8 @@ class LibraryNotifier extends StateNotifier<LibraryState> {
       final db = _ref.read(appDatabaseProvider);
       final engine = _ref.read(syncEngineProvider);
       final nowIso = DateTime.now().toUtc().toIso8601String();
-      final baseRev = await SyncQueue.currentRevision(
-          db, 'library_books', tenantId, id);
+      final baseRev =
+          await SyncQueue.currentRevision(db, 'library_books', tenantId, id);
 
       await db.transaction(() async {
         await SyncEngine.softDeleteLocalRow(
@@ -303,8 +315,8 @@ class LibraryNotifier extends StateNotifier<LibraryState> {
       engine?.notifyLocalChange();
       unawaited(engine?.syncNow() ?? Future.value());
 
-      state = state.copyWith(
-          books: state.books.where((b) => b.id != id).toList());
+      state =
+          state.copyWith(books: state.books.where((b) => b.id != id).toList());
     } catch (e) {
       state = state.copyWith(error: e.toString());
     }
@@ -316,5 +328,5 @@ class LibraryNotifier extends StateNotifier<LibraryState> {
       state.issues.where((i) => i.isOverdue).toList();
 }
 
-final libraryProvider =
-    StateNotifierProvider<LibraryNotifier, LibraryState>((ref) => LibraryNotifier(ref));
+final libraryProvider = StateNotifierProvider<LibraryNotifier, LibraryState>(
+    (ref) => LibraryNotifier(ref));

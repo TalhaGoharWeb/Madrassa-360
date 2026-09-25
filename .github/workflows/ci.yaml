@@ -32,6 +32,7 @@ jobs:
           channel: stable
           cache: true
       - run: flutter pub get
+      - run: dart run build_runner build --delete-conflicting-outputs
       - run: flutter analyze
 
   format:
@@ -59,6 +60,7 @@ jobs:
           channel: stable
           cache: true
       - run: flutter pub get
+      - run: dart run build_runner build --delete-conflicting-outputs
       - run: flutter test
 
   mock-guard:
