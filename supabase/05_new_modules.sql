@@ -351,7 +351,7 @@ CREATE POLICY "superAdmin manage announcements"
     gen_random_uuid(),
     '00000000-0000-0000-0000-000000000000',
     'superadmin@madrasa360.com',         -- ← change to your email
-    crypt('***REDACTED-PASSWORD-ROTATED-2026-09-25***', gen_salt('bf')), -- ← change to your password
+    crypt('REPLACE_WITH_A_STRONG_PASSWORD', gen_salt('bf')), -- ← change to your password (never commit a real one)
     NOW(),
     '{"role": "superAdmin", "provider": "email", "providers": ["email"]}',
     '{"name": "Super Admin"}',

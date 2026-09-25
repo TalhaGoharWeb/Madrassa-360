@@ -68,6 +68,38 @@ never update the Play Store listing). Then base64 it into
   (Project Settings → API → regenerate service_role key) **before** deploying
   Edge Functions to any environment.
 
+### Key rotation runbook (do this first, before any staging deploy)
+
+If API keys were ever committed to git (as happened in this repo's history),
+treat them as public and rotate:
+
+1. **Create the new keys** — Supabase Dashboard → Project Settings → API Keys
+   → "Create new API key". Create one **publishable** key and one **secret** key.
+   Copy both somewhere safe (password manager, not chat, not email).
+2. **Revoke the OLD keys** — in the same API Keys page, find the old keys
+   (the legacy JWT ones starting with `eyJhbGciOi...`, matching what was
+   committed) → **Revoke**. Verify the old keys stop working; nothing in
+   production should be using them.
+3. **Point the app at the new publishable key** — on your dev machine, create
+   `assets/.env` (gitignored, never committed) from `assets/.env.example`:
+   ```
+   SUPABASE_URL=https://your-project.supabase.co
+   SUPABASE_ANON_KEY=<new publishable key>
+   ```
+   The Flutter client reads only this file. The service/secret key must NEVER
+   go here.
+4. **Point Edge Functions at the new secret key** — Dashboard → Edge Functions
+   → Secrets → set `SUPABASE_SERVICE_ROLE_KEY` to the new **secret** key
+   (or `supabase secrets set SUPABASE_SERVICE_ROLE_KEY=<new secret key>`).
+   Redeploy the functions afterwards.
+5. **Purge git history** — after revocation, rewrite history to remove every
+   trace of the old keys (e.g. `git filter-repo --invert-paths` on the file,
+   or BFG Repo-Cleaner on the key strings), then force-push. Everyone
+   re-clones; old clones must be discarded.
+6. **Confirm** — `git log -p --all | grep eyJhbGci` returns nothing, the old
+   keys are revoked in the dashboard, and the app + functions work with the
+   new keys.
+
 ## 3. Database migrations
 
 Migrations live in `supabase/migrations/` and run **in numeric order**:
