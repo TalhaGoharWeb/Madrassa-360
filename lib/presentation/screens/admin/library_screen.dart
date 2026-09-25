@@ -274,7 +274,7 @@ class _BooksList extends StatelessWidget {
               ),
             ),
             DropdownButtonFormField<String>(
-              value: borrowerType,
+              initialValue: borrowerType,
               decoration: const InputDecoration(
                   labelText: 'نوعیت', border: OutlineInputBorder()),
               items: const [

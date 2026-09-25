@@ -607,7 +607,7 @@ class _StaffListScreenState extends State<StaffListScreen> {
 
                 // Department
                 DropdownButtonFormField<String>(
-                  value: selectedDepartment,
+                  initialValue: selectedDepartment,
                   decoration: const InputDecoration(
                     labelText: 'شعبہ',
                     border: OutlineInputBorder(),
@@ -819,7 +819,7 @@ class _StaffListScreenState extends State<StaffListScreen> {
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  value: selectedDept,
+                  initialValue: selectedDept,
                   decoration: const InputDecoration(
                       labelText: 'شعبہ',
                       border: OutlineInputBorder(),

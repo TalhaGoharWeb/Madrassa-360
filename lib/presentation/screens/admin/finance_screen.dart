@@ -133,7 +133,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
           content: SingleChildScrollView(
               child: Column(mainAxisSize: MainAxisSize.min, children: [
             DropdownButtonFormField<int>(
-              value: entryKind,
+              initialValue: entryKind,
               decoration: const InputDecoration(
                   labelText: 'نوعیت', border: OutlineInputBorder()),
               items: const [
@@ -146,7 +146,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
             const SizedBox(height: 12),
             if (entryKind == 0)
               DropdownButtonFormField<TransactionCategory>(
-                value: incomeCat,
+                initialValue: incomeCat,
                 decoration: const InputDecoration(
                     labelText: 'ذریعہ', border: OutlineInputBorder()),
                 items: const [
@@ -162,7 +162,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
               )
             else if (entryKind == 2)
               DropdownButtonFormField<PaymentMethod>(
-                value: payMethod,
+                initialValue: payMethod,
                 decoration: const InputDecoration(
                     labelText: 'طریقہ', border: OutlineInputBorder()),
                 items: PaymentMethod.values
@@ -174,7 +174,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
             const SizedBox(height: 12),
             if (accounts.isNotEmpty)
               DropdownButtonFormField<String?>(
-                value: accountId,
+                initialValue: accountId,
                 decoration: const InputDecoration(
                     labelText: 'کھاتہ', border: OutlineInputBorder()),
                 items: [

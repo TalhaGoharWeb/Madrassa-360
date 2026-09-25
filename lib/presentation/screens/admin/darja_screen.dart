@@ -129,7 +129,7 @@ class _DarjaScreenState extends State<DarjaScreen> {
               _field(nameUCtrl, 'نام (اردو)'),
               _field(nameECtrl, 'نام (انگریزی)'),
               DropdownButtonFormField<String>(
-                value: level,
+                initialValue: level,
                 decoration: const InputDecoration(
                     labelText: 'سطح', border: OutlineInputBorder()),
                 items: const [

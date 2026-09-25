@@ -685,7 +685,7 @@ class _StudentListScreenState extends State<StudentListScreen> {
 
                 // Class Selection
                 DropdownButtonFormField<String>(
-                  value: selectedClass,
+                  initialValue: selectedClass,
                   decoration: const InputDecoration(
                     labelText: 'جماعت',
                     border: OutlineInputBorder(),
@@ -712,7 +712,7 @@ class _StudentListScreenState extends State<StudentListScreen> {
 
                 // Section Selection
                 DropdownButtonFormField<String>(
-                  value: selectedSection,
+                  initialValue: selectedSection,
                   decoration: const InputDecoration(
                     labelText: 'سیکشن',
                     border: OutlineInputBorder(),
@@ -953,7 +953,7 @@ class _StudentListScreenState extends State<StudentListScreen> {
 
                 // Class Selection
                 DropdownButtonFormField<String>(
-                  value: selectedClass,
+                  initialValue: selectedClass,
                   decoration: const InputDecoration(
                     labelText: 'جماعت',
                     border: OutlineInputBorder(),
@@ -1110,7 +1110,7 @@ class _StudentListScreenState extends State<StudentListScreen> {
 
                   // Fee Type
                   DropdownButtonFormField<String>(
-                    value: selectedFeeType,
+                    initialValue: selectedFeeType,
                     decoration: const InputDecoration(
                       labelText: 'فیس کی قسم',
                       border: OutlineInputBorder(),
@@ -1134,7 +1134,7 @@ class _StudentListScreenState extends State<StudentListScreen> {
 
                   // Month
                   DropdownButtonFormField<String>(
-                    value: selectedMonth,
+                    initialValue: selectedMonth,
                     decoration: const InputDecoration(
                       labelText: 'ماہ',
                       border: OutlineInputBorder(),

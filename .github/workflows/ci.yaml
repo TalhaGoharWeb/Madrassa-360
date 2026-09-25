@@ -46,6 +46,10 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
+      # NB: pub get must run before format — without package_config.json,
+      # dart format falls back to the latest language version and wants to
+      # reformat the whole tree.
+      - run: flutter pub get
       - run: dart format --set-exit-if-changed lib test tool
 
   test:

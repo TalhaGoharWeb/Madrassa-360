@@ -671,7 +671,7 @@ class _RolesTabState extends State<_RolesTab> {
               child: SwitchListTile(
                 value: enabled,
                 onChanged: readOnly ? null : (v) => onToggle?.call(perm, v),
-                activeColor: AppColors.primary,
+                activeThumbColor: AppColors.primary,
                 title: Text(perm.urduLabel, style: AppTypography.bodyMedium),
                 secondary: Icon(perm.icon,
                     color:

@@ -582,7 +582,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           title: Text(label, style: AppTypography.bodyMedium),
           value: value,
           onChanged: (newValue) => setState(() => value = newValue),
-          activeColor: AppColors.primary,
+          activeThumbColor: AppColors.primary,
         );
       },
     );

@@ -136,7 +136,7 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
           Expanded(
             flex: 3,
             child: DropdownButtonFormField<String?>(
-              value: _tenantFilter,
+              initialValue: _tenantFilter,
               decoration: const InputDecoration(
                 labelText: 'مدرسہ / Tenant',
                 contentPadding:
@@ -164,7 +164,7 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
           Expanded(
             flex: 2,
             child: DropdownButtonFormField<String?>(
-              value: _actionFilter,
+              initialValue: _actionFilter,
               decoration: const InputDecoration(
                 labelText: 'Action',
                 contentPadding:

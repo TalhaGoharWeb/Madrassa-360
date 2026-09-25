@@ -1008,7 +1008,7 @@ class _FeeManagementScreenState extends State<FeeManagementScreen>
                     else ...[
                       // Student Selection — the tenant's real roster
                       DropdownButtonFormField<String>(
-                        value: selectedStudentId,
+                        initialValue: selectedStudentId,
                         decoration: const InputDecoration(
                           labelText: 'طالب علم',
                           border: OutlineInputBorder(),
@@ -1027,7 +1027,7 @@ class _FeeManagementScreenState extends State<FeeManagementScreen>
 
                       // Month Selection — real months, newest first
                       DropdownButtonFormField<String>(
-                        value: selectedMonth,
+                        initialValue: selectedMonth,
                         decoration: const InputDecoration(
                           labelText: 'ماہ',
                           border: OutlineInputBorder(),

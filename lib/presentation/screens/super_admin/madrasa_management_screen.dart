@@ -173,7 +173,7 @@ class _MadrasaManagementScreenState extends State<MadrasaManagementScreen> {
             // Active toggle
             Switch(
               value: m.isActive,
-              activeColor: AppColors.success,
+              activeThumbColor: AppColors.success,
               onChanged: (_) =>
                   ref.read(madrasaProvider.notifier).toggleStatus(m),
             ),
@@ -226,7 +226,7 @@ class _MadrasaManagementScreenState extends State<MadrasaManagementScreen> {
               _field(branchCtrl, 'برانچ کوڈ'),
               const SizedBox(height: 8),
               DropdownButtonFormField<String>(
-                value: plan,
+                initialValue: plan,
                 decoration: const InputDecoration(
                     labelText: 'سبسکرپشن پلان', border: OutlineInputBorder()),
                 items: const [

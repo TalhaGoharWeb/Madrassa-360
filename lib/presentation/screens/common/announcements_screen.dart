@@ -108,7 +108,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
             _field(titleCtrl, 'عنوان'),
             _field(bodyCtrl, 'تفصیل', maxLines: 4),
             DropdownButtonFormField<String>(
-              value: target,
+              initialValue: target,
               decoration: const InputDecoration(
                   labelText: 'ہدف', border: OutlineInputBorder()),
               items: const [

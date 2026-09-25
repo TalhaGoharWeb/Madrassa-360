@@ -491,7 +491,7 @@ class _ReportFilterSheetState extends ConsumerState<_ReportFilterSheet> {
     required ValueChanged<T?> onChanged,
   }) =>
       DropdownButtonFormField<T>(
-        value: value,
+        initialValue: value,
         decoration:
             const InputDecoration(border: OutlineInputBorder(), isDense: true),
         hint: Text(hint),

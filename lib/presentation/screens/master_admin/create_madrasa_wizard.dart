@@ -420,7 +420,7 @@ class _CreateMadrasaWizardState extends State<CreateMadrasaWizard> {
     return Column(
       children: [
         DropdownButtonFormField<String>(
-          value: _language,
+          initialValue: _language,
           decoration: const InputDecoration(labelText: 'زبان / Language'),
           items: const [
             DropdownMenuItem(value: 'ur', child: Text('اردو (Urdu)')),
@@ -433,7 +433,7 @@ class _CreateMadrasaWizardState extends State<CreateMadrasaWizard> {
         _field(_timezone, 'ٹائم زون / Timezone *', required: true),
         const SizedBox(height: 12),
         DropdownButtonFormField<String>(
-          value: _currency,
+          initialValue: _currency,
           decoration: const InputDecoration(labelText: 'کرنسی / Currency'),
           items: const [
             DropdownMenuItem(value: 'PKR', child: Text('PKR — روپیہ')),
@@ -463,30 +463,32 @@ class _CreateMadrasaWizardState extends State<CreateMadrasaWizard> {
             'then return here.',
       );
     }
-    return Column(
-      children: [
-        for (final p in _plans)
-          Card(
-            margin: const EdgeInsets.only(bottom: 8),
-            child: RadioListTile<String>(
-              value: p['id'] as String,
-              groupValue: _planId,
-              onChanged: (v) => setState(() => _planId = v),
-              title: Text((p['name'] as String?) ?? '—',
-                  style: AppTypography.titleMedium
-                      .copyWith(fontWeight: FontWeight.w600)),
-              subtitle: Text(
-                '${p['description'] ?? ''}\n'
-                'طلبہ: ${p['max_students'] ?? '—'}  •  '
-                'صارفین: ${p['max_users'] ?? '—'}  •  '
-                '${p['price_monthly'] ?? '—'}/ماہ',
-                style: AppTypography.bodySmall
-                    .copyWith(color: AppColors.textSecondary),
+    return RadioGroup<String>(
+      groupValue: _planId,
+      onChanged: (v) => setState(() => _planId = v),
+      child: Column(
+        children: [
+          for (final p in _plans)
+            Card(
+              margin: const EdgeInsets.only(bottom: 8),
+              child: RadioListTile<String>(
+                value: p['id'] as String,
+                title: Text((p['name'] as String?) ?? '—',
+                    style: AppTypography.titleMedium
+                        .copyWith(fontWeight: FontWeight.w600)),
+                subtitle: Text(
+                  '${p['description'] ?? ''}\n'
+                  'طلبہ: ${p['max_students'] ?? '—'}  •  '
+                  'صارفین: ${p['max_users'] ?? '—'}  •  '
+                  '${p['price_monthly'] ?? '—'}/ماہ',
+                  style: AppTypography.bodySmall
+                      .copyWith(color: AppColors.textSecondary),
+                ),
+                isThreeLine: true,
               ),
-              isThreeLine: true,
             ),
-          ),
-      ],
+        ],
+      ),
     );
   }
 
