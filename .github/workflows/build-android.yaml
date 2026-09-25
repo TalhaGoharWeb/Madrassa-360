@@ -78,6 +78,18 @@ jobs:
           storeFile=keystore.jks
           EOF
 
+      - name: Write assets/.env from secrets
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "::error::SUPABASE_URL and SUPABASE_ANON_KEY GitHub secrets must be set (repo Settings > Secrets and variables > Actions). The APK would otherwise ship without backend config and show the crash screen on launch."
+            exit 1
+          fi
+          printf 'SUPABASE_URL=%s\nSUPABASE_ANON_KEY=%s\n' "$SUPABASE_URL" "$SUPABASE_ANON_KEY" > assets/.env
+          echo "assets/.env written (values masked)."
+
       - name: Get dependencies
         run: flutter pub get
 
