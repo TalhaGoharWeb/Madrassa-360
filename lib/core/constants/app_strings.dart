@@ -33,6 +33,20 @@ class AppStrings {
   static const String presentCount = 'حاضر';
   static const String absentCount = 'غیر حاضر';
   static const String leaveCount = 'چھٹی پر';
+  static const String late = 'تاخیر';
+  static const String lateCount = 'تاخیر سے';
+  static const String markAllPresent = 'سب کو حاضر کریں';
+  static const String markAllAbsent = 'سب کو غیر حاضر کریں';
+  static const String clearEdits = 'صاف کریں';
+  static const String selectDate = 'تاریخ منتخب کریں';
+  static const String noClassAssigned = 'آپ کو کوئی جماعت تفویض نہیں کی گئی';
+  static const String noActiveTenant = 'کوئی فعال مدرسہ منتخب نہیں';
+  static const String savedOffline =
+      'آف لائن محفوظ — انٹرنیٹ بحال ہوتے ہی خودکار ہم آہنگی ہو جائے گی';
+  static const String saveFailed =
+      'محفوظ کرنے میں ناکامی — دوبارہ کوشش کریں';
+  static const String pendingSyncBanner =
+      'آف لائن: ہم آہنگی کے منتظر ریکارڈز';
 
   // Student Info
   static const String studentName = 'طالب علم کا نام';

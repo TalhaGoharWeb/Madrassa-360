@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../data/models/student.dart';
 import '../data/repositories/student_repository.dart';
+import '../core/sync/sync_providers.dart';
 import '../core/services/supabase_service.dart';
 import '../core/services/tenant_context.dart';
 
@@ -14,7 +15,10 @@ import '../core/services/tenant_context.dart';
 // ─────────────────────────────────────────────
 
 final studentRepositoryProvider = Provider<IStudentRepository>((ref) {
-  return SupabaseStudentRepository();
+  return LocalStudentRepository(
+    ref.watch(appDatabaseProvider),
+    ref.watch(syncEngineProvider),
+  );
 });
 
 // ─────────────────────────────────────────────

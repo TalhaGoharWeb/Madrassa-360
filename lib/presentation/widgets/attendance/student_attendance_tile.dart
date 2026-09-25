@@ -26,6 +26,8 @@ class StudentAttendanceTile extends StatelessWidget {
         return AppColors.absent;
       case AttendanceStatus.leave:
         return AppColors.leave;
+      case AttendanceStatus.late:
+        return AppColors.late;
     }
   }
 
@@ -38,6 +40,8 @@ class StudentAttendanceTile extends StatelessWidget {
         return AppColors.absent.withOpacity(0.1);
       case AttendanceStatus.leave:
         return AppColors.leave.withOpacity(0.1);
+      case AttendanceStatus.late:
+        return AppColors.late.withOpacity(0.1);
     }
   }
 
@@ -153,6 +157,9 @@ class StudentAttendanceTile extends StatelessWidget {
         break;
       case AttendanceStatus.leave:
         icon = Icons.event_busy;
+        break;
+      case AttendanceStatus.late:
+        icon = Icons.access_time;
         break;
     }
     return Icon(icon, color: Colors.white, size: 24);

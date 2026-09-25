@@ -3,6 +3,7 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/services/tenant_context.dart';
+import '../core/sync/sync_providers.dart';
 import '../data/models/result.dart';
 import '../data/repositories/result_repository.dart';
 
@@ -11,7 +12,10 @@ import '../data/repositories/result_repository.dart';
 // ─────────────────────────────────────────────
 
 final resultRepositoryProvider = Provider<IResultRepository>((ref) {
-  return SupabaseResultRepository();
+  return LocalResultRepository(
+    ref.watch(appDatabaseProvider),
+    ref.watch(syncEngineProvider),
+  );
 });
 
 // ─────────────────────────────────────────────

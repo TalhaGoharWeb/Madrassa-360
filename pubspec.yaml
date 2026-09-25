@@ -36,10 +36,27 @@ dependencies:
   url_launcher: ^6.3.0            # Open email / phone / web links
   http: ^1.2.2                    # Direct REST calls to Supabase Admin Auth API
 
+  # ── Local Database (offline-first sync engine, Phase 5) ───────
+  # Pinned to the 2.31.x line: highest drift whose SDK constraint
+  # (>=3.5.0 <4.0.0) fits this app's sdk: ^3.5.0. drift >=2.33 needs
+  # Dart >=3.10 and sqlite3 ^3.x, which is incompatible with
+  # sqlite3_flutter_libs. See lib/data/local/BUILD_NOTES.md.
+  drift: ^2.31.0                  # Reactive SQLite layer (SDK >=3.5.0 <4.0.0)
+  sqlite3_flutter_libs: ^0.5.41   # Native sqlite3 for Windows/macOS/Linux/Android/iOS (SDK >=2.12.0 <4.0.0)
+  path_provider: ^2.1.5           # Per-OS app-data dir; on Windows resolves under %APPDATA% (SDK ^3.4.0)
+  path: ^1.9.0                    # join() for the database file path
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^4.0.0
+  # Codegen for drift. drift_dev must track the drift minor version
+  # (2.31.x <-> 2.31.x); build_runner ^2.10.0 is the line whose
+  # analyzer (^8.0.0) intersects drift_dev 2.31.0's analyzer
+  # (>=8.1.0 <11.0.0). Codegen runs on the dev/CI machine, which
+  # needs Dart >=3.7.0 for build_runner.
+  drift_dev: ^2.31.0              # Generator (SDK >=3.5.0 <4.0.0)
+  build_runner: ^2.10.0           # Build system (SDK ^3.7.0)
 
 flutter:
   uses-material-design: true

@@ -5,10 +5,11 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'core/theme/app_theme.dart';
 import 'core/constants/app_strings.dart';
-import 'core/services/offline_sync_service.dart';
 import 'core/services/storage_service.dart';
 import 'core/services/supabase_service.dart';
+import 'core/sync/sync_providers.dart';
 import 'core/widgets/master_admin_guard.dart';
+import 'data/local/database_provider.dart';
 import 'providers/tenant_branding_provider.dart';
 import 'presentation/screens/auth/login_screen.dart';
 import 'presentation/screens/master_admin/master_admin_shell.dart';
@@ -37,9 +38,17 @@ void main() async {
   // Initialize Supabase
   await SupabaseService.init();
 
-  // Initialize offline sync queue (listens for connectivity, flushes pending attendance)
-  OfflineSyncService.init();
-  
+  // Phase 5: the offline-first sync engine starts via Riverpod
+  // (syncEngineProvider is watched in Madrasa360App below). The legacy
+  // SharedPreferences queue (OfflineSyncService) is retired — local writes
+  // go to Drift + sync_queue, pushed by SyncEngine.
+  //
+  // Phase 5 (worker 2): open the local Drift database. This is the single
+  // instance shared by the whole app; sync_providers.dart consumes
+  // appDatabaseProvider (also worker 2's) from here.
+
+  final db = await openDatabase();
+
   // Set preferred orientations (Portrait only for now)
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
@@ -57,9 +66,13 @@ void main() async {
   );
 
   runApp(
-    // Wrap with ProviderScope for Riverpod
-    const ProviderScope(
-      child: Madrasa360App(),
+    // Wrap with ProviderScope for Riverpod. The local DB instance is
+    // injected here so every repository / the sync engine shares it.
+    ProviderScope(
+      overrides: [
+        appDatabaseProvider.overrideWithValue(db),
+      ],
+      child: const Madrasa360App(),
     ),
   );
 }
@@ -76,6 +89,12 @@ class Madrasa360App extends StatelessWidget {
     // resolving → the neutral product theme.
     return Consumer(
       builder: (context, ref, _) {
+        // Phase 5: start the per-tenant sync engine (idempotent; recreated
+        // automatically on tenant switch by syncEngineProvider).
+        // Coordinator TODO: wire WidgetsBindingObserver
+        // (didChangeAppLifecycleState → resumed) to
+        // ref.read(syncEngineProvider)?.notifyAppResumed().
+        ref.watch(syncEngineProvider);
         final branding = ref.watch(tenantBrandingProvider).valueOrNull;
         final theme = branding == null
             ? AppTheme.lightTheme

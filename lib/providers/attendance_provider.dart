@@ -4,7 +4,7 @@ import '../data/models/student_model.dart';
 import '../data/models/attendance_status.dart';
 import '../data/models/attendance_record.dart';
 import '../data/repositories/attendance_repository.dart';
-import '../core/services/offline_sync_service.dart';
+import '../core/sync/sync_providers.dart';
 
 /// حاضری کی حالت کا انتظام
 /// Attendance State Management using Riverpod
@@ -143,9 +143,12 @@ class AttendanceParams {
   String _dateStr(DateTime d) => d.toIso8601String().substring(0, 10);
 }
 
-/// Repository provider
+/// Repository provider (local-first: Drift + sync engine)
 final attendanceRepositoryProvider = Provider<IAttendanceRepository>((ref) {
-  return SupabaseAttendanceRepository();
+  return LocalAttendanceRepository(
+    ref.watch(appDatabaseProvider),
+    ref.watch(syncEngineProvider),
+  );
 });
 
 /// Fetch attendance records for a class on a given date
@@ -188,8 +191,10 @@ class AttendanceRecordNotifier extends AsyncNotifier<void> {
       await repo.saveAttendance(records);
       state = const AsyncData(null);
     } catch (e, st) {
-      // Offline fallback: queue records for later sync
-      await OfflineSyncService.queueAttendance(records);
+      // Local-first: saveAttendance writes to Drift + the sync queue in one
+      // transaction, so a failure here is a LOCAL failure (no separate
+      // offline queue needed — the legacy OfflineSyncService fallback is
+      // obsolete). The queue row was never created, so the user can retry.
       state = AsyncError(e, st);
     }
     // Invalidate the cache so next read is fresh

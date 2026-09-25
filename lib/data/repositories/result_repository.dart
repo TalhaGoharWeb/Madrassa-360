@@ -1,12 +1,34 @@
 /// نتائج ریپوزیٹری
-/// Result Repository — abstract interface + Mock + Supabase implementations
+/// Result Repository — LOCAL-FIRST (Phase 5 offline-first sync).
+///
+/// Reads come from the local Drift envelope tables (`exams`, `results` ⨝
+/// `students`); writes go to Drift + a `sync_queue` row in the SAME
+/// transaction, then opportunistically trigger [SyncEngine.syncNow].
+/// Direct Supabase writes are FORBIDDEN in this repository — the sync engine
+/// is the only writer to the server (via the `sync_apply` RPC).
+///
+/// Local schema (sibling contract, `016_create_core_schema.sql`):
+/// `exams(id, tenant_id, name, class_id, revision, server_revision,
+/// updated_at, deleted_at, data)` and `results(id, tenant_id, exam_id,
+/// student_id, marks, revision, server_revision, updated_at, deleted_at,
+/// data)`. `exam_date`/`total_marks`/`subject` live ONLY in `data`/payloads
+/// (and on the server) — the `data` JSON is authoritative.
+///
+/// Remote reads kept: NONE.
+///
+/// Public method signatures are IDENTICAL to the previous Supabase
+/// implementation.
 
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'dart:async';
+
+import 'package:drift/drift.dart';
+
+import '../../data/local/app_database.dart';
+import '../../core/sync/sync_engine.dart';
 import '../models/result.dart';
-import '../../core/services/supabase_service.dart';
 
 // ─────────────────────────────────────────────
-// Interface
+// Interface (unchanged)
 // ─────────────────────────────────────────────
 
 abstract class IResultRepository {
@@ -24,66 +46,85 @@ abstract class IResultRepository {
 }
 
 // ─────────────────────────────────────────────
-// Supabase Implementation
+// Local-first implementation
 // ─────────────────────────────────────────────
 
-class SupabaseResultRepository implements IResultRepository {
-  SupabaseClient get _client => SupabaseService.client;
+class LocalResultRepository implements IResultRepository {
+  LocalResultRepository(this._db, this._engine);
+
+  final AppDatabase _db;
+
+  /// Null when logged out / no active tenant — writes still enqueue
+  /// locally and sync later; the opportunistic trigger is skipped.
+  final SyncEngine? _engine;
+
+  // ── Queries (local) ─────────────────────────────────────────
 
   @override
   Future<List<Exam>> getExams({required String tenantId}) async {
-    final response = await _client
-        .from('exams')
-        .select()
-        .eq('tenant_id', tenantId)
-        .order('exam_date', ascending: false);
-    return (response as List)
-        .map((row) => Exam.fromJson(row as Map<String, dynamic>))
+    // `exam_date` is not an indexed column — sort inside the data JSON.
+    final rows = await LocalRows.query(
+      _db,
+      'SELECT data FROM exams WHERE tenant_id = ? AND deleted_at IS NULL '
+      "ORDER BY json_extract(data, '\$.exam_date') DESC",
+      [Variable.withString(tenantId)],
+    );
+    return rows
+        .map((r) =>
+            Exam.fromJson((r['_data'] as Map<String, dynamic>?) ?? const {}))
         .toList();
   }
 
   @override
   Future<Exam?> getExamById(String id, {required String tenantId}) async {
-    final response = await _client
-        .from('exams')
-        .select()
-        .eq('tenant_id', tenantId)
-        .eq('id', id)
-        .maybeSingle();
-    if (response == null) return null;
-    return Exam.fromJson(response);
+    final row = await LocalRows.byId(_db, 'exams', tenantId, id);
+    if (row == null) return null;
+    return Exam.fromJson(
+        (row['_data'] as Map<String, dynamic>?) ?? const {});
   }
 
   @override
   Future<List<StudentResult>> getExamResults(String examId,
       {required String tenantId}) async {
     final exam = await getExamById(examId, tenantId: tenantId);
-    final response = await _client
-        .from('results')
-        .select('*, students(name, roll_no, classes(name))')
-        .eq('tenant_id', tenantId)
-        .eq('exam_id', examId)
-        .order('student_id');
+    // Names come from the indexed envelope columns (fast); the marks
+    // themselves from each result's data JSON.
+    final rows = await LocalRows.query(
+      _db,
+      'SELECT r.data AS data, s.name AS student_name, c.name AS class_name '
+      'FROM results r '
+      'LEFT JOIN students s ON s.id = r.student_id '
+      'AND s.tenant_id = r.tenant_id AND s.deleted_at IS NULL '
+      'LEFT JOIN classes c ON c.id = s.class_id '
+      'AND c.tenant_id = s.tenant_id AND c.deleted_at IS NULL '
+      'WHERE r.tenant_id = ? AND r.exam_id = ? '
+      'AND r.deleted_at IS NULL '
+      'ORDER BY r.student_id',
+      [Variable.withString(tenantId), Variable.withString(examId)],
+    );
 
     final Map<String, List<Map<String, dynamic>>> grouped = {};
-    for (final row in (response as List)) {
-      final r = row as Map<String, dynamic>;
-      final sid = r['student_id'] as String;
-      grouped.putIfAbsent(sid, () => []).add(r);
+    for (final row in rows) {
+      final payload =
+          (row['_data'] as Map<String, dynamic>?) ?? const {};
+      final sid = (payload['student_id'] ?? '') as String;
+      grouped.putIfAbsent(sid, () => []).add({
+        ...payload,
+        'student_name': row['student_name'],
+        'class_name': row['class_name'],
+      });
     }
 
     return grouped.entries.map((entry) {
       final rows = entry.value;
       final first = rows.first;
-      final student = first['students'] as Map<String, dynamic>? ?? {};
-      final classMap = student['classes'] as Map<String, dynamic>? ?? {};
       return StudentResult(
         examId: examId,
         examName: exam?.name ?? '',
         examDate: exam?.examDate ?? '',
         studentId: entry.key,
-        studentName: student['name'] as String? ?? '',
-        className: classMap['name'] as String? ?? '',
+        studentName: (first['student_name'] ?? '') as String,
+        className: (first['class_name'] ?? '') as String,
         subjects: rows.map((r) => SubjectResult.fromJson(r)).toList(),
       );
     }).toList();
@@ -95,26 +136,69 @@ class SupabaseResultRepository implements IResultRepository {
     required String examId,
     required String tenantId,
   }) async {
-    final response = await _client
-        .from('results')
-        .select()
-        .eq('tenant_id', tenantId)
-        .eq('student_id', studentId)
-        .eq('exam_id', examId);
-    return (response as List)
-        .map((row) => SubjectResult.fromJson(row as Map<String, dynamic>))
+    final rows = await LocalRows.query(
+      _db,
+      'SELECT data FROM results WHERE tenant_id = ? AND student_id = ? '
+      'AND exam_id = ? AND deleted_at IS NULL',
+      [
+        Variable.withString(tenantId),
+        Variable.withString(studentId),
+        Variable.withString(examId),
+      ],
+    );
+    return rows
+        .map((r) => SubjectResult.fromJson(
+            (r['_data'] as Map<String, dynamic>?) ?? const {}))
         .toList();
   }
+
+  // ── Writes (local + queue, same transaction) ─────────────────
 
   @override
   Future<SubjectResult> upsertResult(SubjectResult result,
       {required String tenantId}) async {
-    final payload = <String, dynamic>{...result.toJson(), 'tenant_id': tenantId};
-    final response = await _client
-        .from('results')
-        .upsert(payload)
-        .select()
-        .single();
-    return SubjectResult.fromJson(response);
+    final nowIso = DateTime.now().toUtc().toIso8601String();
+    final exists = await SyncQueue.rowExists(
+        _db, 'results', tenantId, result.id);
+    final baseRev = exists
+        ? await SyncQueue.currentRevision(
+            _db, 'results', tenantId, result.id)
+        : 0;
+
+    // Server-shaped payload kept in the envelope's data JSON and queued.
+    final data = {
+      ...result.toJson(),
+      'id': result.id,
+      'tenant_id': tenantId,
+    };
+
+    await _db.transaction(() async {
+      await SyncEngine.writeLocalRow(
+        _db,
+        table: 'results',
+        id: result.id,
+        tenantId: tenantId,
+        indexed: {
+          'exam_id': result.examId,
+          'student_id': result.studentId,
+          'marks': result.marksObtained,
+        },
+        data: data,
+      );
+
+      await SyncQueue.enqueue(
+        _db,
+        tenantId: tenantId,
+        entity: 'results',
+        entityId: result.id,
+        operation: exists ? 'update' : 'create',
+        payload: {...data, 'updated_at': nowIso},
+        baseRevision: baseRev,
+      );
+    });
+
+    _engine?.notifyLocalChange();
+    unawaited(_engine?.syncNow() ?? Future.value());
+    return result;
   }
 }

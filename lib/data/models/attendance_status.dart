@@ -4,6 +4,7 @@ enum AttendanceStatus {
   present,  // حاضر - Green
   absent,   // غیر حاضر - Red
   leave,    // چھٹی - Yellow/Amber
+  late,     // تاخیر سے حاضر - Blue (Phase 5: teacher attendance selector)
 }
 
 /// Extension for AttendanceStatus to get Urdu labels and colors
@@ -16,10 +17,12 @@ extension AttendanceStatusExtension on AttendanceStatus {
         return 'غیر حاضر';
       case AttendanceStatus.leave:
         return 'چھٹی';
+      case AttendanceStatus.late:
+        return 'تاخیر';
     }
   }
 
-  /// Get the next status in cycle: Present -> Absent -> Leave -> Present
+  /// Get the next status in cycle: Present -> Absent -> Leave -> Late -> Present
   AttendanceStatus get next {
     switch (this) {
       case AttendanceStatus.present:
@@ -27,6 +30,8 @@ extension AttendanceStatusExtension on AttendanceStatus {
       case AttendanceStatus.absent:
         return AttendanceStatus.leave;
       case AttendanceStatus.leave:
+        return AttendanceStatus.late;
+      case AttendanceStatus.late:
         return AttendanceStatus.present;
     }
   }

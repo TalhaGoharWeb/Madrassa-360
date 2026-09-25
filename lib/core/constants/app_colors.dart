@@ -14,6 +14,7 @@ class AppColors {
   static const Color present = Color(0xFF4CAF50);        // حاضر - Green
   static const Color absent = Color(0xFFF44336);         // غیر حاضر - Red
   static const Color leave = Color(0xFFFFC107);          // چھٹی - Amber/Yellow
+  static const Color late = Color(0xFF2196F3);           // تاخیر سے حاضر - Blue
 
   // Neutral Colors
   static const Color background = Color(0xFFF5F5F5);     // Light Gray Background

@@ -60,6 +60,7 @@ class AttendanceRecord {
     switch (s) {
       case 'absent': return AttendanceStatus.absent;
       case 'leave':  return AttendanceStatus.leave;
+      case 'late':   return AttendanceStatus.late;
       default:       return AttendanceStatus.present;
     }
   }
@@ -71,7 +72,7 @@ class AttendanceRecord {
     'class_id':   classId,
     'teacher_id': teacherId,
     'date':       date,
-    'status':     status.name, // 'present' | 'absent' | 'leave'
+    'status':     status.name, // 'present' | 'absent' | 'leave' | 'late'
     'note':       note,
   };
 

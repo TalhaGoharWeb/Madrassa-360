@@ -3,6 +3,7 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/services/tenant_context.dart';
+import '../core/sync/sync_providers.dart';
 import '../data/models/fee.dart';
 import '../data/repositories/fee_repository.dart';
 
@@ -11,7 +12,10 @@ import '../data/repositories/fee_repository.dart';
 // ─────────────────────────────────────────────
 
 final feeRepositoryProvider = Provider<IFeeRepository>((ref) {
-  return SupabaseFeeRepository();
+  return LocalFeeRepository(
+    ref.watch(appDatabaseProvider),
+    ref.watch(syncEngineProvider),
+  );
 });
 
 // ─────────────────────────────────────────────
