@@ -2,27 +2,28 @@
 /// Application Configuration and Environment Variables
 ///
 /// ─────────────────────────────────────────────
-/// DEVELOPER NOTE
-/// To deploy for a different madrassa, edit ONE file:
-///   lib/core/config/madrassa_config.dart
+/// PHASE 4 — Institution identity (name, logo, phone, address, colours)
+/// is NO LONGER a build-time constant. It is loaded per-tenant at runtime
+/// from `tenants` / `tenant_settings` via `tenantBrandingProvider`
+/// (lib/providers/tenant_branding_provider.dart).
 /// Supabase credentials go in:
 ///   assets/.env  (copy from assets/.env.example)
 /// ─────────────────────────────────────────────
-
-import 'madrassa_config.dart';
 
 /// Always use Supabase — mock data has been removed for production
 const bool kUseSupabase = true;
 
 class AppConfig {
-  // ── Madrassa Identity (read from MadrassaConfig — single source of truth) ──
-  static const String appName        = MadrassaConfig.nameUrdu;
-  static const String appNameEnglish = MadrassaConfig.nameEnglish;
-  static const String appEmail       = MadrassaConfig.email;
-  static const String appPhone       = MadrassaConfig.phone;
-  static const String appWebsite     = MadrassaConfig.website;
-  static const String appVersion     = MadrassaConfig.appVersion;
-  static const String appBuildNumber = MadrassaConfig.appBuildNumber;
+  // ── Product identity (tenant-agnostic; shown pre-login) ──────────────
+  // NOTE: the *institution* name/logo/contact shown after login come from
+  // tenantBrandingProvider, never from here.
+  static const String appName        = 'مدرسہ 360';
+  static const String appNameEnglish = 'Madrasa 360';
+  static const String appTagline     = 'مدارس کا مکمل نظام';
+
+  // ── Build metadata ───────────────────────────────────────────────────
+  static const String appVersion     = '1.0.0';
+  static const String appBuildNumber = '1';
 
   // ── Supabase (credentials loaded at runtime from assets/.env) ──────────
   // See assets/.env.example for required keys.

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:al_markaz_al_islami/core/constants/app_colors.dart';
-import 'package:al_markaz_al_islami/core/constants/app_typography.dart';
-import 'package:al_markaz_al_islami/data/models/student_model.dart';
-import 'package:al_markaz_al_islami/data/models/attendance_status.dart';
+import 'package:madrasa_360/core/constants/app_colors.dart';
+import 'package:madrasa_360/core/constants/app_typography.dart';
+import 'package:madrasa_360/data/models/student_model.dart';
+import 'package:madrasa_360/data/models/attendance_status.dart';
 
 /// طالب علم حاضری ٹائل
 /// Student Attendance Tile Widget

@@ -2,6 +2,7 @@
 /// Fee Provider — repository-backed state management
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../core/services/tenant_context.dart';
 import '../data/models/fee.dart';
 import '../data/repositories/fee_repository.dart';
 
@@ -18,8 +19,10 @@ final feeRepositoryProvider = Provider<IFeeRepository>((ref) {
 // ─────────────────────────────────────────────
 
 final allFeesProvider = FutureProvider<List<Fee>>((ref) async {
+  final tenantId = ref.watch(currentTenantIdProvider);
+  if (tenantId == null) return <Fee>[];
   final repo = ref.watch(feeRepositoryProvider);
-  return repo.getAllFees();
+  return repo.getAllFees(tenantId: tenantId);
 });
 
 // ─────────────────────────────────────────────
@@ -28,8 +31,10 @@ final allFeesProvider = FutureProvider<List<Fee>>((ref) async {
 
 final feesByStudentProvider =
     FutureProvider.family<List<Fee>, String>((ref, studentId) async {
+  final tenantId = ref.watch(currentTenantIdProvider);
+  if (tenantId == null) return <Fee>[];
   final repo = ref.watch(feeRepositoryProvider);
-  return repo.getFeesByStudent(studentId);
+  return repo.getFeesByStudent(studentId, tenantId: tenantId);
 });
 
 // ─────────────────────────────────────────────
@@ -38,8 +43,10 @@ final feesByStudentProvider =
 
 final feesByMonthProvider =
     FutureProvider.family<List<Fee>, String>((ref, yearMonth) async {
+  final tenantId = ref.watch(currentTenantIdProvider);
+  if (tenantId == null) return <Fee>[];
   final repo = ref.watch(feeRepositoryProvider);
-  return repo.getFeesByMonth(yearMonth);
+  return repo.getFeesByMonth(yearMonth, tenantId: tenantId);
 });
 
 // ─────────────────────────────────────────────
@@ -87,16 +94,20 @@ class FeeNotifier extends AsyncNotifier<void> {
   Future<void> build() async {}
 
   Future<Fee> save(Fee fee) async {
+    final tenantId = ref.read(currentTenantIdProvider);
+    if (tenantId == null) throw StateError('No active tenant');
     final repo = ref.read(feeRepositoryProvider);
-    final saved = await repo.upsertFee(fee);
+    final saved = await repo.upsertFee(fee, tenantId: tenantId);
     ref.invalidate(allFeesProvider);
     ref.invalidate(feesByStudentProvider(fee.studentId));
     return saved;
   }
 
   Future<void> delete(String feeId) async {
+    final tenantId = ref.read(currentTenantIdProvider);
+    if (tenantId == null) throw StateError('No active tenant');
     final repo = ref.read(feeRepositoryProvider);
-    await repo.deleteFee(feeId);
+    await repo.deleteFee(feeId, tenantId: tenantId);
     ref.invalidate(allFeesProvider);
   }
 }

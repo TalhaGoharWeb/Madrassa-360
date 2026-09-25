@@ -12,12 +12,14 @@ import '../../core/services/storage_service.dart';
 // ─────────────────────────────────────────────
 
 abstract class IStudentRepository {
-  Future<List<Student>> getAllStudents();
-  Future<List<Student>> getStudentsByClass(String classId);
-  Future<List<Student>> getStudentsByDarja(String darjaId);
-  Future<Student?> getStudentById(String id);
-  Future<Student> upsertStudent(Student student);
-  Future<void> deleteStudent(String id);
+  Future<List<Student>> getAllStudents({required String tenantId});
+  Future<List<Student>> getStudentsByClass(String classId,
+      {required String tenantId});
+  Future<List<Student>> getStudentsByDarja(String darjaId,
+      {required String tenantId});
+  Future<Student?> getStudentById(String id, {required String tenantId});
+  Future<Student> upsertStudent(Student student, {required String tenantId});
+  Future<void> deleteStudent(String id, {required String tenantId});
 }
 
 // ─────────────────────────────────────────────
@@ -31,7 +33,8 @@ class SupabaseStudentRepository implements IStudentRepository {
 
   // ── Cache helpers ──────────────────────────────────────────
 
-  static String _cacheKey(String suffix) => 'cache_students_$suffix';
+  static String _cacheKey(String tenantId, String suffix) =>
+      'cache_students_${tenantId}_$suffix';
 
   static List<Student> _decodeCache(String? raw) {
     if (raw == null || raw.isEmpty) return [];
@@ -51,12 +54,13 @@ class SupabaseStudentRepository implements IStudentRepository {
   // ── Queries ────────────────────────────────────────────────
 
   @override
-  Future<List<Student>> getAllStudents() async {
-    const key = 'cache_students_all';
+  Future<List<Student>> getAllStudents({required String tenantId}) async {
+    final key = _cacheKey(tenantId, 'all');
     try {
       final response = await _client
           .from('students')
           .select(_select)
+          .eq('tenant_id', tenantId)
           .eq('is_active', true)
           .order('roll_no');
       await _writeCache(key, response as List);
@@ -69,12 +73,14 @@ class SupabaseStudentRepository implements IStudentRepository {
   }
 
   @override
-  Future<List<Student>> getStudentsByClass(String classId) async {
-    final key = _cacheKey('class_$classId');
+  Future<List<Student>> getStudentsByClass(String classId,
+      {required String tenantId}) async {
+    final key = _cacheKey(tenantId, 'class_$classId');
     try {
       final response = await _client
           .from('students')
           .select(_select)
+          .eq('tenant_id', tenantId)
           .eq('class_id', classId)
           .eq('is_active', true)
           .order('roll_no');
@@ -88,12 +94,14 @@ class SupabaseStudentRepository implements IStudentRepository {
   }
 
   @override
-  Future<List<Student>> getStudentsByDarja(String darjaId) async {
-    final key = _cacheKey('darja_$darjaId');
+  Future<List<Student>> getStudentsByDarja(String darjaId,
+      {required String tenantId}) async {
+    final key = _cacheKey(tenantId, 'darja_$darjaId');
     try {
       final response = await _client
           .from('students')
           .select(_select)
+          .eq('tenant_id', tenantId)
           .eq('darja_id', darjaId)
           .eq('is_active', true)
           .order('roll_no');
@@ -107,10 +115,12 @@ class SupabaseStudentRepository implements IStudentRepository {
   }
 
   @override
-  Future<Student?> getStudentById(String id) async {
+  Future<Student?> getStudentById(String id,
+      {required String tenantId}) async {
     final response = await _client
         .from('students')
         .select(_select)
+        .eq('tenant_id', tenantId)
         .eq('id', id)
         .maybeSingle();
     if (response == null) return null;
@@ -118,20 +128,23 @@ class SupabaseStudentRepository implements IStudentRepository {
   }
 
   @override
-  Future<Student> upsertStudent(Student student) async {
+  Future<Student> upsertStudent(Student student,
+      {required String tenantId}) async {
+    final payload = <String, dynamic>{...student.toJson(), 'tenant_id': tenantId};
     final response = await _client
         .from('students')
-        .upsert(student.toJson())
+        .upsert(payload)
         .select(_select)
         .single();
     return Student.fromJson(response);
   }
 
   @override
-  Future<void> deleteStudent(String id) async {
+  Future<void> deleteStudent(String id, {required String tenantId}) async {
     await _client
         .from('students')
         .update({'is_active': false})
+        .eq('tenant_id', tenantId)
         .eq('id', id);
   }
 }

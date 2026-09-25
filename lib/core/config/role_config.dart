@@ -183,11 +183,16 @@ class NavTab {
   final String label;
   final Widget screen;
 
+  /// Module key from `modules_catalog` (e.g. 'students', 'attendance').
+  /// Null = core tab (dashboard/profile) that is never module-gated.
+  final String? module;
+
   const NavTab({
     required this.icon,
     required this.activeIcon,
     required this.label,
     required this.screen,
+    this.module,
   });
 }
 
@@ -217,6 +222,11 @@ class DashboardModule {
 // Permission → nav-tab builder
 // Builds a priority-ordered list; Dashboard first, Profile last.
 // Middle slots capped at 3 to keep the bar at max 5 items.
+//
+// Phase 4 — module gating: pass [enabledModules] (from
+// tenantModulesProvider) to hide tabs whose module the tenant has not
+// enabled. A null set means "not loaded yet" — no filtering is applied
+// so navigation does not flicker while the tenant resolves.
 // ─────────────────────────────────────────────────────────────
 
 List<NavTab> buildNavTabs({
@@ -229,54 +239,72 @@ List<NavTab> buildNavTabs({
   required Widget feesScreen,
   required Widget usersScreen,
   required Widget resultsScreen,
+  Set<String>? enabledModules,
 }) {
+  bool moduleOk(String? module) =>
+      enabledModules == null ||
+      module == null ||
+      enabledModules.contains(module);
+
   final middle = <NavTab>[];
 
   // Priority order for middle slots (max 3)
-  if (perms.contains(AppPermissions.viewStudents) && middle.length < 3) {
+  if (perms.contains(AppPermissions.viewStudents) &&
+      moduleOk('students') &&
+      middle.length < 3) {
     middle.add(NavTab(
       icon: Icons.people_outline,
       activeIcon: Icons.people,
       label: 'طلباء',
       screen: studentsScreen,
+      module: 'students',
     ));
   }
-  if (perms.contains(AppPermissions.markAttendance) && middle.length < 3) {
+  if (perms.contains(AppPermissions.markAttendance) &&
+      moduleOk('attendance') &&
+      middle.length < 3) {
     middle.add(NavTab(
       icon: Icons.fact_check_outlined,
       activeIcon: Icons.fact_check,
       label: 'حاضری',
       screen: attendanceScreen,
+      module: 'attendance',
     ));
   }
   if (perms.contains(AppPermissions.viewResults) &&
       perms.contains(AppPermissions.enterResults) &&
+      moduleOk('results') &&
       middle.length < 3) {
     middle.add(NavTab(
       icon: Icons.assessment_outlined,
       activeIcon: Icons.assessment,
       label: 'نتائج',
       screen: resultsScreen,
+      module: 'results',
     ));
   }
   if (perms.contains(AppPermissions.viewStaff) &&
       !perms.contains(AppPermissions.viewStudents) &&
+      moduleOk('staff') &&
       middle.length < 3) {
     middle.add(NavTab(
       icon: Icons.badge_outlined,
       activeIcon: Icons.badge,
       label: 'عملہ',
       screen: staffScreen,
+      module: 'staff',
     ));
   }
   if (perms.contains(AppPermissions.viewFees) &&
       !perms.contains(AppPermissions.viewStudents) &&
+      moduleOk('fees') &&
       middle.length < 3) {
     middle.add(NavTab(
       icon: Icons.account_balance_wallet_outlined,
       activeIcon: Icons.account_balance_wallet,
       label: 'فیس',
       screen: feesScreen,
+      module: 'fees',
     ));
   }
   if (perms.contains(AppPermissions.viewUsers) &&

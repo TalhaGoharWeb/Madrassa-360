@@ -403,8 +403,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   }
 
   Widget _buildFooter() {
+    // Phase 4 — neutral product credit (tenant identity is runtime-driven).
     return Text(
-      'Developed by HijaziApps',
+      'Madrasa 360',
       style: AppTypography.bodySmall.copyWith(
         color: Colors.white54,
         letterSpacing: 0.5,

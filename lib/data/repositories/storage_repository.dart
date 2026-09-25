@@ -31,13 +31,14 @@ abstract class IStorageRepository {
 // ─────────────────────────────────────────────
 
 class MockStorageRepository implements IStorageRepository {
+  // Phase 4: no external placeholder URLs (was via.placeholder.com — an
+  // external tracking surface). Dead under kUseSupabase=true; returns ''
+  // so callers must handle "no photo" instead of persisting a fake URL.
   @override
-  Future<String> uploadStudentPhoto(String studentId, File file) async =>
-      'https://via.placeholder.com/150?text=$studentId';
+  Future<String> uploadStudentPhoto(String studentId, File file) async => '';
 
   @override
-  Future<String> uploadStaffPhoto(String staffId, File file) async =>
-      'https://via.placeholder.com/150?text=$staffId';
+  Future<String> uploadStaffPhoto(String staffId, File file) async => '';
 
   @override
   Future<void> deleteStudentPhoto(String studentId) async {}
@@ -46,8 +47,7 @@ class MockStorageRepository implements IStorageRepository {
   Future<void> deleteStaffPhoto(String staffId) async {}
 
   @override
-  String getPublicUrl(String bucket, String path) =>
-      'https://via.placeholder.com/150';
+  String getPublicUrl(String bucket, String path) => '';
 }
 
 // ─────────────────────────────────────────────

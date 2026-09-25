@@ -9,6 +9,7 @@ import '../../../core/config/role_config.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../providers/auth_provider.dart';
+import '../../../providers/tenant_branding_provider.dart';
 import 'admin_dashboard_screen.dart';
 import 'student_list_screen.dart';
 import 'staff_list_screen.dart';
@@ -29,8 +30,13 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
   int _currentIndex = 0;
   List<NavTab> _tabs = [];
 
-  List<NavTab> _buildTabs(Set<String> perms) => buildNavTabs(
+  // Phase 4 — module gating: [enabledModules] comes from
+  // tenantModulesProvider. Null = not loaded yet → no filtering, so the
+  // bar does not flicker while the tenant resolves.
+  List<NavTab> _buildTabs(Set<String> perms, Set<String>? enabledModules) =>
+      buildNavTabs(
         perms: perms,
+        enabledModules: enabledModules,
         dashboardBuilder: () => const AdminDashboardScreen(),
         profileScreen: const ProfileScreen(),
         attendanceScreen: const AttendanceScreen(),
@@ -45,7 +51,8 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
   Widget build(BuildContext context) {
     return Consumer(builder: (context, ref, _) {
       final perms = ref.watch(userPermissionsProvider);
-      final newTabs = _buildTabs(perms);
+      final enabledModules = ref.watch(tenantModulesProvider).valueOrNull;
+      final newTabs = _buildTabs(perms, enabledModules);
 
       // Reset to 0 when tab count changes (e.g. after session restore).
       if (newTabs.length != _tabs.length) {

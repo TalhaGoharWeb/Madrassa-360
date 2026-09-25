@@ -5,11 +5,11 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_permissions.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../core/widgets/tenant_logo.dart';
 import '../../../data/repositories/auth_repository.dart';
 import '../../../providers/auth_provider.dart';
-import '../../../providers/student_provider.dart';
-import '../../../providers/staff_provider.dart';
-import '../../../providers/fee_provider.dart';
+import '../../../providers/admin_dashboard_provider.dart';
+import '../../../providers/tenant_branding_provider.dart';
 import '../../widgets/common/app_widgets.dart';
 import 'user_management_screen.dart';
 import 'darja_screen.dart';
@@ -20,16 +20,17 @@ import '../teacher/attendance_screen.dart';
 import '../teacher/results_screen.dart';
 
 /// منتظم ڈیش بورڈ
-/// Admin Dashboard Screen with Statistics and Overview
+/// Admin Dashboard Screen with Statistics and Overview.
+///
+/// Phase 4: every number comes from [dashboardStatsProvider] — live,
+/// tenant-scoped Supabase queries. No hard-coded demo figures remain.
+/// Navigation cards are gated by BOTH the user's permissions AND the
+/// tenant's enabled modules ([tenantModulesProvider]): a tenant without
+/// the library module never sees the library card, even for a permitted
+/// user. Institution identity (name/logo) comes from
+/// [tenantBrandingProvider].
 class AdminDashboardScreen extends StatelessWidget {
   const AdminDashboardScreen({super.key});
-
-  static const _activities = [
-    {'icon': 'fee',        'title': 'فیس وصولی',    'subtitle': 'محمد احمد - 3000 روپے', 'time': 'ابھی'},
-    {'icon': 'attendance', 'title': 'حاضری',      'subtitle': 'درجہ اولیٰ - مکمل',        'time': '10 منٹ پہلے'},
-    {'icon': 'admission',  'title': 'نیا داخلہ',   'subtitle': 'سعد اللہ - درجہ دوم',         'time': '1 گھنٹہ پہلے'},
-    {'icon': 'result',     'title': 'نتائج',        'subtitle': 'ماہانہ امتحان اپ لوڈ',    'time': 'کل'},
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -40,27 +41,29 @@ class AdminDashboardScreen extends StatelessWidget {
     final roleConfig = role.config;
 
     final adminName  = authState.user?.name ?? 'اسٹاف';
-    final students   = ref.watch(allStudentsProvider).valueOrNull ?? [];
-    final staffList  = ref.watch(allStaffProvider).valueOrNull ?? [];
-    final feeSummary = ref.watch(feeSummaryProvider).valueOrNull;
 
-    final teachers = staffList.where((s) => s.department == 'تعلیمی').length;
-    final stats = {
-      'totalStudents':  students.length,
-      'totalTeachers':  teachers,
-      'totalStaff':     staffList.length,
-      'totalClasses':   8,
-      'todayPresent':   142,
-      'todayAbsent':    10,
-      'todayLeave':     4,
-      'pendingFees':    (feeSummary?.totalDue       ?? 45000).toInt(),
-      'collectedFees':  (feeSummary?.totalCollected ?? 380000).toInt(),
-      'monthlyTarget':  468000,
-    };
+    // Phase 4 — live tenant-scoped numbers (zeros while loading/offline).
+    final stats =
+        ref.watch(dashboardStatsProvider).valueOrNull ??
+        const DashboardStats.zero();
+
+    // Phase 4 — module gating. Null = modules not loaded yet → do not
+    // filter, so cards don't flicker while the tenant resolves.
+    final enabledModules = ref.watch(tenantModulesProvider).valueOrNull;
+    bool moduleOk(String module) =>
+        enabledModules == null || enabledModules.contains(module);
+
+    final branding = ref.watch(tenantBrandingProvider).valueOrNull;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(AppStrings.dashboard),
+        // Phase 4 — the tenant's own name in the app bar.
+        title: branding == null
+            ? Text(AppStrings.dashboard)
+            : TenantNameText(
+                style: AppTypography.appBarTitle
+                    .copyWith(color: Colors.white),
+              ),
         actions: [
           IconButton(
             icon: const Icon(Icons.notifications_outlined),
@@ -72,19 +75,20 @@ class AdminDashboardScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Role-aware welcome header
-            _buildWelcomeHeader(adminName, roleConfig),
+            // Role-aware welcome header (shows the tenant name)
+            _buildWelcomeHeader(
+                adminName, roleConfig, branding?.displayName()),
 
-            // Stats — shown only for permitted modules
+            // Stats — shown only for permitted AND enabled modules
             const SectionHeader(title: 'اہم اعداد و شمار'),
-            _buildPermissionFilteredStats(stats, perms),
+            _buildPermissionFilteredStats(stats, perms, moduleOk),
 
             // User Management card — only for managers
             if (perms.contains(AppPermissions.viewUsers))
               _buildUserManagementCard(context),
 
-            // Module shortcuts — filtered by permissions
-            _buildModulesSection(context, perms),
+            // Module shortcuts — filtered by permissions AND modules
+            _buildModulesSection(context, perms, moduleOk),
 
             // Fee progress — only if user can view fees
             if (perms.contains(AppPermissions.viewFees))
@@ -94,12 +98,12 @@ class AdminDashboardScreen extends StatelessWidget {
             if (perms.contains(AppPermissions.viewAttendance))
               _buildAttendanceOverview(stats),
 
-            // Recent activities
+            // Recent activities (real events from the tenant's data)
             const SectionHeader(
               title: 'حالیہ سرگرمیاں',
               actionText: 'سب دیکھیں',
             ),
-            _buildRecentActivities(_filteredActivities(perms)),
+            _buildRecentActivities(_filteredActivities(stats, perms)),
 
             const SizedBox(height: 100),
           ],
@@ -109,7 +113,8 @@ class AdminDashboardScreen extends StatelessWidget {
     });
   }
 
-  Widget _buildWelcomeHeader(String userName, RoleConfig config) {
+  Widget _buildWelcomeHeader(
+      String userName, RoleConfig config, String? tenantName) {
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(20),
@@ -147,6 +152,17 @@ class AdminDashboardScreen extends StatelessWidget {
                     color: Colors.white,
                   ),
                 ),
+                if (tenantName != null && tenantName.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    tenantName,
+                    style: AppTypography.bodySmall.copyWith(
+                      color: Colors.white70,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
                 const SizedBox(height: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(
@@ -181,83 +197,94 @@ class AdminDashboardScreen extends StatelessWidget {
               shape: BoxShape.circle,
               border: Border.all(color: Colors.white30, width: 2),
             ),
-            child: Icon(
-              config.icon,
-              color: Colors.white,
-              size: 36,
-            ),
+            // Phase 4 — tenant logo; neutral mark while loading/unset.
+            child: const TenantLogo(size: 66, circular: true),
           ),
         ],
       ),
     );
   }
 
-  /// Returns only the activity entries relevant to the current user's permissions.
-  List<Map<String, dynamic>> _filteredActivities(Set<String> perms) {
-    return _activities.where((a) {
-      switch (a['icon']) {
-        case 'fee':        return perms.contains(AppPermissions.viewFees);
-        case 'attendance': return perms.contains(AppPermissions.viewAttendance);
-        case 'admission':  return perms.contains(AppPermissions.viewStudents);
-        case 'result':     return perms.contains(AppPermissions.viewResults);
-        default:           return true;
+  /// Returns only the real activity entries relevant to the current user's
+  /// permissions. Empty feed renders as an empty section (never fake rows).
+  List<DashboardActivity> _filteredActivities(
+      DashboardStats stats, Set<String> perms) {
+    return stats.recentActivities.where((a) {
+      switch (a.iconKey) {
+        case 'fee':
+          return perms.contains(AppPermissions.viewFees);
+        case 'attendance':
+          return perms.contains(AppPermissions.viewAttendance);
+        case 'admission':
+          return perms.contains(AppPermissions.viewStudents);
+        case 'result':
+          return perms.contains(AppPermissions.viewResults);
+        default:
+          return true;
       }
     }).toList();
   }
 
-  /// Shows stat cards filtered to what the user is allowed to see.
+  /// Shows stat cards filtered to what the user is allowed to see AND what
+  /// the tenant has enabled. All values are live tenant-scoped counts.
   Widget _buildPermissionFilteredStats(
-      Map<String, dynamic> stats, Set<String> perms) {
+    DashboardStats stats,
+    Set<String> perms,
+    bool Function(String) moduleOk,
+  ) {
     final cards = <Widget>[];
 
-    if (perms.contains(AppPermissions.viewStudents)) {
+    if (perms.contains(AppPermissions.viewStudents) &&
+        moduleOk('students')) {
       cards.add(StatCard(
         icon: Icons.people,
         label: 'کل طلباء',
-        value: '${stats['totalStudents']}',
+        value: '${stats.totalStudents}',
         color: AppColors.primary,
-        trend: '5%+',
-        isUp: true,
       ));
     }
-    if (perms.contains(AppPermissions.viewStaff)) {
+    if (perms.contains(AppPermissions.viewStaff) &&
+        (moduleOk('teachers') || moduleOk('staff'))) {
       cards.add(StatCard(
         icon: Icons.school,
         label: 'اساتذہ',
-        value: '${stats['totalTeachers']}',
+        value: '${stats.totalTeachers}',
         color: AppColors.info,
       ));
     }
-    if (perms.contains(AppPermissions.viewDarjas)) {
+    if (perms.contains(AppPermissions.viewDarjas) &&
+        moduleOk('academics')) {
       cards.add(StatCard(
         icon: Icons.class_,
         label: 'جماعتیں',
-        value: '${stats['totalClasses']}',
+        value: '${stats.totalClasses}',
         color: AppColors.warning,
       ));
     }
-    if (perms.contains(AppPermissions.viewFees)) {
+    if (perms.contains(AppPermissions.viewFees) && moduleOk('fees')) {
       cards.add(StatCard(
         icon: Icons.account_balance_wallet,
         label: 'واجب الادا',
-        value: '${stats['pendingFees']}',
+        value: formatPK(stats.pendingFees),
         color: AppColors.error,
       ));
     }
-    if (perms.contains(AppPermissions.viewAttendance)) {
+    if (perms.contains(AppPermissions.viewAttendance) &&
+        moduleOk('attendance')) {
       cards.add(StatCard(
         icon: Icons.fact_check,
         label: 'آج حاضر',
-        value: '${stats['todayPresent']}',
+        value: '${stats.todayPresent}',
         color: AppColors.success,
       ));
     }
     if (perms.contains(AppPermissions.viewStaff) &&
-        perms.contains(AppPermissions.createStaff)) {
+        perms.contains(AppPermissions.createStaff) &&
+        moduleOk('staff')) {
       cards.add(StatCard(
         icon: Icons.person_add,
         label: 'کل عملہ',
-        value: '${stats['totalStaff']}',
+        value: '${stats.totalStaff}',
         color: AppColors.success,
       ));
     }
@@ -281,8 +308,12 @@ class AdminDashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildModulesSection(BuildContext context, [Set<String>? perms]) {
-    // All possible modules with their required permission
+  Widget _buildModulesSection(
+    BuildContext context,
+    Set<String> perms,
+    bool Function(String) moduleOk,
+  ) {
+    // All possible modules with their required permission AND tenant module.
     final allModules = [
       _ModuleDef(
         label: 'درجات',
@@ -291,6 +322,7 @@ class AdminDashboardScreen extends StatelessWidget {
         color: const Color(0xFF1565C0),
         screen: const DarjaScreen(),
         requiredPerm: AppPermissions.viewDarjas,
+        module: 'academics',
       ),
       _ModuleDef(
         label: 'اعلانات',
@@ -299,6 +331,7 @@ class AdminDashboardScreen extends StatelessWidget {
         color: const Color(0xFF2E7D32),
         screen: const AnnouncementsScreen(),
         requiredPerm: AppPermissions.viewAnnouncements,
+        module: 'notifications',
       ),
       _ModuleDef(
         label: 'کتب خانہ',
@@ -307,6 +340,7 @@ class AdminDashboardScreen extends StatelessWidget {
         color: const Color(0xFF6A1B9A),
         screen: const LibraryScreen(),
         requiredPerm: AppPermissions.viewLibrary,
+        module: 'library',
       ),
       _ModuleDef(
         label: 'مالیات',
@@ -315,6 +349,7 @@ class AdminDashboardScreen extends StatelessWidget {
         color: const Color(0xFFE65100),
         screen: const FinanceScreen(),
         requiredPerm: AppPermissions.viewFinance,
+        module: 'finance',
       ),
       _ModuleDef(
         label: 'حاضری',
@@ -323,6 +358,7 @@ class AdminDashboardScreen extends StatelessWidget {
         color: const Color(0xFF00838F),
         screen: const AttendanceScreen(),
         requiredPerm: AppPermissions.markAttendance,
+        module: 'attendance',
       ),
       _ModuleDef(
         label: 'نتائج',
@@ -331,6 +367,7 @@ class AdminDashboardScreen extends StatelessWidget {
         color: const Color(0xFF558B2F),
         screen: const ResultsScreen(),
         requiredPerm: AppPermissions.viewResults,
+        module: 'results',
       ),
       _ModuleDef(
         label: 'عملہ',
@@ -339,14 +376,18 @@ class AdminDashboardScreen extends StatelessWidget {
         color: const Color(0xFF37474F),
         screen: const Placeholder(), // StaffListScreen imported in outer scope
         requiredPerm: AppPermissions.viewStaff,
+        module: 'staff',
       ),
     ];
 
-    final visible = perms == null
-        ? allModules
-        : allModules
-            .where((m) => perms.contains(m.requiredPerm))
-            .toList();
+    // Phase 4 — a card shows only when the user is permitted AND the
+    // tenant has the module enabled. A tenant with only
+    // students+attendance+fees never sees library/hostel/finance cards.
+    final visible = allModules
+        .where((m) =>
+            perms.contains(m.requiredPerm) &&
+            (m.module == null || moduleOk(m.module!)))
+        .toList();
 
     if (visible.isEmpty) return const SizedBox.shrink();
 
@@ -423,10 +464,9 @@ class AdminDashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildFeeProgress(Map<String, dynamic> stats) {
-    final collected = stats['collectedFees'] as int;
-    final target = stats['monthlyTarget'] as int;
-    final progress = collected / target;
+  /// Monthly fee collection progress — real tenant numbers, dynamic month.
+  Widget _buildFeeProgress(DashboardStats stats) {
+    final progress = stats.monthProgress;
 
     return AppCard(
       margin: const EdgeInsets.all(16),
@@ -456,7 +496,7 @@ class AdminDashboardScreen extends StatelessWidget {
                       style: AppTypography.titleMedium,
                     ),
                     Text(
-                      'جنوری 2026',
+                      stats.monthLabel.isNotEmpty ? stats.monthLabel : '—',
                       style: AppTypography.labelSmall,
                     ),
                   ],
@@ -494,17 +534,17 @@ class AdminDashboardScreen extends StatelessWidget {
             children: [
               _buildFeeStatItem(
                 'وصول شدہ',
-                '3,80,000',
+                formatPK(stats.collectedThisMonth),
                 AppColors.success,
               ),
               _buildFeeStatItem(
                 'واجب الادا',
-                '45,000',
+                formatPK(stats.pendingFees),
                 AppColors.error,
               ),
               _buildFeeStatItem(
                 'ہدف',
-                '4,68,000',
+                formatPK(stats.monthlyTarget),
                 AppColors.primary,
               ),
             ],
@@ -590,10 +630,11 @@ class AdminDashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildAttendanceOverview(Map<String, dynamic> stats) {
-    final present = stats['todayPresent'] as int;
-    final absent = stats['todayAbsent'] as int;
-    final leave = stats['todayLeave'] as int;
+  /// Today's attendance from live tenant data.
+  Widget _buildAttendanceOverview(DashboardStats stats) {
+    final present = stats.todayPresent;
+    final absent = stats.todayAbsent;
+    final leave = stats.todayLeave;
     final total = present + absent + leave;
 
     return AppCard(
@@ -633,22 +674,34 @@ class AdminDashboardScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 20),
-          Row(
-            children: [
-              _buildAttendanceBar('حاضر', present, total, AppColors.present),
-              const SizedBox(width: 8),
-              _buildAttendanceBar('غیر حاضر', absent, total, AppColors.absent),
-              const SizedBox(width: 8),
-              _buildAttendanceBar('چھٹی', leave, total, AppColors.leave),
-            ],
-          ),
+          if (total == 0)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Text(
+                'آج کی حاضری ابھی درج نہیں ہوئی',
+                style: AppTypography.bodySmall
+                    .copyWith(color: AppColors.textSecondary),
+              ),
+            )
+          else
+            Row(
+              children: [
+                _buildAttendanceBar('حاضر', present, total, AppColors.present),
+                const SizedBox(width: 8),
+                _buildAttendanceBar(
+                    'غیر حاضر', absent, total, AppColors.absent),
+                const SizedBox(width: 8),
+                _buildAttendanceBar('چھٹی', leave, total, AppColors.leave),
+              ],
+            ),
         ],
       ),
     );
   }
 
   Widget _buildAttendanceBar(String label, int count, int total, Color color) {
-    final percentage = (count / total * 100).toInt();
+    final percentage = total == 0 ? 0 : (count / total * 100).toInt();
+    final ratio = total == 0 ? 0.0 : count / total;
     return Expanded(
       child: Column(
         children: [
@@ -663,7 +716,7 @@ class AdminDashboardScreen extends StatelessWidget {
               children: [
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 500),
-                  height: 80 * (count / total),
+                  height: 80 * ratio,
                   decoration: BoxDecoration(
                     color: color,
                     borderRadius: BorderRadius.circular(12),
@@ -674,7 +727,7 @@ class AdminDashboardScreen extends StatelessWidget {
                   child: Text(
                     '$count',
                     style: AppTypography.titleLarge.copyWith(
-                      color: count / total > 0.5 ? Colors.white : color,
+                      color: ratio > 0.5 ? Colors.white : color,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -693,7 +746,17 @@ class AdminDashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildRecentActivities(List<Map<String, dynamic>> activities) {
+  Widget _buildRecentActivities(List<DashboardActivity> activities) {
+    if (activities.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Text(
+          'ابھی کوئی سرگرمی نہیں',
+          style: AppTypography.bodySmall
+              .copyWith(color: AppColors.textSecondary),
+        ),
+      );
+    }
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -702,11 +765,11 @@ class AdminDashboardScreen extends StatelessWidget {
       itemBuilder: (context, index) {
         final activity = activities[index];
         return _buildActivityTile(
-          icon: _getActivityIcon(activity['icon']),
-          iconColor: _getActivityColor(activity['icon']),
-          title: activity['title'],
-          subtitle: activity['subtitle'],
-          time: activity['time'],
+          icon: _getActivityIcon(activity.iconKey),
+          iconColor: _getActivityColor(activity.iconKey),
+          title: activity.title,
+          subtitle: activity.subtitle,
+          time: activity.timeLabel,
         );
       },
     );
@@ -791,7 +854,7 @@ class AdminDashboardScreen extends StatelessWidget {
   }
 }
 
-/// Internal model for permission-gated module shortcuts on the dashboard.
+/// Internal model for permission- AND module-gated module shortcuts.
 class _ModuleDef {
   final String label;
   final String subtitle;
@@ -800,6 +863,9 @@ class _ModuleDef {
   final Widget screen;
   final String requiredPerm;
 
+  /// Module key from `modules_catalog`; null = never module-gated.
+  final String? module;
+
   const _ModuleDef({
     required this.label,
     required this.subtitle,
@@ -807,5 +873,6 @@ class _ModuleDef {
     required this.color,
     required this.screen,
     required this.requiredPerm,
+    this.module,
   });
 }

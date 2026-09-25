@@ -1,48 +1,41 @@
 /// بارے میں اسکرین
-/// About Screen — project info, developer credentials, contact
+/// About Screen — product info, tenant (institution) info, contact.
+///
+/// Phase 4: institution identity (name, city, phone, email, address, logo)
+/// is loaded per-tenant from [tenantBrandingProvider] — nothing is
+/// hard-coded. Developer contact PII was removed from this shipped screen;
+/// the contact section now reaches the tenant's own administration.
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/config/app_config.dart';
-import '../../../core/config/madrassa_config.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../core/widgets/tenant_logo.dart';
+import '../../../providers/tenant_branding_provider.dart';
 
-// ─────────────────────────────────────────────────────────────
-// Developer constants — edit here if details change
-// ─────────────────────────────────────────────────────────────
-const _devName    = 'Muhammad Talha Farid';
-const _devEmail   = 'goharenaqshband@gmail.com';
-const _devPhone   = '03287819000';
-const _production = 'HijaziApps Production';
-
-class AboutScreen extends StatefulWidget {
+class AboutScreen extends ConsumerStatefulWidget {
   const AboutScreen({super.key});
 
   @override
-  State<AboutScreen> createState() => _AboutScreenState();
+  ConsumerState<AboutScreen> createState() => _AboutScreenState();
 }
 
-class _AboutScreenState extends State<AboutScreen> {
+class _AboutScreenState extends ConsumerState<AboutScreen> {
   bool _isUrdu = true; // language toggle
 
-  // ── Project description ──────────────────────────────────
+  // ── Product description (tenant-agnostic, no personal data) ──────
 
   static const _descUrdu =
-      'مدرسہ 360 ایک مکمل ڈیجیٹل انتظامی نظام ہے جسے HijaziApps پروڈکشن کے تحت '
-      'محمد طلحہ فرید نے تیار کیا ہے۔ اس منصوبے کا مقصد مدارس کو ان کے ریکارڈ، '
-      'طلباء، عملے اور روزمرہ کے انتظامی امور کو آسان، منظم اور جدید انداز میں '
-      'سنبھالنے میں مدد فراہم کرنا ہے۔\n\n'
-      'اگر آپ اپنے مدرسے کے ریکارڈ کو ڈیجیٹل بنانا اور جدید نظام کو اپنانا چاہتے '
-      'ہیں تو ڈویلپر سے فوری رابطہ کریں۔';
+      'مدرسہ 360 ایک مکمل ڈیجیٹل انتظامی نظام ہے جو مدارس کے ریکارڈ، طلباء، '
+      'عملے اور روزمرہ کے انتظامی امور کو آسان، منظم اور جدید انداز میں '
+      'سنبھالنے میں مدد فراہم کرتا ہے۔';
 
   static const _descEnglish =
-      'Madrasa 360 is a complete digital management system developed under '
-      'HijaziApps Production by Muhammad Talha Farid. The goal of this platform '
-      'is to help madrassas manage their records, students, staff, and operations '
-      'in an easy, organised, and modern way.\n\n'
-      'If you want to modernise and digitise your madrassa records, contact the '
-      'developer today.';
+      'Madrasa 360 is a complete digital management system that helps '
+      'madrassas manage their records, students, staff, and day-to-day '
+      'operations in an easy, organised, and modern way.';
 
   // ── Helpers ───────────────────────────────────────────────
 
@@ -59,20 +52,24 @@ class _AboutScreenState extends State<AboutScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final branding = ref.watch(tenantBrandingProvider).valueOrNull;
+    final headerColor = branding?.primaryColor ?? AppColors.primary;
+    final headerDark = branding?.secondaryColor ?? AppColors.primaryDark;
+
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          // ── App Bar (gradient) ──────────────────────────
+          // ── App Bar (tenant-tinted gradient) ──────────────
           SliverAppBar(
             expandedHeight: 200,
             pinned: true,
-            backgroundColor: AppColors.primary,
+            backgroundColor: headerColor,
             foregroundColor: Colors.white,
             flexibleSpace: FlexibleSpaceBar(
               background: Container(
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [AppColors.primary, AppColors.primaryDark],
+                    colors: [headerColor, headerDark],
                     begin: Alignment.topRight,
                     end: Alignment.bottomLeft,
                   ),
@@ -81,24 +78,17 @@ class _AboutScreenState extends State<AboutScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const SizedBox(height: 40),
-                    Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white30, width: 2),
-                      ),
-                      child: const Icon(Icons.mosque, color: Colors.white, size: 42),
-                    ),
+                    // Phase 4 — the tenant's own logo (neutral mark if unset)
+                    const TenantLogo(size: 80, circular: true),
                     const SizedBox(height: 12),
-                    Text(
-                      AppConfig.appName,
-                      style: AppTypography.headingSmall.copyWith(color: Colors.white),
+                    TenantNameText(
+                      style: AppTypography.headingSmall
+                          .copyWith(color: Colors.white),
                     ),
                     Text(
-                      'v${MadrassaConfig.appVersion}',
-                      style: AppTypography.bodySmall.copyWith(color: Colors.white70),
+                      'v${AppConfig.appVersion}',
+                      style:
+                          AppTypography.bodySmall.copyWith(color: Colors.white70),
                     ),
                   ],
                 ),
@@ -117,14 +107,16 @@ class _AboutScreenState extends State<AboutScreen> {
 
                   _LanguageToggle(
                     isUrdu: _isUrdu,
+                    accent: headerColor,
                     onToggle: (v) => setState(() => _isUrdu = v),
                   ),
                   const SizedBox(height: 20),
 
-                  // ── Project Description ──────────────
+                  // ── Product Description ──────────────
 
                   _SectionCard(
-                    header: _isUrdu ? 'منصوبے کے بارے میں' : 'About the Project',
+                    accent: headerColor,
+                    header: _isUrdu ? 'منصوبے کے بارے میں' : 'About the Product',
                     headerIcon: Icons.info_outline,
                     child: Text(
                       _isUrdu ? _descUrdu : _descEnglish,
@@ -134,88 +126,82 @@ class _AboutScreenState extends State<AboutScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // ── Developer Credentials ────────────
+                  // ── Institution (tenant) info ────────
 
                   _SectionCard(
-                    header: _isUrdu ? 'ڈویلپر کی معلومات' : 'Developer Credentials',
-                    headerIcon: Icons.person_outline,
+                    accent: headerColor,
+                    header: _isUrdu ? 'مدرسے کی معلومات' : 'Institution',
+                    headerIcon: Icons.mosque_outlined,
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _DevInfoRow(
-                          icon: Icons.badge_outlined,
-                          label: _isUrdu ? 'نام' : 'Name',
-                          value: _devName,
-                          onTap: null,
+                        _InfoRow(
+                          label: _isUrdu ? 'مدرسہ' : 'Institution',
+                          value: branding?.displayName(urdu: _isUrdu) ?? '—',
                         ),
-                        const Divider(height: 20),
-                        _DevInfoRow(
-                          icon: Icons.business_outlined,
-                          label: _isUrdu ? 'پروڈکشن' : 'Production',
-                          value: _production,
-                          onTap: null,
+                        _InfoRow(
+                          label: _isUrdu ? 'پتہ' : 'Address',
+                          value: (branding?.locationLine.isNotEmpty == true)
+                              ? branding!.locationLine
+                              : '—',
                         ),
-                        const Divider(height: 20),
-                        _DevInfoRow(
-                          icon: Icons.email_outlined,
+                        _InfoRow(
+                          label: _isUrdu ? 'فون' : 'Phone',
+                          value: (branding?.phone?.isNotEmpty == true)
+                              ? branding!.phone!
+                              : '—',
+                        ),
+                        _InfoRow(
                           label: _isUrdu ? 'ای میل' : 'Email',
-                          value: _devEmail,
-                          onTap: () => _copy(context, _devEmail,
-                              _isUrdu ? 'ای میل' : 'Email'),
-                          tapIcon: Icons.copy,
-                        ),
-                        const Divider(height: 20),
-                        _DevInfoRow(
-                          icon: Icons.phone_outlined,
-                          label: _isUrdu ? 'رابطہ نمبر' : 'Phone',
-                          value: _devPhone,
-                          onTap: () =>
-                              _copy(context, _devPhone, _isUrdu ? 'نمبر' : 'Number'),
-                          tapIcon: Icons.copy,
+                          value: (branding?.email?.isNotEmpty == true)
+                              ? branding!.email!
+                              : '—',
+                          isLast: true,
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(height: 16),
 
-                  // ── Contact Buttons ──────────────────
+                  // ── Contact the administration ───────
 
-                  _SectionCard(
-                    header: _isUrdu ? 'ڈویلپر سے رابطہ کریں' : 'Contact Developer',
-                    headerIcon: Icons.contact_support_outlined,
-                    child: Column(
-                      children: [
-                        _ContactButton(
-                          icon: Icons.email,
-                          label: _isUrdu ? 'ای میل بھیجیں' : 'Send Email',
-                          subtitle: _devEmail,
-                          color: const Color(0xFF1976D2),
-                          onTap: () => _launchEmail(context),
-                        ),
-                        const SizedBox(height: 12),
-                        _ContactButton(
-                          icon: Icons.phone,
-                          label: _isUrdu ? 'فون کریں' : 'Call Developer',
-                          subtitle: _devPhone,
-                          color: const Color(0xFF388E3C),
-                          onTap: () => _launchPhone(context),
-                        ),
-                        const SizedBox(height: 12),
-                        _ContactButton(
-                          icon: Icons.chat_bubble_outline,
-                          label: _isUrdu ? 'واٹس ایپ پر رابطہ' : 'WhatsApp',
-                          subtitle: '+92 $_devPhone',
-                          color: const Color(0xFF00897B),
-                          onTap: () => _launchWhatsApp(context),
-                        ),
-                      ],
+                  if (branding?.hasContact == true)
+                    _SectionCard(
+                      accent: headerColor,
+                      header: _isUrdu ? 'انتظامیہ سے رابطہ' : 'Contact',
+                      headerIcon: Icons.contact_support_outlined,
+                      child: Column(
+                        children: [
+                          if (branding?.phone?.isNotEmpty == true)
+                            _ContactButton(
+                              icon: Icons.phone,
+                              label: _isUrdu ? 'فون کریں' : 'Call',
+                              subtitle: branding!.phone!,
+                              color: const Color(0xFF388E3C),
+                              onTap: () => _copy(context, branding.phone!,
+                                  _isUrdu ? 'نمبر' : 'Number'),
+                            ),
+                          if (branding?.phone?.isNotEmpty == true &&
+                              branding?.email?.isNotEmpty == true)
+                            const SizedBox(height: 12),
+                          if (branding?.email?.isNotEmpty == true)
+                            _ContactButton(
+                              icon: Icons.email,
+                              label: _isUrdu ? 'ای میل' : 'Email',
+                              subtitle: branding!.email!,
+                              color: const Color(0xFF1976D2),
+                              onTap: () => _copy(context, branding.email!,
+                                  _isUrdu ? 'ای میل' : 'Email'),
+                            ),
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
+                  if (branding?.hasContact == true)
+                    const SizedBox(height: 16),
 
                   // ── App Info ─────────────────────────
 
                   _SectionCard(
+                    accent: headerColor,
                     header: _isUrdu ? 'ایپ کی معلومات' : 'App Information',
                     headerIcon: Icons.phone_android_outlined,
                     child: Column(
@@ -226,27 +212,7 @@ class _AboutScreenState extends State<AboutScreen> {
                         ),
                         _InfoRow(
                           label: _isUrdu ? 'ورژن' : 'Version',
-                          value: MadrassaConfig.appVersion,
-                        ),
-                        _InfoRow(
-                          label: _isUrdu ? 'مدرسہ' : 'Institution',
-                          value: _isUrdu
-                              ? MadrassaConfig.nameUrdu
-                              : MadrassaConfig.nameEnglish,
-                        ),
-                        _InfoRow(
-                          label: _isUrdu ? 'شہر' : 'City',
-                          value: _isUrdu
-                              ? MadrassaConfig.cityUrdu
-                              : MadrassaConfig.cityEnglish,
-                        ),
-                        _InfoRow(
-                          label: _isUrdu ? 'ای میل' : 'Email',
-                          value: MadrassaConfig.email,
-                        ),
-                        _InfoRow(
-                          label: _isUrdu ? 'جاری تاریخ' : 'Released',
-                          value: 'January 2026',
+                          value: AppConfig.appVersion,
                           isLast: true,
                         ),
                       ],
@@ -260,14 +226,8 @@ class _AboutScreenState extends State<AboutScreen> {
                     child: Column(
                       children: [
                         Text(
-                          'Developed by $_production',
+                          AppConfig.appNameEnglish,
                           style: AppTypography.bodySmall.copyWith(
-                              color: AppColors.textSecondary),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          _devName,
-                          style: AppTypography.labelSmall.copyWith(
                               color: AppColors.textSecondary),
                         ),
                         const SizedBox(height: 24),
@@ -282,40 +242,6 @@ class _AboutScreenState extends State<AboutScreen> {
       ),
     );
   }
-
-  void _launchEmail(BuildContext ctx) {
-    final subject = Uri.encodeComponent('Madrasa 360 — Inquiry');
-    final body = Uri.encodeComponent(
-        'السلام علیکم ${_devName} صاحب،\n\nمیں اپنے مدرسے کے لیے معلومات چاہتا ہوں۔');
-    final url = 'mailto:$_devEmail?subject=$subject&body=$body';
-    _tryLaunch(ctx, url);
-  }
-
-  void _launchPhone(BuildContext ctx) {
-    _tryLaunch(ctx, 'tel:+92$_devPhone');
-  }
-
-  void _launchWhatsApp(BuildContext ctx) {
-    final text = Uri.encodeComponent(
-        'السلام علیکم! مجھے Madrasa 360 کے بارے میں معلومات چاہیے۔');
-    _tryLaunch(ctx, 'https://wa.me/92${_devPhone.substring(1)}?text=$text');
-  }
-
-  void _tryLaunch(BuildContext ctx, String url) {
-    // Copy the URL to clipboard as friendly fallback
-    Clipboard.setData(ClipboardData(text:
-        url.startsWith('mailto') ? _devEmail :
-        url.startsWith('tel')    ? _devPhone : url));
-    ScaffoldMessenger.of(ctx).showSnackBar(
-      SnackBar(
-        content: Text(_isUrdu
-            ? 'رابطہ کی معلومات کاپی ہو گئی'
-            : 'Contact info copied to clipboard'),
-        backgroundColor: AppColors.primary,
-        duration: const Duration(seconds: 3),
-      ),
-    );
-  }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -324,9 +250,11 @@ class _AboutScreenState extends State<AboutScreen> {
 
 class _LanguageToggle extends StatelessWidget {
   final bool isUrdu;
+  final Color accent;
   final ValueChanged<bool> onToggle;
 
-  const _LanguageToggle({required this.isUrdu, required this.onToggle});
+  const _LanguageToggle(
+      {required this.isUrdu, required this.accent, required this.onToggle});
 
   @override
   Widget build(BuildContext context) {
@@ -339,8 +267,16 @@ class _LanguageToggle extends StatelessWidget {
       padding: const EdgeInsets.all(4),
       child: Row(
         children: [
-          _Tab(label: 'اردو',   active: isUrdu,  onTap: () => onToggle(true)),
-          _Tab(label: 'English', active: !isUrdu, onTap: () => onToggle(false)),
+          _Tab(
+              label: 'اردو',
+              active: isUrdu,
+              accent: accent,
+              onTap: () => onToggle(true)),
+          _Tab(
+              label: 'English',
+              active: !isUrdu,
+              accent: accent,
+              onTap: () => onToggle(false)),
         ],
       ),
     );
@@ -350,9 +286,14 @@ class _LanguageToggle extends StatelessWidget {
 class _Tab extends StatelessWidget {
   final String label;
   final bool active;
+  final Color accent;
   final VoidCallback onTap;
 
-  const _Tab({required this.label, required this.active, required this.onTap});
+  const _Tab(
+      {required this.label,
+      required this.active,
+      required this.accent,
+      required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -363,7 +304,7 @@ class _Tab extends StatelessWidget {
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: active ? AppColors.primary : Colors.transparent,
+            color: active ? accent : Colors.transparent,
             borderRadius: BorderRadius.circular(9),
           ),
           child: Text(
@@ -384,11 +325,13 @@ class _SectionCard extends StatelessWidget {
   final String header;
   final IconData headerIcon;
   final Widget child;
+  final Color accent;
 
   const _SectionCard({
     required this.header,
     required this.headerIcon,
     required this.child,
+    this.accent = AppColors.primary,
   });
 
   @override
@@ -412,17 +355,16 @@ class _SectionCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.06),
+              color: accent.withOpacity(0.06),
               borderRadius:
                   const BorderRadius.vertical(top: Radius.circular(16)),
             ),
             child: Row(
               children: [
-                Icon(headerIcon, color: AppColors.primary, size: 20),
+                Icon(headerIcon, color: accent, size: 20),
                 const SizedBox(width: 10),
                 Text(header,
-                    style: AppTypography.titleMedium
-                        .copyWith(color: AppColors.primary)),
+                    style: AppTypography.titleMedium.copyWith(color: accent)),
               ],
             ),
           ),
@@ -433,56 +375,6 @@ class _SectionCard extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _DevInfoRow extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  final VoidCallback? onTap;
-  final IconData? tapIcon;
-
-  const _DevInfoRow({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.onTap,
-    this.tapIcon,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, color: AppColors.primary, size: 20),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(label,
-                  style: AppTypography.labelSmall
-                      .copyWith(color: AppColors.textSecondary)),
-              const SizedBox(height: 2),
-              Text(value,
-                  style: AppTypography.bodyMedium
-                      .copyWith(fontWeight: FontWeight.w600)),
-            ],
-          ),
-        ),
-        if (onTap != null)
-          IconButton(
-            icon: Icon(tapIcon ?? Icons.copy,
-                size: 18, color: AppColors.textSecondary),
-            onPressed: onTap,
-            tooltip: 'Copy',
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-          ),
-      ],
     );
   }
 }

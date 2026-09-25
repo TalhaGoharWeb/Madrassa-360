@@ -1,5 +1,5 @@
-/// المرکز الاسلامی قصور - اردو متن
-/// Al Markaz al Islami Kasur Urdu Strings - All UI labels in Urdu
+/// مدرسہ 360 - اردو متن
+/// Madrasa 360 Urdu Strings - All UI labels in Urdu
 import '../config/app_config.dart';
 
 class AppStrings {

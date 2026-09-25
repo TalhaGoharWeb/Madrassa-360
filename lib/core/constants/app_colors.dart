@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-/// المرکز الاسلامی قصور - رنگوں کی فہرست
-/// Al Markaz al Islami Kasur Color Palette
+/// مدرسہ 360 - رنگوں کی فہرست
+/// Madrasa 360 Color Palette
 class AppColors {
   AppColors._();
 

@@ -2,6 +2,7 @@
 /// Result Provider — repository-backed state management
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../core/services/tenant_context.dart';
 import '../data/models/result.dart';
 import '../data/repositories/result_repository.dart';
 
@@ -18,8 +19,10 @@ final resultRepositoryProvider = Provider<IResultRepository>((ref) {
 // ─────────────────────────────────────────────
 
 final allExamsProvider = FutureProvider<List<Exam>>((ref) async {
+  final tenantId = ref.watch(currentTenantIdProvider);
+  if (tenantId == null) return <Exam>[];
   final repo = ref.watch(resultRepositoryProvider);
-  return repo.getExams();
+  return repo.getExams(tenantId: tenantId);
 });
 
 // ─────────────────────────────────────────────
@@ -28,8 +31,10 @@ final allExamsProvider = FutureProvider<List<Exam>>((ref) async {
 
 final examResultsProvider =
     FutureProvider.family<List<StudentResult>, String>((ref, examId) async {
+  final tenantId = ref.watch(currentTenantIdProvider);
+  if (tenantId == null) return <StudentResult>[];
   final repo = ref.watch(resultRepositoryProvider);
-  return repo.getExamResults(examId);
+  return repo.getExamResults(examId, tenantId: tenantId);
 });
 
 // ─────────────────────────────────────────────
@@ -38,11 +43,14 @@ final examResultsProvider =
 // ─────────────────────────────────────────────
 
 final allResultsProvider = FutureProvider<List<StudentResult>>((ref) async {
+  final tenantId = ref.watch(currentTenantIdProvider);
+  if (tenantId == null) return <StudentResult>[];
   final exams = await ref.watch(allExamsProvider.future);
   final repo = ref.watch(resultRepositoryProvider);
   final results = <StudentResult>[];
   for (final exam in exams) {
-    final examResults = await repo.getExamResults(exam.id);
+    final examResults =
+        await repo.getExamResults(exam.id, tenantId: tenantId);
     results.addAll(examResults);
   }
   return results;
@@ -70,10 +78,13 @@ class StudentExamKey {
 final studentSubjectResultsProvider =
     FutureProvider.family<List<SubjectResult>, StudentExamKey>(
         (ref, key) async {
+  final tenantId = ref.watch(currentTenantIdProvider);
+  if (tenantId == null) return <SubjectResult>[];
   final repo = ref.watch(resultRepositoryProvider);
   return repo.getStudentSubjectResults(
     studentId: key.studentId,
     examId: key.examId,
+    tenantId: tenantId,
   );
 });
 
@@ -86,8 +97,10 @@ class ResultNotifier extends AsyncNotifier<void> {
   Future<void> build() async {}
 
   Future<SubjectResult> save(SubjectResult result) async {
+    final tenantId = ref.read(currentTenantIdProvider);
+    if (tenantId == null) throw StateError('No active tenant');
     final repo = ref.read(resultRepositoryProvider);
-    final saved = await repo.upsertResult(result);
+    final saved = await repo.upsertResult(result, tenantId: tenantId);
     ref.invalidate(allExamsProvider);
     ref.invalidate(allResultsProvider);
     ref.invalidate(examResultsProvider(result.examId));

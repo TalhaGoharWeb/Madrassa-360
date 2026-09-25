@@ -3,11 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../../core/config/app_config.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../providers/auth_provider.dart';
+import '../../../providers/tenant_branding_provider.dart';
 import '../auth/login_screen.dart';
 import 'about_screen.dart';
 
@@ -148,7 +148,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   // Footer
                   Center(
                     child: Text(
-                      'Developed by HijaziApps',
+                      'Madrasa 360',
                       style: AppTypography.labelSmall.copyWith(
                           color: AppColors.textSecondary),
                     ),
@@ -462,12 +462,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             _buildLanguageOption('انگریزی', false),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('بند کریں'),
-          ),
-        ],
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('بند کریں'),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -475,9 +477,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   void _showHelpDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('مدد اور معاونت', style: AppTypography.titleLarge),
-        content: SingleChildScrollView(
+      // Phase 4 — contact section is tenant-driven (was hard-coded
+      // institution email/phone via AppConfig).
+      builder: (context) => Consumer(
+        builder: (context, ref, _) {
+          final branding = ref.watch(tenantBrandingProvider).valueOrNull;
+          final contactLines = [
+            if (branding?.phone?.isNotEmpty == true) branding!.phone!,
+            if (branding?.email?.isNotEmpty == true) branding!.email!,
+          ];
+          return AlertDialog(
+            title: Text('مدد اور معاونت', style: AppTypography.titleLarge),
+            content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -501,7 +512,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-'${AppConfig.appEmail}\n${AppConfig.appPhone}',
+                contactLines.isNotEmpty ? contactLines.join('\n') : '—',
                 style: AppTypography.bodyMedium,
               ),
             ],

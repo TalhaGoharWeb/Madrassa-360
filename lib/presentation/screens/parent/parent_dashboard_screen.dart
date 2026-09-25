@@ -1,16 +1,35 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../data/models/attendance_status.dart';
+import '../../../data/models/student.dart';
+import '../../../providers/parent_portal_provider.dart';
 import '../../widgets/common/app_widgets.dart';
 
 /// والدین ڈیش بورڈ
 /// Parent Dashboard Screen with Child Overview
-class ParentDashboardScreen extends StatelessWidget {
+///
+/// Phase 4: shows ONLY the signed-in parent's own children, resolved
+/// through the `student_guardians` link + active tenant. Stats are
+/// computed from scoped providers — never from global lists.
+class ParentDashboardScreen extends ConsumerStatefulWidget {
   const ParentDashboardScreen({super.key});
 
   @override
+  ConsumerState<ParentDashboardScreen> createState() =>
+      _ParentDashboardScreenState();
+}
+
+class _ParentDashboardScreenState
+    extends ConsumerState<ParentDashboardScreen> {
+  String? _selectedChildId;
+
+  @override
   Widget build(BuildContext context) {
+    final childrenAsync = ref.watch(parentChildrenProvider);
+
     return Scaffold(
       appBar: AppBar(
         title: Text(AppStrings.home),
@@ -21,43 +40,142 @@ class ParentDashboardScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Child Profile Card
-            _buildChildProfileCard(),
-            
-            // Quick Stats
-            _buildQuickStats(),
-            
-            // Today's Update Section
-            const SectionHeader(
-              title: 'آج کی اپ ڈیٹ',
-            ),
-            _buildTodayUpdate(),
-            
-            // Recent Activities / Timeline
-            const SectionHeader(
-              title: 'حالیہ سرگرمیاں',
-              actionText: 'مزید دیکھیں',
-            ),
-            _buildActivityTimeline(),
-            
-            // Upcoming Events
-            const SectionHeader(
-              title: 'آئندہ امتحانات',
-            ),
-            _buildUpcomingExams(),
-            
-            const SizedBox(height: 24),
-          ],
+      body: childrenAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => Center(
+          child: Text('بچوں کا ڈیٹا لوڈ کرنے میں خطا',
+              style: AppTypography.bodyMedium),
         ),
+        data: (children) {
+          if (children.isEmpty) {
+            return const EmptyState(
+              icon: Icons.family_restroom,
+              title: 'کوئی بچہ منسلک نہیں',
+              subtitle: 'آپ کا کوئی بچہ اس ادارے سے منسلک نہیں ہے',
+            );
+          }
+          final selected = children.firstWhere(
+            (c) => c.id == _selectedChildId,
+            orElse: () => children.first,
+          );
+
+          // Scoped stats for the selected child.
+          final fees = (ref.watch(parentFeesProvider).valueOrNull ?? const [])
+              .where((f) => f.studentId == selected.id)
+              .toList();
+          final results =
+              (ref.watch(parentResultsProvider).valueOrNull ?? const [])
+                  .where((r) => r.studentId == selected.id)
+                  .toList();
+          final attendance = ref
+                  .watch(parentAttendanceProvider(
+                      ParentAttendanceArgs(studentId: selected.id, days: 30)))
+                  .valueOrNull ??
+              const [];
+
+          final attendancePct = attendance.isEmpty
+              ? null
+              : attendance
+                      .where((a) => a.status == AttendanceStatus.present)
+                      .length /
+                  attendance.length *
+                  100;
+          final resultPct = results.isEmpty
+              ? null
+              : results.map((r) => r.percentage).reduce((a, b) => a + b) /
+                  results.length;
+          final feeDue = fees.fold<double>(
+              0, (sum, f) => sum + (f.amountDue - f.amountPaid));
+
+          final todayStr =
+              DateTime.now().toIso8601String().substring(0, 10);
+          final todayRecords = attendance
+              .where((a) => a.date == todayStr)
+              .toList();
+
+          return SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Child selector (only when more than one child)
+                if (children.length > 1) _buildChildSelector(children, selected),
+
+                // Child Profile Card
+                _buildChildProfileCard(selected, attendancePct, resultPct),
+
+                // Quick Stats
+                _buildQuickStats(attendancePct, resultPct, feeDue),
+
+                // Today's Update Section
+                const SectionHeader(
+                  title: 'آج کی اپ ڈیٹ',
+                ),
+                _buildTodayUpdate(
+                    todayRecords.isEmpty ? null : todayRecords.first.status),
+
+                // Recent Activities / Timeline
+                const SectionHeader(
+                  title: 'حالیہ سرگرمیاں',
+                  actionText: 'مزید دیکھیں',
+                ),
+                _buildActivityTimeline(),
+
+                // Upcoming Events
+                const SectionHeader(
+                  title: 'آئندہ امتحانات',
+                ),
+                _buildUpcomingExams(),
+
+                const SizedBox(height: 24),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
 
-  Widget _buildChildProfileCard() {
+  /// Chips to switch between the parent's own children.
+  Widget _buildChildSelector(List<Student> children, Student selected) {
+    return Container(
+      height: 52,
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: children.length,
+        itemBuilder: (context, index) {
+          final child = children[index];
+          final isSelected = child.id == selected.id;
+          return Padding(
+            padding: const EdgeInsets.only(left: 8),
+            child: FilterChip(
+              label: Text(child.name),
+              selected: isSelected,
+              onSelected: (_) =>
+                  setState(() => _selectedChildId = child.id),
+              selectedColor: AppColors.primary.withOpacity(0.2),
+              checkmarkColor: AppColors.primary,
+              labelStyle: AppTypography.labelMedium.copyWith(
+                color:
+                    isSelected ? AppColors.primary : AppColors.textSecondary,
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildChildProfileCard(
+      Student child, double? attendancePct, double? resultPct) {
+    final initial = child.name.isNotEmpty ? child.name[0] : 'م';
+    final attendanceLabel = attendancePct == null
+        ? 'حاضری —'
+        : 'حاضری ${attendancePct.toStringAsFixed(0)}٪';
+    final resultLabel = resultPct == null
+        ? 'نتائج —'
+        : 'اوسط ${resultPct.toStringAsFixed(0)}٪';
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(20),
@@ -89,7 +207,7 @@ class ParentDashboardScreen extends StatelessWidget {
             ),
             child: Center(
               child: Text(
-                'م',
+                initial,
                 style: AppTypography.headingLarge.copyWith(
                   color: Colors.white,
                 ),
@@ -104,7 +222,7 @@ class ParentDashboardScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'محمد احمد',
+                  child.name,
                   style: AppTypography.headingSmall.copyWith(
                     color: Colors.white,
                   ),
@@ -117,7 +235,7 @@ class ParentDashboardScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    'درجہ اولیٰ (اول سال) -  رول نمبر 1',
+                    '${child.className} -  رول نمبر ${child.rollNo}',
                     style: AppTypography.labelMedium.copyWith(
                       color: Colors.white,
                     ),
@@ -126,9 +244,9 @@ class ParentDashboardScreen extends StatelessWidget {
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    _buildChildStat(Icons.calendar_today, 'حاضری 95%'),
+                    _buildChildStat(Icons.calendar_today, attendanceLabel),
                     const SizedBox(width: 16),
-                    _buildChildStat(Icons.star, 'گریڈ الف'),
+                    _buildChildStat(Icons.star, resultLabel),
                   ],
                 ),
               ],
@@ -161,7 +279,8 @@ class ParentDashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildQuickStats() {
+  Widget _buildQuickStats(
+      double? attendancePct, double? resultPct, double feeDue) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
@@ -170,7 +289,9 @@ class ParentDashboardScreen extends StatelessWidget {
             child: _buildStatCard(
               icon: Icons.fact_check,
               label: 'اس ماہ حاضری',
-              value: '95%',
+              value: attendancePct == null
+                  ? '—'
+                  : '${attendancePct.toStringAsFixed(0)}%',
               color: AppColors.success,
             ),
           ),
@@ -179,7 +300,9 @@ class ParentDashboardScreen extends StatelessWidget {
             child: _buildStatCard(
               icon: Icons.assessment,
               label: 'امتحانی نمبر',
-              value: '85%',
+              value: resultPct == null
+                  ? '—'
+                  : '${resultPct.toStringAsFixed(0)}%',
               color: AppColors.primary,
             ),
           ),
@@ -188,7 +311,7 @@ class ParentDashboardScreen extends StatelessWidget {
             child: _buildStatCard(
               icon: Icons.payments,
               label: 'فیس کی حالت',
-              value: 'مکمل',
+              value: feeDue > 0.005 ? 'بقایا' : 'مکمل',
               color: AppColors.info,
             ),
           ),
@@ -241,7 +364,13 @@ class ParentDashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildTodayUpdate() {
+  Widget _buildTodayUpdate(AttendanceStatus? todayStatus) {
+    final statusLabel = todayStatus?.urduLabel ?? 'ریکارڈ نہیں';
+    final statusColor = switch (todayStatus) {
+      AttendanceStatus.absent => AppColors.absent,
+      AttendanceStatus.leave => AppColors.leave,
+      _ => AppColors.present,
+    };
     return AppCard(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
@@ -251,12 +380,12 @@ class ParentDashboardScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: AppColors.success.withOpacity(0.1),
+                  color: statusColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.check_circle,
-                  color: AppColors.success,
+                  color: statusColor,
                 ),
               ),
               const SizedBox(width: 12),
@@ -269,15 +398,15 @@ class ParentDashboardScreen extends StatelessWidget {
                       style: AppTypography.titleMedium,
                     ),
                     Text(
-                      'حاضر - 8:00 بجے',
+                      statusLabel,
                       style: AppTypography.bodySmall.copyWith(
-                        color: AppColors.success,
+                        color: statusColor,
                       ),
                     ),
                   ],
                 ),
               ),
-              StatusBadge.present(),
+              StatusBadge(label: statusLabel, color: statusColor),
             ],
           ),
           const Divider(height: 24),
@@ -317,6 +446,8 @@ class ParentDashboardScreen extends StatelessWidget {
     );
   }
 
+  /// Phase-5 placeholder: activity timeline is still static mock data.
+  /// (Real event feed arrives with the notifications module work.)
   Widget _buildActivityTimeline() {
     final activities = [
       {
@@ -432,6 +563,7 @@ class ParentDashboardScreen extends StatelessWidget {
     );
   }
 
+  /// Phase-5 placeholder: upcoming exams are still static mock data.
   Widget _buildUpcomingExams() {
     final exams = [
       {

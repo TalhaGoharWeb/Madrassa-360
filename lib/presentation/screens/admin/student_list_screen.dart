@@ -6,6 +6,7 @@ import 'package:uuid/uuid.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../core/utils/date_utils.dart';
 import '../../../data/models/student.dart';
 import '../../../providers/student_provider.dart';
 import '../../widgets/common/app_widgets.dart';
@@ -984,7 +985,14 @@ class _StudentListScreenState extends State<StudentListScreen> {
     final TextEditingController descriptionController = TextEditingController();
 
     String selectedFeeType = 'ماہانہ فیس';
-    String selectedMonth = 'جنوری 2026';
+    // Phase 4: month list is generated from the current date instead of a
+    // frozen 2026 list.
+    final now = DateTime.now();
+    final monthOptions = List.generate(6, (i) {
+      final d = DateTime(now.year, now.month - i, 1);
+      return '${DateUtils.formatMonthName(d)} ${d.year}';
+    });
+    String selectedMonth = monthOptions.first;
 
     showDialog(
       context: context,
@@ -1057,14 +1065,7 @@ class _StudentListScreenState extends State<StudentListScreen> {
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.calendar_month),
                 ),
-                items: [
-                  'جنوری 2026',
-                  'فروری 2026',
-                  'مارچ 2026',
-                  'اپریل 2026',
-                  'مئی 2026',
-                  'جون 2026',
-                ].map((String value) {
+                items: monthOptions.map((String value) {
                   return DropdownMenuItem<String>(
                     value: value,
                     child: Text(value),

@@ -1,5 +1,5 @@
-name: al_markaz_al_islami
-description: "Al Markaz al Islami Kasur - A unified ERP for Islamic Educational Institutions"
+name: madrasa_360
+description: "Madrasa 360 - Multi-tenant SaaS ERP for Islamic Educational Institutions"
 publish_to: 'none'
 version: 1.0.0+1
 

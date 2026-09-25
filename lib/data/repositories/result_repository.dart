@@ -10,14 +10,17 @@ import '../../core/services/supabase_service.dart';
 // ─────────────────────────────────────────────
 
 abstract class IResultRepository {
-  Future<List<Exam>> getExams();
-  Future<Exam?> getExamById(String id);
-  Future<List<StudentResult>> getExamResults(String examId);
+  Future<List<Exam>> getExams({required String tenantId});
+  Future<Exam?> getExamById(String id, {required String tenantId});
+  Future<List<StudentResult>> getExamResults(String examId,
+      {required String tenantId});
   Future<List<SubjectResult>> getStudentSubjectResults({
     required String studentId,
     required String examId,
+    required String tenantId,
   });
-  Future<SubjectResult> upsertResult(SubjectResult result);
+  Future<SubjectResult> upsertResult(SubjectResult result,
+      {required String tenantId});
 }
 
 // ─────────────────────────────────────────────
@@ -28,10 +31,11 @@ class SupabaseResultRepository implements IResultRepository {
   SupabaseClient get _client => SupabaseService.client;
 
   @override
-  Future<List<Exam>> getExams() async {
+  Future<List<Exam>> getExams({required String tenantId}) async {
     final response = await _client
         .from('exams')
         .select()
+        .eq('tenant_id', tenantId)
         .order('exam_date', ascending: false);
     return (response as List)
         .map((row) => Exam.fromJson(row as Map<String, dynamic>))
@@ -39,19 +43,25 @@ class SupabaseResultRepository implements IResultRepository {
   }
 
   @override
-  Future<Exam?> getExamById(String id) async {
-    final response =
-        await _client.from('exams').select().eq('id', id).maybeSingle();
+  Future<Exam?> getExamById(String id, {required String tenantId}) async {
+    final response = await _client
+        .from('exams')
+        .select()
+        .eq('tenant_id', tenantId)
+        .eq('id', id)
+        .maybeSingle();
     if (response == null) return null;
     return Exam.fromJson(response);
   }
 
   @override
-  Future<List<StudentResult>> getExamResults(String examId) async {
-    final exam = await getExamById(examId);
+  Future<List<StudentResult>> getExamResults(String examId,
+      {required String tenantId}) async {
+    final exam = await getExamById(examId, tenantId: tenantId);
     final response = await _client
         .from('results')
         .select('*, students(name, roll_no, classes(name))')
+        .eq('tenant_id', tenantId)
         .eq('exam_id', examId)
         .order('student_id');
 
@@ -83,10 +93,12 @@ class SupabaseResultRepository implements IResultRepository {
   Future<List<SubjectResult>> getStudentSubjectResults({
     required String studentId,
     required String examId,
+    required String tenantId,
   }) async {
     final response = await _client
         .from('results')
         .select()
+        .eq('tenant_id', tenantId)
         .eq('student_id', studentId)
         .eq('exam_id', examId);
     return (response as List)
@@ -95,10 +107,12 @@ class SupabaseResultRepository implements IResultRepository {
   }
 
   @override
-  Future<SubjectResult> upsertResult(SubjectResult result) async {
+  Future<SubjectResult> upsertResult(SubjectResult result,
+      {required String tenantId}) async {
+    final payload = <String, dynamic>{...result.toJson(), 'tenant_id': tenantId};
     final response = await _client
         .from('results')
-        .upsert(result.toJson())
+        .upsert(payload)
         .select()
         .single();
     return SubjectResult.fromJson(response);

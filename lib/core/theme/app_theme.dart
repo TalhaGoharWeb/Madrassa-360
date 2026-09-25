@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_typography.dart';
 
-/// المرکز الاسلامی قصور - ایپ تھیم
+/// مدرسہ 360 - ایپ تھیم
 /// App Theme Configuration with RTL Support
 class AppTheme {
   AppTheme._();

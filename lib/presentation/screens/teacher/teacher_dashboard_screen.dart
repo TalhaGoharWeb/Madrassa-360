@@ -4,9 +4,13 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../providers/auth_provider.dart';
+import '../../../providers/teacher_portal_provider.dart';
 
 /// استاد ڈیش بورڈ
-/// Teacher Dashboard Screen (Placeholder for Phase 1)
+/// Teacher Dashboard Screen
+///
+/// Phase 4: the schedule and headcount are driven by the teacher's
+/// `teacher_class_assignments` (tenant-scoped) — never a global list.
 class TeacherDashboardScreen extends StatelessWidget {
   const TeacherDashboardScreen({super.key});
 
@@ -27,13 +31,13 @@ class TeacherDashboardScreen extends StatelessWidget {
               // Welcome Card
               _buildWelcomeCard(teacherName),
               const SizedBox(height: 16),
-              
-              // Quick Stats Grid
-              _buildQuickStats(),
+
+              // Quick Stats Grid (headcount = assigned classes only)
+              _buildQuickStats(ref),
               const SizedBox(height: 16),
-              
-              // Today's Schedule Card
-              _buildTodayScheduleCard(),
+
+              // Today's Schedule Card (assigned classes only)
+              _buildTodayScheduleCard(ref),
             ],
           ),
         ),
@@ -97,14 +101,17 @@ class TeacherDashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildQuickStats() {
+  Widget _buildQuickStats(WidgetRef ref) {
+    // Headcount across the teacher's assigned classes (tenant-scoped).
+    // The other two cards are Phase-5 placeholders (still static).
+    final studentCount = ref.watch(teacherStudentCountProvider).valueOrNull;
     return Row(
       children: [
         Expanded(
           child: _buildStatCard(
             icon: Icons.people,
             label: 'کل طلباء',
-            value: '25',
+            value: studentCount == null ? '—' : '$studentCount',
             color: AppColors.primary,
           ),
         ),
@@ -174,7 +181,10 @@ class TeacherDashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildTodayScheduleCard() {
+  Widget _buildTodayScheduleCard(WidgetRef ref) {
+    // Watched here (during the outer Consumer's build), not inside a
+    // nested builder — ref.watch is only legal in Consumer/provider scope.
+    final assignmentsAsync = ref.watch(teacherAssignmentsProvider);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -203,9 +213,30 @@ class TeacherDashboardScreen extends StatelessWidget {
             ],
           ),
           const Divider(height: 24),
-          _buildScheduleItem('درجہ اولیٰ (اول سال) - قرآن کریم', '8:00 - 9:00'),
-          _buildScheduleItem('درجہ دوم - حدیث شریف', '9:15 - 10:15'),
-          _buildScheduleItem('درجہ سوم - فقہ', '10:30 - 11:30'),
+          // Phase 4: only classes assigned to this teacher (tenant-scoped).
+          assignmentsAsync.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, _) => Text(
+              'شیڈول لوڈ کرنے میں خطا',
+              style: AppTypography.bodySmall,
+            ),
+            data: (assignments) {
+              if (assignments.isEmpty) {
+                return Text(
+                  'کوئی جماعت تفویض نہیں',
+                  style: AppTypography.bodySmall,
+                );
+              }
+              return Column(
+                children: assignments.map((a) {
+                  final label = a.subject.isEmpty
+                      ? a.className
+                      : '${a.className} - ${a.subject}';
+                  return _buildScheduleItem(label, a.academicYear ?? '');
+                }).toList(),
+              );
+            },
+          ),
         ],
       ),
     );

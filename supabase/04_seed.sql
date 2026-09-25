@@ -198,19 +198,19 @@ ON CONFLICT (exam_id, student_id, subject) DO NOTHING;
 /*
 UPDATE auth.users
   SET raw_app_meta_data = raw_app_meta_data || '{"role": "admin"}'
-  WHERE email = 'admin@almarkazalislamikasur.pk';
+  WHERE email = 'admin@your-madrassa.pk';
 
 UPDATE auth.users
   SET raw_app_meta_data = raw_app_meta_data || '{"role": "teacher"}'
-  WHERE email = 'teacher@almarkazalislamikasur.pk';
+  WHERE email = 'teacher@your-madrassa.pk';
 
 UPDATE auth.users
   SET raw_app_meta_data = raw_app_meta_data || '{"role": "parent"}'
-  WHERE email = 'parent@almarkazalislamikasur.pk';
+  WHERE email = 'parent@your-madrassa.pk';
 
 -- Link teacher to their class (replace UUIDs with actual profile IDs)
 UPDATE public.classes
   SET teacher_id = (SELECT id FROM public.profiles WHERE id IN
-    (SELECT id FROM auth.users WHERE email = 'teacher@almarkazalislamikasur.pk'))
+    (SELECT id FROM auth.users WHERE email = 'teacher@your-madrassa.pk'))
   WHERE id = 'c1000000-0000-0000-0000-000000000001';
 */

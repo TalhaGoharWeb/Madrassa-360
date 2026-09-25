@@ -5,7 +5,11 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../data/models/result.dart';
+import '../../../data/models/student.dart';
 import '../../../providers/result_provider.dart';
+import '../../../providers/tenant_branding_provider.dart';
+import '../../../core/widgets/tenant_logo.dart';
+import '../../../providers/teacher_portal_provider.dart';
 import '../../widgets/common/app_widgets.dart';
 
 /// نتائج کی سکرین
@@ -20,7 +24,11 @@ class ResultsScreen extends StatefulWidget {
 class _ResultsScreenState extends State<ResultsScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  String _selectedClass = 'درجہ اولیٰ (اول سال)';
+
+  /// Id of the teacher's assigned class being filtered ('' = all assigned).
+  /// Phase 4: only classes from `teacherAssignedClassesProvider` are ever
+  /// offered — a teacher cannot filter by (or see) unassigned classes.
+  String _selectedClassId = '';
 
   @override
   void initState() {
@@ -62,23 +70,45 @@ class _ResultsScreenState extends State<ResultsScreen>
   Widget _buildResultsTab() {
     return Consumer(
       builder: (context, ref, _) {
+        final classesAsync = ref.watch(teacherAssignedClassesProvider);
         final resultsAsync = ref.watch(allResultsProvider);
-        final results = resultsAsync.valueOrNull ?? [];
-        final filtered = _selectedClass.isEmpty
-            ? results
-            : results.where((r) => r.className == _selectedClass).toList();
 
-        if (resultsAsync.isLoading) return const Center(child: CircularProgressIndicator());
+        if (classesAsync.isLoading || resultsAsync.isLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
         if (resultsAsync.hasError) {
           return Center(
             child: Text('نتائج لوڈ کرنے میں خطا', style: AppTypography.bodyMedium),
           );
         }
 
+        // The ONLY scope this teacher may see: their assigned classes and
+        // the students inside them. Results for any other student are
+        // dropped client-side (RLS enforces the same server-side).
+        final classes = classesAsync.valueOrNull ?? const <AssignedClass>[];
+        final allowedStudentIds = <String>{};
+        final studentClassIds = <String, String>{};
+        for (final c in classes) {
+          final students =
+              ref.watch(teacherClassStudentsProvider(c.id)).valueOrNull ??
+                  const <Student>[];
+          for (final s in students) {
+            allowedStudentIds.add(s.id);
+            studentClassIds[s.id] = c.id;
+          }
+        }
+
+        final filtered = (resultsAsync.valueOrNull ?? const <StudentResult>[])
+            .where((r) => allowedStudentIds.contains(r.studentId))
+            .where((r) =>
+                _selectedClassId.isEmpty ||
+                studentClassIds[r.studentId] == _selectedClassId)
+            .toList();
+
         return Column(
           children: [
-            // Class Filter
-            _buildClassFilter(),
+            // Class Filter (assigned classes only)
+            _buildClassFilter(classes),
 
             // Results List
             Expanded(
@@ -102,35 +132,27 @@ class _ResultsScreenState extends State<ResultsScreen>
     );
   }
 
-  Widget _buildClassFilter() {
-    final classes = [
-      'درجہ اولیٰ (اول سال)',
-      'درجہ ثانیہ (دوسرا سال)',
-      'درجہ ثالثہ (تیسرا سال)',
-      'درجہ رابعہ (چوتھا سال)',
-      'درجہ خامسہ (پانچواں سال)',
-      'درجہ سادسہ (چھٹا سال)',
-      'درجہ سابِعہ (ساتواں سال)',
-      'دورہ حدیث (آٹھواں سال/آخری سال)',
-    ];
-
+  /// Class filter chips — built from the teacher's assignments only.
+  Widget _buildClassFilter(List<AssignedClass> classes) {
     return Container(
       height: 50,
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: classes.length,
+        itemCount: classes.length + 1,
         itemBuilder: (context, index) {
-          final className = classes[index];
-          final isSelected = _selectedClass == className;
+          final isAll = index == 0;
+          final classId = isAll ? '' : classes[index - 1].id;
+          final className = isAll ? 'تمام جماعتیں' : classes[index - 1].name;
+          final isSelected = _selectedClassId == classId;
           return Padding(
             padding: const EdgeInsets.only(left: 8),
             child: FilterChip(
               label: Text(className),
               selected: isSelected,
               onSelected: (selected) {
-                setState(() => _selectedClass = className);
+                setState(() => _selectedClassId = classId);
               },
               selectedColor: AppColors.primary.withOpacity(0.2),
               checkmarkColor: AppColors.primary,
@@ -338,8 +360,8 @@ class _ResultsScreenState extends State<ResultsScreen>
                     ),
                     child: Column(
                       children: [
-                        Text(
-                          AppConfig.appName,
+                        // Phase 4 — tenant name (was hard-coded institution).
+                        TenantNameText(
                           style: AppTypography.titleMedium.copyWith(
                             color: Colors.white70,
                           ),
@@ -574,18 +596,18 @@ class _ResultsScreenState extends State<ResultsScreen>
                   style: AppTypography.titleMedium,
                 ),
                 const SizedBox(height: 12),
-                _buildDropdownField(
-                  hint: 'جماعت',
-                  items: [
-                    'درجہ اولیٰ (اول سال)',
-                    'درجہ ثانیہ (دوسرا سال)',
-                    'درجہ ثالثہ (تیسرا سال)',
-                    'درجہ رابعہ (چوتھا سال)',
-                    'درجہ خامسہ (پانچواں سال)',
-                    'درجہ سادسہ (چھٹا سال)',
-                    'درجہ سابِعہ (ساتواں سال)',
-                    'دورہ حدیث (آٹھواں سال/آخری سال)',
-                  ],
+                // Phase 4: only the teacher's assigned classes are offered.
+                Consumer(
+                  builder: (context, ref, _) {
+                    final classes = ref
+                            .watch(teacherAssignedClassesProvider)
+                            .valueOrNull ??
+                        const <AssignedClass>[];
+                    return _buildDropdownField(
+                      hint: 'جماعت',
+                      items: classes.map((c) => c.name).toList(),
+                    );
+                  },
                 ),
                 const SizedBox(height: 12),
                 _buildDropdownField(

@@ -3,7 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../core/services/tenant_context.dart';
+import '../../../data/models/attendance_record.dart';
 import '../../../providers/attendance_provider.dart';
+import '../../../providers/auth_provider.dart';
 import '../../widgets/attendance/student_attendance_tile.dart';
 import 'package:intl/intl.dart';
 
@@ -232,15 +235,50 @@ class AttendanceScreen extends ConsumerWidget {
     );
   }
 
-  /// Save attendance action
+  /// Save attendance via the real stack:
+  /// AttendanceRecordNotifier → SupabaseAttendanceRepository
+  /// (offline fallback via OfflineSyncService). The old in-memory mock
+  /// save on AttendanceNotifier has been deleted.
   Future<void> _saveAttendance(BuildContext context, WidgetRef ref) async {
-    final success = await ref.read(attendanceProvider.notifier).saveAttendance();
+    final state = ref.read(attendanceProvider);
+    final tenantId = ref.read(currentTenantIdProvider);
+    final teacherId = ref.read(currentUserProvider)?.id;
+
+    String? error;
+    if (tenantId == null) {
+      error = 'کوئی فعال مدرسہ منتخب نہیں';
+    } else if (state.students.isNotEmpty &&
+        (state.classId == null || teacherId == null)) {
+      error = 'حاضری محفوظ نہیں ہو سکی';
+    }
+
+    var success = false;
+    if (error == null) {
+      final dateStr = state.selectedDate.toIso8601String().substring(0, 10);
+      final records = state.students
+          .map((s) => AttendanceRecord(
+                tenantId: tenantId!,
+                studentId: s.id,
+                studentName: s.name,
+                studentRollNo: s.rollNo,
+                studentPhotoUrl: s.photoUrl,
+                classId: state.classId ?? '',
+                teacherId: teacherId ?? '',
+                date: dateStr,
+                status: s.status,
+              ))
+          .toList();
+      await ref.read(attendanceRecordNotifierProvider.notifier).save(records);
+      final saveState = ref.read(attendanceRecordNotifierProvider);
+      success = saveState is! AsyncError;
+      if (!success) error = AppStrings.error;
+    }
 
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            success ? AppStrings.attendanceSaved : AppStrings.error,
+            success ? AppStrings.attendanceSaved : (error ?? AppStrings.error),
             style: AppTypography.bodyMedium.copyWith(color: Colors.white),
           ),
           backgroundColor: success ? AppColors.success : AppColors.error,

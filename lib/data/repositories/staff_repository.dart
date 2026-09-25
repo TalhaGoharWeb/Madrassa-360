@@ -10,10 +10,10 @@ import '../../core/services/supabase_service.dart';
 // ─────────────────────────────────────────────
 
 abstract class IStaffRepository {
-  Future<List<Staff>> getStaff();
-  Future<Staff?> getStaffById(String id);
-  Future<Staff> upsertStaff(Staff staff);
-  Future<void> deleteStaff(String id);
+  Future<List<Staff>> getStaff({required String tenantId});
+  Future<Staff?> getStaffById(String id, {required String tenantId});
+  Future<Staff> upsertStaff(Staff staff, {required String tenantId});
+  Future<void> deleteStaff(String id, {required String tenantId});
 }
 
 // ─────────────────────────────────────────────
@@ -24,10 +24,11 @@ class SupabaseStaffRepository implements IStaffRepository {
   SupabaseClient get _client => SupabaseService.client;
 
   @override
-  Future<List<Staff>> getStaff() async {
+  Future<List<Staff>> getStaff({required String tenantId}) async {
     final response = await _client
         .from('staff')
         .select()
+        .eq('tenant_id', tenantId)
         .eq('is_active', true)
         .order('name');
     return (response as List)
@@ -36,10 +37,12 @@ class SupabaseStaffRepository implements IStaffRepository {
   }
 
   @override
-  Future<Staff?> getStaffById(String id) async {
+  Future<Staff?> getStaffById(String id,
+      {required String tenantId}) async {
     final response = await _client
         .from('staff')
         .select()
+        .eq('tenant_id', tenantId)
         .eq('id', id)
         .maybeSingle();
     if (response == null) return null;
@@ -47,20 +50,22 @@ class SupabaseStaffRepository implements IStaffRepository {
   }
 
   @override
-  Future<Staff> upsertStaff(Staff staff) async {
+  Future<Staff> upsertStaff(Staff staff, {required String tenantId}) async {
+    final payload = <String, dynamic>{...staff.toJson(), 'tenant_id': tenantId};
     final response = await _client
         .from('staff')
-        .upsert(staff.toJson())
+        .upsert(payload)
         .select()
         .single();
     return Staff.fromJson(response);
   }
 
   @override
-  Future<void> deleteStaff(String id) async {
+  Future<void> deleteStaff(String id, {required String tenantId}) async {
     await _client
         .from('staff')
         .update({'is_active': false})
+        .eq('tenant_id', tenantId)
         .eq('id', id);
   }
 }

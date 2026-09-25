@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'app_colors.dart';
 
-/// المرکز الاسلامی قصور - خطاطی
+/// مدرسہ 360 - خطاطی
 /// Typography styles using Jameel Noori Nastaleeq font
 class AppTypography {
   AppTypography._();

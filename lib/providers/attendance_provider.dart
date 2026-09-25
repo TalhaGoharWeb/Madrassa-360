@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../core/services/tenant_context.dart';
 import '../data/models/student_model.dart';
 import '../data/models/attendance_status.dart';
 import '../data/models/attendance_record.dart';
@@ -15,11 +16,16 @@ class AttendanceState {
   final String? errorMessage;
   final DateTime selectedDate;
 
+  /// The class these students belong to (needed by the real save path to
+  /// build AttendanceRecords). Null until a class is loaded.
+  final String? classId;
+
   AttendanceState({
     required this.students,
     this.isLoading = false,
     this.errorMessage,
     DateTime? selectedDate,
+    this.classId,
   }) : selectedDate = selectedDate ?? DateTime.now();
 
   /// Create initial state — empty until a class is loaded from the database
@@ -36,12 +42,14 @@ class AttendanceState {
     bool? isLoading,
     String? errorMessage,
     DateTime? selectedDate,
+    String? classId,
   }) {
     return AttendanceState(
       students: students ?? this.students,
       isLoading: isLoading ?? this.isLoading,
       errorMessage: errorMessage,
       selectedDate: selectedDate ?? this.selectedDate,
+      classId: classId ?? this.classId,
     );
   }
 
@@ -104,26 +112,6 @@ class AttendanceNotifier extends StateNotifier<AttendanceState> {
   void loadStudentsForDarja(String darjaName) {
     state = state.copyWith(students: [], isLoading: false);
   }
-
-  /// Save attendance (Mock - just prints for now)
-  Future<bool> saveAttendance() async {
-    state = state.copyWith(isLoading: true);
-
-    // Simulate network delay
-    await Future.delayed(const Duration(seconds: 1));
-
-    // In Phase 2, this will save to Firebase/Hive
-    // For now, just print the exceptions (non-present students)
-    final exceptions = state.students.where((s) => s.status != AttendanceStatus.present);
-    
-    for (final student in exceptions) {
-      // ignore: avoid_print
-      print('📝 Exception: ${student.name} - ${student.status.urduLabel}');
-    }
-
-    state = state.copyWith(isLoading: false);
-    return true;
-  }
 }
 
 /// Provider for attendance state
@@ -133,7 +121,7 @@ final attendanceProvider = StateNotifierProvider<AttendanceNotifier, AttendanceS
 
 // ─────────────────────────────────────────────
 // Repository-backed Attendance Providers
-// (Phase 5 — uses Supabase or Mock via kUseSupabase flag)
+// (tenant-scoped; Supabase via IAttendanceRepository)
 // ─────────────────────────────────────────────
 
 /// Parameters for attendance queries (classId + date)
@@ -164,17 +152,22 @@ final attendanceRepositoryProvider = Provider<IAttendanceRepository>((ref) {
 final classAttendanceProvider =
     FutureProvider.family<List<AttendanceRecord>, AttendanceParams>(
         (ref, params) async {
+  final tenantId = ref.watch(currentTenantIdProvider);
+  if (tenantId == null) return <AttendanceRecord>[];
   final repo = ref.watch(attendanceRepositoryProvider);
-  return repo.getClassAttendance(classId: params.classId, date: params.date);
+  return repo.getClassAttendance(
+      classId: params.classId, date: params.date, tenantId: tenantId);
 });
 
 /// Realtime stream of attendance records for a class+date
 final attendanceStreamProvider =
     StreamProvider.family<List<AttendanceRecord>, AttendanceParams>(
         (ref, params) {
+  final tenantId = ref.watch(currentTenantIdProvider);
+  if (tenantId == null) return Stream<List<AttendanceRecord>>.empty();
   final repo = ref.watch(attendanceRepositoryProvider);
   return repo.subscribeToAttendance(
-      classId: params.classId, date: params.date);
+      classId: params.classId, date: params.date, tenantId: tenantId);
 });
 
 /// Notifier for saving attendance changes
@@ -183,6 +176,12 @@ class AttendanceRecordNotifier extends AsyncNotifier<void> {
   Future<void> build() async {}
 
   Future<void> save(List<AttendanceRecord> records) async {
+    final tenantId = ref.read(currentTenantIdProvider);
+    if (tenantId == null) {
+      state = AsyncError(
+          StateError('No active tenant'), StackTrace.current);
+      return;
+    }
     final repo = ref.read(attendanceRepositoryProvider);
     state = const AsyncLoading();
     try {

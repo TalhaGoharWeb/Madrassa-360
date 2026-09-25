@@ -17,15 +17,19 @@ abstract class IAttendanceRepository {
   Future<List<AttendanceRecord>> getClassAttendance({
     required String classId,
     required DateTime date,
+    required String tenantId,
   });
 
   /// Upsert attendance records (insert or update on student_id+date conflict).
+  /// Records carry their own tenant_id (see [AttendanceRecord.toUpsertJson]);
+  /// the signature stays stable for OfflineSyncService.
   Future<void> saveAttendance(List<AttendanceRecord> records);
 
   /// Realtime stream of attendance changes for a class+date.
   Stream<List<AttendanceRecord>> subscribeToAttendance({
     required String classId,
     required DateTime date,
+    required String tenantId,
   });
 }
 
@@ -40,8 +44,8 @@ class SupabaseAttendanceRepository implements IAttendanceRepository {
   String _dateStr(DateTime d) => d.toIso8601String().substring(0, 10);
 
   // ── Cache helpers ───────────────────────────────────────────
-  static String _cacheKey(String classId, String dateStr) =>
-      'cache_attendance_${classId}_$dateStr';
+  static String _cacheKey(String tenantId, String classId, String dateStr) =>
+      'cache_attendance_${tenantId}_${classId}_$dateStr';
 
   static List<AttendanceRecord> _decodeCache(String? raw) {
     if (raw == null || raw.isEmpty) return [];
@@ -75,10 +79,11 @@ class SupabaseAttendanceRepository implements IAttendanceRepository {
   }
 
   static Future<void> _writeCache(
-      String classId, String dateStr, List<AttendanceRecord> records) async {
-    final key = _cacheKey(classId, dateStr);
+      String tenantId, String classId, String dateStr, List<AttendanceRecord> records) async {
+    final key = _cacheKey(tenantId, classId, dateStr);
     final encoded = records.map((r) => {
       'id': r.id,
+      'tenant_id': r.tenantId,
       'student_id': r.studentId,
       'student_name': r.studentName,
       'student_roll_no': r.studentRollNo,
@@ -97,13 +102,15 @@ class SupabaseAttendanceRepository implements IAttendanceRepository {
   Future<List<AttendanceRecord>> getClassAttendance({
     required String classId,
     required DateTime date,
+    required String tenantId,
   }) async {
     final dateStr = _dateStr(date);
     final teacherId = _currentUserId;
     try {
       final response = await _client
           .from('students')
-          .select('id, name, roll_no, photo_url, attendance!left(id, status, note)')
+          .select('id, tenant_id, name, roll_no, photo_url, attendance!left(id, status, note)')
+          .eq('tenant_id', tenantId)
           .eq('class_id', classId)
           .eq('is_active', true)
           .eq('attendance.date', dateStr)
@@ -116,11 +123,11 @@ class SupabaseAttendanceRepository implements IAttendanceRepository {
           dateStr,
         );
       }).toList();
-      await _writeCache(classId, dateStr, records);
+      await _writeCache(tenantId, classId, dateStr, records);
       return records;
     } catch (_) {
       final cached = _decodeCache(
-          StorageService.getString(_cacheKey(classId, dateStr)));
+          StorageService.getString(_cacheKey(tenantId, classId, dateStr)));
       if (cached.isNotEmpty) return cached;
       rethrow;
     }
@@ -137,9 +144,10 @@ class SupabaseAttendanceRepository implements IAttendanceRepository {
     // Refresh cache after successful save
     if (records.isNotEmpty) {
       final classId = records.first.classId;
+      final tenantId = records.first.tenantId;
       final dateStr = records.first.date;
       final date = DateTime.tryParse(dateStr);
-      if (date != null) await _writeCache(classId, dateStr, records);
+      if (date != null) await _writeCache(tenantId, classId, dateStr, records);
     }
   }
 
@@ -147,13 +155,16 @@ class SupabaseAttendanceRepository implements IAttendanceRepository {
   Stream<List<AttendanceRecord>> subscribeToAttendance({
     required String classId,
     required DateTime date,
+    required String tenantId,
   }) {
     final dateStr = _dateStr(date);
     // Stream realtime changes then re-fetch full list on each event
     return _client
         .from('attendance')
         .stream(primaryKey: ['id'])
+        .eq('tenant_id', tenantId)
         .eq('date', dateStr)
-        .asyncMap((_) => getClassAttendance(classId: classId, date: date));
+        .asyncMap((_) => getClassAttendance(
+            classId: classId, date: date, tenantId: tenantId));
   }
 }

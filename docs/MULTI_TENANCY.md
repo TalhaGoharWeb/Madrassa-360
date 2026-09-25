@@ -61,3 +61,78 @@ The database deliberately has no "current tenant": a member of three madrasas ca
 - **Legacy RBAC remnants**: `user_roles` table + policies, `profiles.role` column + CHECK, `get_user_role()`/`get_my_role()`/single-arg `has_permission()` are deprecated-in-place, not removed (decommission in Phase 5).
 - **Missing entirely (later phases)**: provisioning wizard + Edge Functions (§12), licensing/subscriptions (§§42–43), offline SQLite + sync (§§20–23), `audit_logs` (§30), finance rebuild (§28), reporting (§31), CI/installer (§§39, 65–66).
 - **Secrets**: the committed keys are still in git history and the client still reads `SUPABASE_SERVICE_KEY` — key rotation + purge remain the user's P0 action; Phase 2 added `.env.example` (placeholders only) and verified `.env` is gitignored.
+
+## Module gating + dynamic branding design (mission §§32–33, Phase 4)
+
+**Status:** design contract only — the branding implementation is being built
+by a separate worker; what follows is the contract it must honor. Module
+gating UX follows the same contract. Both are *presentation-layer* concerns:
+they never replace RLS, which remains the single enforcement point.
+
+### Module gating contract
+
+- **Source of truth:** `public.tenant_modules(tenant_id, module, is_enabled)`
+  (migration 003; auto-seeded on tenant insert — defaults: students,
+  teachers, attendance, academics, exams, results, fees, parents enabled).
+- **Who can toggle:** `modules.view` to read, `modules.manage` to flip a
+  switch (tenant_admin/tenant_owner only, per 005).
+- **Client behavior:** after `TenantContext.init()`, the app fetches the
+  active tenant's `tenant_modules` and hides nav items / routes for disabled
+  modules. A disabled module's screens are unreachable AND its providers
+  return [] — belt and suspenders.
+- **Honest limitation (2026-09-25):** gating is UX-only. RLS policies do
+  *not* consult `tenant_modules` — a disabled module's rows are still fully
+  protected by the 007 permission policies, but a direct API call with a
+  valid permission code would still return rows. Closing that gap
+  (RLS-side module check, e.g. a `tenant_module_enabled(uuid, text)`
+  helper in policy USING clauses) is a documented Phase-8 hardening item,
+  not a blocker for the portal UX.
+
+### Dynamic branding contract (implemented by the branding worker)
+
+- **Data:** `tenants(name, name_urdu, logo_url, favicon_url)` +
+  `tenant_settings(language, theme, primary_color, secondary_color,
+  accent_color, font, dark_mode_enabled, receipt_header, receipt_footer)`
+  (migrations 001–002; settings auto-created by trigger on tenant insert).
+- **Client behavior:** after `TenantContext.init()` (and on every tenant
+  switch), the app loads the tenant's branding row and applies it —
+  `ThemeData` from the color/font/dark-mode fields, app-bar title from
+  `name_urdu` when the locale is Urdu (else `name`), logo widget from
+  `logo_url` with a bundled fallback. Values are cached per tenant in
+  `SharedPreferences` under a `branding_<tenant_id>` key and re-fetched
+  on switch.
+- **Contract rules the branding worker must follow:**
+  1. Read branding from the DB rows above — never hardcode a tenant's
+     name, logo, or colors in Dart.
+  2. Apply only *after* `currentTenantIdProvider` is non-null; before
+     that (or on logout) render the neutral default brand.
+  3. Fall back gracefully: any NULL branding field resolves to the
+     neutral default (missing `logo_url` → bundled logo, missing colors
+     → default palette). A tenant with no branding configured must look
+     identical to today's app.
+  4. RTL/Urdu is non-negotiable: `name_urdu` + Urdu labels are the
+     primary display when the locale is `ur`; the layout must stay RTL.
+
+### Portal link tables (Phase 4, migration 015)
+
+- `public.student_guardians(tenant_id, student_id, guardian_user_id →
+  auth.users, relationship, is_primary)` — the enforced parent↔child
+  link. Replaces the legacy single-column `students.parent_user_id`
+  (kept for 007 RLS-fallback compatibility only; new code joins through
+  the link table). Backfilled once from legacy `parent_user_id` values
+  that resolve to real `auth.users` rows.
+- `public.teacher_class_assignments(tenant_id, teacher_user_id →
+  auth.users, class_id → classes, subject, academic_year, is_active)` —
+  the enforced teacher↔class link (no such table existed before).
+- RLS mirrors the 007 template: guardians/teachers `SELECT` only their
+  own rows within tenants they belong to
+  (`guardian_user_id = auth.uid() AND is_tenant_member(tenant_id)`);
+  INSERT/UPDATE/DELETE are tenant-admin (+ platform-admin) only.
+  `tenant_id` is immutable via the 006 `prevent_tenant_id_change()`
+  trigger. Parse-validated with pglast; never applied to a live DB.
+- Dart: `lib/providers/parent_portal_provider.dart` (guardian link →
+  own children → scoped fees/results/attendance/announcements) and
+  `lib/providers/teacher_portal_provider.dart` (assignments → assigned
+  classes → assigned students). Every provider bails out (returns [])
+  when `currentTenantIdProvider` is null and always filters by
+  `tenant_id` — unscoped queries are impossible by construction.

@@ -1,4 +1,4 @@
-# 🕌 Madrasa 360 — Al Markaz al Islami Kasur
+# 🕌 Madrasa 360
 
 <div align="center">
 

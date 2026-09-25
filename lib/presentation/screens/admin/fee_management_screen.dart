@@ -3,8 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../core/services/tenant_context.dart';
+import '../../../core/utils/date_utils.dart';
 import '../../../data/models/fee.dart';
+import '../../../providers/admin_dashboard_provider.dart';
 import '../../../providers/fee_provider.dart';
+import '../../../providers/student_provider.dart';
 import '../../widgets/common/app_widgets.dart';
 
 /// فیس کی فہرست
@@ -357,12 +361,39 @@ class _FeeManagementScreenState extends State<FeeManagementScreen>
     }
   }
 
+  /// Phase 4: collection stats and the recent-collections feed are built
+  /// from the tenant's real fee rows ([allFeesProvider]) — no invented
+  /// names, amounts or "12%+" trends.
   Widget _buildCollectionTab() {
+    return Consumer(builder: (context, ref, _) {
+    final feeAsync = ref.watch(allFeesProvider);
+    final records = feeAsync.valueOrNull ?? [];
+    final paid = records
+        .where((r) => r.status == FeeStatus.paid)
+        .toList()
+      ..sort((a, b) => (b.paidDate ?? '').compareTo(a.paidDate ?? ''));
+
+    final now = DateTime.now();
+    final todayStr =
+        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    final todayPaid = paid.where((r) => r.paidDate == todayStr).toList();
+    final todayTotal =
+        todayPaid.fold<double>(0, (sum, r) => sum + r.amountPaid);
+
+    if (feeAsync.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (feeAsync.hasError) {
+      return Center(
+        child: Text('فیس لوڈ کرنے میں خطا', style: AppTypography.bodyMedium),
+      );
+    }
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          // Collection Stats
+          // Collection Stats — real tenant data
           AppCard(
             gradient: const LinearGradient(
               colors: [AppColors.primary, AppColors.primaryDark],
@@ -386,7 +417,7 @@ class _FeeManagementScreenState extends State<FeeManagementScreen>
                             ),
                           ),
                           Text(
-                            '15,500 روپے',
+                            '${formatPK(todayTotal)} روپے',
                             style: AppTypography.headingMedium.copyWith(
                               color: Colors.white,
                             ),
@@ -400,18 +431,11 @@ class _FeeManagementScreenState extends State<FeeManagementScreen>
                         color: Colors.white.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(20),
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.trending_up, color: Colors.white, size: 16),
-                          const SizedBox(width: 4),
-                          Text(
-                            '12%+',
-                            style: AppTypography.labelMedium.copyWith(
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
+                      child: Text(
+                        '${DateUtils.formatMonthName(now)} ${now.year}',
+                        style: AppTypography.labelMedium.copyWith(
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ],
@@ -422,35 +446,60 @@ class _FeeManagementScreenState extends State<FeeManagementScreen>
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    _buildCollectionStat('5', 'رسیدیں'),
-                    _buildCollectionStat('3', 'نقد'),
-                    _buildCollectionStat('2', 'آن لائن'),
+                    _buildCollectionStat('${paid.length}', 'رسیدیں'),
+                    _buildCollectionStat('${todayPaid.length}', 'آج'),
                   ],
                 ),
               ],
             ),
           ),
-          
+
           const SizedBox(height: 16),
-          
-          // Recent Collections
+
+          // Recent Collections — the tenant's real paid fees, newest first
           const SectionHeader(
             title: 'حالیہ وصولی',
             actionText: 'سب دیکھیں',
           ),
-          
-          // Collection List
-          ...List.generate(5, (index) {
-            return _buildCollectionItem(
-              name: ['محمد احمد', 'عبداللہ خان', 'حافظ عمر', 'یوسف علی', 'حسن رضا'][index],
-              amount: ['3,000', '1,500', '3,000', '2,500', '3,000'][index],
-              time: ['ابھی', '15 منٹ پہلے', '1 گھنٹہ پہلے', '2 گھنٹے پہلے', 'صبح'][index],
-              method: index % 2 == 0 ? 'نقد' : 'آن لائن',
-            );
-          }),
+
+          if (paid.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Text(
+                'ابھی کوئی وصولی درج نہیں',
+                style: AppTypography.bodyMedium.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            )
+          else
+            ...paid.take(5).map((r) => _buildCollectionItem(
+                  name: r.studentName,
+                  amount: formatPK(r.amountPaid),
+                  time: _paidTimeLabel(r),
+                  method: _monthLabel(r.month),
+                )),
         ],
       ),
     );
+    });
+  }
+
+  /// Relative Urdu label for when a fee was paid.
+  String _paidTimeLabel(Fee r) {
+    final at = DateTime.tryParse(r.paidDate ?? '');
+    if (at == null) return '';
+    return urduTimeAgo(at);
+  }
+
+  /// '2026-09' → 'ستمبر 2026'.
+  String _monthLabel(String yearMonth) {
+    final parts = yearMonth.split('-');
+    if (parts.length != 2) return yearMonth;
+    final y = int.tryParse(parts[0]);
+    final m = int.tryParse(parts[1]);
+    if (y == null || m == null || m < 1 || m > 12) return yearMonth;
+    return '${DateUtils.formatMonthName(DateTime(y, m))} $y';
   }
 
   Widget _buildCollectionStat(String value, String label) {
@@ -653,7 +702,7 @@ class _FeeManagementScreenState extends State<FeeManagementScreen>
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
-                      onPressed: () => _showReceiptDialog(context),
+                      onPressed: () => _showReceiptDialog(context, record),
                       icon: const Icon(Icons.print),
                       label: const Text('رسید پرنٹ کریں'),
                     ),
@@ -667,7 +716,12 @@ class _FeeManagementScreenState extends State<FeeManagementScreen>
     );
   }
 
-  void _showReceiptDialog(BuildContext context) {
+  /// Phase 4: the receipt prints the selected fee record's real data —
+  /// no invented names, dates or amounts.
+  void _showReceiptDialog(BuildContext context, Fee record) {
+    final receiptNo =
+        '#FEE-${record.month}-${record.id.length >= 6 ? record.id.substring(0, 6).toUpperCase() : record.id.toUpperCase()}';
+    final paidAt = DateTime.tryParse(record.paidDate ?? '');
     showDialog(
       context: context,
       builder: (context) => Dialog(
@@ -694,13 +748,18 @@ class _FeeManagementScreenState extends State<FeeManagementScreen>
                 ),
                 child: Column(
                   children: [
-                    _buildReceiptRow('رسید نمبر', '#FEE-2026-001'),
-                    _buildReceiptRow('طالب علم کا نام', 'محمد احمد'),
-                    _buildReceiptRow('کلاس', 'دہم جماعت'),
+                    _buildReceiptRow('رسید نمبر', receiptNo),
+                    _buildReceiptRow('طالب علم کا نام', record.studentName),
+                    _buildReceiptRow('کلاس', record.studentClass),
+                    _buildReceiptRow('مہینہ', _monthLabel(record.month)),
                     _buildReceiptRow('فیس کی قسم', 'ماہانہ فیس'),
-                    _buildReceiptRow('رقم', 'ر 2,500'),
-                    _buildReceiptRow('وصول کرنے والا', 'مدرسہ منتظم'),
-                    _buildReceiptRow('تاریخ', '9 جنوری 2026'),
+                    _buildReceiptRow('رقم', '${formatPK(record.amountPaid)} روپے'),
+                    _buildReceiptRow('حیثیت', record.status.urduLabel),
+                    _buildReceiptRow(
+                        'تاریخ',
+                        paidAt == null
+                            ? '—'
+                            : DateUtils.formatDateUrdu(paidAt)),
                   ],
                 ),
               ),
@@ -775,9 +834,12 @@ class _FeeManagementScreenState extends State<FeeManagementScreen>
       text: record.remaining.toString(),
     );
 
+    // Phase 4: collecting a fee persists the payment through the fee
+    // notifier (DB status is recalculated server-side) — no more mock.
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => Consumer(
+        builder: (context, ref, _) => AlertDialog(
         title: Text(
           'فیس وصول کریں',
           style: AppTypography.titleLarge,
@@ -834,18 +896,38 @@ class _FeeManagementScreenState extends State<FeeManagementScreen>
             child: const Text('منسوخ کریں'),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               final amount = double.tryParse(amountController.text);
-              if (amount != null && amount > 0 && amount <= record.remaining) {
-                // Mock fee collection
+              if (amount == null ||
+                  amount <= 0 ||
+                  amount > record.remaining) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                      content: Text('درست رقم درج کریں (باقی رقم سے زیادہ نہیں)')),
+                );
+                return;
+              }
+              final now = DateTime.now();
+              final paidStr =
+                  '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+              final updated = record.copyWith(
+                amountPaid: record.amountPaid + amount,
+                paidDate: paidStr,
+              );
+              try {
+                await ref.read(feeNotifierProvider.notifier).save(updated);
+                if (dialogContext.mounted) Navigator.pop(dialogContext);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('ر ${amount} کی فیس کامیابی سے وصول کر لی گئی'),
+                    content: Text(
+                        'ر ${formatPK(amount)} کی فیس کامیابی سے وصول کر لی گئی'),
                     backgroundColor: Colors.green,
                   ),
                 );
-                Navigator.pop(context);
-                // In a real app, this would update the record status
+              } catch (_) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('فیس وصول کرنے میں خطا')),
+                );
               }
             },
             style: ElevatedButton.styleFrom(
@@ -854,173 +936,179 @@ class _FeeManagementScreenState extends State<FeeManagementScreen>
             child: const Text('وصول کریں'),
           ),
         ],
+        ),
       ),
     );
   }
 
+  /// Phase 4: real voucher creation. The student comes from the
+  /// tenant's live roster and the month from real calendar months — no
+  /// free-text names, no hard-coded darja list, no frozen month names.
+  /// Persists through [FeeNotifier.save]; the class shown is the selected
+  /// student's own class.
   void _showNewVoucherDialog(BuildContext context) {
-    final TextEditingController studentController = TextEditingController();
-    final TextEditingController amountController = TextEditingController();
-    final TextEditingController descriptionController = TextEditingController();
-    const classOptions = [
-      'درجہ اولیٰ (اول سال)',
-      'درجہ ثانیہ (دوسرا سال)',
-      'درجہ ثالثہ (تیسرا سال)',
-      'درجہ رابعہ (چوتھا سال)',
-      'درجہ خامسہ (پانچواں سال)',
-      'درجہ سادسہ (چھٹا سال)',
-      'درجہ سابِعہ (ساتواں سال)',
-      'دورہ حدیث (آٹھواں سال/آخری سال)',
-    ];
-    String selectedClass = classOptions.first;
-    String selectedMonth = 'جنوری';
+    final amountController = TextEditingController();
+    final now = DateTime.now();
+    final monthValues = List.generate(6, (i) {
+      final d = DateTime(now.year, now.month - i, 1);
+      return '${d.year}-${d.month.toString().padLeft(2, '0')}';
+    });
+    String selectedMonth = monthValues.first;
+    String? selectedStudentId;
 
     showDialog(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-        title: Text(
-          'نیا واؤچر بنائیں',
-          style: AppTypography.titleLarge,
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Student Selection
-              TextFormField(
-                controller: studentController,
-                decoration: const InputDecoration(
-                  labelText: 'طالب علم کا نام',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.person),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'طالب علم کا نام درج کریں';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
+      builder: (dialogContext) => Consumer(
+        builder: (context, ref, _) {
+          final studentsAsync = ref.watch(allStudentsProvider);
+          final students = studentsAsync.valueOrNull ?? [];
+          final tenantId = ref.watch(currentTenantIdProvider);
+          final failed = studentsAsync.hasError || tenantId == null;
 
-              // Class Selection
-              DropdownButtonFormField<String>(
-                value: selectedClass,
-                decoration: const InputDecoration(
-                  labelText: 'کلاس',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.class_),
-                ),
-                items: classOptions.map((String value) {
-                  return DropdownMenuItem<String>(
-                    value: value,
-                    child: Text(value),
-                  );
-                }).toList(),
-                onChanged: (value) =>
-                    setDialogState(() => selectedClass = value!),
+          return StatefulBuilder(
+            builder: (context, setDialogState) => AlertDialog(
+              title: Text(
+                'نیا واؤچر بنائیں',
+                style: AppTypography.titleLarge,
               ),
-              const SizedBox(height: 16),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (studentsAsync.isLoading)
+                      const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: CircularProgressIndicator(),
+                      )
+                    else if (failed)
+                      Text(
+                        'طلبہ لوڈ کرنے میں خطا',
+                        style: AppTypography.bodyMedium,
+                      )
+                    else ...[
+                      // Student Selection — the tenant's real roster
+                      DropdownButtonFormField<String>(
+                        value: selectedStudentId,
+                        decoration: const InputDecoration(
+                          labelText: 'طالب علم',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.person),
+                        ),
+                        items: students.map((s) {
+                          return DropdownMenuItem<String>(
+                            value: s.id,
+                            child: Text('${s.name} (${s.className})'),
+                          );
+                        }).toList(),
+                        onChanged: (value) =>
+                            setDialogState(() => selectedStudentId = value),
+                      ),
+                      const SizedBox(height: 16),
 
-              // Month Selection
-              DropdownButtonFormField<String>(
-                value: selectedMonth,
-                decoration: const InputDecoration(
-                  labelText: 'ماہ',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.calendar_month),
-                ),
-                items: [
-                  'جنوری',
-                  'فروری',
-                  'مارچ',
-                  'اپریل',
-                  'مئی',
-                  'جون',
-                  'جولائی',
-                  'اگست',
-                  'ستمبر',
-                  'اکتوبر',
-                  'نومبر',
-                  'دسمبر',
-                ].map((String value) {
-                  return DropdownMenuItem<String>(
-                    value: value,
-                    child: Text(value),
-                  );
-                }).toList(),
-                onChanged: (value) =>
-                    setDialogState(() => selectedMonth = value!),
-              ),
-              const SizedBox(height: 16),
+                      // Month Selection — real months, newest first
+                      DropdownButtonFormField<String>(
+                        value: selectedMonth,
+                        decoration: const InputDecoration(
+                          labelText: 'ماہ',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.calendar_month),
+                        ),
+                        items: monthValues.map((String value) {
+                          return DropdownMenuItem<String>(
+                            value: value,
+                            child: Text(_monthLabel(value)),
+                          );
+                        }).toList(),
+                        onChanged: (value) =>
+                            setDialogState(() => selectedMonth = value!),
+                      ),
+                      const SizedBox(height: 16),
 
-              // Amount
-              TextFormField(
-                controller: amountController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'رقم',
-                  border: OutlineInputBorder(),
-                  prefixText: 'ر ',
-                  prefixIcon: Icon(Icons.attach_money),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'رقم درج کریں';
-                  }
-                  final amount = double.tryParse(value);
-                  if (amount == null || amount <= 0) {
-                    return 'درست رقم درج کریں';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-
-              // Description
-              TextFormField(
-                controller: descriptionController,
-                maxLines: 2,
-                decoration: const InputDecoration(
-                  labelText: 'تفصیل (اختیاری)',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.description),
+                      // Amount
+                      TextFormField(
+                        controller: amountController,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: 'رقم',
+                          border: OutlineInputBorder(),
+                          prefixText: 'ر ',
+                          prefixIcon: Icon(Icons.attach_money),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('منسوخ کریں'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (studentController.text.isNotEmpty &&
-                  amountController.text.isNotEmpty) {
-                final amount = double.tryParse(amountController.text);
-                if (amount != null && amount > 0) {
-                  // Mock voucher creation
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('نیا واؤچر ${studentController.text} کے لیے بنایا گیا'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                  Navigator.pop(context);
-                  // In a real app, this would save the voucher to database
-                }
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: const Text('منسوخ کریں'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    final amount = double.tryParse(amountController.text);
+                    final matches = students
+                        .where((s) => s.id == selectedStudentId)
+                        .toList();
+                    if (matches.isEmpty ||
+                        amount == null ||
+                        amount <= 0 ||
+                        tenantId == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                              'طالب علم منتخب کریں اور درست رقم درج کریں'),
+                        ),
+                      );
+                      return;
+                    }
+                    final student = matches.first;
+                    // Due on the last day of the selected month.
+                    final mp = selectedMonth.split('-');
+                    final due = DateTime(
+                        int.parse(mp[0]), int.parse(mp[1]) + 1, 0);
+                    final dueStr =
+                        '${due.year}-${due.month.toString().padLeft(2, '0')}-${due.day.toString().padLeft(2, '0')}';
+                    final fee = Fee(
+                      id: '',
+                      tenantId: tenantId,
+                      studentId: student.id,
+                      studentName: student.name,
+                      studentClass: student.className,
+                      month: selectedMonth,
+                      amountDue: amount,
+                      amountPaid: 0,
+                      dueDate: dueStr,
+                      status: FeeStatus.pending,
+                    );
+                    try {
+                      await ref.read(feeNotifierProvider.notifier).save(fee);
+                      if (dialogContext.mounted) {
+                        Navigator.pop(dialogContext);
+                      }
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                              '${student.name} کے لیے واؤچر بنا دیا گیا'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    } catch (_) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                            content: Text('واؤچر بنانے میں خطا')),
+                      );
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                  ),
+                  child: const Text('واؤچر بنائیں'),
+                ),
+              ],
             ),
-            child: const Text('واؤچر بنائیں'),
-          ),
-        ],
-      ),
+          );
+        },
       ),
     );
   }

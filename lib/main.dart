@@ -9,14 +9,16 @@ import 'core/services/offline_sync_service.dart';
 import 'core/services/storage_service.dart';
 import 'core/services/supabase_service.dart';
 import 'core/widgets/master_admin_guard.dart';
+import 'providers/tenant_branding_provider.dart';
 import 'presentation/screens/auth/login_screen.dart';
 import 'presentation/screens/master_admin/master_admin_shell.dart';
 
 /// مدرسہ  360 — ایپ انٹری پوائنٹ
 /// Madrasa 360 — Main Entry Point
 /// 
-/// Deploy for a new madrassa? Edit ONE file:
-///   lib/core/config/madrassa_config.dart
+/// Multi-tenant: institution identity (name, logo, contact, colours) is
+/// loaded per-tenant at runtime from Supabase via tenantBrandingProvider —
+/// no per-client source edits needed.
 /// Supabase credentials:
 ///   assets/.env  (copy from assets/.env.example)
 ///
@@ -69,15 +71,29 @@ class Madrasa360App extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    // Phase 4: the whole app's accent colours and dark mode follow the
+    // active tenant's branding (tenant_settings). Logged out / still
+    // resolving → the neutral product theme.
+    return Consumer(
+      builder: (context, ref, _) {
+        final branding = ref.watch(tenantBrandingProvider).valueOrNull;
+        final theme = branding == null
+            ? AppTheme.lightTheme
+            : AppTheme.lightTheme.withTenantBranding(branding);
+        final dark = branding == null
+            ? AppTheme.darkTheme
+            : AppTheme.darkTheme.withTenantBranding(branding);
+        return MaterialApp(
       // App Info
       title: AppStrings.appName,
       debugShowCheckedModeBanner: false,
-      
-      // Theme
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.light,
+
+      // Theme — tenant-driven accents
+      theme: theme,
+      darkTheme: dark,
+      themeMode: (branding?.darkModeEnabled ?? false)
+          ? ThemeMode.dark
+          : ThemeMode.light,
       
       // ⭐ FORCE RTL (Right-to-Left) for Urdu
       locale: const Locale('ur', 'PK'),
@@ -112,6 +128,8 @@ class Madrasa360App extends StatelessWidget {
         '/master': (_) => const MasterAdminGuard(
               child: MasterAdminShell(),
             ),
+      },
+        );
       },
     );
   }

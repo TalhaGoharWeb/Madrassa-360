@@ -4,7 +4,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../data/models/fee.dart';
-import '../../../providers/fee_provider.dart';
+import '../../../providers/parent_portal_provider.dart';
 import '../../widgets/common/app_widgets.dart';
 
 /// فیس کی تاریخ
@@ -15,7 +15,9 @@ class FeeHistoryScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Consumer(builder: (context, ref, _) {
-    final feesAsync = ref.watch(allFeesProvider);
+    // Phase 4: parents see ONLY their own children's fees, via the
+    // student_guardians link + tenant scope (never the global fee list).
+    final feesAsync = ref.watch(parentFeesProvider);
 
     return Scaffold(
       appBar: AppBar(

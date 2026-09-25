@@ -10,12 +10,13 @@ import '../../core/services/supabase_service.dart';
 // ─────────────────────────────────────────────
 
 abstract class IFeeRepository {
-  Future<List<Fee>> getAllFees();
-  Future<List<Fee>> getFeesByStudent(String studentId);
+  Future<List<Fee>> getAllFees({required String tenantId});
+  Future<List<Fee>> getFeesByStudent(String studentId,
+      {required String tenantId});
   /// [month] is in 'YYYY-MM' format, e.g. '2026-01'
-  Future<List<Fee>> getFeesByMonth(String month);
-  Future<Fee> upsertFee(Fee fee);
-  Future<void> deleteFee(String id);
+  Future<List<Fee>> getFeesByMonth(String month, {required String tenantId});
+  Future<Fee> upsertFee(Fee fee, {required String tenantId});
+  Future<void> deleteFee(String id, {required String tenantId});
 }
 
 // ─────────────────────────────────────────────
@@ -29,10 +30,11 @@ class SupabaseFeeRepository implements IFeeRepository {
       '*, students(name, roll_no)';
 
   @override
-  Future<List<Fee>> getAllFees() async {
+  Future<List<Fee>> getAllFees({required String tenantId}) async {
     final response = await _client
         .from('fees')
         .select(_select)
+        .eq('tenant_id', tenantId)
         .order('due_date', ascending: false);
     return (response as List)
         .map((row) => Fee.fromJson(row as Map<String, dynamic>))
@@ -40,10 +42,12 @@ class SupabaseFeeRepository implements IFeeRepository {
   }
 
   @override
-  Future<List<Fee>> getFeesByStudent(String studentId) async {
+  Future<List<Fee>> getFeesByStudent(String studentId,
+      {required String tenantId}) async {
     final response = await _client
         .from('fees')
         .select(_select)
+        .eq('tenant_id', tenantId)
         .eq('student_id', studentId)
         .order('due_date', ascending: false);
     return (response as List)
@@ -52,10 +56,12 @@ class SupabaseFeeRepository implements IFeeRepository {
   }
 
   @override
-  Future<List<Fee>> getFeesByMonth(String month) async {
+  Future<List<Fee>> getFeesByMonth(String month,
+      {required String tenantId}) async {
     final response = await _client
         .from('fees')
         .select(_select)
+        .eq('tenant_id', tenantId)
         .eq('month', month)
         .order('due_date', ascending: false);
     return (response as List)
@@ -64,17 +70,22 @@ class SupabaseFeeRepository implements IFeeRepository {
   }
 
   @override
-  Future<Fee> upsertFee(Fee fee) async {
+  Future<Fee> upsertFee(Fee fee, {required String tenantId}) async {
+    final payload = <String, dynamic>{...fee.toJson(), 'tenant_id': tenantId};
     final response = await _client
         .from('fees')
-        .upsert(fee.toJson())
+        .upsert(payload)
         .select(_select)
         .single();
     return Fee.fromJson(response);
   }
 
   @override
-  Future<void> deleteFee(String id) async {
-    await _client.from('fees').delete().eq('id', id);
+  Future<void> deleteFee(String id, {required String tenantId}) async {
+    await _client
+        .from('fees')
+        .delete()
+        .eq('tenant_id', tenantId)
+        .eq('id', id);
   }
 }
