@@ -50,6 +50,20 @@ jobs:
           "version=$v" >> $env:GITHUB_OUTPUT
           Write-Host "Building installer for version $v"
 
+      - name: Write assets/.env from secrets
+        shell: pwsh
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          if (-not $env:SUPABASE_URL -or -not $env:SUPABASE_ANON_KEY) {
+            Write-Error "SUPABASE_URL and SUPABASE_ANON_KEY GitHub secrets must be set (repo Settings > Secrets and variables > Actions). The installer would otherwise ship without backend config and show the crash screen on launch."
+            exit 1
+          }
+          $content = "SUPABASE_URL=$($env:SUPABASE_URL)`nSUPABASE_ANON_KEY=$($env:SUPABASE_ANON_KEY)`n"
+          Set-Content -Path assets/.env -Value $content -NoNewline
+          Write-Host "assets/.env written (values masked)."
+
       - name: Get dependencies
         run: flutter pub get
 
