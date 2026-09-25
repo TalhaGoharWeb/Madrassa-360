@@ -36,6 +36,8 @@ Never point a dev or staging build at the prod Supabase project.
 | `KEYSTORE_PASSWORD` | Keystore (store) password |
 | `KEY_ALIAS` | Key alias (e.g. `madrassa360`) |
 | `KEY_PASSWORD` | Key password |
+| `SUPABASE_URL` | Supabase project URL, e.g. `https://xyzcompany.supabase.co` (baked into `assets/.env` at build time) |
+| `SUPABASE_ANON_KEY` | Supabase **publishable/anon** key (baked into `assets/.env` at build time; safe for client embedding — never the secret key) |
 
 The `build-android` workflow decodes the keystore to `android/keystore.jks`
 and writes `android/key.properties` from these secrets **inside the runner**;
