@@ -446,213 +446,47 @@ class _ParentDashboardScreenState
     );
   }
 
-  /// Phase-5 placeholder: activity timeline is still static mock data.
-  /// (Real event feed arrives with the notifications module work.)
+  /// Phase 6 (mock purge): the old static mock activity rows are gone.
+  /// A real child activity feed arrives with the notifications module.
+  /// TODO(phase-8): wire to the real notifications/activity feed; until
+  /// then show an explicit empty state — never invented rows.
   Widget _buildActivityTimeline() {
-    final activities = [
-      {
-        'icon': Icons.fact_check,
-        'color': AppColors.success,
-        'title': 'حاضری',
-        'subtitle': 'حاضر',
-        'time': 'آج 8:00',
-      },
-      {
-        'icon': Icons.menu_book,
-        'color': AppColors.primary,
-        'title': 'سبق مکمل',
-        'subtitle': 'قرآن - سورۃ البقرۃ',
-        'time': 'آج 10:00',
-      },
-      {
-        'icon': Icons.assignment,
-        'color': AppColors.info,
-        'title': 'ٹیسٹ',
-        'subtitle': 'ناظرہ امتحان - 90%',
-        'time': 'کل',
-      },
-      {
-        'icon': Icons.payments,
-        'color': AppColors.success,
-        'title': 'فیس',
-        'subtitle': 'جنوری کی فیس ادا شدہ',
-        'time': '5 دن پہلے',
-      },
-    ];
-
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemCount: activities.length,
-      itemBuilder: (context, index) {
-        final activity = activities[index];
-        final isLast = index == activities.length - 1;
-        
-        return IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Timeline indicator
-              Column(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: (activity['color'] as Color).withOpacity(0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      activity['icon'] as IconData,
-                      color: activity['color'] as Color,
-                      size: 20,
-                    ),
-                  ),
-                  if (!isLast)
-                    Expanded(
-                      child: Container(
-                        width: 2,
-                        color: AppColors.divider,
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(width: 12),
-              
-              // Content
-              Expanded(
-                child: Container(
-                  margin: const EdgeInsets.only(bottom: 16),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              activity['title'] as String,
-                              style: AppTypography.titleSmall,
-                            ),
-                            Text(
-                              activity['subtitle'] as String,
-                              style: AppTypography.bodySmall,
-                            ),
-                          ],
-                        ),
-                      ),
-                      Text(
-                        activity['time'] as String,
-                        style: AppTypography.labelSmall.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
+    return _buildEmptySection(
+      icon: Icons.timeline_outlined,
+      message: 'ابھی کوئی سرگرمی ریکارڈ نہیں',
     );
   }
 
-  /// Phase-5 placeholder: upcoming exams are still static mock data.
+  /// Phase 6 (mock purge): the old static mock exam rows are gone.
+  /// TODO(phase-8): wire to a real exams/schedule source; until then show
+  /// an explicit empty state — never invented exam dates.
   Widget _buildUpcomingExams() {
-    final exams = [
-      {
-        'subject': 'قرآن کریم',
-        'type': 'ماہانہ امتحان',
-        'date': '15 جنوری',
-        'daysLeft': 6,
-      },
-      {
-        'subject': 'حدیث شریف',
-        'type': 'ہفتہ وار ٹیسٹ',
-        'date': '12 جنوری',
-        'daysLeft': 3,
-      },
-    ];
+    return _buildEmptySection(
+      icon: Icons.event_outlined,
+      message: 'ابھی کوئی امتحان شیڈول نہیں',
+    );
+  }
 
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemCount: exams.length,
-      itemBuilder: (context, index) {
-        final exam = exams[index];
-        return AppCard(
-          margin: const EdgeInsets.only(bottom: 8),
-          child: Row(
-            children: [
-              Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  color: AppColors.warning.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      '${exam['daysLeft']}',
-                      style: AppTypography.titleMedium.copyWith(
-                        color: AppColors.warning,
-                      ),
-                    ),
-                    Text(
-                      'دن',
-                      style: AppTypography.labelSmall.copyWith(
-                        color: AppColors.warning,
-                        fontSize: 9,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      exam['subject'] as String,
-                      style: AppTypography.titleMedium,
-                    ),
-                    Text(
-                      exam['type'] as String,
-                      style: AppTypography.bodySmall,
-                    ),
-                  ],
-                ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    exam['date'] as String,
-                    style: AppTypography.labelMedium.copyWith(
-                      color: AppColors.primary,
-                    ),
-                  ),
-                  const Icon(
-                    Icons.chevron_left,
-                    color: AppColors.textSecondary,
-                    size: 20,
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
+  /// Explicit empty state — never invented rows.
+  Widget _buildEmptySection(
+      {required IconData icon, required String message}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      child: Center(
+        child: Column(
+          children: [
+            Icon(icon,
+                size: 48, color: AppColors.textSecondary.withOpacity(0.5)),
+            const SizedBox(height: 12),
+            Text(
+              message,
+              style: AppTypography.bodyMedium
+                  .copyWith(color: AppColors.textSecondary),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

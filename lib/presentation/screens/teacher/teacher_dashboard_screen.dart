@@ -102,9 +102,14 @@ class TeacherDashboardScreen extends StatelessWidget {
   }
 
   Widget _buildQuickStats(WidgetRef ref) {
-    // Headcount across the teacher's assigned classes (tenant-scoped).
-    // The other two cards are Phase-5 placeholders (still static).
+    // Headcount across the teacher's assigned classes (tenant-scoped), and
+    // today's real present count (Phase 6 mock purge — no more hard-coded
+    // '23'). The "pending" card has no backing source yet: it renders an
+    // explicit empty value instead of the old invented '3'.
+    // TODO(phase-8): wire "زیر التواء" to a real pending-tasks/approvals
+    // source once one exists; never render an invented number.
     final studentCount = ref.watch(teacherStudentCountProvider).valueOrNull;
+    final todayPresent = ref.watch(teacherTodayPresentProvider).valueOrNull;
     return Row(
       children: [
         Expanded(
@@ -120,7 +125,7 @@ class TeacherDashboardScreen extends StatelessWidget {
           child: _buildStatCard(
             icon: Icons.check_circle,
             label: 'آج حاضر',
-            value: '23',
+            value: todayPresent == null ? '—' : '$todayPresent',
             color: AppColors.present,
           ),
         ),
@@ -129,7 +134,7 @@ class TeacherDashboardScreen extends StatelessWidget {
           child: _buildStatCard(
             icon: Icons.assignment,
             label: 'زیر التواء',
-            value: '3',
+            value: '—',
             color: AppColors.warning,
           ),
         ),

@@ -17,7 +17,10 @@ class FeeHistoryScreen extends StatelessWidget {
     return Consumer(builder: (context, ref, _) {
     // Phase 4: parents see ONLY their own children's fees, via the
     // student_guardians link + tenant scope (never the global fee list).
+    // Phase 6 (mock purge): the header card below renders the real child
+    // (first linked child) — never the old hard-coded name/class/roll.
     final feesAsync = ref.watch(parentFeesProvider);
+    final childrenAsync = ref.watch(parentChildrenProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -28,26 +31,49 @@ class FeeHistoryScreen extends StatelessWidget {
         error: (e, _) => Center(
           child: Text('فیس لوڈ کرنے میں خطا', style: AppTypography.bodyMedium),
         ),
-        data: (fees) => Column(
-          children: [
-            // Fee Summary Card
-            _buildFeeSummaryCard(fees),
-            
-            // Fee History List
-            Expanded(
-              child: _buildFeeHistoryList(fees),
-            ),
-          ],
-        ),
+        data: (fees) {
+          final children = childrenAsync.valueOrNull ?? const [];
+          // Totals aggregate across all linked children; the header names
+          // them honestly (never an invented single child).
+          final String? headerName = children.isEmpty
+              ? null
+              : (children.length == 1
+                  ? children.first.name
+                  : '${children.length} طلباء');
+          final String? headerClass =
+              children.length == 1 ? children.first.className : null;
+          final String? rollLine = children.length == 1
+              ? 'رول نمبر ${children.first.rollNo}'
+              : null;
+          return Column(
+            children: [
+              // Fee Summary Card
+              _buildFeeSummaryCard(fees, headerName, headerClass, rollLine),
+
+              // Fee History List
+              Expanded(
+                child: _buildFeeHistoryList(fees),
+              ),
+            ],
+          );
+        },
       ),
     );
     });
   }
 
-  Widget _buildFeeSummaryCard(List<Fee> fees) {
+  /// Phase 6 (mock purge): child identity comes from the real linked
+  /// children — a null [childName] means no child is linked yet, so the
+  /// header shows an explicit "no child" state instead of an invented name.
+  Widget _buildFeeSummaryCard(
+      List<Fee> fees, String? childName, String? childClass, String? rollLine) {
     final totalDue = fees.fold<double>(0, (sum, f) => sum + f.amountDue);
     final totalPaid = fees.fold<double>(0, (sum, f) => sum + f.amountPaid);
     final remaining = totalDue - totalPaid;
+    final subtitle = [
+      if (childClass != null && childClass.isNotEmpty) childClass,
+      if (rollLine != null) rollLine,
+    ].join(' - ');
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(20),
@@ -75,13 +101,13 @@ class FeeHistoryScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'محمد احمد',
+                      childName ?? 'کوئی طالب علم منسلک نہیں',
                       style: AppTypography.titleLarge.copyWith(
                         color: Colors.white,
                       ),
                     ),
                     Text(
-                      'درجہ اولیٰ (اول سال)  - رول نمبر 1',
+                      subtitle.isEmpty ? '—' : subtitle,
                       style: AppTypography.bodySmall.copyWith(
                         color: Colors.white70,
                       ),

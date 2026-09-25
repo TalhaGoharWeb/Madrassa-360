@@ -779,11 +779,14 @@ class _FeeManagementScreenState extends State<FeeManagementScreen>
                   Expanded(
                     child: ElevatedButton.icon(
                       onPressed: () {
-                        // Mock print functionality
+                        // Phase 6 (mock purge): there is no print engine yet —
+                        // the old code showed a fake "printing…" success. Be
+                        // honest instead.
+                        // TODO(phase-8): wire to a real receipt printer via the
+                        // `printing` package once the dependency is approved.
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text('رسید پرنٹ ہو رہی ہے...'),
-                            backgroundColor: Colors.green,
+                            content: Text('رسید پرنٹنگ جلد دستیاب ہوگی'),
                           ),
                         );
                         Navigator.pop(context);

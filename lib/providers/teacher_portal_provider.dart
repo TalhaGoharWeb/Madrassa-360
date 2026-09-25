@@ -11,7 +11,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/services/supabase_service.dart';
 import '../core/services/tenant_context.dart';
+import '../data/models/attendance_status.dart';
 import '../data/models/student.dart';
+import 'attendance_provider.dart';
 import 'auth_provider.dart';
 
 // ─────────────────────────────────────────────
@@ -169,6 +171,22 @@ final teacherStudentCountProvider = FutureProvider<int>((ref) async {
   for (final id in classIds) {
     final students = await ref.watch(teacherClassStudentsProvider(id).future);
     total += students.length;
+  }
+  return total;
+});
+
+/// Present headcount TODAY across the teacher's assigned classes.
+///
+/// Phase 6 (mock purge): replaces the hard-coded '23' the dashboard used
+/// to render. Real, tenant-scoped data via [classAttendanceProvider].
+final teacherTodayPresentProvider = FutureProvider<int>((ref) async {
+  final classIds = ref.watch(teacherAssignedClassIdsProvider);
+  final today = DateTime.now();
+  var total = 0;
+  for (final id in classIds) {
+    final records = await ref
+        .watch(classAttendanceProvider(AttendanceParams(classId: id, date: today)).future);
+    total += records.where((r) => r.status == AttendanceStatus.present).length;
   }
   return total;
 });
