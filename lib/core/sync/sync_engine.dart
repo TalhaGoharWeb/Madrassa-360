@@ -85,6 +85,7 @@ import 'dart:math';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:drift/drift.dart';
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
@@ -189,6 +190,43 @@ const List<String> _pullEntities = [
   'invoices',
   'payments',
 ];
+
+/// Decision for a NORMAL (non-financial) entity conflict once the server
+/// row is known to exist. Mirrors the branch inside
+/// [SyncEngine._handleConflict]; extracted for unit testing.
+enum NormalConflictDecision { takeServer, rebaseAndRetry }
+
+/// True when a conflicted entity must be parked in `sync_conflicts` and
+/// NEVER overwrite server data. The server's `financial` flag in the RPC
+/// response is authoritative; the client-side [financialEntities] set
+/// covers a missing flag. Mirrors the predicate inside
+/// [SyncEngine._handleConflict]; extracted for unit testing.
+@visibleForTesting
+bool isFinancialConflict({
+  required bool serverFinancialFlag,
+  required String entity,
+}) =>
+    serverFinancialFlag || financialEntities.contains(entity);
+
+/// Pure decision rule for normal-entity conflicts. Mirrors the branch
+/// inside [SyncEngine._handleConflict]; extracted for unit testing.
+///
+///   * server newer (`updated_at`) → take the server row;
+///   * local newer, timestamps tied, or server time unknown → rebase the
+///     local op onto the fresh `base_revision` and retry the RPC exactly
+///     once;
+///   * local time unknown → take the server row.
+@visibleForTesting
+NormalConflictDecision decideNormalConflict({
+  required DateTime? serverUpdatedAt,
+  required DateTime? localUpdatedAt,
+}) {
+  if (localUpdatedAt == null ||
+      (serverUpdatedAt != null && serverUpdatedAt.isAfter(localUpdatedAt))) {
+    return NormalConflictDecision.takeServer;
+  }
+  return NormalConflictDecision.rebaseAndRetry;
+}
 
 /// Queue ops that count as conflicts from the RPC.
 const Set<String> _conflictReasons = {
@@ -1035,8 +1073,8 @@ class SyncEngine {
       _QueueRow row, Map<String, dynamic> rpc) async {
     final reason = '${rpc['reason'] ?? 'conflict'}';
     final serverFinancial = rpc['financial'] == true;
-    final isFinancial =
-        serverFinancial || financialEntities.contains(row.entity);
+    final isFinancial = isFinancialConflict(
+        serverFinancialFlag: serverFinancial, entity: row.entity);
     Map<String, dynamic>? serverRow = rpc['server_row'] is Map
         ? Map<String, dynamic>.from(rpc['server_row'] as Map)
         : null;
@@ -1065,9 +1103,9 @@ class SyncEngine {
     final localUpdatedAt = _parseTime(row.payload['updated_at']) ??
         DateTime.fromMillisecondsSinceEpoch(row.createdAtMs, isUtc: true);
 
-    if (localUpdatedAt == null ||
-        (serverUpdatedAt != null &&
-            serverUpdatedAt.isAfter(localUpdatedAt))) {
+    final decision = decideNormalConflict(
+        serverUpdatedAt: serverUpdatedAt, localUpdatedAt: localUpdatedAt);
+    if (decision == NormalConflictDecision.takeServer) {
       // Server is newer (or local time unknown) → take the server row.
       await _db.transaction(() async {
         await _applyServerRow(row.entity, serverRow!);

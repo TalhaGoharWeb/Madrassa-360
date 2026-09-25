@@ -39,7 +39,8 @@
 | 15 | Error messages safe | ✅ PASS | `ErrorHandler` maps errors to user-safe Urdu messages (`error_handler.dart:8-28`); no raw stack traces to users |
 | 16 | Sensitive logs removed | 🟡 CODE-COMPLETE (pending `flutter analyze` run) | Phase 7: `avoid_print` re-enabled (`analysis_options.yaml`); 11 `debugPrint` sites migrated to the redacting file logger `AppLogger`; `ErrorHandler.logError` now routes to `AppLogger` — never analyzed, so not yet proven |
 
-**Score: 2/16 pass, 5 items code-complete pending execution** (items 3–6: migrations + isolation suite written and parse-validated 2026-09-25, never applied/executed; item 16: log hygiene code-complete 2026-09-25, never analyzed). Both passes are narrow technical facts, not endorsements — item 15's safety collapses the moment secrets sit client-side (item 1).
+**Score (final, 2026-09-25): 2/16 pass, 1 FAIL, 13 code-complete pending staging** — see Phase-8 block at the end for the per-item verdicts.
+(Phases 2–7 history: items 3–6 migrations + isolation suite written and parse-validated, never applied/executed; item 16: log hygiene code-complete, never analyzed.) Both passes are narrow technical facts, not endorsements — item 15's safety collapses the moment secrets sit client-side (item 1), and the one FAIL (committed keys) blocks everything.
 
 > **Phase 2 update (2026-09-25, branch `feature/tenant-architecture`, unpushed):** tenant data architecture is implemented as ordered idempotent migrations `001`–`010` + `TenantContext` in Dart + 30-assertion isolation suite. The P0 items 4–6 in "stop the bleeding" (profiles escalation, stale-policy drops, PII leaks) are addressed **in code** by 007/008 — they become actually fixed only when the migrations run on staging and the tests go green. Key rotation (P0 items 1–3) is still entirely outstanding and still blocks everything.
 
@@ -84,3 +85,43 @@ Until every §60 item above reads ✅, the project must not be described as prod
 > **Phase 6 — reporting/notifications/backup/mock-purge update (2026-09-25, branch `feature/reporting-notifications`, unpushed):** offline-first reporting engine (15 tenant-branded PDF reports from local Drift, Urdu via engine-shaped raster — see `docs/REPORTING.md` §3, CSV/XLSX export, reports hub; `pdf`/`printing`/`excel` pinned to Dart-3.5-compatible lines); notifications framework (`017_notifications.sql` pglast parse-validated 21 statements, channel interface + in-app/push/email channels, offline outbox, per-user preferences, 4 of 5 triggers wired — result-published unwired: no publish flow exists yet); one-file offline tenant backup (`_backup_manifest` inside the .db, SHA-256, verify-before-restore, typed-`RESTORE` confirmation, server-side `export-tenant` function; `docs/BACKUP_RESTORE.md`); mock-data purge (dead mock auth/model/widget/provider code deleted, live fakes rewired to real data with empty states, `tool/no_mock_check.dart` CI guard passing on 139 files, dev-only `010_tenant_seed.sql` proven unreferenced from Dart and excluded from the runbook glob); notifications inbox screen + admin dashboard cards (Reports/Backup/Notifications) wired. **No §60 verdict changes — score stays 2/16, nothing marked pass**: no Dart compilation possible here (no Flutter toolchain; drift codegen `app_database.g.dart` not regenerated), migrations 001–017 unapplied, isolation suite unexecuted, P0 key rotation still user-blocked.
 
 > **Phase 7 — centralized error handling + observability update (2026-09-25, branch `feature/windows-production`, unpushed):** sealed `AppException` taxonomy (`lib/core/errors/app_exceptions.dart`: base `userMessageEn`/`userMessageUr`/`code`/`technicalDetails`/`cause` + `Auth/Network/Database/Sync/Permission/Tenant/Validation/UpdateRequiredException`, each with real Urdu + English safe messages; `fromSupabase` maps Postgrest/Auth/Storage codes, socket/TLS/timeout, `FormatException`/`TypeError`; `fromHttpError`/`fromHttpResponse` for the `http` package; legacy `AuthenticationException`/`StorageException` kept as deprecated shims so old throw sites compile); global `ErrorBoundary` (`lib/core/errors/error_boundary.dart`: classify → redacted file log via `AppLogger` → health counters → user-safe message only; `showErrorSnackBar`/`showErrorDialog` helpers) wired into the sync engine's public catch sites (`start` connectivity `onError`, `pullOnce` per-entity, `syncNow`), all 7 auth-provider catch sites, and all 4 backup-service catch sites — classification + logging, same UX everywhere, no raw exceptions reach users; `avoid_print` re-enabled and 11 `debugPrint` sites migrated to `AppLogger` (parallel worker's redacting file logger: 5×2 MiB rotation, `Madrassa360/logs`, inline `key=value` secret masking); `HealthMetrics` per-device counters (`crash_free_sessions`, `sync_failures_24h`, `auth_failures_24h`, `api_errors_24h`, SharedPreferences-backed) surfaced on a new Master Admin "Client health (this device)" card — fleet aggregation is a future Edge Function; `docs/DEPLOYMENT.md` §§8–9 added (staging acceptance runbook: migrations 001–018 → 4 Edge Functions → bootstrap platform_owner → `cross_tenant_isolation.sql` → `OFFLINE_SYNC.md` checklist → record results; log locations per OS + what never gets logged). Parallel workers landed the crash wiring (`FlutterError.onError` + `runZonedGuarded` + `AppLogger.logCrash` in `main.dart`), CI workflows (`.github/workflows/ci.yaml` runs `flutter analyze` — exists in-branch, never observed green), and the Inno installer script (`installer/madrassa360.iss`, 78 lines — exists in-branch, never compiled here). **No §60 verdict changes — score stays 2/16, nothing marked pass**: item 16 moves to code-complete-pending-analyze (log hygiene written, `flutter analyze` never run in this environment); a compile break spotted in `main.dart:58` (`AppLogger.init(...)` called statically on an instance method) was fixed by the coordinator (`AppLogger().init(...)`), and the deferred `UpdateGate` wiring plus `HealthMetrics` session/clean-exit hooks were wired into `main.dart` bootstrap. P0 key rotation still blocks everything.
+
+> **Phase 8 — final security audit (2026-09-25, branch `feature/testing-security`, Worker 4):**
+> re-ran the §60 checklist against the final code with `file:line` evidence. Standing rule held:
+> **pass requires executed evidence; nothing in this environment can pass** (no Flutter/Dart
+> toolchain, no live Supabase). Final verdicts:
+>
+> | # | Item | Verdict |
+> |---|---|---|
+> | 1 | No service-role keys in client | 🟡 code-complete — no `SUPABASE_SERVICE_KEY` in `lib/`; privileged ops via `manage-users` Edge Function (`user_management_provider.dart:152`). Key rotation (P0) still outstanding |
+> | 2 | No secrets committed | ❌ **FAIL** — real anon + service_role keys still committed at `SUPABASE_INTEGRATION_PLAN.md:105,107` and in git history since `ecff664`; `crypt('***REDACTED-PASSWORD-ROTATED-2026-09-25***'…)` in `supabase/05_new_modules.sql:354` |
+> | 3 | Tenant RLS complete | 🟡 code-complete — fail-loud guard (`007_tenant_rls.sql:912`), predicates spot-checked on students/fees/announcements; written, unapplied |
+> | 4 | Cross-tenant tests pass | 🟡 written, NOT executed (`supabase/tests/cross_tenant_isolation.sql`, 731 lines, self-labeled) |
+> | 5 | Storage policies isolated | 🟡 code-complete — 3 private buckets, `{tenant_id}/` prefixes, membership-checked policies (`008_tenant_storage.sql`); written, unapplied |
+> | 6 | Realtime isolated | ⚪ N/A by design — no realtime in client, no publication config; sync is REST polling |
+> | 7 | Auth hardened | 🟡 code-complete — real Supabase Auth, `admin123` creds gone; ⚠️ no `flutter_secure_storage` yet |
+> | 8 | Password reset works | 🟡 code-complete — `resetPasswordForEmail` (`auth_repository.dart:209`); recovery deep-link unverified |
+> | 9 | Session management | 🟡 code-complete — real signOut, refresh, SIGNED_OUT-on-expiry, restore redirect; unexecuted |
+> | 10 | Audit logs work | 🟡 code-complete — append-only table + `log_audit()` SECURITY DEFINER RPC (`012_audit_logs.sql`); finance via triggers; unexecuted |
+> | 11 | Privileged APIs protected | 🟡 code-complete **with gap** — `requirePlatformAdmin` on 3 functions; ⚠️ **`manage-users` Edge Function invoked by the client does not exist** (fail-closed honest error, so not an open vuln — but Master Admin user management is non-functional until it is written + deployed) |
+> | 12 | File upload validated | 🟡 PARTIAL — server-side tenant path + RLS gate code-complete; **no client-side type/size/content-type validation** on the image_picker path |
+> | 13 | Input validation | 🟡 code-complete — `validators.dart` + `validator:` in 9 form screens; no repo-wide validation audit |
+> | 14 | SQL injection | ✅ PASS (narrow technical fact) — parameterized Drift queries; only interpolated identifier comes from a hardcoded whitelist map |
+> | 15 | Error messages safe | ✅ PASS (narrow technical fact) — sealed `AppException` + `ErrorHandler` Urdu mapping, no raw exceptions to UI |
+> | 16 | Sensitive logs removed | 🟡 code-complete — `avoid_print: true`, 0 `print(`/`debugPrint(` in `lib/`, redacting `AppLogger`; `flutter analyze` never run here |
+>
+> **Final §60 score: 2/16 pass, 1 FAIL, 13 code-complete pending staging.**
+> Full evidence table + P0 blockers (key rotation, `***REDACTED-PASSWORD-ROTATED-2026-09-25***`, staging run) in `docs/SECURITY_AUDIT.md`
+> §"Phase-8 Final Review". No-mock guard replicated by hand: 0 violations / 147 files (`tool/no_mock_check.dart`
+> logic; `dart` unavailable in this environment, CI `mock-guard` job unobserved-green).
+>
+> **Coordinator addendum (2026-09-25, final review):** found and fixed a real functional bug —
+> `get_my_permissions()` returns dotted codes (`students.view`, per 005) but every Dart
+> `PermissionService.has()` call site checks underscore constants (`view_students`), with no
+> translation between them: every online permission check evaluated to **false** (fail-closed, but the
+> app denied all gated UI online). Fixed in `lib/core/services/permission_service.dart` via an
+> explicit `normalizeServerCodes()` map (unmapped codes dropped fail-closed with a warning log),
+> pinned by 4 new unit tests. Also corrected `docs/TESTING.md` inaccuracies spotted in review
+> (suite inventory, isolation-suite line count 1217, real updated_at-based conflict rule, DATABASE.md
+> already excludes 010 from the production glob). Item 7 stays code-complete — the fix is uncompiled
+> here and needs `flutter test` on CI.

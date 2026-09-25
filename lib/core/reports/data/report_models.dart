@@ -223,6 +223,27 @@ class ExamOutcome {
   double? get percentage => total <= 0 ? null : obtained * 100.0 / total;
 }
 
+/// Assigns dense-ranking positions (1-based) by [ExamOutcome.obtained],
+/// descending, over the students with [ExamOutcome.hasMarks] == true.
+/// Students without usable marks keep position 0 (unranked).
+///
+/// Extracted from `ReportData.examOutcomes` for unit testing — the
+/// algorithm is unchanged (ties share a rank; the next distinct score
+/// takes rank+1).
+void assignDensePositions(Iterable<ExamOutcome> outcomes) {
+  final ranked = outcomes.where((o) => o.hasMarks).toList()
+    ..sort((a, b) => b.obtained.compareTo(a.obtained));
+  var rank = 0;
+  double? last;
+  for (final o in ranked) {
+    if (last == null || o.obtained < last) {
+      rank++;
+      last = o.obtained;
+    }
+    o.position = rank;
+  }
+}
+
 /// Income or expense ledger entry.
 class MoneyEntry {
   final String id;

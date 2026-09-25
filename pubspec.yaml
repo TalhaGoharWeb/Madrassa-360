@@ -84,6 +84,8 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  integration_test:
+    sdk: flutter
   flutter_lints: ^4.0.0
   # Codegen for drift. drift_dev must track the drift minor version
   # (2.31.x <-> 2.31.x); build_runner ^2.10.0 is the line whose

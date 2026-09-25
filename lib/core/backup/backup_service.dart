@@ -39,6 +39,7 @@ import 'dart:io';
 import 'package:crypto/crypto.dart';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
@@ -91,6 +92,19 @@ class BackupManifest {
       dataSha256: kv['data_sha256'] ?? '',
     );
   }
+}
+
+/// Canonical JSON encoding of one table row for the backup data
+/// checksum: columns JSON-encoded with sorted keys, so key insertion order
+/// (which SQLite does not guarantee across connections) cannot change the
+/// hash. Extracted from [BackupService._dataChecksum] for unit testing —
+/// the encoding is unchanged.
+@visibleForTesting
+String canonicalRowJson(Map<String, dynamic> row) {
+  final sorted = Map.fromEntries(
+    row.entries.toList()..sort((a, b) => a.key.compareTo(b.key)),
+  );
+  return jsonEncode(sorted);
 }
 
 /// Structured outcome of [BackupService.verifyBackup].
@@ -341,11 +355,7 @@ class BackupService {
       final rows =
           await db.customSelect('SELECT * FROM "$table" ORDER BY rowid').get();
       for (final row in rows) {
-        final sorted = Map.fromEntries(
-          row.data.entries.toList()
-            ..sort((a, b) => a.key.compareTo(b.key)),
-        );
-        bytes.add(utf8.encode('${jsonEncode(sorted)}\n'));
+        bytes.add(utf8.encode('${canonicalRowJson(row.data)}\n'));
       }
     }
     return sha256.convert(bytes.toBytes()).toString();

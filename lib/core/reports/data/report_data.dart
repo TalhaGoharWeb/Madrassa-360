@@ -458,17 +458,7 @@ class ReportData {
     }
     // Dense ranking by obtained marks — only over students who have
     // usable marks. Students without marks stay unranked (position 0).
-    final ranked = byStudent.values.where((o) => o.hasMarks).toList()
-      ..sort((a, b) => b.obtained.compareTo(a.obtained));
-    var rank = 0;
-    double? last;
-    for (final o in ranked) {
-      if (last == null || o.obtained < last) {
-        rank++;
-        last = o.obtained;
-      }
-      o.position = rank;
-    }
+    assignDensePositions(byStudent.values);
     final list = byStudent.values.toList()
       ..sort((a, b) {
         if (a.position == 0 && b.position == 0) {

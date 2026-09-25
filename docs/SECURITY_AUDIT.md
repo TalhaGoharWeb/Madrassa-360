@@ -175,3 +175,51 @@
 8. Rename package `al_markaz_al_islami` → product name; move Android `label`, iOS `CFBundleDisplayName`/`CFBundleName` to build flavors or `--dart-define`; parameterize `supabase/04_seed.sql` emails; rewrite `test/widget_test.dart` expectation and README/plan headers.
 9. Replace `madrassa_config.dart` source-edit deployment with per-tenant config from backend (or build-time defines); resolve the Khawaja-vs-AlMarkaz split; move developer contact PII out of the shipped About screen (or gate behind a build flag).
 10. Add `*-firebase-adminsdk-*.json` / `serviceAccount*.json` to `.gitignore`; add a pre-commit secret scanner (gitleaks); wrap auth `debugPrint`s in `kDebugMode`; replace `via.placeholder.com` URLs; add the missing `assets/images/logo.png` (or drop the reference).
+
+---
+
+## Phase-8 Final Review — 2026-09-25 (Worker 4, final security audit)
+
+**Branch:** `feature/testing-security` · **Method:** static grep of the final working tree + repo inventory.
+No Flutter/Dart toolchain and no live Supabase project exist in this environment, so **no §60 item
+can move to "pass" on executed evidence today** — verdicts below are file:line-evidence-backed
+"code-complete / pending staging" at best. Nothing was committed; findings live in the working tree only.
+
+**Secret values are never printed.** Exposures are reported as `[REDACTED]` with `file:line` + exposure path.
+
+### Item-by-item verdicts (final §60: 2/16 pass, 13 code-complete, 1 FAIL)
+
+| # | Item | Verdict | Evidence |
+|---|---|---|---|
+| 1 | No service-role keys in client | 🟡 CODE-COMPLETE | No `SUPABASE_SERVICE_KEY`/`service_role` in `lib/` (`lib/providers/user_management_provider.dart:1-9` documents the removal; privileged ops go via `_client.functions.invoke('manage-users', …)` at `:152` — client never holds the key) |
+| 2 | No secrets committed | ❌ FAIL | **`SUPABASE_INTEGRATION_PLAN.md:105,107` still contains the real anon key + real service_role key verbatim** (verified 2026-09-25); both also survive in git history since the initial commit (`git log --oneline --all -- SUPABASE_INTEGRATION_PLAN.md` → `ecff664`). Plus: `supabase/05_new_modules.sql:354` still has `crypt('***REDACTED-PASSWORD-ROTATED-2026-09-25***', …)` (commented). No JWT-shaped secrets, private keys, or hardcoded passwords found anywhere else in the tree |
+| 3 | Tenant RLS complete | 🟡 CODE-COMPLETE (unapplied) | `supabase/migrations/007_tenant_rls.sql` (920 lines): fail-loud stale-policy guard raises at `:912`; spot-checked tenant predicates — `students` `:280-327`, `fees` `:422-478`, `announcements` `:569-577` — all `is_platform_admin() OR (is_tenant_member(<table>.tenant_id) AND tenant_has_permission(…))` |
+| 4 | Cross-tenant tests pass | 🟡 WRITTEN, NOT EXECUTED | `supabase/tests/cross_tenant_isolation.sql` (731 lines) is self-labeled "NOT YET EXECUTED" — Tenant A/B matrix, escalation negatives, storage, stale-policy sweep |
+| 5 | Storage policies isolated | 🟡 CODE-COMPLETE (unapplied) | `supabase/migrations/008_tenant_storage.sql`: 3 private buckets (`:31-35`), `{tenant_id}/` path prefix via `storage_path_tenant()` (`:58-66`), membership-checked policies on all 3 buckets (`:79-257`) |
+| 6 | Realtime isolated | ⚪ N/A (by design) | No realtime in the client (no `.channel(`/`.stream(`/`realtime` in `lib/`) and no publication config in migrations; sync is REST polling + event-driven (`lib/data/repositories/attendance_repository.dart:16-18`). Tenant boundary inherits table RLS when/if realtime is enabled later |
+| 7 | Auth hardened | 🟡 CODE-COMPLETE (unexecuted) | Real `supabase_flutter` auth only (`lib/data/repositories/auth_repository.dart:153` `signInWithPassword`); `admin123` demo creds **gone** (no hits anywhere); ⚠️ session persistence is still the SDK default — **no `flutter_secure_storage`** dependency |
+| 8 | Password reset works | 🟡 CODE-COMPLETE (unexecuted) | `resetPasswordForEmail` wired at `auth_repository.dart:209`, forgot-password screen exists (`lib/presentation/screens/auth/forgot_password_screen.dart`) — but the recovery deep-link/redirect (`reset-password` route) is **unverified end-to-end** and no email template/redirect URL config is in-tree |
+| 9 | Session management | 🟡 CODE-COMPLETE (unexecuted) | Real logout → `_repo.signOut()` (`lib/providers/auth_provider.dart:203-211`); `refreshSession()` (`auth_repository.dart:236-238`); expiry surfaces as `SIGNED_OUT` (`:262-265`); restore redirect via `AuthRoute` (`:20`) |
+| 10 | Audit logs work | 🟡 CODE-COMPLETE (unexecuted) | `012_audit_logs.sql`: append-only `audit_logs` table (`:17`), `log_audit()` SECURITY DEFINER RPC (`:65-104`, client granted EXECUTE only), tenant-admin/platform-admin SELECT policies. Client never writes audit rows directly (finance writes via `finance_audit()` trigger per `014_finance.sql:36-39`) — the design is correct, unexecuted |
+| 11 | Privileged APIs protected | 🟡 CODE-COMPLETE **with a functional gap** | `requirePlatformAdmin` enforced in `provision-tenant` (`:103-104`), `manage-tenant` (`:33-34`), `export-tenant` (`:80-81`); `send-notification` allows platform-admin **or** active tenant member (`index.ts:202-210`, documented). ⚠️ **GAP:** the client invokes a `manage-users` Edge Function (`user_management_provider.dart:152`) that **does not exist** (`supabase/functions/` has only provision/manage/export + send-notification) — the code fails closed with an honest error (`:128-133`), so this is a *non-functional Master Admin op*, not an open vuln, but it blocks user management until the function is written + deployed |
+| 12 | File upload validated | 🟡 PARTIAL — server side code-complete, client side missing | Upload path is tenant-prefixed (`Madrassa360/uploads/<tenantId>/<fileName>`, `storage_repository.dart:42-52`) and the actual byte upload is server-RLS-gated via the pending-queue engine (`sync_engine.dart:869-895`, `FileOptions(upsert: true)`); ⚠️ **no client-side content-type/size/extension validation** — no `maxSize`, `contentType`, or image-type checks found on the image_picker path |
+| 13 | Input validation | 🟡 CODE-COMPLETE (not audited repo-wide) | `lib/core/utils/validators.dart` exists; `validator:` used in 9 form screens (auth screens included). No systematic input-validation audit has been run — cannot certify every form |
+| 14 | SQL injection protections | ✅ PASS (narrow technical fact) | All Drift `customSelect`/`customUpdate` use `?` + `Variable.withString(…)` (e.g. `sync_providers.dart:65-69`, `sync_engine.dart:869-874`); the single interpolated identifier (`customStatement('DELETE FROM $table …', …)` at `sync_engine.dart:967`) draws `$table` from the hardcoded `_localTables` whitelist map (`:119-145`) |
+| 15 | Error messages safe | ✅ PASS (narrow technical fact) | Sealed `AppException` taxonomy (`lib/core/errors/app_exceptions.dart:32+`, Urdu+English `userMessage`s); auth errors mapped (`auth_repository.dart:164`); screens show mapped messages via `ErrorHandler.showErrorSnackBar` (`login_screen.dart:80-83`); no raw `e.toString()` in UI paths |
+| 16 | Sensitive logs removed | 🟡 CODE-COMPLETE (unverified lint) | `avoid_print: true` (`analysis_options.yaml:20`); zero `print(`/`debugPrint(` in `lib/`; `AppLogger` redacts keys matching secret patterns (`lib/core/observability/app_logger.dart:12-13,175-180`); `ErrorBoundary` routes all classified errors through the redacting logger. `flutter analyze` never ran in this environment, so lint enforcement is unproven |
+
+### Mock-data guard (manual replication — `dart` not installed here)
+
+Replicated `tool/no_mock_check.dart`'s grep logic by hand (`\b(Mock|mockData|fakeData|demoData|sampleData|dummyData|loremIpsum)`
+over `lib/`, honoring the `mock-guard:allow` per-line opt-out): **0 violations across 147 files.**
+The CI job (`mock-guard` in `.github/workflows/ci.yaml`) runs the real tool — unobserved green.
+
+### P0 blockers still standing (user action required)
+
+1. **Rotate the Supabase anon key AND service_role key** — both still committed at
+   `SUPABASE_INTEGRATION_PLAN.md:105,107` and in git history since `ecff664`. Then purge
+   from history (`git filter-repo`), not just delete (current tree still ships the file).
+2. **Change `***REDACTED-PASSWORD-ROTATED-2026-09-25***`** (`supabase/05_new_modules.sql:354`) or remove the legacy seed.
+3. Deploy staging, apply migrations 001–018, execute `supabase/tests/cross_tenant_isolation.sql` green,
+   deploy the 4 Edge Functions (+ write/deploy the missing `manage-users`), then re-run this checklist
+   — items 1, 3–13, 16 cannot pass before that.
