@@ -8,9 +8,9 @@
 /// function is not deployed yet, the op returns an honest error instead of
 /// falling back to a client-held service key.
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../core/observability/app_logger.dart';
 import '../core/services/supabase_service.dart';
 import '../data/models/app_role.dart';
 import '../data/models/user_account.dart';
@@ -168,7 +168,8 @@ class UserManagementNotifier extends StateNotifier<UserManagementState> {
             error: 'Server did not return a user id');
         return 'Server did not return a user id';
       }
-      debugPrint('[UserMgmt] Auth user created via manage-users: $authUserId');
+      AppLogger().info('[UserMgmt] Auth user created via manage-users',
+          context: {'auth_user_id': authUserId});
     } on FunctionException catch (e) {
       final msg = _serverFunctionError(e);
       state = state.copyWith(isLoading: false, error: msg);
@@ -194,7 +195,7 @@ class UserManagementNotifier extends StateNotifier<UserManagementState> {
       );
     } on PostgrestException catch (e) {
       // Auth user created but DB row failed — still show success with warning
-      debugPrint('[UserMgmt] user_accounts insert failed: ${e.message}');
+      AppLogger().warning('[UserMgmt] user_accounts insert failed', error: e);
       final optimistic = UserAccount(
         id: authUserId,
         name: account.name, email: account.email,
@@ -205,7 +206,7 @@ class UserManagementNotifier extends StateNotifier<UserManagementState> {
         isLoading: false,
       );
     } catch (e) {
-      debugPrint('[UserMgmt] user_accounts insert error: $e');
+      AppLogger().warning('[UserMgmt] user_accounts insert error', error: e);
       state = state.copyWith(isLoading: false);
     }
 

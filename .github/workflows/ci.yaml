@@ -1,0 +1,122 @@
+name: CI
+
+# Continuous integration: static analysis, formatting, tests, mock-data guard,
+# Supabase SQL migration syntax checks, and Deno Edge Function checks.
+#
+# Every job is independent (no `needs` chains) so a failure in one never hides
+# results from the others. This workflow is also reusable: release.yaml calls it
+# via `workflow_call` to run the full suite before publishing.
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
+
+env:
+  FLUTTER_VERSION: '3.47.4'
+
+jobs:
+  analyze:
+    name: flutter analyze
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter analyze
+
+  format:
+    name: dart format check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - run: dart format --set-exit-if-changed lib test tool
+
+  test:
+    name: flutter test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter test
+
+  mock-guard:
+    name: no-mock-data guard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - run: dart tool/no_mock_check.dart
+
+  sql:
+    name: validate Supabase migrations (pglast)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pglast
+        run: pip install pglast
+      - name: Parse every migration with libpg_query
+        run: |
+          set -euo pipefail
+          fail=0
+          for f in supabase/migrations/*.sql; do
+            echo "Parsing $f"
+            if ! python3 -c "import sys, pglast; pglast.parse_sql(open(sys.argv[1]).read())" "$f"; then
+              echo "::error::SQL syntax error in $f"
+              fail=1
+            fi
+          done
+          exit $fail
+
+  deno:
+    name: Deno check + lint (Edge Functions)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Check and lint every function
+        run: |
+          set -euo pipefail
+          for d in supabase/functions/*/; do
+            name=$(basename "$d")
+            # _shared is a library imported by the functions, not an entrypoint.
+            if [ "$name" = "_shared" ]; then
+              continue
+            fi
+            echo "=== $name ==="
+            deno check "$d/index.ts"
+            deno lint "$d/index.ts"
+          done

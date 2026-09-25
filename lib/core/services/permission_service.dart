@@ -11,8 +11,8 @@
 // Results are stored in AuthState.permissions.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import 'package:flutter/foundation.dart';
 import '../constants/app_permissions.dart';
+import '../observability/app_logger.dart';
 import 'supabase_service.dart';
 
 class PermissionService {
@@ -35,7 +35,7 @@ class PermissionService {
       );
 
       if (response == null) {
-        debugPrint('[Permissions] RPC returned null, using offline fallback');
+        AppLogger().warning('[Permissions] RPC returned null, using offline fallback');
         return AppPermissions.fallbackFor(roleName);
       }
 
@@ -46,10 +46,10 @@ class PermissionService {
           .whereType<String>()
           .toSet();
 
-      debugPrint('[Permissions] loaded ${perms.length} permissions for $roleName');
+      AppLogger().info('[Permissions] loaded ${perms.length} permissions for $roleName');
       return perms;
     } catch (e) {
-      debugPrint('[Permissions] Error loading from DB: $e — using offline fallback');
+      AppLogger().warning('[Permissions] Error loading from DB — using offline fallback', error: e);
       return AppPermissions.fallbackFor(roleName);
     }
   }

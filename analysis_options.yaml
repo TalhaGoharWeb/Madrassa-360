@@ -17,7 +17,7 @@ linter:
     
     # Style rules
     prefer_single_quotes: true
-    avoid_print: false  # Allow print for debugging in Phase 1
+    avoid_print: true  # Phase 7: enforced — use AppLogger (file log + redaction), never print/debugPrint
     prefer_const_constructors: false  # Relax for Phase 1
     prefer_const_declarations: true
     prefer_final_fields: true

@@ -3,7 +3,8 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as sb;
 import '../data/repositories/auth_repository.dart';
-import '../core/utils/error_handler.dart';
+import '../core/errors/app_exceptions.dart';
+import '../core/errors/error_boundary.dart';
 import '../core/services/permission_service.dart';
 import '../core/services/supabase_service.dart';
 import '../core/services/tenant_context.dart';
@@ -182,12 +183,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
       // The SIGNED_IN event will also fire; _handleSignedIn is idempotent.
       await _handleSignedIn();
       return state.isAuthenticated;
-    } on AppException catch (e) {
-      state = AuthState.error(e.message);
+    } on AppException catch (e, st) {
+      // Phase 7: classify (already typed) + log + health counter via the
+      // error boundary; the returned message is the same safe Urdu string.
+      final message = ErrorBoundary.handleError(e, st, ref, tag: 'auth/login');
+      state = AuthState.error(message);
       return false;
-    } catch (e) {
-      ErrorHandler.logError(e, null);
-      state = AuthState.error('لاگ ان میں خرابی');
+    } catch (e, st) {
+      final message = ErrorBoundary.handleError(e, st, ref, tag: 'auth/login');
+      state = AuthState.error(message);
       return false;
     }
   }
@@ -199,8 +203,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> logout() async {
     try {
       await _repo.signOut();
-    } catch (e) {
-      ErrorHandler.logError(e, null);
+    } catch (e, st) {
+      ErrorBoundary.handleError(e, st, ref, tag: 'auth/logout');
     } finally {
       // SIGNED_OUT event will also fire; _handleSignedOut is idempotent.
       await _handleSignedOut();
@@ -251,11 +255,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
         await _ref.read(activeTenantIdProvider.notifier).init();
         memberships = await _ref.read(tenantMembershipsProvider.future);
         isPlatformAdmin = await _checkPlatformAdmin(user.id);
-      } catch (e) {
+      } catch (e, st) {
         // Tenant wiring must not fail the login itself (e.g. flaky network):
         // fall back to any previously restored active tenant below.
         tenantLoadOk = false;
-        ErrorHandler.logError(e, null);
+        ErrorBoundary.handleError(e, st, ref, tag: 'auth/tenant-wiring');
       }
 
       final route = _resolveRoute(
@@ -270,9 +274,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
         route: route,
         isPlatformAdmin: isPlatformAdmin,
       );
-    } catch (e) {
-      ErrorHandler.logError(e, null);
-      state = AuthState.error('سیشن لوڈ کرنے میں خرابی');
+    } catch (e, st) {
+      final message =
+          ErrorBoundary.handleError(e, st, ref, tag: 'auth/session-load');
+      state = AuthState.error(message);
     }
   }
 
@@ -295,8 +300,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
         isAuthenticated: true,
         permissions: perms,
       );
-    } catch (e) {
-      ErrorHandler.logError(e, null);
+    } catch (e, st) {
+      ErrorBoundary.handleError(e, st, ref, tag: 'auth/session-refresh');
       // Keep the existing state — a transient refresh failure must not
       // log the user out; a truly dead session arrives as SIGNED_OUT.
     }
@@ -307,8 +312,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
     try {
       _ref.invalidate(tenantMembershipsProvider);
       await _ref.read(activeTenantIdProvider.notifier).clear();
-    } catch (e) {
-      ErrorHandler.logError(e, null);
+    } catch (e, st) {
+      ErrorBoundary.handleError(e, st, ref, tag: 'auth/signout-cleanup');
     }
     state = AuthState.unauthenticated();
   }
@@ -343,8 +348,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
           .eq('user_id', userId)
           .maybeSingle();
       return row != null;
-    } catch (e) {
-      ErrorHandler.logError(e, null);
+    } catch (e, st) {
+      ErrorBoundary.handleError(e, st, ref, tag: 'auth/platform-admin-check');
       return false;
     }
   }

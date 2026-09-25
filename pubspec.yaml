@@ -99,6 +99,7 @@ flutter:
   # Assets
   assets:
     - assets/
+    - version.json   # release source of truth; read at runtime by UpdateService
   
   # Fonts
   fonts:

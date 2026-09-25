@@ -13,11 +13,15 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class SupabaseService {
   SupabaseService._(); // private constructor — static-only class
 
+  static bool _initialized = false;
+
   /// Global Supabase client. Use everywhere in the app.
   static SupabaseClient get client => Supabase.instance.client;
 
   /// Call once from main() before runApp().
+  /// Idempotent — safe to call again on soft restart (see CrashScreen).
   static Future<void> init() async {
+    if (_initialized) return;
     // Load .env from assets
     await dotenv.load(fileName: 'assets/.env');
 
@@ -27,6 +31,7 @@ class SupabaseService {
       // Use implicit flow — more reliable for email/password auth on physical devices
       // (PKCE requires deep-link callback which can fail if app loses focus)
     );
+    _initialized = true;
   }
 
   /// Convenience: current logged-in Supabase user (nullable).

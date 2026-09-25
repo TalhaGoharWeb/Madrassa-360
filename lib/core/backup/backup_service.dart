@@ -45,6 +45,7 @@ import 'package:path_provider/path_provider.dart';
 import '../../data/local/app_database.dart';
 import '../../data/local/database_provider.dart';
 import '../../data/repositories/storage_repository.dart';
+import '../errors/error_boundary.dart';
 import '../notifications/notification_triggers.dart';
 
 /// Keep in sync with `version:` in pubspec.yaml. There is deliberately no
@@ -289,7 +290,11 @@ class BackupService {
         sizeBytes: sizeBytes,
         cloudUploadId: uploadId,
       );
-    } catch (_) {}
+    } catch (e, st) {
+      // Non-fatal: the backup itself succeeded; only the post-backup
+      // notification hook failed. Phase 7: classify + log, same UX.
+      ErrorBoundary.handleErrorSimple(e, st, tag: 'backup/post-notify');
+    }
 
     return BackupResult(
       file: copy,
@@ -476,7 +481,10 @@ class BackupService {
         reasons: reasons,
         manifest: manifest,
       );
-    } catch (e) {
+    } catch (e, st) {
+      // Phase 7: classify + log through the error boundary. The returned
+      // verification still carries only a one-line failure reason.
+      ErrorBoundary.handleErrorSimple(e, st, tag: 'backup/verify');
       return BackupVerification(
         path: path,
         valid: false,
@@ -581,7 +589,9 @@ class BackupService {
           manifest: manifest,
         ),
       );
-    } catch (e) {
+    } catch (e, st) {
+      // Phase 7: classify + log before attempting the rollback.
+      ErrorBoundary.handleErrorSimple(e, st, tag: 'backup/restore');
       // Roll back: put the pre-restore copy back and reopen, so the app
       // is never left with a half-restored database.
       try {
@@ -629,7 +639,9 @@ class BackupService {
         if (!v.valid) {
           note = 'unverified: ${v.reasons.join('; ')}';
         }
-      } catch (_) {
+      } catch (e, st) {
+        // Phase 7: classify + log; the list still just marks it unreadable.
+        ErrorBoundary.handleErrorSimple(e, st, tag: 'backup/list-verify');
         note = 'unreadable';
       }
       out.add(BackupMetadata(

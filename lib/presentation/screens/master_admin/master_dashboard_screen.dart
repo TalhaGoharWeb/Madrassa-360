@@ -10,6 +10,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../core/observability/health_metrics.dart';
 import 'madrasa_detail_screen.dart';
 import 'madrasa_list_screen.dart';
 import 'widgets/ma_widgets.dart';
@@ -41,6 +42,10 @@ class _MasterDashboardScreenState extends State<MasterDashboardScreen> {
 
   final Map<String, _HealthResult> _health = {};
 
+  /// Phase 7: on-device health counters (HealthMetrics). Per-device only —
+  /// fleet-wide aggregation is a future Edge Function.
+  Map<String, Object> _clientHealth = {};
+
   @override
   void initState() {
     super.initState();
@@ -59,6 +64,10 @@ class _MasterDashboardScreenState extends State<MasterDashboardScreen> {
         _loadSubscriptionStats(),
       ]);
       await _runHealthChecks();
+      // Phase 7: client health counters (never throws — HealthMetrics is
+      // best-effort and loads from SharedPreferences).
+      await HealthMetrics.instance.load();
+      _clientHealth = HealthMetrics.instance.toMap();
     } catch (e) {
       _error = e.toString();
     }
@@ -374,6 +383,57 @@ class _MasterDashboardScreenState extends State<MasterDashboardScreen> {
                       status: entry.value.status,
                       detail: entry.value.detail,
                     ),
+                ],
+              ),
+            ),
+            // ── Client health (this device) — Phase 7 ──
+            // On-device counters only. Fleet-wide aggregation across all
+            // devices is a future Edge Function, not implemented yet.
+            MaSectionCard(
+              title: 'Client health (this device) / کلائنٹ ہیلتھ (یہ ڈیوائس)',
+              subtitle:
+                  'On-device counters — crash_free_sessions counts sessions whose '
+                  'previous run exited cleanly; failures are rolling 24h windows',
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  SizedBox(
+                    width: 170,
+                    child: MaStatCard(
+                      label: 'Crash-free sessions\nکریش فری سیشنز',
+                      value: '${_clientHealth['crash_free_sessions'] ?? 0}',
+                      icon: Icons.shield_outlined,
+                      color: AppColors.success,
+                    ),
+                  ),
+                  SizedBox(
+                    width: 170,
+                    child: MaStatCard(
+                      label: 'Sync failures · 24h\nہم آہنگی ناکامیاں',
+                      value: '${_clientHealth['sync_failures_24h'] ?? 0}',
+                      icon: Icons.sync_problem_outlined,
+                      color: AppColors.warning,
+                    ),
+                  ),
+                  SizedBox(
+                    width: 170,
+                    child: MaStatCard(
+                      label: 'Auth failures · 24h\nسائن ان ناکامیاں',
+                      value: '${_clientHealth['auth_failures_24h'] ?? 0}',
+                      icon: Icons.lock_outline,
+                      color: AppColors.error,
+                    ),
+                  ),
+                  SizedBox(
+                    width: 170,
+                    child: MaStatCard(
+                      label: 'API errors · 24h\nاے پی آئی خرابیاں',
+                      value: '${_clientHealth['api_errors_24h'] ?? 0}',
+                      icon: Icons.cloud_off_outlined,
+                      color: AppColors.info,
+                    ),
+                  ),
                 ],
               ),
             ),

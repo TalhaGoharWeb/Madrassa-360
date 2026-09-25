@@ -8,8 +8,8 @@
 import 'dart:io';
 import 'package:supabase_flutter/supabase_flutter.dart' as sb;
 import '../../core/services/supabase_service.dart';
+import '../../core/observability/app_logger.dart';
 import '../../core/utils/error_handler.dart';
-import 'package:flutter/foundation.dart';
 
 // ─────────────────────────────────────────────────────────────
 // User Role
@@ -84,7 +84,7 @@ class AppUser {
       orElse: () => UserRole.teacher,
     );
 
-    debugPrint('[Auth] resolved role: "$rawRole" → ${role.name}');
+    AppLogger().debug('[Auth] resolved role: "$rawRole" → ${role.name}');
 
     return AppUser(
       id: user.id,
@@ -171,8 +171,9 @@ class AuthRepository {
     } on SocketException {
       throw NetworkException('انٹرنیٹ کنکشن نہیں — برا کرم نیٹ ورک چیک کریں');
     } catch (e) {
+      // Phase 7: ErrorHandler.logError now routes to AppLogger (file log +
+      // redaction); the duplicate debugPrint is removed to avoid double logging.
       ErrorHandler.logError(e, null);
-      debugPrint('[Auth] login error: $e');
       throw AuthenticationException('لاگ ان میں خرابی');
     }
   }
@@ -189,7 +190,7 @@ class AuthRepository {
       ErrorHandler.logError(e, null);
       // Local session is cleared by the SDK even when the server call fails;
       // don't block logout on a network error.
-      debugPrint('[Auth] signOut error (non-fatal): $e');
+      AppLogger().warning('[Auth] signOut error (non-fatal)', error: e);
     }
   }
 
@@ -211,8 +212,9 @@ class AuthRepository {
     } on SocketException {
       throw NetworkException('انٹرنیٹ کنکشن نہیں — برا کرم نیٹ ورک چیک کریں');
     } catch (e) {
+      // Phase 7: ErrorHandler.logError now routes to AppLogger (file log +
+      // redaction); the duplicate debugPrint is removed to avoid double logging.
       ErrorHandler.logError(e, null);
-      debugPrint('[Auth] password reset error: $e');
       throw AuthenticationException('پاس ورڈ ری سیٹ لنک بھیجنے میں خرابی');
     }
   }

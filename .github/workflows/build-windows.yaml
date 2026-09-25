@@ -1,0 +1,79 @@
+name: Build Windows
+
+# Builds the Windows release bundle and compiles the Inno Setup installer.
+# Triggers: manual dispatch, release tags (v*), or as a reusable workflow
+# called by release.yaml.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Installer version override (defaults to version.json)'
+        required: false
+        default: ''
+  push:
+    tags:
+      - 'v*'
+  workflow_call:
+
+permissions:
+  contents: read
+  actions: write # upload installer artifact
+
+env:
+  FLUTTER_VERSION: '3.47.4'
+
+jobs:
+  build-windows:
+    name: Build Windows installer
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Resolve version
+        id: version
+        shell: pwsh
+        run: |
+          $override = "${{ inputs.version }}"
+          if ($override) {
+            $v = $override
+          } else {
+            $v = (Get-Content version.json -Raw | ConvertFrom-Json).version
+          }
+          "version=$v" >> $env:GITHUB_OUTPUT
+          Write-Host "Building installer for version $v"
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Build Windows (release)
+        run: flutter build windows --release
+
+      - name: Verify Inno Setup script exists
+        shell: pwsh
+        run: |
+          if (-not (Test-Path installer/madrassa360.iss)) {
+            Write-Error "installer/madrassa360.iss not found. It is produced by the Windows packaging workstream."
+            exit 1
+          }
+
+      - name: Compile installer with Inno Setup
+        uses: Minionguyjpro/Inno-Setup-Action@v1.2.2
+        with:
+          path: installer/madrassa360.iss
+          options: /O+ /O"installer/Output" /F"Madrassa360-Setup-${{ steps.version.outputs.version }}"
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer
+          path: installer/Output/Madrassa360-Setup-${{ steps.version.outputs.version }}.exe
+          if-no-files-found: error
+          retention-days: 30

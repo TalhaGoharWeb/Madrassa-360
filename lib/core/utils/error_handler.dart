@@ -1,39 +1,29 @@
 /// خرابی کا انتظام
 /// Global Error Handling Utilities
+///
+/// Phase 7: the exception taxonomy moved to
+/// `lib/core/errors/app_exceptions.dart` (sealed [AppException] +
+/// subclasses with EN/UR user-safe messages). This file keeps the UI
+/// helpers (dialogs, snackbars, inline error widgets) and re-exports the
+/// taxonomy so existing imports keep working.
+///
+/// Legacy aliases ([AuthenticationException], [StorageException]) live in
+/// `app_exceptions.dart` as deprecated subclasses — do not re-add the old
+/// definitions here; duplicate class names will not compile.
 
 import 'package:flutter/material.dart';
 
-/// Custom Exception Classes
-class AppException implements Exception {
-  final String message;
-  final String? code;
-  final dynamic details;
+import 'package:madrasa_360/core/observability/app_logger.dart';
 
-  AppException(this.message, {this.code, this.details});
-
-  @override
-  String toString() => 'AppException: $message ${code != null ? '(Code: $code)' : ''}';
-}
-
-class NetworkException extends AppException {
-  NetworkException(super.message, {super.code, super.details});
-}
-
-class ValidationException extends AppException {
-  ValidationException(super.message, {super.code, super.details});
-}
-
-class AuthenticationException extends AppException {
-  AuthenticationException(super.message, {super.code, super.details});
-}
-
-class StorageException extends AppException {
-  StorageException(super.message, {super.code, super.details});
-}
+export 'package:madrasa_360/core/errors/app_exceptions.dart';
 
 /// Error Handler Utility
 class ErrorHandler {
-  /// Handle and format error messages
+  /// Handle and format error messages.
+  ///
+  /// Returns the user-safe message: for [AppException]s this is the Urdu
+  /// user message ([AppException.message]); technical details are never
+  /// returned here.
   static String getErrorMessage(dynamic error) {
     if (error is AppException) {
       return error.message;
@@ -92,13 +82,17 @@ class ErrorHandler {
     );
   }
 
-  /// Log error (can be integrated with crash reporting services)
+  /// Log error via the centralized [AppLogger] (file logging + redaction).
+  ///
+  /// Kept for pre-Phase-7 call sites. New code should use
+  /// `ErrorBoundary.handleError` / `logOnly`, which also classify the
+  /// error into the [AppException] taxonomy and bump health counters.
   static void logError(dynamic error, StackTrace? stackTrace) {
-    debugPrint('❌ Error: $error');
-    if (stackTrace != null) {
-      debugPrint('Stack trace: $stackTrace');
-    }
-    // TODO: Integrate with Firebase Crashlytics or other error reporting service
+    AppLogger().error(
+      'ErrorHandler.logError',
+      error: error,
+      stackTrace: stackTrace,
+    );
   }
 }
 
@@ -111,8 +105,8 @@ class ErrorDisplayWidget extends StatelessWidget {
   const ErrorDisplayWidget({
     super.key,
     required this.message,
-    this.onRetry,
     this.icon = Icons.error_outline,
+    this.onRetry,
   });
 
   @override

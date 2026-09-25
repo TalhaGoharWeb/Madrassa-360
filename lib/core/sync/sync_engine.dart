@@ -89,6 +89,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../data/local/app_database.dart';
+import '../errors/error_boundary.dart';
+import '../observability/app_logger.dart';
 import '../services/supabase_service.dart';
 
 // ─────────────────────────────────────────────
@@ -576,6 +578,16 @@ class SyncEngine {
 
   // ── lifecycle ──────────────────────────────────────────────
 
+  /// Fire-and-forget wrapper: logs failures to the file log instead of
+  /// letting them escape as uncaught async errors (which would surface the
+  /// crash screen for a background sync hiccup).
+  void _fireAndForget(Future<void> task, String name) {
+    unawaited(task.then((_) {}, onError: (Object e, StackTrace st) {
+      AppLogger().error('sync.$name failed',
+          error: e, stackTrace: st, context: {'tenant_id': _tenantId});
+    }));
+  }
+
   /// Subscribe to connectivity changes and reclaim stale claims.
   /// Idempotent. Called by [syncEngineProvider] on creation.
   void start() {
@@ -583,7 +595,7 @@ class SyncEngine {
     _started = true;
     // Crash safety: rows left 'in_progress' by a dead process (lease
     // expired) go back to 'pending'.
-    unawaited(_reclaimStaleClaims());
+    _fireAndForget(_reclaimStaleClaims(), 'reclaimStaleClaims');
     // Version-tolerant connectivity listener (connectivity_plus 5.x emits
     // List<ConnectivityResult>; older versions emit a single value).
     _connectivitySub = Connectivity().onConnectivityChanged.listen(
@@ -591,9 +603,13 @@ class SyncEngine {
         final results = event is List ? event : [event];
         final online =
             results.any((r) => r != ConnectivityResult.none);
-        if (online) unawaited(syncNow());
+        if (online) _fireAndForget(syncNow(), 'syncNow');
       },
-      onError: (_) {},
+      onError: (Object e, StackTrace st) {
+        // Phase 7: classify + log through the error boundary instead of
+        // swallowing. No UX change — sync retries on the next trigger.
+        ErrorBoundary.handleErrorSimple(e, st, tag: 'sync/connectivity');
+      },
     );
   }
 
@@ -601,7 +617,7 @@ class SyncEngine {
   /// `WidgetsBindingObserver.didChangeAppLifecycleState(AppLifecycleState.resumed)`.
   void notifyAppResumed() {
     if (!_started || _disposed) return;
-    unawaited(syncNow());
+    _fireAndForget(syncNow(), 'syncNow');
   }
 
   /// Repositories call this after a local write + enqueue so UI counters
@@ -635,6 +651,10 @@ class SyncEngine {
 
   /// Full cycle: push local ops first, then pull server changes.
   /// No-op when offline or when a cycle is already running.
+  ///
+  /// Never throws: a background sync hiccup must not surface as an
+  /// uncaught async error (crash screen). Failures are logged to the
+  /// file log with the tenant id and retried on the next trigger.
   Future<void> syncNow() async {
     if (_syncRunning || _disposed) return;
     if (!await _isOnline()) return;
@@ -647,6 +667,11 @@ class SyncEngine {
         _lastSyncAt.add(_lastSyncValue);
         _events.add(SyncEvent.syncCompleted);
       }
+    } catch (e, st) {
+      // Phase 7: classify via the error boundary (taxonomy + health
+      // counters + file log) instead of a bare log line. Same UX — the
+      // failure is swallowed here and retried on the next trigger.
+      ErrorBoundary.logOnly(e, st, tag: 'sync/syncNow');
     } finally {
       _syncRunning = false;
     }
@@ -1246,7 +1271,7 @@ class SyncEngine {
       await _markConflictResolved(conflict, 'retried_local');
     });
     notifyLocalChange();
-    unawaited(syncNow());
+    _fireAndForget(syncNow(), 'syncNow');
   }
 
   Future<void> _markConflictResolved(
@@ -1273,9 +1298,11 @@ class SyncEngine {
     for (final entity in _pullEntities) {
       try {
         await _pullEntity(entity);
-      } catch (_) {
+      } catch (e, st) {
         // One entity's pull must not abort the others; the watermark only
         // advances inside the transaction that applied the rows.
+        // Phase 7: classify + log through the error boundary (same UX).
+        ErrorBoundary.handleErrorSimple(e, st, tag: 'sync/pull:$entity');
       }
     }
     if (!_disposed) _events.add(SyncEvent.pullCompleted);
