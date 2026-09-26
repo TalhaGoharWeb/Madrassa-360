@@ -8,6 +8,8 @@
 
 import 'package:flutter/material.dart';
 
+import '../../core/constants/app_typography.dart';
+
 class CrashScreen extends StatefulWidget {
   const CrashScreen({
     super.key,
@@ -79,8 +81,7 @@ class _CrashScreenState extends State<CrashScreen> {
                       const SizedBox(height: 20),
                       const Text(
                         'کچھ غلط ہو گیا',
-                        style: TextStyle(
-                          fontSize: 22,
+                        style: AppTypography.titleLarge.copyWith(
                           fontWeight: FontWeight.bold,
                           color: emerald,
                         ),
@@ -89,20 +90,25 @@ class _CrashScreenState extends State<CrashScreen> {
                       const SizedBox(height: 8),
                       const Text(
                         'Something went wrong',
-                        style: TextStyle(fontSize: 15, color: Colors.black54),
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: Colors.black54,
+                        ),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 12),
                       const Text(
                         'ایپ کو ایک غیر متوقع خرابی کا سامنا کرنا پڑا۔\nآپ کا ڈیٹا محفوظ ہے — دوبارہ شروع کرنے کی کوشش کریں۔',
-                        style: TextStyle(
-                            fontSize: 15, color: Colors.black87, height: 1.6),
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: Colors.black87,
+                        ),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 4),
                       const Text(
                         'The app hit an unexpected error. Your data is safe — please try restarting.',
-                        style: TextStyle(fontSize: 13, color: Colors.black54),
+                        style: AppTypography.bodySmall.copyWith(
+                          color: Colors.black54,
+                        ),
                         textAlign: TextAlign.center,
                       ),
                       if (widget.details != null) ...[
@@ -137,7 +143,7 @@ class _CrashScreenState extends State<CrashScreen> {
                             _busy
                                 ? 'شروع ہو رہا ہے…'
                                 : 'دوبارہ شروع کریں  •  Restart',
-                            style: const TextStyle(fontSize: 16),
+                            style: AppTypography.labelLarge,
                           ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: emerald,

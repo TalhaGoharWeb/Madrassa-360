@@ -355,9 +355,12 @@ class _PlatformUsersScreenState extends State<PlatformUsersScreen> {
                           if (isSelf)
                             const Padding(
                               padding: EdgeInsets.only(left: 6),
-                              child: Text('(you)',
-                                  style: TextStyle(
-                                      color: AppColors.textSecondary)),
+                              child: Text(
+                                '(you)',
+                                style: AppTypography.bodySmall.copyWith(
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
                             ),
                           if (!isSelf)
                             IconButton(

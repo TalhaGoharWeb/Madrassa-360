@@ -15,6 +15,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:printing/printing.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_typography.dart';
 import '../../../core/reports/data/report_data.dart';
 import '../../../core/reports/data/report_models.dart';
 import '../../../core/reports/report_catalog.dart';
@@ -99,10 +100,9 @@ class _ReportsHubScreenState extends ConsumerState<ReportsHubScreen>
               ),
             ),
             title: Text(r.titleUr,
-                style: const TextStyle(
-                    fontFamily: 'JameelNooriNastaleeq', fontSize: 17)),
+                style: AppTypography.titleSmall.copyWith(fontSize: 17)),
             subtitle: Text('${r.titleEn}\n${r.descriptionUr}',
-                style: const TextStyle(fontSize: 14)),
+                style: AppTypography.bodySmall),
             isThreeLine: true,
             trailing: const Icon(Icons.arrow_forward_ios, size: 16),
             onTap: () => _openFilters(context, tenantId, r),
@@ -302,13 +302,15 @@ class _ReportFilterSheetState extends ConsumerState<_ReportFilterSheet> {
             children: [
               Text(_def.titleUr,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                      fontFamily: 'JameelNooriNastaleeq',
+                  style: AppTypography.titleMedium.copyWith(
                       fontSize: 20,
-                      fontWeight: FontWeight.bold)),
+                      fontWeight: FontWeight.bold,
+                    )),
               Text(_def.titleEn,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 14, color: Colors.grey)),
+                  style: AppTypography.bodySmall.copyWith(
+                      color: Colors.grey,
+                    )),
               const SizedBox(height: 12),
               if (_def.needsStudent) ...[
                 _label('طالب علم'),
@@ -474,8 +476,7 @@ class _ReportFilterSheetState extends ConsumerState<_ReportFilterSheet> {
   Widget _label(String text) => Padding(
         padding: const EdgeInsets.only(top: 8, bottom: 4),
         child: Text(text,
-            style: const TextStyle(
-                fontFamily: 'JameelNooriNastaleeq', fontSize: 15)),
+            style: AppTypography.labelLarge.copyWith(fontSize: 15)),
       );
 
   Widget _selectedChip(String text, VoidCallback onClear) => Chip(
@@ -499,7 +500,12 @@ class _ReportFilterSheetState extends ConsumerState<_ReportFilterSheet> {
           DropdownMenuItem<T>(
             value: null,
             child:
-                Text('— $hint —', style: const TextStyle(color: Colors.grey)),
+                Text(
+                  '— $hint —',
+                  style: AppTypography.bodySmall.copyWith(
+                    color: Colors.grey,
+                  ),
+                ),
           ),
           for (final e in items.entries)
             DropdownMenuItem<T>(value: e.key, child: Text(e.value)),
