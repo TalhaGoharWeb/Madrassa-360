@@ -1,221 +1,173 @@
-// Permission-evaluation unit tests.
+// Permission-authorization unit tests (Phase 5).
 //
 // Implementation files under test:
-//   lib/core/services/permission_service.dart     (has/hasAll/hasAny + role classifiers)
-//   lib/core/constants/app_permissions.dart       (offline roleDefaults fallback matrix)
+//   lib/core/constants/app_permissions.dart   (canonical catalog + Urdu labels)
+//   lib/core/services/permission_service.dart (EffectivePermissions,
+//     validateServerCodes, has/hasAll/hasAny, tenantRoleDefaults)
 //
-// The Dart side uses the legacy underscore codes (mark_attendance,
-// create_fees, ...), which are the client mirror of the canonical dotted
-// codes seeded by supabase/migrations/005_rbac.sql:
-//   SQL 005 'teacher' row set: students.view, attendance.view,
-//     attendance.mark, attendance.edit, exams.view, results.view,
-//     results.enter, results.edit, notifications.view
-//   -> notably NO fees.* and NO results.delete / exams.create.
-// The tests below assert the same grants/denies on the Dart fallback,
-// e.g. a teacher HAS attendance.mark (mark_attendance) but NOT
-// fees.collect (create_fees/update_fees).
+// The app uses the canonical DOTTED codes from supabase/migrations/019
+// (e.g. 'students.view') plus the 56 still-live legacy underscore codes
+// 019 also labels. Server rows are validated (unknown codes dropped
+// fail-closed) but never re-mapped — there is no dotted-to-underscore
+// translation step anymore.
 //
-// HONESTY NOTE: PermissionService.loadForUser() calls the Supabase RPC
-// get_my_permissions() and is NOT covered here (needs network). Only the
-// pure evaluation helpers and the static fallback matrix are.
+// HONESTY NOTE: PermissionService.loadEffectivePermissions() calls the
+// live `get_my_permissions_detailed` RPC and is NOT covered here (needs
+// network + Supabase). Only the pure helpers, the server-code validator,
+// the canonical catalog and the static offline role-default matrix are.
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:madrasa_360/core/constants/app_permissions.dart';
 import 'package:madrasa_360/core/services/permission_service.dart';
 
 void main() {
-  group('PermissionService.has / hasAll / hasAny', () {
-    final perms = <String>{'a', 'b', 'c'};
+  group('has / hasAll / hasAny (pure set helpers)', () {
+    const perms = {'students.view', 'attendance.mark'};
 
     test('has is exact set membership', () {
-      expect(PermissionService.has(perms, 'a'), isTrue);
-      expect(PermissionService.has(perms, 'z'), isFalse);
-      expect(PermissionService.has(const {}, 'a'), isFalse);
+      expect(PermissionService.has(perms, 'students.view'), isTrue);
+      expect(PermissionService.has(perms, 'fees.collect'), isFalse);
+      expect(PermissionService.has(const {}, 'students.view'), isFalse);
     });
 
     test('hasAll requires every permission', () {
-      expect(PermissionService.hasAll(perms, ['a', 'b']), isTrue);
-      expect(PermissionService.hasAll(perms, ['a', 'z']), isFalse);
+      expect(
+          PermissionService.hasAll(
+              perms, ['students.view', 'attendance.mark']),
+          isTrue);
+      expect(
+          PermissionService.hasAll(perms, ['students.view', 'fees.collect']),
+          isFalse);
       expect(PermissionService.hasAll(perms, []), isTrue);
     });
 
     test('hasAny requires at least one', () {
-      expect(PermissionService.hasAny(perms, ['z', 'b']), isTrue);
-      expect(PermissionService.hasAny(perms, ['x', 'y']), isFalse);
+      expect(
+          PermissionService.hasAny(perms, ['fees.collect', 'attendance.mark']),
+          isTrue);
+      expect(PermissionService.hasAny(perms, ['fees.collect']), isFalse);
       expect(PermissionService.hasAny(perms, []), isFalse);
     });
   });
 
-  group('teacher role (005 matrix: attendance.mark yes, fees.collect no)', () {
-    final teacher = AppPermissions.fallbackFor('teacher');
-
-    test('teacher can mark attendance (SQL: attendance.mark)', () {
-      expect(PermissionService.has(teacher, AppPermissions.markAttendance),
-          isTrue);
-      expect(PermissionService.has(teacher, AppPermissions.viewAttendance),
-          isTrue);
+  group('validateServerCodes (server codes -> effective set)', () {
+    test('known dotted codes pass through unchanged', () {
+      final valid = PermissionService.validateServerCodes(
+          {'students.view', 'attendance.mark'});
+      expect(valid, {'students.view', 'attendance.mark'});
     });
 
-    test('teacher CANNOT collect/refund fees (SQL: no fees.* for teacher)', () {
-      expect(
-          PermissionService.has(teacher, AppPermissions.createFees), isFalse);
-      expect(
-          PermissionService.has(teacher, AppPermissions.updateFees), isFalse);
-      expect(
-          PermissionService.has(teacher, AppPermissions.deleteFees), isFalse);
-      // viewing fee records is allowed
-      expect(PermissionService.has(teacher, AppPermissions.viewFees), isTrue);
+    test('unknown / injected codes are dropped fail-closed', () {
+      final valid = PermissionService.validateServerCodes({
+        'students.view',
+        'admin.superpowers',
+        'DROP TABLE x;--',
+        '',
+      });
+      expect(valid, {'students.view'});
     });
 
-    test('teacher can enter results but not delete them', () {
-      expect(
-          PermissionService.has(teacher, AppPermissions.enterResults), isTrue);
-      expect(
-          PermissionService.has(teacher, AppPermissions.viewResults), isTrue);
-      expect(PermissionService.has(teacher, AppPermissions.deleteResults),
-          isFalse);
+    test('legacy catalog codes pass through too (they are in the catalog)', () {
+      final valid = PermissionService.validateServerCodes({'update_fees'});
+      expect(valid, {'update_fees'});
     });
 
-    test('teacher cannot manage users, roles or settings', () {
-      expect(
-          PermissionService.hasAny(teacher, [
-            AppPermissions.createUsers,
-            AppPermissions.manageRoles,
-            AppPermissions.managePermissions,
-            AppPermissions.manageSettings,
-          ]),
-          isFalse);
+    test('empty input stays empty', () {
+      expect(PermissionService.validateServerCodes({}), isEmpty);
+    });
+
+    // NOTE: rejecting rows whose tenant_id differs from the requested tenant
+    // lives inside loadEffectivePermissions' RPC path and needs Supabase;
+    // it is exercised in CI only via the widget/integration surface.
+  });
+
+  group('canonical catalog (019)', () {
+    test('66 dotted codes + 56 legacy codes = 122 unique codes', () {
+      expect(AppPermissions.allDottedCodes, hasLength(66));
+      expect(AppPermissions.allCodes, hasLength(122));
+      expect(AppPermissions.allCodes,
+          containsAll(AppPermissions.allDottedCodes));
+    });
+
+    test('constants carry the canonical dotted values', () {
+      expect(AppPermissions.viewStudents, 'students.view');
+      expect(AppPermissions.markAttendance, 'attendance.mark');
+      expect(AppPermissions.assignRoles, 'roles.assign');
+      expect(AppPermissions.collectFees, 'fees.collect');
+      expect(AppPermissions.sendNotifications, 'notifications.send');
+      // Deliberate aliases (match RLS semantics — see file header):
+      // fees have no separate update/delete grant server-side, and results
+      // deletion is the results.edit grant.
+      expect(AppPermissions.updateFees, 'fees.collect');
+      expect(AppPermissions.deleteFees, 'fees.collect');
+      expect(AppPermissions.deleteResults, 'results.edit');
+      expect(AppPermissions.deleteUsers, 'users.deactivate');
+    });
+
+    test('Urdu label map covers every catalog code', () {
+      for (final code in AppPermissions.allCodes) {
+        expect(AppPermissions.urduLabelFor(code), isNotEmpty,
+            reason: 'missing Urdu label for $code');
+      }
     });
   });
 
-  group('finance roles', () {
-    test('accountant can create/update fees but not delete them', () {
+  group('AppPermissions.fallbackFor (019 static offline fallback)', () {
+    test('teacher: dotted attendance rights, NO fee/role rights', () {
+      final p = AppPermissions.fallbackFor('teacher');
+      expect(PermissionService.has(p, AppPermissions.markAttendance), isTrue);
+      expect(PermissionService.has(p, AppPermissions.viewAttendance), isTrue);
+      expect(PermissionService.has(p, AppPermissions.viewStudents), isTrue);
+      expect(PermissionService.has(p, AppPermissions.enterResults), isTrue);
+      // no fees.* and no admin rights for a teacher
+      expect(PermissionService.has(p, AppPermissions.collectFees), isFalse);
+      expect(PermissionService.has(p, AppPermissions.viewFees), isFalse);
+      expect(PermissionService.has(p, AppPermissions.assignRoles), isFalse);
+      // values are the canonical dotted codes, not legacy underscores
+      expect(p, contains('attendance.mark'));
+      expect(p, isNot(contains('mark_attendance')));
+    });
+
+    test('teacher: enter/edit results, but cannot publish them', () {
+      final p = AppPermissions.fallbackFor('teacher');
+      expect(PermissionService.has(p, AppPermissions.enterResults), isTrue);
+      expect(PermissionService.has(p, AppPermissions.viewResults), isTrue);
+      // deleteResults deliberately aliases results.edit (RLS semantics).
+      expect(PermissionService.has(p, AppPermissions.deleteResults), isTrue);
+      expect(PermissionService.has(p, AppPermissions.publishResults), isFalse);
+    });
+
+    test('accountant: collect/create fees yes; delete aliases collect', () {
       final p = AppPermissions.fallbackFor('accountant');
+      expect(PermissionService.has(p, AppPermissions.collectFees), isTrue);
       expect(PermissionService.has(p, AppPermissions.createFees), isTrue);
-      expect(PermissionService.has(p, AppPermissions.updateFees), isTrue);
-      expect(PermissionService.has(p, AppPermissions.deleteFees), isFalse);
+      // deleteFees / updateFees deliberately alias fees.collect
+      // (no separate server-side grant), so they resolve identically.
+      expect(AppPermissions.deleteFees, AppPermissions.collectFees);
+      expect(PermissionService.has(p, AppPermissions.deleteFees), isTrue);
       expect(PermissionService.has(p, AppPermissions.markAttendance), isFalse);
     });
 
-    test('financeManager has the full finance set', () {
-      final p = AppPermissions.fallbackFor('financeManager');
-      expect(
-          PermissionService.hasAll(p, [
-            AppPermissions.viewFinance,
-            AppPermissions.createFinance,
-            AppPermissions.approveFinance,
-            AppPermissions.deleteFinance,
-            AppPermissions.deleteFees,
-          ]),
-          isTrue);
+    test('tenant_owner is a superset of teacher', () {
+      final owner = AppPermissions.fallbackFor('tenant_owner');
+      final teacher = AppPermissions.fallbackFor('teacher');
+      expect(owner.containsAll(teacher), isTrue);
+      expect(PermissionService.has(owner, AppPermissions.assignRoles), isTrue);
     });
-  });
 
-  group('fallbackFor edge cases', () {
+    test('parent sees announcements only (read-only external role)', () {
+      final p = AppPermissions.fallbackFor('parent');
+      expect(PermissionService.has(p, AppPermissions.viewAnnouncements),
+          isTrue);
+      expect(PermissionService.has(p, AppPermissions.markAttendance), isFalse);
+      expect(PermissionService.has(p, AppPermissions.createStudents), isFalse);
+      expect(PermissionService.has(p, AppPermissions.collectFees), isFalse);
+    });
+
     test('unknown role -> empty set (deny by default)', () {
       final p = AppPermissions.fallbackFor('definitely_not_a_role');
       expect(p, isEmpty);
       expect(PermissionService.has(p, AppPermissions.viewStudents), isFalse);
-    });
-
-    test('parent is read-only on attendance/fees/results', () {
-      final p = AppPermissions.fallbackFor('parent');
-      expect(
-          PermissionService.hasAll(p, [
-            AppPermissions.viewAttendance,
-            AppPermissions.viewFees,
-            AppPermissions.viewResults,
-          ]),
-          isTrue);
-      expect(PermissionService.has(p, AppPermissions.markAttendance), isFalse);
-      expect(PermissionService.has(p, AppPermissions.createStudents), isFalse);
-    });
-
-    test('madrasaAdmin is a superset of teacher', () {
-      final admin = AppPermissions.fallbackFor('madrasaAdmin');
-      final teacher = AppPermissions.fallbackFor('teacher');
-      expect(admin.containsAll(teacher), isTrue);
-      expect(PermissionService.has(admin, AppPermissions.deleteFees), isTrue);
-    });
-  });
-
-  group('role classifiers', () {
-    test('isPlatformRole', () {
-      expect(PermissionService.isPlatformRole('superAdmin'), isTrue);
-      expect(PermissionService.isPlatformRole('franchiseManager'), isTrue);
-      expect(PermissionService.isPlatformRole('madrasaAdmin'), isFalse);
-      expect(PermissionService.isPlatformRole('teacher'), isFalse);
-    });
-
-    test('isMadrasaAdmin', () {
-      expect(PermissionService.isMadrasaAdmin('madrasaAdmin'), isTrue);
-      expect(PermissionService.isMadrasaAdmin('admin'), isTrue);
-      expect(PermissionService.isMadrasaAdmin('editor'), isTrue);
-      expect(PermissionService.isMadrasaAdmin('itManager'), isTrue);
-      expect(PermissionService.isMadrasaAdmin('teacher'), isFalse);
-    });
-
-    test('isStaffRole covers operational staff, not externals', () {
-      expect(PermissionService.isStaffRole('teacher'), isTrue);
-      expect(PermissionService.isStaffRole('accountant'), isTrue);
-      expect(PermissionService.isStaffRole('parent'), isFalse);
-      expect(PermissionService.isStaffRole('student'), isFalse);
-    });
-
-    test('isExternalRole is exactly parent/student', () {
-      expect(PermissionService.isExternalRole('parent'), isTrue);
-      expect(PermissionService.isExternalRole('student'), isTrue);
-      expect(PermissionService.isExternalRole('teacher'), isFalse);
-    });
-  });
-
-  // ── Server-code normalization (Phase-8 fix) ────────────────────────
-  // The server returns dotted codes (005_rbac.sql); the UI checks underscore
-  // constants. Without normalizeServerCodes every online check was false.
-
-  group('normalizeServerCodes', () {
-    test('teacher dotted set maps to working underscore permissions', () {
-      final server = {
-        'students.view',
-        'attendance.view',
-        'attendance.mark',
-        'attendance.edit',
-        'exams.view',
-        'results.view',
-        'results.enter',
-        'results.edit',
-        'notifications.view',
-      };
-      final perms = PermissionService.normalizeServerCodes(server);
-      expect(
-          PermissionService.has(perms, AppPermissions.markAttendance), isTrue);
-      expect(PermissionService.has(perms, AppPermissions.viewStudents), isTrue);
-      expect(PermissionService.has(perms, AppPermissions.enterResults), isTrue);
-      // teacher has no fee rights anywhere in the matrix
-      expect(PermissionService.has(perms, AppPermissions.viewFees), isFalse);
-      expect(PermissionService.has(perms, AppPermissions.createFees), isFalse);
-    });
-
-    test('unmapped dotted codes are dropped fail-closed', () {
-      final perms = PermissionService.normalizeServerCodes({
-        'fees.collect', // no Dart counterpart
-        'audit.view', // no Dart counterpart
-        'roles.assign', // intentionally unmapped (would over-grant)
-        'students.view',
-      });
-      expect(perms, {AppPermissions.viewStudents});
-    });
-
-    test('legacy underscore codes pass through untouched', () {
-      final perms = PermissionService.normalizeServerCodes(
-          {AppPermissions.viewStudents, 'custom_code'});
-      expect(perms, {AppPermissions.viewStudents, 'custom_code'});
-    });
-
-    test('empty set stays empty; update maps to edit_* family', () {
-      expect(PermissionService.normalizeServerCodes({}), isEmpty);
-      final perms = PermissionService.normalizeServerCodes({'students.update'});
-      expect(perms, {AppPermissions.editStudents});
     });
   });
 }
