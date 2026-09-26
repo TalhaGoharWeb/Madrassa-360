@@ -143,7 +143,7 @@ CREATE TABLE IF NOT EXISTS public.invoices (
                      GENERATED ALWAYS AS (subtotal - discount_total + tax_total) STORED,
   amount_paid      NUMERIC(14,2) NOT NULL DEFAULT 0 CHECK (amount_paid >= 0),
   balance_due      NUMERIC(14,2)
-                     GENERATED ALWAYS AS (total - amount_paid) STORED,
+                     GENERATED ALWAYS AS (subtotal - discount_total + tax_total - amount_paid) STORED,
   status           TEXT        NOT NULL DEFAULT 'draft'
                      CHECK (status IN ('draft','issued','partially_paid','paid','overdue','cancelled','void')),
   reversed_by_id   UUID        REFERENCES public.invoices(id) ON DELETE SET NULL,
