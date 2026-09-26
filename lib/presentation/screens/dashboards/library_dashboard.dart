@@ -16,6 +16,7 @@ import '../../widgets/dashboard/alert_card.dart';
 import '../../widgets/dashboard/dashboard_scaffold.dart';
 import '../../widgets/dashboard/day_timeline.dart';
 import '../../widgets/dashboard/quick_actions.dart';
+import '../common/dashboard_guide_screen.dart';
 import '../../widgets/dashboard/slot_heading.dart';
 import '../../widgets/dashboard/stat_card.dart';
 import '../../../providers/auth_provider.dart';
@@ -52,6 +53,7 @@ class LibraryDashboardScreen extends ConsumerWidget {
         userName: userName,
         roleLabel: snap.data?.isEmpty == true ? null : snap.data,
         madrasaName: madrasaName,
+        actions: const [DashboardGuideButton(roleKey: 'librarian')],
         schedule: const DayTimeline(),
         stats: _LibraryStats(can: can, moduleOk: moduleOk),
         alertsTitle: 'اہم امور',

@@ -24,6 +24,7 @@ import '../../widgets/dashboard/alert_card.dart';
 import '../../widgets/dashboard/dashboard_scaffold.dart';
 import '../../widgets/dashboard/schedule_slot.dart';
 import '../../widgets/dashboard/quick_actions.dart';
+import '../common/dashboard_guide_screen.dart';
 import '../../widgets/dashboard/stat_card.dart';
 import '../../widgets/dashboard/today_tasks.dart';
 import '../../../providers/announcement_provider.dart';
@@ -125,6 +126,7 @@ class _TeacherDashboardScreenState
       alertsTitle: 'تازہ اعلانات',
       alerts: _LatestAnnouncements(),
       actions: [
+        const DashboardGuideButton(roleKey: 'teacher'),
         IconButton(
           icon: const Icon(Icons.notifications_outlined),
           tooltip: 'اعلانات',
