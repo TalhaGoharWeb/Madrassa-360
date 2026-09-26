@@ -12,8 +12,8 @@ class NetworkService {
   /// Check if device is connected to internet
   static Future<bool> isConnected() async {
     try {
-      final result = await _connectivity.checkConnectivity();
-      return result != ConnectivityResult.none;
+      final results = await _connectivity.checkConnectivity();
+      return results.any((r) => r != ConnectivityResult.none);
     } catch (e) {
       ErrorHandler.logError(e, null);
       return false;
@@ -23,8 +23,11 @@ class NetworkService {
   /// Get current connectivity status
   static Future<ConnectivityResult> getConnectivityStatus() async {
     try {
-      final result = await _connectivity.checkConnectivity();
-      return result;
+      final results = await _connectivity.checkConnectivity();
+      return results.firstWhere(
+        (r) => r != ConnectivityResult.none,
+        orElse: () => ConnectivityResult.none,
+      );
     } catch (e) {
       ErrorHandler.logError(e, null);
       return ConnectivityResult.none;
@@ -32,7 +35,7 @@ class NetworkService {
   }
 
   /// Stream of connectivity changes
-  static Stream<ConnectivityResult> get onConnectivityChanged {
+  static Stream<List<ConnectivityResult>> get onConnectivityChanged {
     return _connectivity.onConnectivityChanged;
   }
 
@@ -62,7 +65,11 @@ class NetworkService {
   /// Get connection type (WiFi, Mobile, etc.)
   static Future<String> getConnectionType() async {
     try {
-      final result = await _connectivity.checkConnectivity();
+      final results = await _connectivity.checkConnectivity();
+      final result = results.firstWhere(
+        (r) => r != ConnectivityResult.none,
+        orElse: () => ConnectivityResult.none,
+      );
       switch (result) {
         case ConnectivityResult.wifi:
           return 'WiFi';
@@ -76,6 +83,8 @@ class NetworkService {
           return 'Bluetooth';
         case ConnectivityResult.other:
           return 'دیگر';
+        case ConnectivityResult.satellite:
+          return 'سیٹلائٹ';
         case ConnectivityResult.none:
           return 'غیر منسلک';
       }
@@ -122,10 +131,12 @@ class NetworkStatusWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<ConnectivityResult>(
+    return StreamBuilder<List<ConnectivityResult>>(
       stream: NetworkService.onConnectivityChanged,
       builder: (context, snapshot) {
-        if (snapshot.hasData && snapshot.data == ConnectivityResult.none) {
+        final offline = snapshot.hasData &&
+            snapshot.data!.every((r) => r == ConnectivityResult.none);
+        if (offline) {
           return Column(
             children: [
               Container(
