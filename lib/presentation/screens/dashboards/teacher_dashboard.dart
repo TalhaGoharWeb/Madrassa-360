@@ -3,8 +3,8 @@
 ///
 /// Greeting (السلام علیکم استاد محترم / آج کی تدریس), four cards
 /// (میری جماعتیں، میرے طلبہ، آج کی حاضری، آج کے اسباق), quick actions
-/// (حاضری لگائیں، سبق درج کریں، طلبہ دیکھیں، نمبر درج کریں), "میرا آج کا
-/// کام" checklist, and the latest announcements.
+/// (حاضری لگائیں، طلبہ دیکھیں، نمبر درج کریں), "میرا آج کا کام"
+/// checklist, and the latest announcements.
 ///
 /// Every number comes from the teacher's assignment-scoped providers —
 /// never global lists, never hard-coded. "آج کے اسباق" has no data
@@ -31,7 +31,6 @@ import '../../../providers/dashboard_data_provider.dart';
 import '../../../providers/teacher_portal_provider.dart';
 import '../../../providers/tenant_branding_provider.dart';
 import '../common/announcements_screen.dart';
-import 'role_home.dart' show ComingSoonScreen;
 
 class TeacherDashboardScreen extends ConsumerStatefulWidget {
   final VoidCallback onMarkAttendance;
@@ -79,15 +78,9 @@ class _TeacherDashboardScreenState
           color: AppColors.present,
           onTap: widget.onMarkAttendance,
         ),
-      QuickActionItem(
-        icon: Icons.menu_book_outlined,
-        label: 'سبق درج کریں',
-        onTap: () => Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => const ComingSoonScreen(title: 'تدریس'),
-          ),
-        ),
-      ),
+      // سبق درج کریں: no lesson-logging source exists, so the action is
+      // omitted entirely (the 'آج کے اسباق' card below keeps its honest
+      // empty state).
       if (canStudents)
         QuickActionItem(
           icon: Icons.people_outline,
@@ -263,12 +256,8 @@ class _TodayTasks extends ConsumerWidget {
       ('نمبرات درج کریں', ''),
     ];
 
-    void pushComingSoon() => Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => const ComingSoonScreen(title: 'تدریس'),
-          ),
-        );
-
+    // 'آج کے اسباق درج کریں' stays a manual checklist item: no
+    // lesson-logging source exists, so it has no navigation action.
     return TodayTasks(
       tasks: List.generate(
         3,
@@ -279,7 +268,7 @@ class _TodayTasks extends ConsumerWidget {
         ),
       ),
       onToggle: (i, v) => onToggle(i, derived[i], v),
-      rowActions: [onMarkAttendance, pushComingSoon, onEnterResults],
+      rowActions: [onMarkAttendance, null, onEnterResults],
     );
   }
 }

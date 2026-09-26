@@ -33,9 +33,9 @@
 /// * payment received     → WIRED in LocalFinanceRepository.recordPayment
 ///   (lib/data/repositories/finance_repository.dart)
 /// * result published     → NOT WIRED: no exam-publish flow exists yet
-///   (results entry save is honestly stubbed — see TODO(phase-8)). Call
-///   [onResultPublished] ONCE per exam from the future publish entry
-///   point, never once per result row.
+///   (entry save now persists via ResultNotifier — see
+///   results_screen._saveEntryResults). Call [onResultPublished] ONCE per
+///   exam from the future publish entry point, never once per result row.
 /// * announcement posted  → WIRED in AnnouncementNotifier.create
 ///   (lib/providers/announcement_provider.dart)
 /// * backup completed     → WIRED in BackupService.createBackup, after the

@@ -29,6 +29,8 @@ import '../../../providers/fee_provider.dart';
 import '../../../providers/dashboard_data_provider.dart';
 import '../../../providers/tenant_branding_provider.dart';
 import '../admin/darja_screen.dart';
+import 'exam_dashboard.dart';
+import 'exam_wizard_screen.dart';
 import '../admin/fee_management_screen.dart';
 import '../admin/finance_screen.dart';
 import '../admin/library_screen.dart';
@@ -39,7 +41,6 @@ import '../common/announcements_screen.dart';
 import '../reports/reports_hub_screen.dart';
 import '../teacher/attendance_screen.dart';
 import '../teacher/results_screen.dart';
-import 'role_home.dart' show ComingSoonScreen;
 
 class PrincipalDashboardScreen extends ConsumerWidget {
   const PrincipalDashboardScreen({super.key});
@@ -134,7 +135,7 @@ class PrincipalDashboardScreen extends ConsumerWidget {
         SectionTile(
           icon: Icons.assignment_outlined,
           label: 'امتحانات',
-          onTap: () => go(const ComingSoonScreen(title: 'امتحانات')),
+          onTap: () => go(const ExamDashboardScreen()),
         ),
       if (can(AppPermissions.viewResults))
         SectionTile(
@@ -209,23 +210,9 @@ class PrincipalDashboardScreen extends ConsumerWidget {
       ));
     }
 
-    // دارالاقامہ — module-gated; no hostel screen exists yet, so the tile
-    // lands on a clean "جلد آ رہا ہے" placeholder (never a dead button).
-    if (can(AppPermissions.viewHostel) && moduleOk('hostel')) {
-      sections.add(DashboardSection(
-        title: 'دارالاقامہ',
-        icon: Icons.hotel_outlined,
-        initiallyExpanded: false,
-        tiles: [
-          SectionTile(
-            icon: Icons.hotel_outlined,
-            label: 'دارالاقامہ',
-            onTap: () => go(const ComingSoonScreen(title: 'دارالاقامہ')),
-          ),
-        ],
-      ));
-    }
-
+    // دارالاقامہ — no hostel data source exists yet (no residents/rooms
+    // tables), so the section is omitted entirely rather than pointing
+    // at a placeholder.
     // لائبریری
     if (can(AppPermissions.viewLibrary) && moduleOk('library')) {
       sections.add(DashboardSection(
@@ -509,7 +496,7 @@ class _QuickActions extends ConsumerWidget {
           icon: Icons.assignment_outlined,
           label: 'امتحان بنائیں',
           color: AppColors.warning,
-          onTap: () => go(const ComingSoonScreen(title: 'امتحانات')),
+          onTap: () => go(const ExamWizardScreen()),
         ),
       if (can(AppPermissions.viewReports))
         QuickActionItem(

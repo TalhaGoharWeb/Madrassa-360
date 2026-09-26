@@ -271,7 +271,8 @@ void main() {
         ),
         const HostelDashboardScreen(),
       );
-      expect(find.text('رہائشی طلبہ'), findsNWidgets(2)); // stat + action
+      expect(find.text('رہائشی طلبہ'),
+          findsOneWidget); // stat only — action omitted (no hostel data source)
       expect(find.text('غیر حاضر'), findsOneWidget);
       // Honest empty states, not zeros presented as data.
       expect(find.text('ابھی دستیاب نہیں'), findsWidgets);
