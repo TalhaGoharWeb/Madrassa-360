@@ -69,7 +69,8 @@ class AuthorizationService {
       permissions.any(_effective.contains);
 
   /// Data-scope row for [permission] in the active tenant (UX-level
-  /// filtering; see [ScopeService]).
+  /// filtering; see [ScopeService]). Null is fail-closed (no row, load
+  /// error, or nothing active): treat as denied, never as unrestricted.
   Future<PermissionScope?> scopesFor(String permission) =>
       _ref.read(scopeServiceProvider).scopeFor(permission);
 
