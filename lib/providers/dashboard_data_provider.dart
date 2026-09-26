@@ -270,8 +270,7 @@ class AcademicOverview {
         pendingResults = 0;
 }
 
-final academicOverviewProvider =
-    FutureProvider<AcademicOverview>((ref) async {
+final academicOverviewProvider = FutureProvider<AcademicOverview>((ref) async {
   final tenantId = ref.watch(currentTenantIdProvider);
   if (tenantId == null) return const AcademicOverview.zero();
   try {

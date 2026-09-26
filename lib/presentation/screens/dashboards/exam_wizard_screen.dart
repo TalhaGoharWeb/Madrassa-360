@@ -168,13 +168,12 @@ class _ExamWizardScreenState extends ConsumerState<ExamWizardScreen> {
     }
     setState(() => _busy = true);
     try {
-      final exam =
-          await ref.read(resultNotifierProvider.notifier).createExam(
-                name: name,
-                classId: _classId,
-                examDate: _dateStr(_date),
-                totalMarks: totalMarks,
-              );
+      final exam = await ref.read(resultNotifierProvider.notifier).createExam(
+            name: name,
+            classId: _classId,
+            examDate: _dateStr(_date),
+            totalMarks: totalMarks,
+          );
       setState(() {
         _examId = exam.id;
         _step = 1;
@@ -193,8 +192,7 @@ class _ExamWizardScreenState extends ConsumerState<ExamWizardScreen> {
     final examId = _examId;
     if (examId == null) return;
     try {
-      final existing =
-          await ref.read(examResultsProvider(examId).future);
+      final existing = await ref.read(examResultsProvider(examId).future);
       final map = <String, Map<String, double>>{};
       final ids = <String, Map<String, String>>{};
       for (final sr in existing) {
@@ -242,8 +240,7 @@ class _ExamWizardScreenState extends ConsumerState<ExamWizardScreen> {
         if (obtained == null) continue;
         // Reuse the existing row id when present so re-saving updates
         // the same row instead of creating a duplicate.
-        final rowId =
-            _resultIds[st.id]?[subject.name] ?? const Uuid().v4();
+        final rowId = _resultIds[st.id]?[subject.name] ?? const Uuid().v4();
         await notifier.save(SubjectResult(
           id: rowId,
           tenantId: tenantId,
@@ -270,8 +267,7 @@ class _ExamWizardScreenState extends ConsumerState<ExamWizardScreen> {
   // ── Review computation (steps 4–6) ────────────────────────────
 
   /// studentId → subject → obtained, from the REAL saved rows.
-  Map<String, Map<String, double>> _reviewMap(
-      List<StudentResult> results) {
+  Map<String, Map<String, double>> _reviewMap(List<StudentResult> results) {
     final map = <String, Map<String, double>>{};
     for (final sr in results) {
       for (final sub in sr.subjects) {
@@ -529,8 +525,7 @@ class _ExamWizardScreenState extends ConsumerState<ExamWizardScreen> {
                   child: const Text('سب منتخب کریں'),
                 ),
                 TextButton(
-                  onPressed: () =>
-                      setState(() => _selectedIds.clear()),
+                  onPressed: () => setState(() => _selectedIds.clear()),
                   child: const Text('سب ختم کریں'),
                 ),
               ],
@@ -546,18 +541,14 @@ class _ExamWizardScreenState extends ConsumerState<ExamWizardScreen> {
                     }
                   }),
                   title: Text(s.name),
-                  subtitle: s.className.isEmpty
-                      ? null
-                      : Text(s.className),
+                  subtitle: s.className.isEmpty ? null : Text(s.className),
                   controlAffinity: ListTileControlAffinity.leading,
                 )),
           ],
         );
       },
-      loading: () =>
-          const Center(child: CircularProgressIndicator()),
-      error: (_, __) =>
-          const _EmptyNote('طلبہ لوڈ نہیں ہو سکے'),
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (_, __) => const _EmptyNote('طلبہ لوڈ نہیں ہو سکے'),
     );
   }
 
@@ -584,8 +575,7 @@ class _ExamWizardScreenState extends ConsumerState<ExamWizardScreen> {
             final i = e.key;
             final saved = _savedSubjects.contains(e.value.name);
             return ChoiceChip(
-              label: Text(
-                  '${e.value.name}${saved ? ' ✓' : ''}'),
+              label: Text('${e.value.name}${saved ? ' ✓' : ''}'),
               selected: i == _subjectIndex,
               onSelected: (_) => setState(() => _subjectIndex = i),
             );
@@ -605,8 +595,7 @@ class _ExamWizardScreenState extends ConsumerState<ExamWizardScreen> {
               children: [
                 Expanded(
                   flex: 3,
-                  child: Text(s.name,
-                      style: AppTypography.bodyMedium),
+                  child: Text(s.name, style: AppTypography.bodyMedium),
                 ),
                 Expanded(
                   flex: 2,
@@ -614,11 +603,9 @@ class _ExamWizardScreenState extends ConsumerState<ExamWizardScreen> {
                     key: ValueKey('${s.id}_${subject.name}'),
                     initialValue: current == null
                         ? ''
-                        : current.toStringAsFixed(
-                            current % 1 == 0 ? 0 : 1),
+                        : current.toStringAsFixed(current % 1 == 0 ? 0 : 1),
                     keyboardType:
-                        const TextInputType.numberWithOptions(
-                            decimal: true),
+                        const TextInputType.numberWithOptions(decimal: true),
                     decoration: const InputDecoration(
                       labelText: 'نمبر',
                       border: OutlineInputBorder(),
@@ -647,8 +634,7 @@ class _ExamWizardScreenState extends ConsumerState<ExamWizardScreen> {
           child: ElevatedButton.icon(
             onPressed: _busy ? null : _saveSubjectMarks,
             icon: const Icon(Icons.save_outlined),
-            label: Text(
-                '«${subject.name}» کے نمبر محفوظ کریں'),
+            label: Text('«${subject.name}» کے نمبر محفوظ کریں'),
           ),
         ),
       ],
@@ -685,8 +671,7 @@ class _ExamWizardScreenState extends ConsumerState<ExamWizardScreen> {
             total += m ?? 0;
             cells.add(
               Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: m == null
                       ? AppColors.warning.withValues(alpha: 0.15)
@@ -713,17 +698,13 @@ class _ExamWizardScreenState extends ConsumerState<ExamWizardScreen> {
                         Expanded(
                           child: Text(st.name,
                               style: AppTypography.bodyMedium
-                                  .copyWith(
-                                      fontWeight:
-                                          FontWeight.bold)),
+                                  .copyWith(fontWeight: FontWeight.bold)),
                         ),
                         Icon(
                           allIn
                               ? Icons.check_circle_outline
                               : Icons.warning_amber_outlined,
-                          color: allIn
-                              ? AppColors.success
-                              : AppColors.warning,
+                          color: allIn ? AppColors.success : AppColors.warning,
                           size: 20,
                         ),
                       ],
@@ -735,8 +716,7 @@ class _ExamWizardScreenState extends ConsumerState<ExamWizardScreen> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(subjects[i].name,
-                                style:
-                                    AppTypography.labelSmall),
+                                style: AppTypography.labelSmall),
                             cells[i],
                           ],
                         ),
@@ -764,10 +744,8 @@ class _ExamWizardScreenState extends ConsumerState<ExamWizardScreen> {
           ],
         );
       },
-      loading: () =>
-          const Center(child: CircularProgressIndicator()),
-      error: (_, __) =>
-          const _EmptyNote('نتائج لوڈ نہیں ہو سکے'),
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (_, __) => const _EmptyNote('نتائج لوڈ نہیں ہو سکے'),
     );
   }
 
@@ -780,8 +758,7 @@ class _ExamWizardScreenState extends ConsumerState<ExamWizardScreen> {
     }
     final resultsAsync = ref.watch(examResultsProvider(examId));
     final subjects = _validSubjects;
-    final grandTotal =
-        subjects.fold<double>(0, (s, e) => s + e.total);
+    final grandTotal = subjects.fold<double>(0, (s, e) => s + e.total);
 
     return resultsAsync.when(
       data: (results) {
@@ -805,7 +782,7 @@ class _ExamWizardScreenState extends ConsumerState<ExamWizardScreen> {
           }
           if (!allIn) continue;
           complete++;
-          final pct = grandTotal > 0 ? got * 100 / grandTotal : 0;
+          final pct = grandTotal > 0 ? got * 100 / grandTotal : 0.0;
           if (pct >= 50) pass++;
           if (pct > topPct) {
             topPct = pct;
@@ -823,8 +800,7 @@ class _ExamWizardScreenState extends ConsumerState<ExamWizardScreen> {
                   : 'نتیجہ ابھی مکمل نہیں — کچھ نمبر باقی ہیں',
             ),
             const SizedBox(height: 12),
-            _ResultTile(
-                label: 'مکمل نتائج', value: '$complete'),
+            _ResultTile(label: 'مکمل نتائج', value: '$complete'),
             _ResultTile(
                 label: 'نامکمل', value: '${selected.length - complete}'),
             _ResultTile(
@@ -836,10 +812,8 @@ class _ExamWizardScreenState extends ConsumerState<ExamWizardScreen> {
           ],
         );
       },
-      loading: () =>
-          const Center(child: CircularProgressIndicator()),
-      error: (_, __) =>
-          const _EmptyNote('نتائج لوڈ نہیں ہو سکے'),
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (_, __) => const _EmptyNote('نتائج لوڈ نہیں ہو سکے'),
     );
   }
 
@@ -862,11 +836,8 @@ class _ExamWizardScreenState extends ConsumerState<ExamWizardScreen> {
             Text('نتائج کی منظوری سے پہلے یہ شرائط پوری ہونی چاہئیں',
                 style: AppTypography.bodyMedium),
             const SizedBox(height: 12),
-            _CheckRow(
-                ok: complete, label: 'تمام طلبہ کے تمام نمبر درج ہیں'),
-            _CheckRow(
-                ok: canPublish,
-                label: 'آپ کو منظوری کا اختیار ہے'),
+            _CheckRow(ok: complete, label: 'تمام طلبہ کے تمام نمبر درج ہیں'),
+            _CheckRow(ok: canPublish, label: 'آپ کو منظوری کا اختیار ہے'),
             const SizedBox(height: 16),
             if (_approved)
               const _StatusLine(ok: true, text: 'نتائج منظور ہو گئے'),
@@ -883,8 +854,7 @@ class _ExamWizardScreenState extends ConsumerState<ExamWizardScreen> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: () =>
-                      setState(() => _approved = true),
+                  onPressed: () => setState(() => _approved = true),
                   icon: const Icon(Icons.verified_outlined),
                   label: const Text('منظور کریں'),
                 ),
@@ -893,10 +863,8 @@ class _ExamWizardScreenState extends ConsumerState<ExamWizardScreen> {
           ],
         );
       },
-      loading: () =>
-          const Center(child: CircularProgressIndicator()),
-      error: (_, __) =>
-          const _EmptyNote('نتائج لوڈ نہیں ہو سکے'),
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (_, __) => const _EmptyNote('نتائج لوڈ نہیں ہو سکے'),
     );
   }
 
@@ -926,8 +894,7 @@ class _ExamWizardScreenState extends ConsumerState<ExamWizardScreen> {
           child: OutlinedButton.icon(
             onPressed: () {
               Navigator.of(context).push(
-                MaterialPageRoute(
-                    builder: (_) => const ResultsScreen()),
+                MaterialPageRoute(builder: (_) => const ResultsScreen()),
               );
             },
             icon: const Icon(Icons.assessment_outlined),
@@ -962,8 +929,7 @@ class _ProgressHeader extends StatelessWidget {
           const SizedBox(height: 6),
           LinearProgressIndicator(
             value: (step + 1) / _stepTitles.length,
-            backgroundColor:
-                AppColors.primary.withValues(alpha: 0.15),
+            backgroundColor: AppColors.primary.withValues(alpha: 0.15),
             color: AppColors.primary,
             minHeight: 6,
             borderRadius: BorderRadius.circular(3),
@@ -1024,9 +990,7 @@ class _BottomBar extends StatelessWidget {
                     height: 18,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : Text(step == _stepTitles.length - 1
-                    ? 'مکمل کریں'
-                    : 'آگے'),
+                : Text(step == _stepTitles.length - 1 ? 'مکمل کریں' : 'آگے'),
           ),
         ],
       ),
@@ -1067,8 +1031,8 @@ class _StatusLine extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: (ok ? AppColors.success : AppColors.warning)
-            .withValues(alpha: 0.1),
+        color:
+            (ok ? AppColors.success : AppColors.warning).withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(

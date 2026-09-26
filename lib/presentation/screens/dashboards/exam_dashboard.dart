@@ -40,8 +40,7 @@ class ExamDashboardScreen extends ConsumerWidget {
     final roleService = ref.watch(roleServiceProvider);
     final roleKeys = ref.watch(activeRoleKeysProvider);
 
-    bool can(String permission) =>
-        ref.watch(hasPermissionProvider(permission));
+    bool can(String permission) => ref.watch(hasPermissionProvider(permission));
 
     return FutureBuilder<String>(
       future: roleKeys.isEmpty
@@ -74,8 +73,8 @@ class _ExamStats extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    final summary = ref.watch(examSummaryProvider).valueOrNull ??
-        const ExamSummary.zero();
+    final summary =
+        ref.watch(examSummaryProvider).valueOrNull ?? const ExamSummary.zero();
 
     void go(Widget screen) => Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => screen),
@@ -104,9 +103,7 @@ class _ExamStats extends ConsumerWidget {
                 color: summary.pendingMarks > 0
                     ? AppColors.warning
                     : AppColors.success,
-                subtitle: summary.pendingMarks == 0
-                    ? 'سب درج ہیں'
-                    : null,
+                subtitle: summary.pendingMarks == 0 ? 'سب درج ہیں' : null,
                 onTap: (summary.pendingMarks > 0 &&
                         can(AppPermissions.enterResults))
                     ? () => go(const ResultsScreen())

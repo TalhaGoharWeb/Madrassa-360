@@ -41,8 +41,7 @@ class HostelDashboardScreen extends ConsumerWidget {
     bool moduleOk(String module) =>
         enabledModules == null || enabledModules.contains(module);
 
-    bool can(String permission) =>
-        ref.watch(hasPermissionProvider(permission));
+    bool can(String permission) => ref.watch(hasPermissionProvider(permission));
 
     return FutureBuilder<String>(
       future: roleKeys.isEmpty

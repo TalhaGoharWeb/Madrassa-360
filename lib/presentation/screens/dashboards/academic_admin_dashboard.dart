@@ -46,8 +46,7 @@ class AcademicAdminDashboardScreen extends ConsumerWidget {
     bool moduleOk(String module) =>
         enabledModules == null || enabledModules.contains(module);
 
-    bool can(String permission) =>
-        ref.watch(hasPermissionProvider(permission));
+    bool can(String permission) => ref.watch(hasPermissionProvider(permission));
 
     return FutureBuilder<String>(
       future: roleKeys.isEmpty
@@ -86,8 +85,8 @@ class _AcademicStats extends ConsumerWidget {
     final canSeeStudents = can(AppPermissions.viewStudents);
     final canSeeAttendance = can(AppPermissions.viewAttendance) ||
         can(AppPermissions.markAttendance);
-    final canSeeResults = can(AppPermissions.viewResults) ||
-        can(AppPermissions.enterResults);
+    final canSeeResults =
+        can(AppPermissions.viewResults) || can(AppPermissions.enterResults);
 
     void go(Widget screen) => Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => screen),
@@ -200,8 +199,7 @@ class _AcademicAlerts extends ConsumerWidget {
 
     final overview = ref.watch(academicOverviewProvider).valueOrNull;
 
-    if ((can(AppPermissions.viewResults) ||
-            can(AppPermissions.enterResults)) &&
+    if ((can(AppPermissions.viewResults) || can(AppPermissions.enterResults)) &&
         overview != null &&
         overview.pendingResults > 0) {
       alerts.add(AlertCard(
