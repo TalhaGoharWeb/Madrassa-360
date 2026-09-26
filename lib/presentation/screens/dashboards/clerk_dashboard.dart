@@ -16,11 +16,13 @@ import '../../../core/services/role_service.dart';
 import '../../../core/utils/money_format.dart';
 import '../../widgets/dashboard/alert_card.dart';
 import '../../widgets/dashboard/dashboard_scaffold.dart';
+import '../../widgets/dashboard/schedule_slot.dart';
 import '../../widgets/dashboard/quick_actions.dart';
 import '../../widgets/dashboard/slot_heading.dart';
 import '../../widgets/dashboard/stat_card.dart';
 import '../../widgets/dashboard/today_tasks.dart';
 import '../../../providers/auth_provider.dart';
+import '../../../providers/day_schedule_provider.dart';
 import '../../../providers/dashboard_data_provider.dart';
 import '../../../providers/fee_provider.dart';
 import '../../../providers/tenant_branding_provider.dart';
@@ -63,6 +65,7 @@ class _ClerkDashboardScreenState extends ConsumerState<ClerkDashboardScreen> {
         userName: userName,
         roleLabel: snap.data?.isEmpty == true ? null : snap.data,
         madrasaName: madrasaName,
+        schedule: ScheduleSlot(scheduleProvider: clerkDayScheduleProvider),
         stats: _ClerkStats(can: can, moduleOk: moduleOk),
         alertsTitle: 'اہم امور',
         alerts: _ClerkAlerts(can: can, moduleOk: moduleOk),

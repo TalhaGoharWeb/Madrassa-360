@@ -19,12 +19,14 @@ import '../../../core/constants/app_typography.dart';
 import '../../../core/services/role_service.dart';
 import '../../widgets/dashboard/alert_card.dart';
 import '../../widgets/dashboard/dashboard_scaffold.dart';
+import '../../widgets/dashboard/schedule_slot.dart';
 import '../../widgets/dashboard/dashboard_section.dart';
 import '../../widgets/dashboard/quick_actions.dart';
 import '../../widgets/dashboard/stat_card.dart';
 import '../../../providers/admin_dashboard_provider.dart';
 import '../../../providers/announcement_provider.dart';
 import '../../../providers/auth_provider.dart';
+import '../../../providers/day_schedule_provider.dart';
 import '../../../providers/fee_provider.dart';
 import '../../../providers/dashboard_data_provider.dart';
 import '../../../providers/tenant_branding_provider.dart';
@@ -71,6 +73,7 @@ class PrincipalDashboardScreen extends ConsumerWidget {
         userName: userName,
         roleLabel: snap.data?.isEmpty == true ? null : snap.data,
         madrasaName: madrasaName,
+        schedule: ScheduleSlot(scheduleProvider: principalDayScheduleProvider),
         stats: _TodayOverview(can: can, moduleOk: moduleOk),
         alertsTitle: 'اہم امور',
         alerts: _Alerts(can: can, moduleOk: moduleOk),

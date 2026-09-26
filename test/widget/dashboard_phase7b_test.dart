@@ -218,7 +218,7 @@ void main() {
         ),
         const ClerkDashboardScreen(),
       );
-      expect(find.text('دفتر کا جائزہ'), findsOneWidget);
+      expect(find.text('❁ دفتر کا جائزہ'), findsOneWidget);
       expect(find.text('نئے داخلے'), findsOneWidget);
       expect(find.text('آج کی فیس'), findsOneWidget);
       expect(find.text('میرا آج کا کام'), findsOneWidget);
@@ -243,7 +243,7 @@ void main() {
         ),
         const AccountantDashboardScreen(),
       );
-      expect(find.text('آج کا مالی خلاصہ'), findsOneWidget);
+      expect(find.text('❁ آج کا مالی خلاصہ'), findsOneWidget);
       expect(find.text('آج کی وصولی'), findsOneWidget);
       expect(find.text('آج کے اخراجات'), findsOneWidget);
       expect(find.text('بقایا فیس'), findsOneWidget);
