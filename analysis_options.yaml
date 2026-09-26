@@ -1,0 +1,48 @@
+# Madrasa 360 - Dart Analysis Options
+# This file configures the analyzer to enforce clean code practices
+
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  exclude:
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+    - build/**
+    - android/**
+    - ios/**
+    - web/**
+    - windows/**
+    - macos/**
+    - linux/**
+  errors:
+    invalid_annotation_target: ignore
+
+linter:
+  rules:
+    # Disable strict import rules for Phase 1
+    always_use_package_imports: false
+    
+    # Style rules
+    prefer_single_quotes: true
+    avoid_print: true  # Phase 7: enforced — use AppLogger (file log + redaction), never print/debugPrint
+    prefer_const_constructors: false  # Relax for Phase 1
+    prefer_const_declarations: true
+    prefer_final_fields: true
+    prefer_final_locals: false  # Relax for Phase 1
+    sort_constructors_first: false  # Relax for Phase 1
+    
+    # Documentation
+    public_member_api_docs: false  # Disable for Phase 1
+    dangling_library_doc_comments: false
+    
+    # Error prevention
+    avoid_dynamic_calls: false  # Relax for Phase 1
+    avoid_empty_else: true
+    avoid_type_to_string: true
+    cancel_subscriptions: true
+    close_sinks: true
+    
+    # Flutter specific
+    use_key_in_widget_constructors: true
+    sized_box_for_whitespace: true
+    use_decorated_box: false  # Relax for Phase 1

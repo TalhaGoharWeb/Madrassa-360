@@ -1,0 +1,1 @@
+{"build":1,"note":"Release source of truth. Bump `version` + `build` together with pubspec.yaml `version: X.Y.Z+N`. The release workflow verifies the git tag equals v<version> and publishes artifacts; then update the platform_config row (see docs/WINDOWS_BUILD.md, 'Version bump procedure').","version":"1.0.0"}
