@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_typography.dart';
@@ -60,10 +59,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeIn),
     );
-    _slideAnimation =
-        Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
-          CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
-        );
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.3),
+      end: Offset.zero,
+    ).animate(
+        CurvedAnimation(parent: _animationController, curve: Curves.easeOut));
 
     _animationController.forward();
   }
@@ -81,9 +81,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
     setState(() => _isLoading = true);
 
-    final success = await ref
-        .read(authProvider.notifier)
-        .login(
+    final success = await ref.read(authProvider.notifier).login(
           email: _emailController.text.trim(),
           password: _passwordController.text,
         );
@@ -105,9 +103,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     await StorageService.saveBool(kRememberMeKey, _rememberMe);
     if (_rememberMe) {
       await StorageService.saveString(
-        kRememberedEmailKey,
-        _emailController.text.trim(),
-      );
+          kRememberedEmailKey, _emailController.text.trim());
     } else {
       await StorageService.remove(kRememberedEmailKey);
     }
@@ -131,13 +127,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     }
     if (destination == null || !mounted) return;
 
-    Navigator.of(context)
-        .pushReplacement(MaterialPageRoute(builder: (_) => destination!));
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (_) => destination!),
+    );
   }
 
   void _openForgotPassword() {
-    Navigator.of(context)
-        .push(MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()));
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()),
+    );
   }
 
   @override
@@ -151,7 +149,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [AppColors.primary, AppColors.primaryDark],
+              colors: [
+                AppColors.primary,
+                AppColors.primaryDark,
+              ],
             ),
           ),
           child: SafeArea(
@@ -238,7 +239,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         const SizedBox(height: 8),
         Text(
           AppStrings.appTagline,
-          style: AppTypography.bodyMedium.copyWith(color: Colors.white70),
+          style: AppTypography.bodyMedium.copyWith(
+            color: Colors.white70,
+          ),
         ),
       ],
     );
@@ -263,17 +266,28 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Title
-          Center(child: Text('داخلہ', style: AppTypography.headingSmall)),
+          Center(
+            child: Text(
+              'داخلہ',
+              style: AppTypography.headingSmall,
+            ),
+          ),
           const SizedBox(height: 24),
 
           // Email Input
-          Text('ای میل', style: AppTypography.labelLarge),
+          Text(
+            'ای میل',
+            style: AppTypography.labelLarge,
+          ),
           const SizedBox(height: 8),
           _buildEmailInput(),
           const SizedBox(height: 16),
 
           // Password Input
-          Text('پاس ورڈ', style: AppTypography.labelLarge),
+          Text(
+            'پاس ورڈ',
+            style: AppTypography.labelLarge,
+          ),
           const SizedBox(height: 8),
           _buildPasswordInput(),
           const SizedBox(height: 8),
