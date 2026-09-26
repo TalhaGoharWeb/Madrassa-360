@@ -26,7 +26,6 @@ import '../../../providers/fee_provider.dart';
 import '../../../providers/tenant_branding_provider.dart';
 import '../admin/fee_management_screen.dart';
 import '../admin/student_list_screen.dart';
-import 'role_home.dart' show ComingSoonScreen;
 
 class ClerkDashboardScreen extends ConsumerStatefulWidget {
   const ClerkDashboardScreen({super.key});
@@ -252,20 +251,6 @@ class _ClerkQuickActions extends ConsumerWidget {
           color: AppColors.success,
           onTap: () => go(const FeeManagementScreen()),
         ),
-      if (can(AppPermissions.issueCertificates))
-        QuickActionItem(
-          icon: Icons.workspace_premium_outlined,
-          label: 'سرٹیفکیٹ',
-          color: AppColors.warning,
-          onTap: () => go(const ComingSoonScreen(title: 'سرٹیفکیٹ')),
-        ),
-      if (can(AppPermissions.viewDocuments))
-        QuickActionItem(
-          icon: Icons.folder_outlined,
-          label: 'دستاویزات',
-          color: AppColors.info,
-          onTap: () => go(const ComingSoonScreen(title: 'دستاویزات')),
-        ),
     ];
 
     if (items.isEmpty) return const SizedBox.shrink();
@@ -273,7 +258,8 @@ class _ClerkQuickActions extends ConsumerWidget {
   }
 }
 
-/// "میرا آج کا کام" — داخلے مکمل کریں، دستاویزات چیک کریں، رسیدیں تیار کریں.
+/// "میرا آج کا کام" — داخلے مکمل کریں، رسیدیں تیار کریں. (دستاویزات کا
+/// کوئی ڈیٹا سورس نہیں، اس لیے وہ ٹاسک ہٹا دیا گیا ہے۔)
 class _ClerkTasks extends ConsumerWidget {
   final bool Function(String) can;
   final bool Function(String) moduleOk;
@@ -310,16 +296,6 @@ class _ClerkTasks extends ConsumerWidget {
         ),
         action: () => go(const StudentListScreen()),
         slot: 0,
-      ));
-    }
-    if (can(AppPermissions.viewDocuments)) {
-      entries.add((
-        task: const TodayTask(
-          label: 'دستاویزات چیک کریں',
-          done: false,
-        ),
-        action: () => go(const ComingSoonScreen(title: 'دستاویزات')),
-        slot: 1,
       ));
     }
     if (can(AppPermissions.collectFees) && moduleOk('fees')) {

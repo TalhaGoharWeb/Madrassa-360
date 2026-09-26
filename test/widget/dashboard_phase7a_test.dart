@@ -4,8 +4,7 @@
 //   lib/presentation/widgets/dashboard/{dashboard_scaffold,stat_card,
 //     alert_card,quick_actions,today_tasks,dashboard_section}.dart
 //   lib/presentation/screens/dashboards/role_home.dart
-//   (RoleHomeScreen routing, GenericDashboardScreen fallback,
-//   ComingSoonScreen)
+//   (RoleHomeScreen routing, GenericDashboardScreen fallback)
 //
 // The dashboards read live providers; tests override the Supabase-backed
 // ones (announcements) so no client is ever constructed.
@@ -193,18 +192,6 @@ void main() {
       expect(find.text('ٹیسٹ مدرسہ'), findsOneWidget);
       // Urdu date line carries a month name like 'ستمبر'.
       expect(find.textContaining('ستمبر'), findsWidgets);
-    });
-  });
-
-  group('ComingSoonScreen', () {
-    testWidgets('shows the feature title and جلد آ رہا ہے', (tester) async {
-      await _pump(
-        tester,
-        _container(),
-        const ComingSoonScreen(title: 'امتحانات'),
-      );
-      expect(find.text('امتحانات'), findsWidgets);
-      expect(find.text('جلد آ رہا ہے'), findsOneWidget);
     });
   });
 

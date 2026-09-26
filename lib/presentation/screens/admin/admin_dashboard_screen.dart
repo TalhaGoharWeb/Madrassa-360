@@ -68,7 +68,11 @@ class AdminDashboardScreen extends StatelessWidget {
           actions: [
             IconButton(
               icon: const Icon(Icons.notifications_outlined),
-              onPressed: () {},
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const NotificationsScreen(),
+                ),
+              ),
             ),
           ],
         ),

@@ -3,9 +3,9 @@
 ///
 /// HONEST EMPTY STATE: there is no hostel data source in the app yet
 /// (no hostel tables, no residents, no rooms). The cards say so plainly
-/// ('—' + 'ابھی دستیاب نہیں') instead of inventing numbers, and every
-/// action lands on a titled "جلد آ رہا ہے" screen — except حاضری and
-/// رپورٹ, which have real screens (AttendanceScreen, ReportsHubScreen).
+/// ('—' + 'ابھی دستیاب نہیں') instead of inventing numbers. Quick
+/// actions point only at real screens (حاضری، رپورٹ); hostel-specific
+/// actions are omitted entirely — never "coming soon" buttons.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -22,7 +22,6 @@ import '../../../providers/auth_provider.dart';
 import '../../../providers/tenant_branding_provider.dart';
 import '../reports/reports_hub_screen.dart';
 import '../teacher/attendance_screen.dart';
-import 'role_home.dart' show ComingSoonScreen;
 
 class HostelDashboardScreen extends ConsumerWidget {
   const HostelDashboardScreen({super.key});
@@ -150,8 +149,9 @@ class _HostelStats extends StatelessWidget {
   }
 }
 
-/// Hostel quick actions. حاضری and رپورٹ reuse real screens; the rest
-/// are clean "جلد آ رہا ہے" placeholders (never dead buttons).
+/// Hostel quick actions. حاضری and رپورٹ reuse real screens;
+/// hostel-specific actions (رہائشی طلبہ، کمرے، چھٹی، وارڈن) have no data
+/// source, so they are omitted — never "coming soon" buttons.
 class _HostelQuickActions extends ConsumerWidget {
   final bool Function(String) can;
   final bool Function(String) moduleOk;
@@ -168,25 +168,7 @@ class _HostelQuickActions extends ConsumerWidget {
           MaterialPageRoute(builder: (_) => screen),
         );
 
-    final canManage = can(AppPermissions.manageHostel);
-
     final items = [
-      QuickActionItem(
-        icon: Icons.people_outline,
-        label: 'رہائشی طلبہ',
-        onTap: () => go(const ComingSoonScreen(title: 'رہائشی طلبہ')),
-      ),
-      QuickActionItem(
-        icon: Icons.meeting_room_outlined,
-        label: 'کمرے',
-        onTap: () => go(const ComingSoonScreen(title: 'کمرے')),
-      ),
-      if (canManage)
-        QuickActionItem(
-          icon: Icons.time_to_leave_outlined,
-          label: 'چھٹی',
-          onTap: () => go(const ComingSoonScreen(title: 'چھٹی')),
-        ),
       if (can(AppPermissions.viewAttendance) ||
           can(AppPermissions.markAttendance))
         QuickActionItem(
@@ -194,12 +176,6 @@ class _HostelQuickActions extends ConsumerWidget {
           label: 'حاضری',
           color: AppColors.success,
           onTap: () => go(const AttendanceScreen()),
-        ),
-      if (canManage)
-        QuickActionItem(
-          icon: Icons.shield_outlined,
-          label: 'وارڈن',
-          onTap: () => go(const ComingSoonScreen(title: 'وارڈن')),
         ),
       if (can(AppPermissions.viewReports))
         QuickActionItem(
