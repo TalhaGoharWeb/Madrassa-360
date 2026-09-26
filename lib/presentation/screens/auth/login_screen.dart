@@ -220,12 +220,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
               width: 112,
               height: 112,
               fit: BoxFit.cover,
-              // Never let a missing/corrupt logo break login (or tests):
-              // fall back to the mosque glyph.
-              errorBuilder: (context, error, stackTrace) => const Icon(
-                Icons.mosque,
-                size: 64,
-                color: Colors.white,
+              // A missing or unbundled asset must never break the login
+              // screen: fall back to a simple brand mark instead.
+              errorBuilder: (context, error, stackTrace) => Container(
+                width: 112,
+                height: 112,
+                color: AppColors.primary,
+                child: const Center(
+                  child: Icon(
+                    Icons.mosque,
+                    size: 50,
+                    color: Colors.white,
+                  ),
+                ),
               ),
             ),
           ),
@@ -391,6 +398,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   }
 
   Widget _buildPasswordInput() {
+    final tooltip = _obscurePassword ? 'پاس ورڈ دکھائیں' : 'پاس ورڈ چھپائیں';
     return TextFormField(
       controller: _passwordController,
       obscureText: _obscurePassword,
@@ -407,7 +415,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         // Show/hide toggle — passwords are long and typos are the
         // most common login failure.
         suffixIcon: IconButton(
-          tooltip: _obscurePassword ? 'پاس ورڈ دکھائیں' : 'پاس ورڈ چھپائیں',
+          tooltip: tooltip,
           icon: Icon(
             _obscurePassword
                 ? Icons.visibility_outlined

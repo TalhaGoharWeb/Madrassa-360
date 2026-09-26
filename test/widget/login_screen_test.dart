@@ -12,8 +12,11 @@
 /// URL so `SupabaseService.client` exists, but no network is ever touched.
 
 import 'dart:async';
+import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:madrasa_360/core/constants/app_strings.dart';
@@ -24,6 +27,25 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'fake_auth_repository.dart';
+
+/// Asset bundle for widget tests: the login screen shows the real app logo
+/// via Image.asset, which the flutter_test asset bundle cannot resolve.
+/// Serve a 1x1 transparent PNG for any image request instead of failing the
+/// test (an Image errorBuilder alone is not enough — the image-service error
+/// is still reported to the test zone and fails the test).
+class _TestAssetBundle extends CachingAssetBundle {
+  /// A 1x1 transparent PNG, served for any image asset request.
+  static final ByteData _pixels = ByteData.view(base64Decode(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+  ).buffer);
+
+  @override
+  Future<ByteData> load(String key) async => _pixels;
+
+  @override
+  Future<String> loadString(String key, {bool cache = true}) =>
+      Future.value('');
+}
 
 void main() {
   setUpAll(() async {
@@ -51,7 +73,10 @@ void main() {
         overrides: [
           authRepositoryProvider.overrideWithValue(fakeAuth),
         ],
-        child: const MaterialApp(home: LoginScreen()),
+        child: DefaultAssetBundle(
+          bundle: _TestAssetBundle(),
+          child: const MaterialApp(home: LoginScreen()),
+        ),
       ),
     );
     await tester.pumpAndSettle();
