@@ -303,9 +303,9 @@ class _ReportFilterSheetState extends ConsumerState<_ReportFilterSheet> {
               Text(_def.titleUr,
                   textAlign: TextAlign.center,
                   style: AppTypography.titleMedium.copyWith(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    )),
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  )),
               Text(_def.titleEn,
                   textAlign: TextAlign.center,
                   style: AppTypography.bodySmall.copyWith(color: Colors.grey)),
@@ -473,8 +473,8 @@ class _ReportFilterSheetState extends ConsumerState<_ReportFilterSheet> {
 
   Widget _label(String text) => Padding(
         padding: const EdgeInsets.only(top: 8, bottom: 4),
-        child: Text(text,
-            style: AppTypography.labelLarge.copyWith(fontSize: 15)),
+        child:
+            Text(text, style: AppTypography.labelLarge.copyWith(fontSize: 15)),
       );
 
   Widget _selectedChip(String text, VoidCallback onClear) => Chip(
@@ -497,11 +497,10 @@ class _ReportFilterSheetState extends ConsumerState<_ReportFilterSheet> {
         items: [
           DropdownMenuItem<T>(
             value: null,
-            child:
-                Text(
-                  '— $hint —',
-                  style: AppTypography.bodySmall.copyWith(color: Colors.grey),
-                ),
+            child: Text(
+              '— $hint —',
+              style: AppTypography.bodySmall.copyWith(color: Colors.grey),
+            ),
           ),
           for (final e in items.entries)
             DropdownMenuItem<T>(value: e.key, child: Text(e.value)),
