@@ -110,7 +110,9 @@ class TodayTasks extends StatelessWidget {
                         children: [
                           Text(
                             task.label,
-                            style: AppTypography.bodyMedium.copyWith(
+                            style: AppTypography.labelNastaliq.copyWith(
+                              fontSize: 17,
+                              fontWeight: FontWeight.normal,
                               decoration:
                                   task.done ? TextDecoration.lineThrough : null,
                               color: task.done
@@ -122,7 +124,10 @@ class TodayTasks extends StatelessWidget {
                               task.subtitle!.isNotEmpty)
                             Text(
                               task.subtitle!,
-                              style: AppTypography.labelSmall,
+                              style: AppTypography.labelNastaliq.copyWith(
+                                fontSize: 15,
+                                color: AppColors.textSecondary,
+                              ),
                             ),
                         ],
                       ),
@@ -130,7 +135,12 @@ class TodayTasks extends StatelessWidget {
                     if (action != null && !task.done)
                       TextButton(
                         onPressed: action,
-                        child: const Text('کریں'),
+                        child: Text(
+                          'کریں',
+                          style: AppTypography.labelNastaliq.copyWith(
+                            color: AppColors.primary,
+                          ),
+                        ),
                       ),
                   ],
                 ),

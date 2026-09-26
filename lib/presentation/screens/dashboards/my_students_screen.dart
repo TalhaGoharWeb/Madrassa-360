@@ -94,12 +94,19 @@ class MyStudentsScreen extends ConsumerWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(s.name, style: AppTypography.bodyMedium),
+                              Text(
+                                s.name,
+                                style: AppTypography.labelNastaliq.copyWith(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.normal,
+                                ),
+                              ),
                               Text(
                                 s.className.isEmpty
                                     ? 'جماعت: —'
                                     : 'جماعت: ${s.className}',
-                                style: AppTypography.labelSmall,
+                                style: AppTypography.labelNastaliq
+                                    .copyWith(fontSize: 15),
                               ),
                             ],
                           ),
@@ -107,7 +114,8 @@ class MyStudentsScreen extends ConsumerWidget {
                         if (s.rollNo.isNotEmpty)
                           Text(
                             'نمبر ${s.rollNo}',
-                            style: AppTypography.labelSmall,
+                            style: AppTypography.labelNastaliq
+                                .copyWith(fontSize: 15),
                           ),
                       ],
                     ),
@@ -126,7 +134,9 @@ class MyStudentsScreen extends ConsumerWidget {
           padding: const EdgeInsets.all(32),
           child: Text(
             message,
-            style: AppTypography.bodyMedium.copyWith(
+            style: AppTypography.labelNastaliq.copyWith(
+              fontSize: 17,
+              fontWeight: FontWeight.normal,
               color: AppColors.textSecondary,
             ),
             textAlign: TextAlign.center,

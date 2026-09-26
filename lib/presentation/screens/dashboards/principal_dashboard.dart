@@ -444,7 +444,10 @@ class _Alerts extends ConsumerWidget {
             Expanded(
               child: Text(
                 'سب امور مکمل ہیں — کوئی زیر التواء کام نہیں',
-                style: AppTypography.bodyMedium,
+                style: AppTypography.labelNastaliq.copyWith(
+                  fontSize: 17,
+                  fontWeight: FontWeight.normal,
+                ),
               ),
             ),
           ],

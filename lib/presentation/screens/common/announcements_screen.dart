@@ -49,7 +49,10 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
                 icon: const Icon(Icons.add),
-                label: const Text('نیا اعلان'),
+                label: Text('نیا اعلان',
+                    style: AppTypography.labelNastaliq.copyWith(
+                      color: Colors.white,
+                    )),
                 onPressed: () => _showCreateDialog(context, ref, user),
               )
             : null,
@@ -62,8 +65,10 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                         size: 64, color: AppColors.textSecondary),
                     const SizedBox(height: 12),
                     Text('کوئی اعلان نہیں',
-                        style: AppTypography.bodyLarge
-                            .copyWith(color: AppColors.textSecondary)),
+                        style: AppTypography.labelNastaliq.copyWith(
+                            fontSize: 17,
+                            fontWeight: FontWeight.normal,
+                            color: AppColors.textSecondary)),
                   ]))
                 : ListView(
                     padding: const EdgeInsets.all(16),
@@ -122,14 +127,14 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
             const SizedBox(height: 8),
             CheckboxListTile(
               value: pinned,
-              title: const Text('اہم — پِن کریں'),
+              title: Text('اہم — پِن کریں', style: AppTypography.labelNastaliq),
               onChanged: (v) => setS(() => pinned = v!),
             ),
           ])),
           actions: [
             TextButton(
                 onPressed: () => Navigator.pop(dCtx),
-                child: const Text('منسوخ')),
+                child: Text('منسوخ', style: AppTypography.labelNastaliq)),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
@@ -149,7 +154,10 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                       ),
                     );
               },
-              child: const Text('شائع'),
+              child: Text('شائع',
+                  style: AppTypography.labelNastaliq.copyWith(
+                    color: Colors.white,
+                  )),
             ),
           ],
         );
@@ -214,15 +222,16 @@ class _AnnouncementCard extends StatelessWidget {
                   child: Icon(Icons.push_pin, size: 16, color: Colors.red)),
             Expanded(
                 child: Text(a.title,
-                    style: AppTypography.bodyLarge
-                        .copyWith(fontWeight: FontWeight.w600))),
+                    style: AppTypography.labelNastaliq
+                        .copyWith(fontSize: 17, fontWeight: FontWeight.w600))),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20)),
               child: Text(a.target.urduLabel,
-                  style: AppTypography.labelSmall.copyWith(color: color)),
+                  style: AppTypography.labelNastaliq
+                      .copyWith(fontSize: 15, color: color)),
             ),
           ]),
           const SizedBox(height: 8),
@@ -236,8 +245,8 @@ class _AnnouncementCard extends StatelessWidget {
             const SizedBox(width: 4),
             Expanded(
                 child: Text(a.postedByName ?? '',
-                    style: AppTypography.labelSmall
-                        .copyWith(color: AppColors.textSecondary))),
+                    style: AppTypography.labelNastaliq.copyWith(
+                        fontSize: 15, color: AppColors.textSecondary))),
             if (isAdmin) ...[
               IconButton(
                 icon: Icon(

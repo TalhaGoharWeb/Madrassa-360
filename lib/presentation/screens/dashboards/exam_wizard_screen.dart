@@ -117,7 +117,9 @@ class _ExamWizardScreenState extends ConsumerState<ExamWizardScreen> {
 
   void _snack(String msg) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(msg,
+            style: AppTypography.labelNastaliq.copyWith(color: Colors.white))));
   }
 
   // ── Navigation ────────────────────────────────────────────────
@@ -350,7 +352,7 @@ class _ExamWizardScreenState extends ConsumerState<ExamWizardScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('امتحان کی بنیادی معلومات درج کریں',
-            style: AppTypography.bodyMedium),
+            style: AppTypography.labelNastaliq),
         const SizedBox(height: 16),
         TextField(
           controller: _nameCtrl,
@@ -429,7 +431,7 @@ class _ExamWizardScreenState extends ConsumerState<ExamWizardScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('امتحان کے مضامین اور ان کے کل نمبر درج کریں',
-            style: AppTypography.bodyMedium),
+            style: AppTypography.labelNastaliq),
         const SizedBox(height: 12),
         ..._subjects.asMap().entries.map((entry) {
           final i = entry.key;
@@ -479,7 +481,10 @@ class _ExamWizardScreenState extends ConsumerState<ExamWizardScreen> {
         TextButton.icon(
           onPressed: () => setState(() => _subjects.add(_SubjectRow())),
           icon: const Icon(Icons.add),
-          label: const Text('مضمون شامل کریں'),
+          label: Text('مضمون شامل کریں',
+              style: AppTypography.labelNastaliq.copyWith(
+                color: AppColors.primary,
+              )),
         ),
       ],
     );
@@ -515,18 +520,24 @@ class _ExamWizardScreenState extends ConsumerState<ExamWizardScreen> {
                 Expanded(
                   child: Text(
                     '${_selectedIds.length} طلبہ منتخب',
-                    style: AppTypography.bodyMedium,
+                    style: AppTypography.labelNastaliq,
                   ),
                 ),
                 TextButton(
                   onPressed: () => setState(() => _selectedIds
                     ..clear()
                     ..addAll(active.map((s) => s.id))),
-                  child: const Text('سب منتخب کریں'),
+                  child: Text('سب منتخب کریں',
+                      style: AppTypography.labelNastaliq.copyWith(
+                        color: AppColors.primary,
+                      )),
                 ),
                 TextButton(
                   onPressed: () => setState(() => _selectedIds.clear()),
-                  child: const Text('سب ختم کریں'),
+                  child: Text('سب ختم کریں',
+                      style: AppTypography.labelNastaliq.copyWith(
+                        color: AppColors.primary,
+                      )),
                 ),
               ],
             ),
@@ -567,7 +578,7 @@ class _ExamWizardScreenState extends ConsumerState<ExamWizardScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('مضمون منتخب کریں، پھر ہر طالب علم کے نمبر لکھیں',
-            style: AppTypography.bodyMedium),
+            style: AppTypography.labelNastaliq),
         const SizedBox(height: 12),
         Wrap(
           spacing: 8,
@@ -584,7 +595,7 @@ class _ExamWizardScreenState extends ConsumerState<ExamWizardScreen> {
         const SizedBox(height: 8),
         Text(
           'کل نمبر: ${subject.total.toStringAsFixed(subject.total % 1 == 0 ? 0 : 1)}',
-          style: AppTypography.labelSmall,
+          style: AppTypography.labelNastaliq.copyWith(fontSize: 15),
         ),
         const SizedBox(height: 12),
         ...selected.map((s) {
@@ -595,7 +606,11 @@ class _ExamWizardScreenState extends ConsumerState<ExamWizardScreen> {
               children: [
                 Expanded(
                   flex: 3,
-                  child: Text(s.name, style: AppTypography.bodyMedium),
+                  child: Text(s.name,
+                      style: AppTypography.labelNastaliq.copyWith(
+                        fontSize: 17,
+                        fontWeight: FontWeight.normal,
+                      )),
                 ),
                 Expanded(
                   flex: 2,
@@ -697,8 +712,8 @@ class _ExamWizardScreenState extends ConsumerState<ExamWizardScreen> {
                       children: [
                         Expanded(
                           child: Text(st.name,
-                              style: AppTypography.bodyMedium
-                                  .copyWith(fontWeight: FontWeight.bold)),
+                              style: AppTypography.labelNastaliq.copyWith(
+                                  fontSize: 17, fontWeight: FontWeight.bold)),
                         ),
                         Icon(
                           allIn
@@ -716,14 +731,16 @@ class _ExamWizardScreenState extends ConsumerState<ExamWizardScreen> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(subjects[i].name,
-                                style: AppTypography.labelSmall),
+                                style: AppTypography.labelNastaliq
+                                    .copyWith(fontSize: 15)),
                             cells[i],
                           ],
                         ),
                     ]),
                     const SizedBox(height: 4),
                     Text('کل: ${total.toStringAsFixed(1)}',
-                        style: AppTypography.labelSmall),
+                        style:
+                            AppTypography.labelNastaliq.copyWith(fontSize: 15)),
                   ],
                 ),
               ),
@@ -834,7 +851,7 @@ class _ExamWizardScreenState extends ConsumerState<ExamWizardScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('نتائج کی منظوری سے پہلے یہ شرائط پوری ہونی چاہئیں',
-                style: AppTypography.bodyMedium),
+                style: AppTypography.labelNastaliq),
             const SizedBox(height: 12),
             _CheckRow(ok: complete, label: 'تمام طلبہ کے تمام نمبر درج ہیں'),
             _CheckRow(ok: canPublish, label: 'آپ کو منظوری کا اختیار ہے'),
@@ -845,7 +862,7 @@ class _ExamWizardScreenState extends ConsumerState<ExamWizardScreen> {
               Text(
                 'منظوری کا اختیار ناظم تعلیم کے پاس ہے — براہ کرم ان سے '
                 'رابطہ کریں',
-                style: AppTypography.bodyMedium.copyWith(
+                style: AppTypography.labelNastaliq.copyWith(
                   color: AppColors.warning,
                 ),
               ),
@@ -856,7 +873,10 @@ class _ExamWizardScreenState extends ConsumerState<ExamWizardScreen> {
                 child: ElevatedButton.icon(
                   onPressed: () => setState(() => _approved = true),
                   icon: const Icon(Icons.verified_outlined),
-                  label: const Text('منظور کریں'),
+                  label: Text('منظور کریں',
+                      style: AppTypography.labelNastaliq.copyWith(
+                        color: Colors.white,
+                      )),
                 ),
               ),
             ],
@@ -884,7 +904,7 @@ class _ExamWizardScreenState extends ConsumerState<ExamWizardScreen> {
           Text(
             'نوٹ: منظوری ابھی باقی ہے — نتائج پھر بھی درج شدہ حالت میں '
             'دستیاب ہیں',
-            style: AppTypography.bodyMedium.copyWith(
+            style: AppTypography.labelNastaliq.copyWith(
               color: AppColors.warning,
             ),
           ),
@@ -898,7 +918,10 @@ class _ExamWizardScreenState extends ConsumerState<ExamWizardScreen> {
               );
             },
             icon: const Icon(Icons.assessment_outlined),
-            label: const Text('نتائج دیکھیں'),
+            label: Text('نتائج دیکھیں',
+                style: AppTypography.labelNastaliq.copyWith(
+                  color: Colors.white,
+                )),
           ),
         ),
       ],
@@ -922,7 +945,8 @@ class _ProgressHeader extends StatelessWidget {
         children: [
           Text(
             'مرحلہ ${step + 1} از ${_stepTitles.length}',
-            style: AppTypography.labelSmall.copyWith(
+            style: AppTypography.labelNastaliq.copyWith(
+              fontSize: 15,
               color: AppColors.textSecondary,
             ),
           ),
@@ -979,7 +1003,10 @@ class _BottomBar extends StatelessWidget {
         children: [
           TextButton(
             onPressed: step == 0 || busy ? null : onBack,
-            child: const Text('پیچھے'),
+            child: Text('پیچھے',
+                style: AppTypography.labelNastaliq.copyWith(
+                  color: AppColors.primary,
+                )),
           ),
           const Spacer(),
           ElevatedButton(
@@ -990,7 +1017,10 @@ class _BottomBar extends StatelessWidget {
                     height: 18,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : Text(step == _stepTitles.length - 1 ? 'مکمل کریں' : 'آگے'),
+                : Text(step == _stepTitles.length - 1 ? 'مکمل کریں' : 'آگے',
+                    style: AppTypography.labelNastaliq.copyWith(
+                      color: Colors.white,
+                    )),
           ),
         ],
       ),
@@ -1013,7 +1043,7 @@ class _EmptyNote extends StatelessWidget {
       ),
       child: Text(
         text,
-        style: AppTypography.bodyMedium,
+        style: AppTypography.labelNastaliq,
         textAlign: TextAlign.center,
       ),
     );
@@ -1043,7 +1073,7 @@ class _StatusLine extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(text, style: AppTypography.bodyMedium),
+            child: Text(text, style: AppTypography.labelNastaliq),
           ),
         ],
       ),
@@ -1068,7 +1098,7 @@ class _CheckRow extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(label, style: AppTypography.bodyMedium),
+            child: Text(label, style: AppTypography.labelNastaliq),
           ),
         ],
       ),
@@ -1085,7 +1115,7 @@ class _ResultTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       child: ListTile(
-        title: Text(label, style: AppTypography.bodyMedium),
+        title: Text(label, style: AppTypography.labelNastaliq),
         trailing: Text(
           value,
           style: AppTypography.titleMedium.copyWith(

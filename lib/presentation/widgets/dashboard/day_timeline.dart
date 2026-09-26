@@ -169,7 +169,7 @@ class _EmptyState extends StatelessWidget {
           Expanded(
             child: Text(
               message,
-              style: AppTypography.bodySmall,
+              style: AppTypography.labelNastaliq,
             ),
           ),
         ],
@@ -231,14 +231,16 @@ class _TimelineRow extends StatelessWidget {
                   if (event.timeLabel != null && event.timeLabel!.isNotEmpty)
                     Text(
                       event.timeLabel!,
-                      style: AppTypography.labelSmall.copyWith(
+                      style: AppTypography.labelNastaliq.copyWith(
+                        fontSize: 15,
                         color: _stateColor,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                   Text(
                     event.title,
-                    style: AppTypography.bodyMedium.copyWith(
+                    style: AppTypography.labelNastaliq.copyWith(
+                      fontSize: 17,
                       fontWeight: event.state == DayTimelineState.now
                           ? FontWeight.w600
                           : FontWeight.normal,
@@ -250,7 +252,10 @@ class _TimelineRow extends StatelessWidget {
                   if (event.subtitle != null && event.subtitle!.isNotEmpty)
                     Text(
                       event.subtitle!,
-                      style: AppTypography.labelSmall,
+                      style: AppTypography.labelNastaliq.copyWith(
+                        fontSize: 15,
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                 ],
               ),

@@ -198,7 +198,11 @@ class GenericDashboardScreen extends ConsumerWidget {
               Navigator.of(context).pushNamed('/master');
             } else {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('آپ کو رسائی حاصل نہیں')),
+                SnackBar(
+                    content: Text('آپ کو رسائی حاصل نہیں',
+                        style: AppTypography.labelNastaliq.copyWith(
+                          color: Colors.white,
+                        ))),
               );
             }
           },
@@ -239,7 +243,10 @@ class _RoleInfoCard extends ConsumerWidget {
                   : roleService.roleUrduLabel(roleKeys.first),
               builder: (context, snap) => Text(
                 'آپ کا کردار: ${snap.data ?? '…'}',
-                style: AppTypography.bodyMedium,
+                style: AppTypography.labelNastaliq.copyWith(
+                  fontSize: 17,
+                  fontWeight: FontWeight.normal,
+                ),
               ),
             ),
           ),
@@ -263,7 +270,7 @@ class _EmptyAnnouncementsNote extends StatelessWidget {
       ),
       child: Text(
         'ابھی کوئی اعلان نہیں',
-        style: AppTypography.bodyMedium,
+        style: AppTypography.labelNastaliq,
         textAlign: TextAlign.center,
       ),
     );

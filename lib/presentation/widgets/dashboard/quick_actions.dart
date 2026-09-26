@@ -39,7 +39,8 @@ class QuickActionGrid extends StatelessWidget {
         crossAxisCount: 3,
         mainAxisSpacing: 10,
         crossAxisSpacing: 10,
-        mainAxisExtent: 108,
+        // Tall enough for two Nastaliq label lines (16sp, height 2.0).
+        mainAxisExtent: 124,
       ),
       itemCount: items.length,
       itemBuilder: (context, index) {
@@ -75,7 +76,7 @@ class QuickActionGrid extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 6),
                   child: Text(
                     item.label,
-                    style: AppTypography.labelMedium,
+                    style: AppTypography.labelNastaliq,
                     textAlign: TextAlign.center,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,

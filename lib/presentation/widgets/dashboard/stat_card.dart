@@ -66,7 +66,10 @@ class StatCard extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             label,
-            style: AppTypography.labelSmall,
+            style: AppTypography.labelNastaliq.copyWith(
+              fontSize: 15,
+              color: AppColors.textSecondary,
+            ),
             textAlign: TextAlign.center,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
@@ -75,7 +78,8 @@ class StatCard extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               subtitle!,
-              style: AppTypography.labelSmall.copyWith(
+              style: AppTypography.labelNastaliq.copyWith(
+                fontSize: 15,
                 color: AppColors.warning,
               ),
               textAlign: TextAlign.center,

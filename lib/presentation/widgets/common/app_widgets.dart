@@ -130,7 +130,11 @@ class StatCard extends StatelessWidget {
                       const SizedBox(width: 4),
                       Text(
                         trend!,
-                        style: AppTypography.labelSmall.copyWith(
+                        style: (AppTypography.isUrduText(trend!)
+                                ? AppTypography.labelNastaliq
+                                    .copyWith(fontSize: 15)
+                                : AppTypography.labelSmall)
+                            .copyWith(
                           color: isUp ? AppColors.success : AppColors.error,
                         ),
                       ),
@@ -147,7 +151,7 @@ class StatCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             label,
-            style: AppTypography.bodySmall,
+            style: AppTypography.labelNastaliq.copyWith(fontSize: 15),
           ),
         ],
       ),
@@ -203,7 +207,7 @@ class EmptyState extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 subtitle!,
-                style: AppTypography.bodyMedium.copyWith(
+                style: AppTypography.labelNastaliq.copyWith(
                   color: AppColors.textSecondary,
                 ),
                 textAlign: TextAlign.center,
@@ -260,7 +264,8 @@ class SearchField extends StatelessWidget {
         style: AppTypography.bodyMedium,
         decoration: InputDecoration(
           hintText: hintText,
-          hintStyle: AppTypography.bodyMedium.copyWith(
+          hintStyle: AppTypography.labelNastaliq.copyWith(
+            fontSize: 15,
             color: AppColors.textSecondary,
           ),
           prefixIcon: const Icon(Icons.search, color: AppColors.textSecondary),
@@ -356,9 +361,12 @@ class StatusBadge extends StatelessWidget {
           ],
           Text(
             label,
-            style:
-                (isLarge ? AppTypography.labelLarge : AppTypography.labelSmall)
-                    .copyWith(
+            style: (AppTypography.isUrduText(label)
+                    ? AppTypography.labelNastaliq
+                    : (isLarge
+                        ? AppTypography.labelLarge
+                        : AppTypography.labelSmall))
+                .copyWith(
               color: color,
               fontWeight: FontWeight.bold,
             ),
@@ -406,7 +414,7 @@ class SectionHeader extends StatelessWidget {
                 children: [
                   Text(
                     actionText ?? 'مزید',
-                    style: AppTypography.labelMedium.copyWith(
+                    style: AppTypography.labelNastaliq.copyWith(
                       color: AppColors.primary,
                     ),
                   ),
@@ -464,11 +472,14 @@ class InfoTile extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: AppTypography.labelSmall,
+                  style: AppTypography.labelNastaliq.copyWith(fontSize: 15),
                 ),
                 Text(
                   value,
-                  style: AppTypography.bodyMedium,
+                  style: AppTypography.labelNastaliq.copyWith(
+                    fontSize: 16,
+                    fontWeight: FontWeight.normal,
+                  ),
                 ),
               ],
             ),
@@ -518,7 +529,7 @@ class LoadingOverlay extends StatelessWidget {
                       const SizedBox(height: 16),
                       Text(
                         message!,
-                        style: AppTypography.bodyMedium,
+                        style: AppTypography.labelNastaliq,
                       ),
                     ],
                   ],

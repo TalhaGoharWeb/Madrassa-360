@@ -142,7 +142,7 @@ class _HostelStats extends StatelessWidget {
                 child: Text(
                   'دارالاقامہ کا ریکارڈ (طلبہ، کمرے، چھٹی) ابھی اس ایپ '
                   'میں موجود نہیں — یہ حصہ جلد مکمل ہوگا',
-                  style: AppTypography.bodyMedium,
+                  style: AppTypography.labelNastaliq,
                 ),
               ),
             ],

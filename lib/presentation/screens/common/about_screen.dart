@@ -137,6 +137,7 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
                       children: [
                         _InfoRow(
                           label: _isUrdu ? 'مدرسہ' : 'Institution',
+                          isUrdu: _isUrdu,
                           value: branding?.displayName(urdu: _isUrdu) ?? '—',
                         ),
                         _InfoRow(
@@ -208,6 +209,7 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
                       children: [
                         _InfoRow(
                           label: _isUrdu ? 'ایپ کا نام' : 'App Name',
+                          isUrdu: _isUrdu,
                           value: AppConfig.appName,
                         ),
                         _InfoRow(
@@ -310,7 +312,10 @@ class _Tab extends StatelessWidget {
           child: Text(
             label,
             textAlign: TextAlign.center,
-            style: AppTypography.labelLarge.copyWith(
+            style: (AppTypography.isUrduText(label)
+                    ? AppTypography.labelNastaliq
+                    : AppTypography.labelLarge)
+                .copyWith(
               color: active ? Colors.white : AppColors.textSecondary,
               fontWeight: active ? FontWeight.bold : FontWeight.normal,
             ),
@@ -420,8 +425,13 @@ class _ContactButton extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(label,
-                        style:
-                            AppTypography.titleMedium.copyWith(color: color)),
+                        style: (AppTypography.isUrduText(label)
+                                ? AppTypography.labelNastaliq.copyWith(
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.normal,
+                                  )
+                                : AppTypography.bodyMedium)
+                            .copyWith(color: color)),
                     Text(subtitle,
                         style: AppTypography.bodySmall
                             .copyWith(color: AppColors.textSecondary)),
@@ -442,11 +452,13 @@ class _InfoRow extends StatelessWidget {
   final String label;
   final String value;
   final bool isLast;
+  final bool isUrdu;
 
   const _InfoRow({
     required this.label,
     required this.value,
     this.isLast = false,
+    this.isUrdu = true,
   });
 
   @override
@@ -458,13 +470,18 @@ class _InfoRow extends StatelessWidget {
             Expanded(
               flex: 2,
               child: Text(label,
-                  style: AppTypography.bodySmall
+                  style: (isUrdu
+                          ? AppTypography.labelNastaliq.copyWith(fontSize: 15)
+                          : AppTypography.bodySmall)
                       .copyWith(color: AppColors.textSecondary)),
             ),
             Expanded(
               flex: 3,
               child: Text(value,
-                  style: AppTypography.bodyMedium
+                  style: (isUrdu
+                          ? AppTypography.labelNastaliq.copyWith(
+                              fontSize: 16, fontWeight: FontWeight.normal)
+                          : AppTypography.bodyMedium)
                       .copyWith(fontWeight: FontWeight.w600),
                   textAlign: TextAlign.start),
             ),
