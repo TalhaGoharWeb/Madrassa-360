@@ -22,7 +22,6 @@ import 'package:madrasa_360/core/services/storage_service.dart';
 import 'package:madrasa_360/core/services/tenant_context.dart';
 import 'package:madrasa_360/data/delegation_policy.dart';
 import 'package:madrasa_360/data/delegation_repository.dart';
-import 'package:madrasa_360/data/repositories/auth_repository.dart';
 import 'package:madrasa_360/data/role_ux_repository.dart';
 import 'package:madrasa_360/presentation/screens/settings/delegation_create_screen.dart';
 import 'package:madrasa_360/presentation/screens/settings/delegation_screen.dart';
@@ -278,6 +277,12 @@ ProviderScope _scope({
     overrides: [
       currentTenantIdProvider.overrideWithValue('tenant-test'),
       userPermissionsProvider.overrideWithValue(permissions),
+      currentUserProvider.overrideWithValue(const AppUser(
+        id: 'u-self',
+        email: 'mohtamim@madrassa.com',
+        name: 'مہتمم صاحب',
+        role: UserRole.madrasaAdmin,
+      )),
       delegationRepositoryProvider.overrideWithValue(repo),
       roleUxRepositoryProvider.overrideWithValue(roleRepo),
     ],
