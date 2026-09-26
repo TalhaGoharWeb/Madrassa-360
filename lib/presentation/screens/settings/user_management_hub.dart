@@ -460,7 +460,7 @@ class _RolesTab extends ConsumerWidget {
               context,
               roles[i],
               catalogAsync,
-              counts[roles[i].key] ?? 0,
+              counts[roles[i].key],
             ),
           ),
         );
@@ -472,7 +472,7 @@ class _RolesTab extends ConsumerWidget {
     BuildContext context,
     TenantRoleInfo role,
     AsyncValue<List<PermissionInfo>> catalogAsync,
-    int memberCount,
+    int? memberCount,
   ) {
     return UxCard(
       onTap: () => _showRolePreview(context, role, catalogAsync),
@@ -486,8 +486,12 @@ class _RolesTab extends ConsumerWidget {
                     style: AppTypography.titleSmall),
               ),
               _chip('${role.permissionCodes.length} اختیارات'),
-              const SizedBox(width: 6),
-              _chip('$memberCount ارکان'),
+              // Only show the member chip when the count is actually
+              // readable (RLS may hide memberships) — never fabricate.
+              if (memberCount != null) ...[
+                const SizedBox(width: 6),
+                _chip('$memberCount ارکان'),
+              ],
             ],
           ),
           if (role.description != null && role.description!.isNotEmpty) ...[
@@ -505,8 +509,36 @@ class _RolesTab extends ConsumerWidget {
     );
   }
 
-  Widget _chip(String label) {
-    return Container(
+  /// One permission row: granted (✓) or not granted (✗).
+  Widget _previewRow(PermissionInfo p, TenantRoleInfo role) {
+    final granted = role.permissionCodes.contains(p.code);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        children: [
+          Icon(
+            granted ? Icons.check_circle_outline : Icons.cancel_outlined,
+            size: 18,
+            color: granted
+                ? AppColors.success
+                : AppColors.textSecondary.withValues(alpha: 0.5),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              p.labelUrdu,
+              style: AppTypography.bodyMedium.copyWith(
+                color:
+                    granted ? AppColors.textPrimary : AppColors.textSecondary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _chip(String label) {    return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: AppColors.primary.withValues(alpha: 0.1),
@@ -590,39 +622,7 @@ class _RolesTab extends ConsumerWidget {
                           color: AppColors.textSecondary,
                           fontWeight: FontWeight.bold)),
                 ),
-                for (final p in entry.value)
-                  Builder(builder: (context) {
-                    final granted =
-                        role.permissionCodes.contains(p.code);
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 3),
-                      child: Row(
-                        children: [
-                          Icon(
-                            granted
-                                ? Icons.check_circle_outline
-                                : Icons.cancel_outlined,
-                            size: 18,
-                            color: granted
-                                ? AppColors.success
-                                : AppColors.textSecondary
-                                    .withValues(alpha: 0.5),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              p.labelUrdu,
-                              style: AppTypography.bodyMedium.copyWith(
-                                color: granted
-                                    ? AppColors.textPrimary
-                                    : AppColors.textSecondary,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }),
+                for (final p in entry.value) _previewRow(p, role),
               ],
               const SizedBox(height: 16),
               Text(
