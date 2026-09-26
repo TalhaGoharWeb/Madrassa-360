@@ -414,7 +414,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         // Show/hide toggle — passwords are long and typos are the
         // most common login failure.
         suffixIcon: IconButton(
-          tooltip: _obscurePassword ? 'پاس ورڈ دکھائیں' : 'پاس ورڈ چھپائیں',
+          tooltip: _obscurePassword
+              ? 'پاس ورڈ دکھائیں'
+              : 'پاس ورڈ چھپائیں',
           icon: Icon(
             _obscurePassword
                 ? Icons.visibility_outlined
