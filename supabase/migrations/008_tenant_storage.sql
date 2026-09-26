@@ -7,8 +7,9 @@
 -- What it does:
 --   1. Ensures the three buckets exist (all private):
 --        student-photos, staff-photos, documents
---   2. DROPs all 13 legacy storage policies by exact verified name
---      (03_storage.sql — verified by grep).
+--   2. DROPs all legacy storage policies by name (03_storage.sql names plus
+--      the admin_upload_*/admin_delete_*/auth_view_* variants found on live
+--      projects — DROP IF EXISTS, safe no-op where absent).
 --   3. New object layout: {tenant_id}/{...} as the first path segment.
 --   4. Recreates per-bucket policies keyed on the tenant extracted from
 --      the object path:
@@ -36,7 +37,10 @@ VALUES
 ON CONFLICT (id) DO NOTHING;
 
 
--- ── 2) legacy sweep — exact verified names from 03_storage.sql ─
+-- ── 2) legacy sweep ──
+-- Names verified against the legacy schema (03_storage.sql) AND the live
+-- database: older projects carry admin_upload_*/admin_delete_*/auth_view_*
+-- policies. DROP IF EXISTS keeps this a safe no-op where absent.
 DROP POLICY IF EXISTS "student_photos_admin_insert" ON storage.objects;
 DROP POLICY IF EXISTS "student_photos_admin_update" ON storage.objects;
 DROP POLICY IF EXISTS "student_photos_auth_select"  ON storage.objects;
@@ -53,6 +57,16 @@ DROP POLICY IF EXISTS "documents_staff_select"  ON storage.objects;
 DROP POLICY IF EXISTS "documents_parent_select" ON storage.objects;
 DROP POLICY IF EXISTS "documents_admin_delete"  ON storage.objects;
 
+DROP POLICY IF EXISTS "admin_upload_student_photos" ON storage.objects;
+DROP POLICY IF EXISTS "admin_upload_staff_photos"   ON storage.objects;
+DROP POLICY IF EXISTS "admin_upload_documents"      ON storage.objects;
+DROP POLICY IF EXISTS "admin_delete_student_photos" ON storage.objects;
+DROP POLICY IF EXISTS "admin_delete_staff_photos"   ON storage.objects;
+DROP POLICY IF EXISTS "admin_delete_documents"      ON storage.objects;
+DROP POLICY IF EXISTS "auth_view_student_photos"    ON storage.objects;
+DROP POLICY IF EXISTS "auth_view_staff_photos"      ON storage.objects;
+DROP POLICY IF EXISTS "auth_view_documents"         ON storage.objects;
+
 
 -- ── 3) helper: tenant uuid from the first path segment ────────
 -- Returns NULL for malformed paths (deny, don't error).
@@ -67,7 +81,19 @@ RETURNS UUID LANGUAGE sql STABLE AS $$
 $$;
 
 
-ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+-- RLS is enabled by default on Supabase-hosted storage.objects, but older or
+-- self-hosted targets may not have it. Only attempt the ALTER when needed:
+-- the query-API postgres role is not the table owner, so an unconditional
+-- ALTER fails with "must be owner of table objects" even when RLS is on.
+DO $$
+BEGIN
+  IF NOT (SELECT c.relrowsecurity
+          FROM pg_class c
+          JOIN pg_namespace n ON n.oid = c.relnamespace
+          WHERE n.nspname = 'storage' AND c.relname = 'objects') THEN
+    ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+  END IF;
+END $$;
 
 
 -- ── 4) new tenant-bound storage policies ──────────────────────
