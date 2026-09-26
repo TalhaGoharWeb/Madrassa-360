@@ -445,7 +445,12 @@ class _MadrasaDetailScreenState extends State<MadrasaDetailScreen> {
           ? 'No subscription record (table may not be provisioned yet)'
           : null,
       child: sub == null
-          ? const Text('—', style: TextStyle(color: AppColors.textSecondary))
+          ? Text(
+              '—',
+              style: AppTypography.bodySmall.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            )
           : Column(
               children: [
                 _kv('Status', sub['status']),
@@ -464,8 +469,12 @@ class _MadrasaDetailScreenState extends State<MadrasaDetailScreen> {
       title: 'ماڈیولز / Modules',
       subtitle: _modulesSaving ? 'Saving…' : 'Toggle per-tenant modules',
       child: _catalog.isEmpty
-          ? const Text('Module catalog unavailable.',
-              style: TextStyle(color: AppColors.textSecondary))
+          ? Text(
+              'Module catalog unavailable.',
+              style: AppTypography.bodySmall.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            )
           : Column(
               children: [
                 for (final m in _catalog)

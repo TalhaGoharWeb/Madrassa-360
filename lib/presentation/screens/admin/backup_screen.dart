@@ -13,6 +13,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/backup/backup_service.dart';
+import '../../../core/constants/app_typography.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/tenant_context.dart';
 import '../../../data/local/database_provider.dart';
@@ -165,8 +166,10 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
-        title:
-            const Text('خبردار / Warning', style: TextStyle(color: Colors.red)),
+        title: Text(
+          'خبردار / Warning',
+          style: AppTypography.titleSmall.copyWith(color: Colors.red),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -177,9 +180,12 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
               'جاری رکھنے کے لیے بالکل یہی لکھیں:',
             ),
             const SizedBox(height: 4),
-            const SelectableText(
+            SelectableText(
               BackupService.restoreConfirmationPhrase,
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              style: AppTypography.customBody(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 12),
             TextField(
@@ -295,8 +301,10 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
                           ),
                           if (_status != null) ...[
                             const SizedBox(height: 8),
-                            Text(_status!,
-                                style: const TextStyle(fontSize: 14)),
+                            Text(
+                              _status!,
+                              style: AppTypography.bodySmall,
+                            ),
                           ],
                         ],
                       ),
@@ -331,8 +339,12 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(b.file.path.split('/').last,
-                style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text(
+              b.file.path.split('/').last,
+              style: AppTypography.bodyMedium.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             const SizedBox(height: 4),
             Text(
               m == null
@@ -340,14 +352,18 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
                   : '${_fmtDate(m.exportedAt)} • '
                       '${BackupService.formatBytes(b.sizeBytes)} • '
                       '${m.totalRows} ریکارڈ',
-              style: const TextStyle(fontSize: 14, color: Colors.grey),
+              style: AppTypography.bodySmall.copyWith(color: Colors.grey),
             ),
             if (b.note != null)
               Text(b.note!,
-                  style: const TextStyle(fontSize: 14, color: Colors.red)),
+                  style: AppTypography.bodySmall.copyWith(
+                    color: Colors.red,
+                  )),
             const SizedBox(height: 4),
-            Text(_cloudLabel(b.cloudStatus),
-                style: const TextStyle(fontSize: 14)),
+            Text(
+              _cloudLabel(b.cloudStatus),
+              style: AppTypography.bodySmall,
+            ),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,

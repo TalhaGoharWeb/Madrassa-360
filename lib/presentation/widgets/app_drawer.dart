@@ -128,10 +128,10 @@ class AppDrawer extends ConsumerWidget {
         child: profileImageUrl == null || profileImageUrl!.isEmpty
             ? Text(
                 initial,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: AppTypography.custom(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
+                  color: Colors.white,
                 ),
               )
             : null,

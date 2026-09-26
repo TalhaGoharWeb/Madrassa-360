@@ -13,6 +13,12 @@ class AppTheme {
       useMaterial3: true,
       brightness: Brightness.light,
 
+      // Default font — Noto Naskh Arabic. Every text element that does not
+      // declare its own family (labels, hints, dialogs, dropdowns, tooltips,
+      // buttons, …) inherits this. The explicit textTheme below keeps its
+      // own families: ThemeData merges, never overwrites, provided styles.
+      fontFamily: AppTypography.naskhFamily,
+
       // Color Scheme
       colorScheme: ColorScheme.fromSeed(
         seedColor: AppColors.primary,

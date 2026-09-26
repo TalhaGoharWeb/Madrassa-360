@@ -544,7 +544,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     }
                   },
                   child:
-                      const Text('محفوظ کریں', style: TextStyle(fontSize: 16)),
+                      Text('محفوظ کریں', style: AppTypography.labelLarge),
                 ),
               ),
               const SizedBox(height: 8),
@@ -688,7 +688,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             },
             child: Text(
               'لاگ آؤٹ',
-              style: TextStyle(color: AppColors.error),
+              style: AppTypography.bodyMedium.copyWith(
+                color: AppColors.error,
+              ),
             ),
           ),
         ],

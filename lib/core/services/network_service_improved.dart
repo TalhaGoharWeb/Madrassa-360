@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import '../constants/app_typography.dart';
 import '../utils/error_handler.dart';
 
 /// نیٹ ورک کی خدمت
@@ -138,7 +139,9 @@ class NetworkStatusWidget extends StatelessWidget {
                     SizedBox(width: 8),
                     Text(
                       'انٹرنیٹ دستیاب نہیں',
-                      style: TextStyle(color: Colors.white),
+                      style: AppTypography.bodyMedium.copyWith(
+                        color: Colors.white,
+                      ),
                     ),
                   ],
                 ),

@@ -66,10 +66,14 @@ class _MadrasaManagementScreenState extends State<MadrasaManagementScreen> {
             child: TextField(
               onChanged: (v) => setState(() => _search = v),
               textDirection: TextDirection.rtl,
-              style: const TextStyle(color: Colors.white),
+              style: AppTypography.bodyMedium.copyWith(
+                color: Colors.white,
+              ),
               decoration: InputDecoration(
                 hintText: 'تلاش کریں...',
-                hintStyle: const TextStyle(color: Colors.white54),
+                hintStyle: AppTypography.bodyMedium.copyWith(
+                  color: Colors.white54,
+                ),
                 prefixIcon: const Icon(Icons.search, color: Colors.white54),
                 filled: true,
                 fillColor: Colors.white.withValues(alpha: 0.15),
@@ -124,8 +128,10 @@ class _MadrasaManagementScreenState extends State<MadrasaManagementScreen> {
               backgroundColor: const Color(0xFF1A237E),
               child: Text(
                 m.nameUrdu.isNotEmpty ? m.nameUrdu[0] : 'م',
-                style: const TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.bold),
+                style: AppTypography.bodyMedium.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
             const SizedBox(width: 12),

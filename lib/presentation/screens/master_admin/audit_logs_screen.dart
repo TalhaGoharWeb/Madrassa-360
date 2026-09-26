@@ -512,14 +512,17 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
                     children: [
                       TextSpan(
                         text: d.oldText,
-                        style: const TextStyle(
-                            decoration: TextDecoration.lineThrough,
-                            color: AppColors.textSecondary),
+                        style: AppTypography.bodyMedium.copyWith(
+                          decoration: TextDecoration.lineThrough,
+                          color: AppColors.textSecondary,
+                        ),
                       ),
                       const TextSpan(text: '  ←  '),
                       TextSpan(
                         text: d.newText,
-                        style: const TextStyle(fontWeight: FontWeight.w600),
+                        style: AppTypography.bodyMedium.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ],
                   ),
