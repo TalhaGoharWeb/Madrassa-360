@@ -552,15 +552,21 @@ class _ScopeEditorScreenState extends ConsumerState<ScopeEditorScreen> {
               return Column(
                 children: [
                   for (final u in list)
-                    ListTile(
-                      title: Text(u.name, style: AppTypography.bodyMedium),
-                      subtitle: u.email.isEmpty
-                          ? null
-                          : Text(u.email,
-                              style: AppTypography.bodyMedium
-                                  .copyWith(color: AppColors.textSecondary)),
-                      trailing: RoleBadge(label: u.roleUrdu),
-                      onTap: () => setState(() => _user = u),
+                    // Transparent Material so the ListTile ink paints above
+                    // the card's DecoratedBox (avoids the debug "ink may be
+                    // invisible" assertion).
+                    Material(
+                      type: MaterialType.transparency,
+                      child: ListTile(
+                        title: Text(u.name, style: AppTypography.bodyMedium),
+                        subtitle: u.email.isEmpty
+                            ? null
+                            : Text(u.email,
+                                style: AppTypography.bodyMedium
+                                    .copyWith(color: AppColors.textSecondary)),
+                        trailing: RoleBadge(label: u.roleUrdu),
+                        onTap: () => setState(() => _user = u),
+                      ),
                     ),
                 ],
               );

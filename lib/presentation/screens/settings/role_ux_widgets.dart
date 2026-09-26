@@ -74,9 +74,13 @@ class UxSectionTitle extends StatelessWidget {
           Icon(icon, size: 18, color: AppColors.primary),
           const SizedBox(width: 6),
         ],
-        Text(
-          text,
-          style: AppTypography.titleSmall.copyWith(color: AppColors.primary),
+        // Long Urdu titles must wrap instead of overflowing narrow
+        // screens (Phase 13 responsiveness).
+        Expanded(
+          child: Text(
+            text,
+            style: AppTypography.titleSmall.copyWith(color: AppColors.primary),
+          ),
         ),
       ],
     );
