@@ -125,12 +125,44 @@ explicit deny  >  explicit grant  >  delegation grant  >  role grant  >  default
    → `(code, tenant_id, source)` where source ∈ {role, override, delegation} for the new client.
 4. **Scope enforcement helper**:
    `scope_allows(p_tenant_id, p_user_id, p_code, p_class_id UUID DEFAULT NULL)` —
-   TRUE when no scope row exists (default per-role behavior), when scope is `all`, when the
-   class is in the user's assigned classes (`teacher_class_assignments`, active) for
-   `classes` scope, etc. Used by RLS on `attendance` and `results` write policies so a
-   class-scoped teacher cannot mark/enter outside their classes even via raw API.
-   Default scope per role is seeded in `permission_scopes` only when narrower than `all`
-   (teachers → `classes`; everyone else → no row = `all`).
+   FALSE when no scope row exists (fail-closed since migration 022; see §3.4),
+   TRUE when scope is `all`, when the class is in the user's assigned classes
+   (`teacher_class_assignments`, active) for `classes` scope, etc. Used by RLS on
+   `attendance` and `results` write policies so a class-scoped teacher cannot
+   mark/enter outside their classes even via raw API.
+   Every effective grant gets a `permission_scopes` row: migration 022 backfills
+   `all` rows for existing grants and adds insert-only provisioning triggers
+   (membership / role-grant / explicit-grant / delegation), so "no row" only
+   ever means "no grant". A narrower-than-`all` default is seeded only for
+   teachers (`classes` from their active `teacher_class_assignments`).
+
+### 3.4 Migration `022_scope_failclosed.sql` — the fail-closed flip
+
+Before 022, `scope_allows()` returned TRUE when no `permission_scopes` row
+existed — a fail-open default. 022 flips the contract:
+
+1. **New columns** on `permission_scopes`: `starts_at` / `expires_at`
+   (nullable; a grant outside its window denies), `name_ur` / `name_en`
+   (nullable display labels).
+2. **Backfill** of explicit `all` rows for every effective grant (active
+   memberships × effective codes, minus denies; active delegations, minus
+   denies) — run BEFORE the behavior change, so no live grant is revoked.
+3. **`scope_allows()` rewritten**: missing row → FALSE; future `starts_at`
+   → FALSE; expired `expires_at` → FALSE. `all` / `classes` / `students`
+   evaluation and the `department`-is-unevaluatable fail-closed rule are
+   unchanged.
+4. **Provisioning triggers** (insert-only, `ON CONFLICT DO NOTHING` so they
+   never widen a narrowed row): new/reactivated/re-roled memberships, new
+   role-permission grants, explicit user grants, and new delegations each
+   create the corresponding `all` row. Delegations provision as `all` to
+   preserve the pre-022 effective behavior of delegated codes.
+5. **Client contract** (`ScopeService`): a missing scope row or a scope-load
+   error is FAIL-CLOSED (deny / hide / filter to nothing) — never read as
+   "unrestricted". `ScopeGuard` hides its child in the same situations.
+
+Executable proof: `supabase/tests/phase11_authorization.sql` (68 assertions:
+precedence, tenant isolation, delegation ceilings, last-owner safety, the
+022 fail-closed behavior incl. provisioning triggers, RPC interplay).
 5. **Management RPCs** (SECURITY DEFINER, authorization checked inside — §62):
    - `assign_tenant_role(p_tenant_id, p_user_id, p_role_key)` — requires `roles.assign`.
    - `set_role_permissions(p_tenant_role_id, p_codes TEXT[])` — requires `roles.assign`;

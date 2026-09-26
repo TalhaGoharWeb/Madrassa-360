@@ -7,16 +7,25 @@
 //   classes    → صرف میری مقرر کردہ جماعتوں کے طلبہ
 //   students   → صرف میرے طلبہ
 //
+// FAIL-CLOSED (migration 022): `scope_allows()` denies when NO
+// `permission_scopes` row exists for an effective grant, and the 022
+// provisioning triggers keep a row present for every grant (backfilled for
+// existing grants; insert-only triggers for membership / role-grant /
+// explicit-grant / delegation changes). This service mirrors that contract
+// for the UI:
+//
+//   * no row for a permission      → treat as DENIED (hide / filter out)
+//   * scope rows fail to load       → treat as DENIED (hide / filter out)
+//   * unknown scope_type            → treat as DENIED (never as `all`)
+//
 // UX-ONLY: these helpers filter lists and hide UI affordances. Supabase RLS
-// (`scope_allows()`, 020) remains the real enforcement — a scoped-out write
-// is rejected server-side even if the UI showed the row. When the scope rows
-// cannot be loaded, the service behaves as "no row" (unrestricted display),
-// exactly like `scope_allows()` does.
+// (`scope_allows()`, 020/022) remains the real enforcement — a scoped-out
+// write is rejected server-side even if the UI showed the row.
 //
 // Null-vs-empty contract for the `*InScope` helpers:
-//   null          → unrestricted (no row, or scope `all`): do NOT filter.
-//   empty set     → restricted to nothing (fail-closed, e.g. `department`
-//                   scope which the data model cannot evaluate).
+//   null          → the row is `all`: do NOT filter.
+//   empty set     → restricted to nothing (fail-closed: no row, load error,
+//                   or an unevaluatable scope such as `department`).
 //   non-empty set → restrict list queries to these ids.
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -29,7 +38,8 @@ import 'tenant_context.dart';
 /// One `permission_scopes` row: the data scope for a single permission.
 class PermissionScope {
   final String permission;
-  final String scopeType; // 'all' | 'department' | 'classes' | 'students'
+  final String
+      scopeType; // 'all' | 'department' | 'classes' | 'students' | 'unknown'
   final Set<String> classIds; // scope_ref.class_ids
   final Set<String> studentIds; // scope_ref.student_ids
   final String? department; // scope_ref.department
@@ -42,8 +52,8 @@ class PermissionScope {
     this.department,
   });
 
-  /// True for `all` (or an unknown type — treated as unrestricted, mirroring
-  /// the "no row" default rather than inventing a restriction client-side).
+  /// True only for an explicit `all` row. Anything else — narrower scopes
+  /// AND the defensive `unknown` type — is a restriction.
   bool get isUnrestricted => scopeType == 'all';
 
   /// Plain-language Urdu description for UI (never a raw code or jargon).
@@ -56,8 +66,9 @@ class PermissionScope {
       case 'students':
         return 'صرف میرے طلبہ';
       case 'all':
-      default:
         return 'پورا مدرسہ';
+      default:
+        return 'نامعلوم دائرہ';
     }
   }
 
@@ -67,14 +78,20 @@ class PermissionScope {
   }) {
     final ref = row['scope_ref'];
     final refMap = ref is Map<String, dynamic> ? ref : <String, dynamic>{};
+    final rawType = row['scope_type'] as String?;
     return PermissionScope(
       permission: permission,
-      scopeType: (row['scope_type'] as String?) ?? 'all',
+      // Fail closed: a missing or unrecognized type is `unknown`
+      // (restricted), never `all`.
+      scopeType: _knownScopeType(rawType) ? rawType! : 'unknown',
       classIds: _stringSet(refMap['class_ids']),
       studentIds: _stringSet(refMap['student_ids']),
       department: refMap['department'] as String?,
     );
   }
+
+  static bool _knownScopeType(String? t) =>
+      t == 'all' || t == 'department' || t == 'classes' || t == 'students';
 
   static Set<String> _stringSet(dynamic value) {
     if (value is List) return {for (final e in value) '$e'};
@@ -89,28 +106,38 @@ class ScopeService {
 
   String? _tenantId;
   String? _userId;
-  Map<String, PermissionScope> _scopes = const {};
+
+  /// Loaded scope rows, or null when unknown: not yet loaded, the load
+  /// failed, or no tenant/user is active. Null is FAIL-CLOSED — every
+  /// helper below treats it as "deny / show nothing".
+  Map<String, PermissionScope>? _scopes;
 
   /// Scope row for [permission] in the active tenant, or null when there is
-  /// no row (default per-role behavior — treat as unrestricted in the UI).
+  /// no row, the rows failed to load, or no tenant/user is active.
+  ///
+  /// Null is FAIL-CLOSED (deny): under migration 022 `scope_allows()`
+  /// denies when no row exists, so a missing row must never be read as
+  /// "unrestricted" in the UI.
   Future<PermissionScope?> scopeFor(String permission) async {
     final scopes = await _ensureLoaded();
-    return scopes[permission];
+    return scopes?[permission];
   }
 
   /// Client mirror of `scope_allows()`: may [classId] be acted on under
-  /// [permission]? Fail-closed for narrower scopes with an unverifiable
-  /// target. UX hint only — RLS decides.
+  /// [permission]? Fail-closed: no row, load error, narrower scopes with an
+  /// unverifiable target, and unknown scope types all deny.
+  /// UX hint only — RLS decides.
   Future<bool> scopeAllows(String permission, {String? classId}) async {
     final scope = await scopeFor(permission);
-    if (scope == null || scope.isUnrestricted) return true;
+    if (scope == null) return false;
+    if (scope.isUnrestricted) return true;
     if (classId == null) return false;
     switch (scope.scopeType) {
       case 'classes':
         return scope.classIds.contains(classId);
       case 'students':
         final ids = await studentIdsInScope(permission);
-        if (ids == null) return true;
+        if (ids == null || ids.isEmpty) return false;
         return await _anyStudentInClass(ids, classId);
       case 'department':
         // No department dimension on classes: fail closed (mirrors 020).
@@ -121,10 +148,12 @@ class ScopeService {
   }
 
   /// Class ids the user may see/act on for [permission].
-  /// Null = unrestricted (do not filter); empty = nothing (fail-closed).
+  /// Null = the row is `all` (do not filter); empty = show nothing
+  /// (fail-closed: no row, load error, or unevaluatable scope).
   Future<Set<String>?> classIdsInScope(String permission) async {
     final scope = await scopeFor(permission);
-    if (scope == null || scope.isUnrestricted) return null;
+    if (scope == null) return <String>{};
+    if (scope.isUnrestricted) return null;
     switch (scope.scopeType) {
       case 'classes':
         return scope.classIds;
@@ -137,10 +166,12 @@ class ScopeService {
   }
 
   /// Student ids the user may see/act on for [permission].
-  /// Null = unrestricted (do not filter); empty = nothing (fail-closed).
+  /// Null = the row is `all` (do not filter); empty = show nothing
+  /// (fail-closed: no row, load error, or unevaluatable scope).
   Future<Set<String>?> studentIdsInScope(String permission) async {
     final scope = await scopeFor(permission);
-    if (scope == null || scope.isUnrestricted) return null;
+    if (scope == null) return <String>{};
+    if (scope.isUnrestricted) return null;
     switch (scope.scopeType) {
       case 'students':
         return scope.studentIds;
@@ -153,30 +184,31 @@ class ScopeService {
   }
 
   /// Plain-language Urdu scope description for UI badges/hints.
+  /// Unknown / missing scope is reported as such — never as "whole madrasa".
   Future<String> scopeDescriptionUrdu(String permission) async {
     final scope = await scopeFor(permission);
-    return scope?.descriptionUrdu ?? 'پورا مدرسہ';
+    return scope?.descriptionUrdu ?? 'نامعلوم دائرہ';
   }
 
   /// Drops the in-memory scope rows (call on tenant switch / sign-out).
   void clearCache() {
     _tenantId = null;
     _userId = null;
-    _scopes = const {};
+    _scopes = null;
   }
 
   // ── Internals ──────────────────────────────────────────────────────────────
 
-  Future<Map<String, PermissionScope>> _ensureLoaded() async {
+  Future<Map<String, PermissionScope>?> _ensureLoaded() async {
     final tenantId = _ref.read(activeTenantIdProvider);
-    if (tenantId == null) return const {};
+    if (tenantId == null) return null;
     String? userId;
     try {
       userId = SupabaseService.client.auth.currentUser?.id;
     } catch (_) {
       userId = null;
     }
-    if (userId == null) return const {};
+    if (userId == null) return null;
     if (_tenantId == tenantId && _userId == userId) return _scopes;
 
     final out = <String, PermissionScope>{};
@@ -194,11 +226,11 @@ class ScopeService {
         out[perm] = PermissionScope.fromRow(permission: perm, row: map);
       }
     } catch (e) {
-      // Fail open for DISPLAY (mirrors scope_allows' no-row default);
-      // writes/reads stay enforced by RLS either way.
+      // Fail closed: a load error must not read as "unrestricted".
+      // The failure is NOT cached, so the next call retries.
       AppLogger()
           .warning('[Scopes] failed to load permission_scopes', error: e);
-      return const {};
+      return null;
     }
     _tenantId = tenantId;
     _userId = userId;
