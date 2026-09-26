@@ -227,11 +227,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                 height: 112,
                 color: AppColors.primary,
                 child: const Center(
-                  child: Icon(
-                    Icons.mosque,
-                    size: 50,
-                    color: Colors.white,
-                  ),
+                  child: Icon(Icons.mosque, size: 50, color: Colors.white),
                 ),
               ),
             ),
