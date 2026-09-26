@@ -2,6 +2,7 @@
 /// Result Provider — repository-backed state management
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 import '../core/services/tenant_context.dart';
 import '../core/sync/sync_providers.dart';
 import '../data/models/result.dart';
@@ -108,6 +109,30 @@ class ResultNotifier extends AsyncNotifier<void> {
     ref.invalidate(allResultsProvider);
     ref.invalidate(examResultsProvider(result.examId));
     return saved;
+  }
+
+  /// Creates an exam header (exam wizard step 1). Returns the created
+  /// [Exam]; throws when there is no active tenant.
+  Future<Exam> createExam({
+    required String name,
+    String? classId,
+    required String examDate,
+    required int totalMarks,
+  }) async {
+    final tenantId = ref.read(currentTenantIdProvider);
+    if (tenantId == null) throw StateError('No active tenant');
+    final repo = ref.read(resultRepositoryProvider);
+    final exam = Exam(
+      id: const Uuid().v4(),
+      tenantId: tenantId,
+      name: name,
+      classId: classId,
+      examDate: examDate,
+      totalMarks: totalMarks,
+    );
+    final created = await repo.createExam(exam, tenantId: tenantId);
+    ref.invalidate(allExamsProvider);
+    return created;
   }
 }
 
