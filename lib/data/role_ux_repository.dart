@@ -277,8 +277,9 @@ class SupabaseRoleUxRepository implements RoleUxRepository {
   @override
   String? get currentUserId => SupabaseService.currentUser?.id;
 
-  Map<String, dynamic> _asMap(Object? v) =>
-      v is Map<String, dynamic> ? v : <String, dynamic>{};
+  Map<String, dynamic> _asMap(Object? v) {
+    return v is Map<String, dynamic> ? v : <String, dynamic>{};
+  }
 
   @override
   Future<List<TenantUser>> listUsers(String tenantId, {String? search}) async {
@@ -287,8 +288,7 @@ class SupabaseRoleUxRepository implements RoleUxRepository {
       body: {
         'action': 'list_users',
         'tenant_id': tenantId,
-        if (search != null && search.trim().isNotEmpty)
-          'search': search.trim(),
+        if (search != null && search.trim().isNotEmpty) 'search': search.trim(),
         'limit': 200,
       },
     );
@@ -365,9 +365,9 @@ class SupabaseRoleUxRepository implements RoleUxRepository {
           .inFilter('tenant_role_id', ids);
       for (final row in (trp as List)) {
         final m = row as Map<String, dynamic>;
-        final rid = m['tenant_role_id'] as String?;
-        final code = codeById[m['permission_id'] as String?];
-        if (rid != null && code != null) {
+        final rid = m['tenant_role_id'];
+        final code = _codeFor(codeById, m['permission_id']);
+        if (rid is String && code != null) {
           codesByRole.putIfAbsent(rid, () => <String>{}).add(code);
         }
       }
@@ -499,7 +499,7 @@ class SupabaseRoleUxRepository implements RoleUxRepository {
     required String userId,
     required String roleKey,
   }) async {
-    await _client.rpc('assign_tenant_role', {
+    await _client.rpc('assign_tenant_role', params: {
       'p_tenant_id': tenantId,
       'p_user_id': userId,
       'p_role_key': roleKey,
@@ -513,7 +513,7 @@ class SupabaseRoleUxRepository implements RoleUxRepository {
     required String code,
     required String? effect,
   }) async {
-    await _client.rpc('set_user_permission', {
+    await _client.rpc('set_user_permission', params: {
       'p_tenant_id': tenantId,
       'p_user_id': userId,
       'p_code': code,
@@ -529,12 +529,17 @@ class SupabaseRoleUxRepository implements RoleUxRepository {
     required Set<String> selectedCodes,
   }) async {
     final existing = await userOverrides(tenantId: tenantId, userId: userId);
-    final codes = <String>{...templateCodes, ...selectedCodes, ...existing.keys};
+    final codes = <String>{
+      ...templateCodes,
+      ...selectedCodes,
+      ...existing.keys
+    };
     for (final code in codes) {
       final inTemplate = templateCodes.contains(code);
       final selected = selectedCodes.contains(code);
-      final String? desired =
-          (selected && !inTemplate) ? 'grant' : ((!selected && inTemplate) ? 'deny' : null);
+      final String? desired = (selected && !inTemplate)
+          ? 'grant'
+          : ((!selected && inTemplate) ? 'deny' : null);
       if (existing[code] != desired) {
         await setUserPermission(
           tenantId: tenantId,
@@ -625,9 +630,9 @@ class SupabaseRoleUxRepository implements RoleUxRepository {
     final out = <String, String>{};
     for (final row in (rows as List)) {
       final m = row as Map<String, dynamic>;
-      final code = codeById[m['permission_id'] as String?];
-      final effect = m['effect'] as String?;
-      if (code != null && effect != null) out[code] = effect;
+      final code = _codeFor(codeById, m['permission_id']);
+      final effect = m['effect'];
+      if (code != null && effect is String) out[code] = effect;
     }
     return out;
   }
@@ -647,7 +652,7 @@ class SupabaseRoleUxRepository implements RoleUxRepository {
     final out = <String, ScopeSelection>{};
     for (final row in (rows as List)) {
       final m = row as Map<String, dynamic>;
-      final code = codeById[m['permission_id'] as String?];
+      final code = _codeFor(codeById, m['permission_id']);
       if (code == null) continue;
       final ref = _asMap(m['scope_ref']);
       out[code] = ScopeSelection(
@@ -663,6 +668,10 @@ class SupabaseRoleUxRepository implements RoleUxRepository {
     if (v is! List) return const {};
     return {for (final e in v) e.toString()};
   }
+
+  /// Permission id -> code without any casts (dynamic JSON values).
+  String? _codeFor(Map<String, String> codeById, Object? permissionId) =>
+      permissionId is String ? codeById[permissionId] : null;
 
   @override
   Future<List<ClassRef>> listClasses(String tenantId) async {
@@ -712,14 +721,17 @@ class SupabaseRoleUxRepository implements RoleUxRepository {
           .eq('tenant_id', tenantId)
           .eq('teacher_user_id', userId)
           .eq('is_active', true);
-      return (rows as List).map((r) {
-        final m = r as Map<String, dynamic>;
-        final cls = _asMap(m['classes']);
-        return AssignedClassInfo(
-          id: (m['class_id'] as String?) ?? '',
-          name: (cls['name'] as String?) ?? '',
-        );
-      }).where((c) => c.id.isNotEmpty && c.name.isNotEmpty).toList();
+      return (rows as List)
+          .map((r) {
+            final m = r as Map<String, dynamic>;
+            final cls = _asMap(m['classes']);
+            return AssignedClassInfo(
+              id: (m['class_id'] as String?) ?? '',
+              name: (cls['name'] as String?) ?? '',
+            );
+          })
+          .where((c) => c.id.isNotEmpty && c.name.isNotEmpty)
+          .toList();
     } catch (_) {
       // RLS may hide other users' assignments from non-admin callers.
       return const [];
@@ -748,7 +760,8 @@ class SupabaseRoleUxRepository implements RoleUxRepository {
             .select('action, entity, created_at, user_id')
             .eq('tenant_id', tenantId)
             .eq('entity_id', userId)
-            .inFilter('entity', const ['auth_user', 'tenant_membership', 'user'])
+            .inFilter(
+                'entity', const ['auth_user', 'tenant_membership', 'user'])
             .order('created_at', ascending: false)
             .limit(20),
       ]);
@@ -877,7 +890,8 @@ String roleUxErrorMessage(Object e) {
       hay.contains('jwt expired')) {
     return 'آپ کی لاگ اِن میعاد ختم ہو گئی ہے — دوبارہ لاگ اِن کریں۔';
   }
-  if (hay.contains('404') || hay.contains('not found') && hay.contains('function')) {
+  if (hay.contains('404') ||
+      hay.contains('not found') && hay.contains('function')) {
     return 'سرور فنکشن دستیاب نہیں ہے — manage-users Edge Function deploy کرنا ہوگا۔';
   }
   if (hay.contains('failed host lookup') ||
@@ -890,6 +904,7 @@ String roleUxErrorMessage(Object e) {
   if (hay.contains('server did not return a user id')) {
     return 'صارف بنانے میں مسئلہ ہوا — دوبارہ کوشش کریں۔';
   }
-  AppLogger().warning('[RoleUx] unmapped error, generic message shown', error: e);
+  AppLogger()
+      .warning('[RoleUx] unmapped error, generic message shown', error: e);
   return 'عمل مکمل نہیں ہو سکا — دوبارہ کوشش کریں۔';
 }

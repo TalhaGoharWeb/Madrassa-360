@@ -31,7 +31,8 @@ class UserManagementHubScreen extends ConsumerStatefulWidget {
       _UserManagementHubScreenState();
 }
 
-class _UserManagementHubScreenState extends ConsumerState<UserManagementHubScreen>
+class _UserManagementHubScreenState
+    extends ConsumerState<UserManagementHubScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabs;
   String _search = '';
@@ -95,8 +96,7 @@ class _UserManagementHubScreenState extends ConsumerState<UserManagementHubScree
                 onPressed: () async {
                   final created = await Navigator.push(
                     context,
-                    MaterialPageRoute(
-                        builder: (_) => const UserWizardScreen()),
+                    MaterialPageRoute(builder: (_) => const UserWizardScreen()),
                   );
                   if (created == true && context.mounted) {
                     showUxSnack(context, 'نیا صارف کامیابی سے بن گیا');
@@ -181,8 +181,7 @@ class _UsersTabState extends ConsumerState<_UsersTab> {
         ),
         Expanded(
           child: usersAsync.when(
-            loading: () =>
-                const Center(child: CircularProgressIndicator()),
+            loading: () => const Center(child: CircularProgressIndicator()),
             error: (e, _) => UxEmptyState(
               icon: Icons.error_outline,
               title: roleUxErrorMessage(e),
@@ -228,8 +227,7 @@ class _UsersTabState extends ConsumerState<_UsersTab> {
           ? () => _toggleSelect(u)
           : () => Navigator.push(
                 context,
-                MaterialPageRoute(
-                    builder: (_) => UserDetailScreen(user: u)),
+                MaterialPageRoute(builder: (_) => UserDetailScreen(user: u)),
               ),
       child: Row(
         children: [
@@ -243,8 +241,8 @@ class _UsersTabState extends ConsumerState<_UsersTab> {
               backgroundColor: AppColors.primary.withValues(alpha: 0.12),
               child: Text(
                 u.initials,
-                style: AppTypography.titleSmall
-                    .copyWith(color: AppColors.primary),
+                style:
+                    AppTypography.titleSmall.copyWith(color: AppColors.primary),
               ),
             ),
           const SizedBox(width: 12),
@@ -289,8 +287,7 @@ class _UsersTabState extends ConsumerState<_UsersTab> {
         top: false,
         child: Row(
           children: [
-            Text('${_selected.length} منتخب',
-                style: AppTypography.titleSmall),
+            Text('${_selected.length} منتخب', style: AppTypography.titleSmall),
             const Spacer(),
             TextButton.icon(
               icon: const Icon(Icons.badge_outlined, size: 18),
@@ -482,8 +479,7 @@ class _RolesTab extends ConsumerWidget {
           Row(
             children: [
               Expanded(
-                child: Text(role.displayUrdu,
-                    style: AppTypography.titleSmall),
+                child: Text(role.displayUrdu, style: AppTypography.titleSmall),
               ),
               _chip('${role.permissionCodes.length} اختیارات'),
               // Only show the member chip when the count is actually
@@ -538,7 +534,8 @@ class _RolesTab extends ConsumerWidget {
     );
   }
 
-  Widget _chip(String label) {    return Container(
+  Widget _chip(String label) {
+    return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: AppColors.primary.withValues(alpha: 0.1),
@@ -546,8 +543,7 @@ class _RolesTab extends ConsumerWidget {
       ),
       child: Text(
         label,
-        style:
-            AppTypography.labelSmall.copyWith(color: AppColors.primary),
+        style: AppTypography.labelSmall.copyWith(color: AppColors.primary),
       ),
     );
   }
@@ -594,8 +590,7 @@ class _RolesTab extends ConsumerWidget {
               Text(role.displayUrdu,
                   style: AppTypography.titleLarge
                       .copyWith(color: AppColors.primary)),
-              if (role.description != null &&
-                  role.description!.isNotEmpty) ...[
+              if (role.description != null && role.description!.isNotEmpty) ...[
                 const SizedBox(height: 4),
                 Text(role.description!,
                     style: AppTypography.bodySmall

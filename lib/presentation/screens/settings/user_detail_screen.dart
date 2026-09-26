@@ -13,6 +13,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/services/role_service.dart';
 import '../../../core/services/role_service.dart';
+import '../../../core/services/tenant_context.dart';
 import '../../../data/role_ux_repository.dart';
 import '../../../providers/role_ux_provider.dart';
 import 'role_ux_widgets.dart';
@@ -90,8 +91,8 @@ class _UserDetailScreenState extends ConsumerState<UserDetailScreen> {
             backgroundColor: AppColors.primary.withValues(alpha: 0.12),
             child: Text(
               _user.initials,
-              style: AppTypography.titleLarge
-                  .copyWith(color: AppColors.primary),
+              style:
+                  AppTypography.titleLarge.copyWith(color: AppColors.primary),
             ),
           ),
           const SizedBox(width: 14),
@@ -272,16 +273,14 @@ class _UserDetailScreenState extends ConsumerState<UserDetailScreen> {
           const SizedBox(height: 8),
           Builder(
             builder: (context) {
-              final canManage =
-                  ref.watch(roleServiceProvider).canManageUsers();
+              final canManage = ref.watch(roleServiceProvider).canManageUsers();
               if (!canManage) return const SizedBox.shrink();
               return OutlinedButton.icon(
                 icon: Icon(_user.isActive
                     ? Icons.person_off_outlined
                     : Icons.person_add_alt_outlined),
-                label: Text(_user.isActive
-                    ? 'صارف غیر فعال کریں'
-                    : 'صارف فعال کریں'),
+                label: Text(
+                    _user.isActive ? 'صارف غیر فعال کریں' : 'صارف فعال کریں'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor:
                       _user.isActive ? AppColors.error : AppColors.success,
@@ -292,12 +291,10 @@ class _UserDetailScreenState extends ConsumerState<UserDetailScreen> {
           ),
           const SizedBox(height: 8),
           TextButton.icon(
-            icon: Icon(_showActivity
-                ? Icons.expand_less
-                : Icons.history_outlined),
+            icon: Icon(
+                _showActivity ? Icons.expand_less : Icons.history_outlined),
             label: Text(_showActivity ? 'سرگرمی چھپائیں' : 'سرگرمی دیکھیں'),
-            onPressed: () =>
-                setState(() => _showActivity = !_showActivity),
+            onPressed: () => setState(() => _showActivity = !_showActivity),
           ),
         ],
       ),
@@ -316,8 +313,7 @@ class _UserDetailScreenState extends ConsumerState<UserDetailScreen> {
           builder: (context, snap) {
             if (snap.connectionState == ConnectionState.waiting) {
               return const UxCard(
-                  child:
-                      Center(child: CircularProgressIndicator()));
+                  child: Center(child: CircularProgressIndicator()));
             }
             final rows = snap.data ?? const [];
             if (rows.isEmpty) {
@@ -347,8 +343,7 @@ class _UserDetailScreenState extends ConsumerState<UserDetailScreen> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   _auditUrdu(r, _user.id),
@@ -356,8 +351,8 @@ class _UserDetailScreenState extends ConsumerState<UserDetailScreen> {
                                 ),
                                 Text(
                                   _dateUrdu(r.createdAt),
-                                  style: AppTypography.labelSmall.copyWith(
-                                      color: AppColors.textSecondary),
+                                  style: AppTypography.labelSmall
+                                      .copyWith(color: AppColors.textSecondary),
                                 ),
                               ],
                             ),

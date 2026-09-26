@@ -18,6 +18,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../core/services/tenant_context.dart';
 import '../../../data/role_ux_repository.dart';
 import '../../../providers/role_ux_provider.dart';
 import 'role_ux_widgets.dart';
@@ -25,8 +26,7 @@ import 'role_ux_widgets.dart';
 class UserWizardScreen extends ConsumerStatefulWidget {
   const UserWizardScreen({super.key}) : user = null;
 
-  const UserWizardScreen.edit({super.key, required TenantUser user})
-      : user = user;
+  const UserWizardScreen.edit({super.key, required this.user});
 
   /// Null = create mode; non-null = edit mode (user detail "ذمہ داریاں تبدیل کریں").
   final TenantUser? user;
@@ -110,9 +110,6 @@ class _UserWizardScreenState extends ConsumerState<UserWizardScreen> {
       key == 'mumtahin' ||
       key == 'nazim_hifz';
 
-  static bool _isFinance(String key) =>
-      key.contains('maliyat') || key.contains('accountant');
-
   String _scopeSummaryUrdu() {
     switch (_scopeType) {
       case 'classes':
@@ -150,14 +147,16 @@ class _UserWizardScreenState extends ConsumerState<UserWizardScreen> {
         if (snap.connectionState == ConnectionState.waiting) {
           return Scaffold(
             appBar: AppBar(
-                title: Text(widget.isEdit ? 'ذمہ داریاں تبدیل کریں' : 'نیا صارف')),
+                title:
+                    Text(widget.isEdit ? 'ذمہ داریاں تبدیل کریں' : 'نیا صارف')),
             body: const Center(child: CircularProgressIndicator()),
           );
         }
         if (snap.hasError || !snap.hasData) {
           return Scaffold(
             appBar: AppBar(
-                title: Text(widget.isEdit ? 'ذمہ داریاں تبدیل کریں' : 'نیا صارف')),
+                title:
+                    Text(widget.isEdit ? 'ذمہ داریاں تبدیل کریں' : 'نیا صارف')),
             body: UxEmptyState(
               icon: Icons.error_outline,
               title: roleUxErrorMessage(snap.error ?? 'load'),
@@ -204,7 +203,10 @@ class _UserWizardScreenState extends ConsumerState<UserWizardScreen> {
     final catalog = await repo.permissionCatalog();
     if (_loaded) {
       return _WizardData(
-          roles: roles, catalog: catalog, classes: const [], overrides: const {});
+          roles: roles,
+          catalog: catalog,
+          classes: const [],
+          overrides: const {});
     }
     _loaded = true;
     final classes = await repo.listClasses(tenantId);
@@ -212,10 +214,10 @@ class _UserWizardScreenState extends ConsumerState<UserWizardScreen> {
     Map<String, ScopeSelection> scopes = const {};
     if (widget.isEdit) {
       _roleKey = widget.user!.roleKey;
-      overrides = await repo.userOverrides(
-          tenantId: tenantId, userId: widget.user!.id);
-      scopes = await repo.userScopes(
-          tenantId: tenantId, userId: widget.user!.id);
+      overrides =
+          await repo.userOverrides(tenantId: tenantId, userId: widget.user!.id);
+      scopes =
+          await repo.userScopes(tenantId: tenantId, userId: widget.user!.id);
     } else {
       // sensible first-run default: a teaching responsibility if present
       final teaching = roles.where((r) => _isTeaching(r.key));
@@ -261,7 +263,8 @@ class _UserWizardScreenState extends ConsumerState<UserWizardScreen> {
     final next = <String>{};
     for (final p in catalog) {
       final o = overrides[p.code];
-      final on = o == 'grant' || (o != 'deny' && _templateCodes.contains(p.code));
+      final on =
+          o == 'grant' || (o != 'deny' && _templateCodes.contains(p.code));
       if (on) next.add(p.code);
     }
     _selectedCodes = next;
@@ -313,18 +316,15 @@ class _UserWizardScreenState extends ConsumerState<UserWizardScreen> {
                     ? const Icon(Icons.check, size: 16, color: Colors.white)
                     : Text('${n + 1}',
                         style: AppTypography.labelSmall.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold)),
+                            color: Colors.white, fontWeight: FontWeight.bold)),
               ),
               const SizedBox(height: 2),
               Text(
                 _stepTitles[n],
                 style: AppTypography.labelSmall.copyWith(
-                    color: current
-                        ? AppColors.primary
-                        : AppColors.textSecondary,
-                    fontWeight:
-                        current ? FontWeight.bold : FontWeight.normal),
+                    color:
+                        current ? AppColors.primary : AppColors.textSecondary,
+                    fontWeight: current ? FontWeight.bold : FontWeight.normal),
               ),
             ],
           );
@@ -387,8 +387,9 @@ class _UserWizardScreenState extends ConsumerState<UserWizardScreen> {
               hintText: 'مثلاً محمد احمد',
               border: OutlineInputBorder(),
             ),
-            validator: (v) =>
-                (v == null || v.trim().isEmpty) ? 'نام درج کرنا ضروری ہے۔' : null,
+            validator: (v) => (v == null || v.trim().isEmpty)
+                ? 'نام درج کرنا ضروری ہے۔'
+                : null,
           ),
           const SizedBox(height: 12),
           TextFormField(
@@ -430,9 +431,8 @@ class _UserWizardScreenState extends ConsumerState<UserWizardScreen> {
               hintText: 'کم از کم 6 حروف',
               border: const OutlineInputBorder(),
               suffixIcon: IconButton(
-                icon: Icon(_passwordVisible
-                    ? Icons.visibility_off
-                    : Icons.visibility),
+                icon: Icon(
+                    _passwordVisible ? Icons.visibility_off : Icons.visibility),
                 onPressed: () =>
                     setState(() => _passwordVisible = !_passwordVisible),
               ),
@@ -455,48 +455,53 @@ class _UserWizardScreenState extends ConsumerState<UserWizardScreen> {
         const SizedBox(height: 12),
         if (data.roles.isEmpty)
           const Text('اس مدرسے میں ابھی کوئی ذمہ داری درج نہیں۔'),
-        for (final r in data.roles)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: UxCard(
-              onTap: () {
-                setState(() => _roleKey = r.key);
-                _applyRoleTemplate(data.roles, data.catalog, overrides: const {});
-              },
-              child: Row(
-                children: [
-                  Radio<String>(
-                    value: r.key,
-                    groupValue: _roleKey,
-                    onChanged: (v) {
-                      setState(() => _roleKey = v);
+        RadioGroup<String>(
+          groupValue: _roleKey,
+          onChanged: (v) {
+            if (v == null) return;
+            setState(() => _roleKey = v);
+            _applyRoleTemplate(data.roles, data.catalog, overrides: const {});
+          },
+          child: Column(
+            children: [
+              for (final r in data.roles)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: UxCard(
+                    onTap: () {
+                      setState(() => _roleKey = r.key);
                       _applyRoleTemplate(data.roles, data.catalog,
                           overrides: const {});
                     },
-                  ),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Row(
                       children: [
-                        Text(r.displayUrdu,
-                            style: AppTypography.titleSmall),
-                        if (r.description != null &&
-                            r.description!.isNotEmpty)
-                          Text(r.description!,
-                              style: AppTypography.bodySmall.copyWith(
-                                  color: AppColors.textSecondary),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis),
-                        Text('${r.permissionCodes.length} اختیارات',
-                            style: AppTypography.labelSmall.copyWith(
-                                color: AppColors.primary)),
+                        Radio<String>(value: r.key),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(r.displayUrdu,
+                                  style: AppTypography.titleSmall),
+                              if (r.description != null &&
+                                  r.description!.isNotEmpty)
+                                Text(r.description!,
+                                    style: AppTypography.bodySmall.copyWith(
+                                        color: AppColors.textSecondary),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis),
+                              Text('${r.permissionCodes.length} اختیارات',
+                                  style: AppTypography.labelSmall
+                                      .copyWith(color: AppColors.primary)),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
                   ),
-                ],
-              ),
-            ),
+                ),
+            ],
           ),
+        ),
       ],
     );
   }
@@ -519,8 +524,8 @@ class _UserWizardScreenState extends ConsumerState<UserWizardScreen> {
         const SizedBox(height: 4),
         Text(
           'منتخب ذمہ داری کے اختیارات پہلے سے ٹک ہیں — ضرورت ہو تو کم یا زیادہ کریں۔',
-          style: AppTypography.bodySmall
-              .copyWith(color: AppColors.textSecondary),
+          style:
+              AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
         ),
         const SizedBox(height: 12),
         for (final p in curated) _permissionTile(p),
@@ -571,8 +576,8 @@ class _UserWizardScreenState extends ConsumerState<UserWizardScreen> {
                   Text(p.labelUrdu, style: AppTypography.bodyMedium),
                   Text(
                     '${p.categoryUrdu}${fromTemplate ? ' • ذمہ داری کا اختیار' : ''}',
-                    style: AppTypography.labelSmall.copyWith(
-                        color: AppColors.textSecondary),
+                    style: AppTypography.labelSmall
+                        .copyWith(color: AppColors.textSecondary),
                   ),
                 ],
               ),
@@ -590,13 +595,22 @@ class _UserWizardScreenState extends ConsumerState<UserWizardScreen> {
         const UxSectionTitle('یہ اختیارات کن لوگوں پر لاگو ہوں گے؟',
             icon: Icons.people_outline),
         const SizedBox(height: 12),
-        _scopeOption('all', 'پورا مدرسہ', 'تمام طلبہ اور عملے پر لاگو ہوگا۔'),
-        _scopeOption('department', 'صرف میرے شعبے کے افراد',
-            'فی الحال سرور یہ دائرہ الگ سے نافذ نہیں کرتا — یہ بھی پورے مدرسے پر لاگو ہوگا۔'),
-        _scopeOption('classes', 'صرف میری مقرر کردہ جماعتیں',
-            'حاضری اور نتائج صرف ان جماعتوں کے لیے درج ہو سکیں گے۔'),
-        _scopeOption('students', 'صرف میرے طلبہ',
-            'حاضری اور نتائج صرف ان طلبہ کے لیے درج ہو سکیں گے۔'),
+        RadioGroup<String>(
+          groupValue: _scopeType,
+          onChanged: (v) => setState(() => _scopeType = v ?? 'all'),
+          child: Column(
+            children: [
+              _scopeOption(
+                  'all', 'پورا مدرسہ', 'تمام طلبہ اور عملے پر لاگو ہوگا۔'),
+              _scopeOption('department', 'صرف میرے شعبے کے افراد',
+                  'فی الحال سرور یہ دائرہ الگ سے نافذ نہیں کرتا — یہ بھی پورے مدرسے پر لاگو ہوگا۔'),
+              _scopeOption('classes', 'صرف میری مقرر کردہ جماعتیں',
+                  'حاضری اور نتائج صرف ان جماعتوں کے لیے درج ہو سکیں گے۔'),
+              _scopeOption('students', 'صرف میرے طلبہ',
+                  'حاضری اور نتائج صرف ان طلبہ کے لیے درج ہو سکیں گے۔'),
+            ],
+          ),
+        ),
         if (_scopeType == 'classes') ...[
           const SizedBox(height: 12),
           const UxSectionTitle('جماعتیں منتخب کریں',
@@ -685,11 +699,7 @@ class _UserWizardScreenState extends ConsumerState<UserWizardScreen> {
         onTap: () => setState(() => _scopeType = value),
         child: Row(
           children: [
-            Radio<String>(
-              value: value,
-              groupValue: _scopeType,
-              onChanged: (v) => setState(() => _scopeType = v ?? 'all'),
-            ),
+            Radio<String>(value: value),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -714,9 +724,8 @@ class _UserWizardScreenState extends ConsumerState<UserWizardScreen> {
     if (tenantId == null) return;
     setState(() => _studentSearching = true);
     try {
-      final results = await ref
-          .read(roleUxRepositoryProvider)
-          .searchStudents(tenantId, q);
+      final results =
+          await ref.read(roleUxRepositoryProvider).searchStudents(tenantId, q);
       setState(() => _studentResults = results);
     } finally {
       if (mounted) setState(() => _studentSearching = false);
@@ -729,12 +738,11 @@ class _UserWizardScreenState extends ConsumerState<UserWizardScreen> {
       for (final p in catalog)
         if (_selectedCodes.contains(p.code)) p,
     ];
-    final exclusions = [
+    final exclusions = <String>{
       for (final code in _curatedCodes)
-        if (!_selectedCodes.contains(code) &&
-            _exclusionSentences[code] != null)
+        if (!_selectedCodes.contains(code) && _exclusionSentences[code] != null)
           _exclusionSentences[code]!,
-    ].toSet().toList();
+    }.toList();
     final role = data.roles.where((r) => r.key == _roleKey).firstOrNull;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -781,8 +789,7 @@ class _UserWizardScreenState extends ConsumerState<UserWizardScreen> {
                 const Icon(Icons.check, size: 18, color: AppColors.success),
                 const SizedBox(width: 8),
                 Expanded(
-                    child:
-                        Text(p.labelUrdu, style: AppTypography.bodyMedium)),
+                    child: Text(p.labelUrdu, style: AppTypography.bodyMedium)),
               ],
             ),
           ),
@@ -817,8 +824,8 @@ class _UserWizardScreenState extends ConsumerState<UserWizardScreen> {
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(_savingError!,
-                style: AppTypography.bodyMedium
-                    .copyWith(color: AppColors.error)),
+                style:
+                    AppTypography.bodyMedium.copyWith(color: AppColors.error)),
           ),
         ],
       ],
@@ -868,8 +875,8 @@ class _UserWizardScreenState extends ConsumerState<UserWizardScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 32, vertical: 14),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12)),
               ),
@@ -915,8 +922,7 @@ class _UserWizardScreenState extends ConsumerState<UserWizardScreen> {
     );
     // Only scoped codes (attendance/results) get scope rows; other grants
     // are enforced without a data dimension.
-    final scopeCodes =
-        _selectedCodes.intersection(ScopeSelection.scopedCodes);
+    final scopeCodes = _selectedCodes.intersection(ScopeSelection.scopedCodes);
     String? error;
     if (widget.isEdit) {
       final roles = await ref.read(tenantRolesUxProvider.future);

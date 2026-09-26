@@ -402,11 +402,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         suffixIcon: IconButton(
           tooltip: _obscurePassword ? 'پاس ورڈ دکھائیں' : 'پاس ورڈ چھپائیں',
           icon: Icon(
-            _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+            _obscurePassword
+                ? Icons.visibility_outlined
+                : Icons.visibility_off_outlined,
             color: AppColors.textSecondary,
           ),
-          onPressed: () =>
-              setState(() => _obscurePassword = !_obscurePassword),
+          onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
         ),
         filled: true,
         fillColor: AppColors.background,

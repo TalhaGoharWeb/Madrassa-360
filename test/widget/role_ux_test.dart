@@ -33,7 +33,7 @@ class StubRoleUxRepository implements RoleUxRepository {
     required this.catalog,
     this.classes = const [],
     this.safety,
-  );
+  });
 
   List<TenantUser> users;
   List<TenantRoleInfo> roles;
@@ -63,10 +63,13 @@ class StubRoleUxRepository implements RoleUxRepository {
   Future<List<PermissionInfo>> permissionCatalog() async => catalog;
 
   @override
-  Future<Map<String, int>> roleMemberCounts(String tenantId) async => {
-        for (final u in users)
-          if (u.isActive) u.roleKey: users.where((x) => x.isActive && x.roleKey == u.roleKey).length,
-      };
+  Future<Map<String, int>> roleMemberCounts(String tenantId) async {
+    final counts = <String, int>{};
+    for (final u in users) {
+      if (u.isActive) counts[u.roleKey] = (counts[u.roleKey] ?? 0) + 1;
+    }
+    return counts;
+  }
 
   @override
   Future<String> createAuthUser({
@@ -164,7 +167,8 @@ class StubRoleUxRepository implements RoleUxRepository {
   Future<List<ClassRef>> listClasses(String tenantId) async => classes;
 
   @override
-  Future<List<StudentRef>> searchStudents(String tenantId, String query) async =>
+  Future<List<StudentRef>> searchStudents(
+          String tenantId, String query) async =>
       const [];
 
   @override
@@ -324,8 +328,8 @@ void main() {
 
   group('roleUxErrorMessage', () {
     test('permission denied (RLS/42501) is mapped, jargon hidden', () {
-      final msg = roleUxErrorMessage(Exception(
-          'permission denied for table user_permissions (PG 42501)'));
+      final msg = roleUxErrorMessage(
+          Exception('permission denied for table user_permissions (PG 42501)'));
       expect(msg, 'آپ کے پاس اس عمل کی اجازت نہیں ہے۔');
     });
 
@@ -343,8 +347,8 @@ void main() {
     });
 
     test('network failure is explained plainly', () {
-      final msg = roleUxErrorMessage(
-          Exception('SocketException: Failed host lookup'));
+      final msg =
+          roleUxErrorMessage(Exception('SocketException: Failed host lookup'));
       expect(msg, contains('انٹرنیٹ سے رابطہ نہیں ہو سکا'));
     });
 
@@ -411,8 +415,7 @@ void main() {
   // ── widget: user list / search / status ─────────────────────
 
   group('user hub', () {
-    testWidgets('lists users with Urdu role and active badges',
-        (tester) async {
+    testWidgets('lists users with Urdu role and active badges', (tester) async {
       final repo = StubRoleUxRepository(
         users: _users(),
         roles: _roles(),
@@ -480,7 +483,8 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('صارفین غیر فعال کریں'), findsOneWidget);
 
-      await tester.tap(find.widgetWithText(ElevatedButton, 'جی ہاں، جاری رکھیں'));
+      await tester
+          .tap(find.widgetWithText(ElevatedButton, 'جی ہاں، جاری رکھیں'));
       await tester.pumpAndSettle();
       expect(repo.calls, contains('setActive:u-ahmad:false'));
       expect(find.text('عمل مکمل ہو گیا'), findsOneWidget);
@@ -514,7 +518,8 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('غیر فعال کریں'));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(ElevatedButton, 'جی ہاں، جاری رکھیں'));
+      await tester
+          .tap(find.widgetWithText(ElevatedButton, 'جی ہاں، جاری رکھیں'));
       await tester.pumpAndSettle();
 
       // refused before any write
@@ -554,8 +559,8 @@ void main() {
       expect(find.text('حاضری درج کر سکتا ہے'), findsOneWidget);
       expect(find.text('فیس دیکھ سکتا ہے'), findsOneWidget);
       expect(
-          find.byWidgetPredicate((w) =>
-              w is Icon && w.icon == Icons.check_circle_outline),
+          find.byWidgetPredicate(
+              (w) => w is Icon && w.icon == Icons.check_circle_outline),
           findsWidgets);
       expect(
           find.byWidgetPredicate(
@@ -620,8 +625,7 @@ void main() {
       await next(tester);
 
       // step 2: role — teacher-like default pre-selected
-      expect(
-          find.text('یہ صاحب کیا ذمہ داری سنبھالیں گے؟'), findsOneWidget);
+      expect(find.text('یہ صاحب کیا ذمہ داری سنبھالیں گے؟'), findsOneWidget);
       expect(find.text('استاد'), findsOneWidget);
       await next(tester);
 
@@ -635,8 +639,7 @@ void main() {
       await next(tester);
 
       // step 4: scope — teacher-like default is classes
-      expect(find.text('یہ اختیارات کن لوگوں پر لاگو ہوں گے؟'),
-          findsOneWidget);
+      expect(find.text('یہ اختیارات کن لوگوں پر لاگو ہوں گے؟'), findsOneWidget);
       expect(find.text('صرف میری مقرر کردہ جماعتیں'), findsOneWidget);
       expect(find.text('جماعت اول'), findsOneWidget);
       await tester.tap(find.text('جماعت اول'));
@@ -644,22 +647,19 @@ void main() {
       await next(tester);
 
       // step 5: summary — grants + honest exclusions
-      expect(find.text('اس صارف کو یہ اختیارات حاصل ہوں گے:'),
-          findsOneWidget);
+      expect(find.text('اس صارف کو یہ اختیارات حاصل ہوں گے:'), findsOneWidget);
       expect(find.text('حاضری درج کر سکتا ہے'), findsOneWidget);
-      expect(find.textContaining('مالی لین دین تک رسائی نہیں'),
-          findsOneWidget);
+      expect(find.textContaining('مالی لین دین تک رسائی نہیں'), findsOneWidget);
 
       // save runs the real write sequence
       await tester.tap(find.widgetWithText(ElevatedButton, 'محفوظ کریں'));
       await tester.pumpAndSettle();
-      expect(repo.calls.any((c) => c.startsWith('createAuthUser:')),
-          isTrue);
-      expect(
-          repo.calls, contains('assignRole:new-user-id:ustad'));
+      expect(repo.calls.any((c) => c.startsWith('createAuthUser:')), isTrue);
+      expect(repo.calls, contains('assignRole:new-user-id:ustad'));
       expect(repo.calls, contains('syncUserPermissions:new-user-id'));
       expect(
-          repo.calls.any((c) => c.startsWith('writeScopes:new-user-id:classes')),
+          repo.calls
+              .any((c) => c.startsWith('writeScopes:new-user-id:classes')),
           isTrue);
     });
   });

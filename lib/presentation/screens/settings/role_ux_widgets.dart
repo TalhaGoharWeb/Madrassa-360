@@ -76,8 +76,7 @@ class UxSectionTitle extends StatelessWidget {
         ],
         Text(
           text,
-          style:
-              AppTypography.titleSmall.copyWith(color: AppColors.primary),
+          style: AppTypography.titleSmall.copyWith(color: AppColors.primary),
         ),
       ],
     );
@@ -131,8 +130,7 @@ class UxEmptyState extends StatelessWidget {
 }
 
 /// Plain-Urdu snackbar.
-void showUxSnack(BuildContext context, String message,
-    {bool isError = false}) {
+void showUxSnack(BuildContext context, String message, {bool isError = false}) {
   ScaffoldMessenger.of(context)
     ..hideCurrentSnackBar()
     ..showSnackBar(
@@ -140,8 +138,7 @@ void showUxSnack(BuildContext context, String message,
         content: Text(message, style: const TextStyle(color: Colors.white)),
         backgroundColor: isError ? AppColors.error : AppColors.success,
         behavior: SnackBarBehavior.floating,
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
 }
@@ -181,8 +178,8 @@ Future<bool> confirmUxAction(
             backgroundColor:
                 isDestructive ? AppColors.error : AppColors.primary,
             foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
           onPressed: () => Navigator.pop(ctx, true),
           child: Text(confirmLabel),

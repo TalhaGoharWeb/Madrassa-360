@@ -24,9 +24,8 @@ final roleUxRepositoryProvider = Provider<RoleUxRepository>((ref) {
 });
 
 /// Users of the active tenant, filtered by [search] (name / role).
-final tenantUsersProvider =
-    FutureProvider.autoDispose.family<List<TenantUser>, String>(
-        (ref, search) async {
+final tenantUsersProvider = FutureProvider.autoDispose
+    .family<List<TenantUser>, String>((ref, search) async {
   final tenantId = ref.watch(currentTenantIdProvider);
   if (tenantId == null) return const [];
   return ref
@@ -113,8 +112,9 @@ class RoleUxController extends StateNotifier<AsyncValue<void>> {
     if (disabling && check.isLastOwner) {
       return 'یہ مدرسے کا واحد مالک ہے — پہلے کسی اور کو مالک بنائیں، پھر غیر فعال کریں۔';
     }
-    final demotingOwner =
-        !disabling && user.roleKey == 'tenant_owner' && newRoleKey != 'tenant_owner';
+    final demotingOwner = !disabling &&
+        user.roleKey == 'tenant_owner' &&
+        newRoleKey != 'tenant_owner';
     if (demotingOwner && check.isLastOwner) {
       return 'یہ مدرسے کا واحد مالک ہے — پہلے کسی اور کو مالک بنائیں، پھر ذمہ داری تبدیل کریں۔';
     }
@@ -214,8 +214,8 @@ class RoleUxController extends StateNotifier<AsyncValue<void>> {
         selection: scope,
       );
     } catch (e) {
-      AppLogger().warning('[RoleUx] post-create setup failed, rolling back',
-          error: e);
+      AppLogger()
+          .warning('[RoleUx] post-create setup failed, rolling back', error: e);
       try {
         await _repo.deleteAuthUser(userId);
       } catch (rb) {
