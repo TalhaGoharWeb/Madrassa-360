@@ -101,7 +101,20 @@ CREATE TRIGGER tenants_fill_slug
   BEFORE INSERT ON public.tenants
   FOR EACH ROW EXECUTE FUNCTION public.trg_tenants_fill_slug();
 
--- updated_at maintenance (public.set_updated_at exists in 01_schema.sql:45)
+-- updated_at maintenance. (The old 01_schema.sql:45 this comment once pointed
+-- at is not part of this migration set, so the function is defined here —
+-- idempotent, safe to re-run.)
+CREATE OR REPLACE FUNCTION public.set_updated_at()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SET search_path = public
+AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$;
+
 DROP TRIGGER IF EXISTS tenants_set_updated_at ON public.tenants;
 CREATE TRIGGER tenants_set_updated_at
   BEFORE UPDATE ON public.tenants
