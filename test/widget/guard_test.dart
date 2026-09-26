@@ -19,8 +19,7 @@ import 'package:madrasa_360/core/widgets/role_guard.dart';
 import 'package:madrasa_360/core/widgets/scope_guard.dart';
 import 'package:madrasa_360/providers/auth_provider.dart';
 
-Widget _harness(ProviderContainer c, Widget child) =>
-    UncontrolledProviderScope(
+Widget _harness(ProviderContainer c, Widget child) => UncontrolledProviderScope(
       container: c,
       child: MaterialApp(home: Scaffold(body: child)),
     );
@@ -29,8 +28,7 @@ void main() {
   group('PermissionGuard', () {
     testWidgets('shows the child when the permission is held', (tester) async {
       final c = ProviderContainer(overrides: [
-        userPermissionsProvider
-            .overrideWithValue({AppPermissions.collectFees}),
+        userPermissionsProvider.overrideWithValue({AppPermissions.collectFees}),
       ]);
       addTearDown(c.dispose);
 
@@ -100,8 +98,7 @@ void main() {
       return c;
     }
 
-    testWidgets('shows the child when a required role is held',
-        (tester) async {
+    testWidgets('shows the child when a required role is held', (tester) async {
       final c = await adminContainer();
       addTearDown(c.dispose);
 

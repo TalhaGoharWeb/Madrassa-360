@@ -79,8 +79,7 @@ void main() {
     });
 
     test('department -> صرف میرے شعبے کے افراد', () {
-      expect(
-          _row(scopeType: 'department').descriptionUrdu,
+      expect(_row(scopeType: 'department').descriptionUrdu,
           'صرف میرے شعبے کے افراد');
     });
 

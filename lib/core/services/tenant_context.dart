@@ -110,7 +110,13 @@ class TenantContext extends StateNotifier<String?> {
     state = id;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(prefsKey, id);
-    await _ref.read(authProvider.notifier).refreshPermissions();
+    // The reload needs the auth subsystem: in the running app authProvider
+    // is always alive (AuthGate watches it), but in unit tests the
+    // AuthNotifier cannot be constructed without Supabase — and with no
+    // signed-in user there is nothing to reload for anyway.
+    if (_ref.exists(authProvider)) {
+      await _ref.read(authProvider.notifier).refreshPermissions();
+    }
   }
 
   /// Re-fetch memberships and re-resolve the active tenant

@@ -196,8 +196,8 @@ class ScopeService {
     } catch (e) {
       // Fail open for DISPLAY (mirrors scope_allows' no-row default);
       // writes/reads stay enforced by RLS either way.
-      AppLogger().warning('[Scopes] failed to load permission_scopes',
-          error: e);
+      AppLogger()
+          .warning('[Scopes] failed to load permission_scopes', error: e);
       return const {};
     }
     _tenantId = tenantId;
@@ -220,8 +220,8 @@ class ScopeService {
             '${r['class_id']}',
       };
     } catch (e) {
-      AppLogger().warning('[Scopes] failed to resolve student classes',
-          error: e);
+      AppLogger()
+          .warning('[Scopes] failed to resolve student classes', error: e);
       return <String>{};
     }
   }
@@ -238,13 +238,14 @@ class ScopeService {
         for (final r in (rows as List)) '${(r as Map<String, dynamic>)['id']}',
       };
     } catch (e) {
-      AppLogger().warning('[Scopes] failed to resolve class students',
-          error: e);
+      AppLogger()
+          .warning('[Scopes] failed to resolve class students', error: e);
       return <String>{};
     }
   }
 
-  Future<bool> _anyStudentInClass(Set<String> studentIds, String classId) async {
+  Future<bool> _anyStudentInClass(
+      Set<String> studentIds, String classId) async {
     if (studentIds.isEmpty || _tenantId == null) return false;
     try {
       final rows = await SupabaseService.client

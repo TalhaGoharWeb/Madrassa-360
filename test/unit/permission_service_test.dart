@@ -33,11 +33,9 @@ void main() {
 
     test('hasAll requires every permission', () {
       expect(
-          PermissionService.hasAll(
-              perms, ['students.view', 'attendance.mark']),
+          PermissionService.hasAll(perms, ['students.view', 'attendance.mark']),
           isTrue);
-      expect(
-          PermissionService.hasAll(perms, ['students.view', 'fees.collect']),
+      expect(PermissionService.hasAll(perms, ['students.view', 'fees.collect']),
           isFalse);
       expect(PermissionService.hasAll(perms, []), isTrue);
     });
@@ -86,8 +84,8 @@ void main() {
     test('66 dotted codes + 56 legacy codes = 122 unique codes', () {
       expect(AppPermissions.allDottedCodes, hasLength(66));
       expect(AppPermissions.allCodes, hasLength(122));
-      expect(AppPermissions.allCodes,
-          containsAll(AppPermissions.allDottedCodes));
+      expect(
+          AppPermissions.allCodes, containsAll(AppPermissions.allDottedCodes));
     });
 
     test('constants carry the canonical dotted values', () {
@@ -158,8 +156,8 @@ void main() {
 
     test('parent sees announcements only (read-only external role)', () {
       final p = AppPermissions.fallbackFor('parent');
-      expect(PermissionService.has(p, AppPermissions.viewAnnouncements),
-          isTrue);
+      expect(
+          PermissionService.has(p, AppPermissions.viewAnnouncements), isTrue);
       expect(PermissionService.has(p, AppPermissions.markAttendance), isFalse);
       expect(PermissionService.has(p, AppPermissions.createStudents), isFalse);
       expect(PermissionService.has(p, AppPermissions.collectFees), isFalse);

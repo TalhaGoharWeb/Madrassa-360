@@ -115,12 +115,12 @@ void main() {
       final c = makeContainer();
       addTearDown(c.dispose);
       // Supabase is not initialized in unit tests -> static fallback path.
-      expect(await c.read(roleServiceProvider).roleUrduLabel('teacher'),
-          'استاد');
+      expect(
+          await c.read(roleServiceProvider).roleUrduLabel('teacher'), 'استاد');
       expect(await c.read(roleServiceProvider).roleUrduLabel('tenant_owner'),
           'مالک');
-      expect(await c.read(roleServiceProvider).roleUrduLabel('mohtamim'),
-          'مہتمم');
+      expect(
+          await c.read(roleServiceProvider).roleUrduLabel('mohtamim'), 'مہتمم');
     });
   });
 }

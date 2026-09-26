@@ -135,34 +135,49 @@ abstract class AppPermissions {
   // returns is unrepresentable client-side.
   /// No dotted twin: exam management in this app's UI (create/update/delete/publish).
   static const String manageExams = 'manage_exams';
+
   /// No fees.update in the catalog: 007 RLS gates every fee mutation on fees.collect.
   static const String updateFees = 'fees.collect';
+
   /// No fees.delete in the catalog: 007 RLS lets fees.collect double as update+delete.
   static const String deleteFees = 'fees.collect';
+
   /// No results.delete in the catalog: 007 RLS lets results.edit double as delete.
   static const String deleteResults = 'results.edit';
+
   /// The server's user-removal code is users.deactivate (see 007 profiles policies).
   static const String deleteUsers = 'users.deactivate';
+
   /// Legacy catalog code; the closest dotted codes are roles.view / roles.assign.
   static const String manageRoles = 'manage_roles';
+
   /// Legacy catalog code with no dotted twin.
   static const String managePermissions = 'manage_permissions';
+
   /// Admissions has no dotted codes in the catalog.
   static const String viewAdmissions = 'view_admissions';
+
   /// Admissions has no dotted codes in the catalog.
   static const String createAdmissions = 'create_admissions';
+
   /// Admissions has no dotted codes in the catalog.
   static const String editAdmissions = 'edit_admissions';
+
   /// Admissions has no dotted codes in the catalog.
   static const String deleteAdmissions = 'delete_admissions';
+
   /// Legacy twin of notifications.send.
   static const String createAnnouncements = 'create_announcements';
+
   /// Legacy catalog code with no dotted twin.
   static const String editAnnouncements = 'edit_announcements';
+
   /// Legacy catalog code with no dotted twin.
   static const String deleteAnnouncements = 'delete_announcements';
+
   /// Legacy catalog code with no dotted twin.
   static const String assignMadrasaAdmin = 'assign_madrasa_admin';
+
   /// Legacy platform-level code.
   static const String systemFullAccess = 'system_full_access';
 
@@ -289,7 +304,6 @@ abstract class AppPermissions {
   static final Set<String> allCodes = {
     ...allDottedCodes,
     'manage_exams',
-    'fees.collect',
     'fees.collect',
     'results.edit',
     'users.deactivate',

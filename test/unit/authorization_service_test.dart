@@ -21,7 +21,8 @@ void main() {
   ProviderContainer makeContainer() => ProviderContainer();
 
   group('AuthorizationService cache semantics (offline fallback)', () {
-    test('ensureLoaded resolves the role fallback set for the tenant', () async {
+    test('ensureLoaded resolves the role fallback set for the tenant',
+        () async {
       final c = makeContainer();
       addTearDown(c.dispose);
       final svc = c.read(authorizationServiceProvider);

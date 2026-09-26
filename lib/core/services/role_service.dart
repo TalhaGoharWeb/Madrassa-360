@@ -83,8 +83,8 @@ class RoleService {
 
   /// True for `tenant_owner` / `tenant_admin` in the active tenant.
   /// Same caveat as [isTenantOwner].
-  bool isTenantAdmin() => activeRoleKeys()
-      .any((k) => k == 'tenant_owner' || k == 'tenant_admin');
+  bool isTenantAdmin() =>
+      activeRoleKeys().any((k) => k == 'tenant_owner' || k == 'tenant_admin');
 
   // ── Urdu role labels ───────────────────────────────────────────────────────
 
