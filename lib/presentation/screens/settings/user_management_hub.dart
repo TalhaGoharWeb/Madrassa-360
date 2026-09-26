@@ -110,10 +110,6 @@ class _UserManagementHubScreenState
   }
 }
 
-final _canManageUsersProvider = FutureProvider<bool>((ref) async {
-  return RoleService.canManageUsers();
-});
-
 // ─────────────────────────────────────────────────────────────
 // Users tab
 // ─────────────────────────────────────────────────────────────
