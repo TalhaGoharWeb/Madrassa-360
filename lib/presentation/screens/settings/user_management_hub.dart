@@ -421,7 +421,8 @@ class _UsersTabState extends ConsumerState<_UsersTab> {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Roles tab — read-only preview (full editor is 8b)
+// Roles tab — real working list + read-only permission preview.
+// (The permission editor ships in Phase 8b.)
 // ─────────────────────────────────────────────────────────────
 
 class _RolesTab extends ConsumerWidget {
@@ -431,162 +432,50 @@ class _RolesTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final rolesAsync = ref.watch(tenantRolesUxProvider);
     final catalogAsync = ref.watch(permissionCatalogProvider);
-    return Column(
-      children: [
-        Container(
-          margin: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Row(
-            children: [
-              const Icon(Icons.info_outline, color: AppColors.primary),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'ہر ذمہ داری کے اختیارات یہیں دیکھیں — اختیارات کا مکمل ایڈیٹر جلد آ رہا ہے۔',
-                  style: AppTypography.bodySmall
-                      .copyWith(color: AppColors.textSecondary),
-                ),
-              ),
-            ],
-          ),
-        ),
-        Expanded(
-          child: rolesAsync.when(
-            loading: () =>
-                const Center(child: CircularProgressIndicator()),
-            error: (e, _) => UxEmptyState(
-              icon: Icons.error_outline,
-              title: roleUxErrorMessage(e),
+    final countsAsync = ref.watch(roleMemberCountsProvider);
+    return rolesAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => UxEmptyState(
+        icon: Icons.error_outline,
+        title: roleUxErrorMessage(e),
+      ),
+      data: (roles) {
+        if (roles.isEmpty) {
+          return const UxEmptyState(
+            icon: Icons.badge_outlined,
+            title: 'ابھی کوئی ذمہ داری درج نہیں',
+          );
+        }
+        final counts = countsAsync.valueOrNull ?? const {};
+        return RefreshIndicator(
+          onRefresh: () async {
+            ref.invalidate(tenantRolesUxProvider);
+            ref.invalidate(roleMemberCountsProvider);
+          },
+          child: ListView.separated(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+            itemCount: roles.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 8),
+            itemBuilder: (context, i) => _roleCard(
+              context,
+              roles[i],
+              catalogAsync,
+              counts[roles[i].key] ?? 0,
             ),
-            data: (roles) {
-              if (roles.isEmpty) {
-                return const UxEmptyState(
-                  icon: Icons.badge_outlined,
-                  title: 'ابھی کوئی ذمہ داری درج نہیں',
-                );
-              }
-              return RefreshIndicator(
-                onRefresh: () async {
-                  ref.invalidate(tenantRolesUxProvider);
-                },
-                child: ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-                  itemCount: roles.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 8),
-                  itemBuilder: (context, i) =>
-                      _roleCard(context, ref, roles[i], catalogAsync),
-                ),
-              );
-            },
           ),
-        ),
-      ],
+        );
+      },
     );
   }
 
   Widget _roleCard(
     BuildContext context,
-    WidgetRef ref,
     TenantRoleInfo role,
     AsyncValue<List<PermissionInfo>> catalogAsync,
+    int memberCount,
   ) {
-    final catalog = catalogAsync.valueOrNull ?? const [];
-    final labels = [
-      for (final p in catalog)
-        if (role.permissionCodes.contains(p.code)) p,
-    ];
-    final grouped = <String, List<PermissionInfo>>{};
-    for (final p in labels) {
-      grouped.putIfAbsent(p.categoryUrdu, () => []).add(p);
-    }
     return UxCard(
-      onTap: () => showModalBottomSheet(
-        context: context,
-        isScrollControlled: true,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        builder: (ctx) => DraggableScrollableSheet(
-          expand: false,
-          initialChildSize: 0.7,
-          minChildSize: 0.4,
-          maxChildSize: 0.95,
-          builder: (ctx, scroll) => SafeArea(
-            child: ListView(
-              controller: scroll,
-              padding: const EdgeInsets.all(16),
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: AppColors.divider,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(role.displayUrdu,
-                    style: AppTypography.titleLarge
-                        .copyWith(color: AppColors.primary)),
-                if (role.description != null &&
-                    role.description!.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(role.description!,
-                      style: AppTypography.bodySmall
-                          .copyWith(color: AppColors.textSecondary)),
-                ],
-                const SizedBox(height: 12),
-                UxSectionTitle('اختیارات (${role.permissionCodes.length})',
-                    icon: Icons.key_outlined),
-                const SizedBox(height: 8),
-                if (grouped.isEmpty)
-                  const Text('اس ذمہ داری کے لیے ابھی کوئی اختیار درج نہیں۔'),
-                for (final entry in grouped.entries) ...[
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8, bottom: 4),
-                    child: Text(entry.key,
-                        style: AppTypography.labelSmall.copyWith(
-                            color: AppColors.textSecondary,
-                            fontWeight: FontWeight.bold)),
-                  ),
-                  for (final p in entry.value)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 2),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.check_circle_outline,
-                              size: 18, color: AppColors.success),
-                          const SizedBox(width: 8),
-                          Expanded(
-                              child: Text(p.labelUrdu,
-                                  style: AppTypography.bodyMedium)),
-                        ],
-                      ),
-                    ),
-                ],
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Text(
-                    'اختیارات کی ترمیم جلد آ رہی ہے — فی الحال ذمہ داری سونپنے پر یہی اختیارات لاگو ہوں گے۔',
-                    style: TextStyle(fontSize: 12),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
+      onTap: () => _showRolePreview(context, role, catalogAsync),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -596,19 +485,9 @@ class _RolesTab extends ConsumerWidget {
                 child: Text(role.displayUrdu,
                     style: AppTypography.titleSmall),
               ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  '${role.permissionCodes.length} اختیارات',
-                  style: AppTypography.labelSmall
-                      .copyWith(color: AppColors.primary),
-                ),
-              ),
+              _chip('${role.permissionCodes.length} اختیارات'),
+              const SizedBox(width: 6),
+              _chip('$memberCount ارکان'),
             ],
           ),
           if (role.description != null && role.description!.isNotEmpty) ...[
@@ -622,6 +501,138 @@ class _RolesTab extends ConsumerWidget {
             ),
           ],
         ],
+      ),
+    );
+  }
+
+  Widget _chip(String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        label,
+        style:
+            AppTypography.labelSmall.copyWith(color: AppColors.primary),
+      ),
+    );
+  }
+
+  /// Full permission preview: every catalog permission with ✓ granted /
+  /// ✗ not granted, grouped by category. Read-only.
+  void _showRolePreview(
+    BuildContext context,
+    TenantRoleInfo role,
+    AsyncValue<List<PermissionInfo>> catalogAsync,
+  ) {
+    final catalog = catalogAsync.valueOrNull ?? const [];
+    final grouped = <String, List<PermissionInfo>>{};
+    for (final p in catalog) {
+      grouped.putIfAbsent(p.categoryUrdu, () => []).add(p);
+    }
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.7,
+        minChildSize: 0.4,
+        maxChildSize: 0.95,
+        builder: (ctx, scroll) => SafeArea(
+          child: ListView(
+            controller: scroll,
+            padding: const EdgeInsets.all(16),
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.divider,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(role.displayUrdu,
+                  style: AppTypography.titleLarge
+                      .copyWith(color: AppColors.primary)),
+              if (role.description != null &&
+                  role.description!.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(role.description!,
+                    style: AppTypography.bodySmall
+                        .copyWith(color: AppColors.textSecondary)),
+              ],
+              const SizedBox(height: 12),
+              UxSectionTitle(
+                  'اختیارات کا جائزہ (${role.permissionCodes.length}/${catalog.length})',
+                  icon: Icons.key_outlined),
+              const SizedBox(height: 4),
+              Text(
+                '✓ حاصل ہے — ✗ حاصل نہیں ہے',
+                style: AppTypography.bodySmall
+                    .copyWith(color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 8),
+              if (grouped.isEmpty)
+                const Text('اختیارات کی فہرست لوڈ نہیں ہو سکی۔'),
+              for (final entry in grouped.entries) ...[
+                Padding(
+                  padding: const EdgeInsets.only(top: 8, bottom: 4),
+                  child: Text(entry.key,
+                      style: AppTypography.labelSmall.copyWith(
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.bold)),
+                ),
+                for (final p in entry.value)
+                  Builder(builder: (context) {
+                    final granted =
+                        role.permissionCodes.contains(p.code);
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 3),
+                      child: Row(
+                        children: [
+                          Icon(
+                            granted
+                                ? Icons.check_circle_outline
+                                : Icons.cancel_outlined,
+                            size: 18,
+                            color: granted
+                                ? AppColors.success
+                                : AppColors.textSecondary
+                                    .withValues(alpha: 0.5),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              p.labelUrdu,
+                              style: AppTypography.bodyMedium.copyWith(
+                                color: granted
+                                    ? AppColors.textPrimary
+                                    : AppColors.textSecondary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+              ],
+              const SizedBox(height: 16),
+              Text(
+                'اختیارات کی ترمیم اگلے مرحلے میں شامل کی جائے گی۔',
+                style: AppTypography.bodySmall
+                    .copyWith(color: AppColors.textSecondary),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

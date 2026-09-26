@@ -312,16 +312,14 @@ class _UserWizardScreenState extends ConsumerState<UserWizardScreen> {
                 child: done
                     ? const Icon(Icons.check, size: 16, color: Colors.white)
                     : Text('${n + 1}',
-                        style: const TextStyle(
+                        style: AppTypography.labelSmall.copyWith(
                             color: Colors.white,
-                            fontSize: 12,
                             fontWeight: FontWeight.bold)),
               ),
               const SizedBox(height: 2),
               Text(
                 _stepTitles[n],
-                style: TextStyle(
-                    fontSize: 9,
+                style: AppTypography.labelSmall.copyWith(
                     color: current
                         ? AppColors.primary
                         : AppColors.textSecondary,
@@ -366,9 +364,9 @@ class _UserWizardScreenState extends ConsumerState<UserWizardScreen> {
                   style: AppTypography.bodySmall
                       .copyWith(color: AppColors.textSecondary)),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'نام، ای میل اور پاس ورڈ یہاں تبدیل نہیں ہوتے — صرف ذمہ داری، اختیارات اور دائرۂ کار تبدیل ہوں گے۔',
-              style: TextStyle(fontSize: 12),
+              style: AppTypography.bodySmall,
             ),
           ],
         ),

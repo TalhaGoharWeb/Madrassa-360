@@ -168,11 +168,15 @@ class AuditRow {
     required this.action,
     this.entity,
     required this.createdAt,
+    this.actorUserId,
   });
 
   final String action;
   final String? entity;
   final DateTime createdAt;
+
+  /// auth.users id of the actor; null when unknown.
+  final String? actorUserId;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -183,6 +187,9 @@ abstract class RoleUxRepository {
   Future<List<TenantUser>> listUsers(String tenantId, {String? search});
   Future<List<TenantRoleInfo>> listRoles(String tenantId);
   Future<List<PermissionInfo>> permissionCatalog();
+
+  /// Active member count per role key (from tenant_memberships).
+  Future<Map<String, int>> roleMemberCounts(String tenantId);
 
   /// Creates the Supabase Auth user only (no membership). Returns the id.
   Future<String> createAuthUser({
@@ -410,6 +417,29 @@ class SupabaseRoleUxRepository implements RoleUxRepository {
       'student': 'طالب علم',
     };
     return map[key] ?? key;
+  }
+
+  @override
+  Future<Map<String, int>> roleMemberCounts(String tenantId) async {
+    try {
+      final rows = await _client
+          .from('tenant_memberships')
+          .select('role')
+          .eq('tenant_id', tenantId)
+          .eq('is_active', true);
+      final counts = <String, int>{};
+      for (final row in (rows as List)) {
+        final role = (row as Map<String, dynamic>)['role'] as String?;
+        if (role != null && role.isNotEmpty) {
+          counts[role] = (counts[role] ?? 0) + 1;
+        }
+      }
+      return counts;
+    } catch (_) {
+      // RLS may hide memberships from non-admin callers — the UI then
+      // shows counts only where readable (honest, never fabricated).
+      return const {};
+    }
   }
 
   @override
@@ -702,23 +732,46 @@ class SupabaseRoleUxRepository implements RoleUxRepository {
     required String userId,
   }) async {
     try {
-      final rows = await _client
-          .from('audit_logs')
-          .select('action, entity, created_at')
-          .eq('tenant_id', tenantId)
-          .eq('user_id', userId)
-          .order('created_at', ascending: false)
-          .limit(20);
-      return (rows as List).map((r) {
-        final m = r as Map<String, dynamic>;
-        return AuditRow(
-          action: (m['action'] as String?) ?? '',
-          entity: m['entity'] as String?,
-          createdAt: _parseTime(m['created_at']) ?? DateTime.now(),
-        );
-      }).toList();
+      // Both directions: actions the user performed (actor) and actions
+      // performed on the user (target) — e.g. account created, role
+      // changed, deactivated.
+      final results = await Future.wait([
+        _client
+            .from('audit_logs')
+            .select('action, entity, created_at, user_id')
+            .eq('tenant_id', tenantId)
+            .eq('user_id', userId)
+            .order('created_at', ascending: false)
+            .limit(20),
+        _client
+            .from('audit_logs')
+            .select('action, entity, created_at, user_id')
+            .eq('tenant_id', tenantId)
+            .eq('entity_id', userId)
+            .inFilter('entity', const ['auth_user', 'tenant_membership', 'user'])
+            .order('created_at', ascending: false)
+            .limit(20),
+      ]);
+      final seen = <String>{};
+      final rows = <AuditRow>[];
+      for (final result in results) {
+        for (final r in (result as List)) {
+          final m = r as Map<String, dynamic>;
+          final key =
+              '${m['action']}|${m['entity']}|${m['created_at']}|${m['user_id']}';
+          if (!seen.add(key)) continue;
+          rows.add(AuditRow(
+            action: (m['action'] as String?) ?? '',
+            entity: m['entity'] as String?,
+            createdAt: _parseTime(m['created_at']) ?? DateTime.now(),
+            actorUserId: m['user_id'] as String?,
+          ));
+        }
+      }
+      rows.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return rows.take(20).toList();
     } catch (_) {
-      // audit.view may not be granted to this caller — honest empty state.
+      // audit_logs RLS may hide rows from this caller — honest empty state.
       return const [];
     }
   }

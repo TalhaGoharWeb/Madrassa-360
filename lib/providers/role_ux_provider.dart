@@ -48,10 +48,19 @@ final permissionCatalogProvider =
   return ref.read(roleUxRepositoryProvider).permissionCatalog();
 });
 
+/// Active member count per role key (for the roles tab).
+final roleMemberCountsProvider =
+    FutureProvider.autoDispose<Map<String, int>>((ref) async {
+  final tenantId = ref.watch(currentTenantIdProvider);
+  if (tenantId == null) return const {};
+  return ref.read(roleUxRepositoryProvider).roleMemberCounts(tenantId);
+});
+
 /// Invalidate every 8a list (call after any write).
 void invalidateRoleUxLists(Ref ref) {
   ref.invalidate(tenantUsersProvider);
   ref.invalidate(tenantRolesUxProvider);
+  ref.invalidate(roleMemberCountsProvider);
 }
 
 // ─────────────────────────────────────────────────────────────

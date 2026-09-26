@@ -324,7 +324,7 @@ class _UserDetailScreenState extends ConsumerState<UserDetailScreen> {
               return const UxCard(
                 child: UxEmptyState(
                   icon: Icons.history_outlined,
-                  title: 'ابھی کوئی سرگرمی درج نہیں',
+                  title: 'ابھی کوئی سرگرمی ریکارڈ نہیں',
                   hint:
                       'اس صارف کی سرگرمی یہاں نظر آئے گی جب وہ کام شروع کرے گا۔',
                 ),
@@ -351,7 +351,7 @@ class _UserDetailScreenState extends ConsumerState<UserDetailScreen> {
                                   CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  _auditUrdu(r),
+                                  _auditUrdu(r, _user.id),
                                   style: AppTypography.bodyMedium,
                                 ),
                                 Text(
@@ -409,8 +409,22 @@ class _UserDetailScreenState extends ConsumerState<UserDetailScreen> {
   }
 
   /// audit_logs rows -> plain Urdu (action codes stay server-side only).
-  static String _auditUrdu(AuditRow r) {
+  /// [viewerId] is the user whose detail screen this is: rows acted upon
+  /// by someone else are phrased passively ("کا اکاؤنٹ بنایا گیا").
+  String _auditUrdu(AuditRow r, String viewerId) {
     final a = r.action.toLowerCase();
+    final byOther = r.actorUserId != null && r.actorUserId != viewerId;
+    if (byOther) {
+      if (a.contains('create_user')) return 'ان کا اکاؤنٹ بنایا گیا';
+      if (a.contains('assign') || a.contains('role')) {
+        return 'ان کی ذمہ داری تبدیل کی گئی';
+      }
+      if (a.contains('set_active') || a.contains('deactivat')) {
+        return 'ان کے اکاؤنٹ کی حیثیت تبدیل کی گئی';
+      }
+      if (a.contains('delete')) return 'ان کا اکاؤنٹ حذف کیا گیا';
+      return 'ان کے اکاؤنٹ پر عمل کیا گیا';
+    }
     if (a.contains('login')) return 'لاگ اِن کیا';
     if (a.contains('logout')) return 'لاگ آؤٹ کیا';
     if (a.contains('create')) return 'نیا ریکارڈ بنایا';

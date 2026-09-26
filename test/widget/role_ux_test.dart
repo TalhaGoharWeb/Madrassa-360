@@ -33,7 +33,7 @@ class StubRoleUxRepository implements RoleUxRepository {
     required this.catalog,
     this.classes = const [],
     this.safety,
-  });
+  );
 
   List<TenantUser> users;
   List<TenantRoleInfo> roles;
@@ -61,6 +61,12 @@ class StubRoleUxRepository implements RoleUxRepository {
 
   @override
   Future<List<PermissionInfo>> permissionCatalog() async => catalog;
+
+  @override
+  Future<Map<String, int>> roleMemberCounts(String tenantId) async => {
+        for (final u in users)
+          if (u.isActive) u.roleKey: users.where((x) => x.isActive && x.roleKey == u.roleKey).length,
+      };
 
   @override
   Future<String> createAuthUser({
@@ -514,6 +520,47 @@ void main() {
       // refused before any write
       expect(repo.calls.where((c) => c.startsWith('setActive')), isEmpty);
       expect(find.textContaining('واحد مالک'), findsOneWidget);
+    });
+
+    testWidgets('roles tab: member counts and check/cross permission preview',
+        (tester) async {
+      final repo = StubRoleUxRepository(
+        users: _users(),
+        roles: _roles(),
+        catalog: _catalog(),
+      );
+      await tester.pumpWidget(_scope(
+        repo: repo,
+        child: const UserManagementHubScreen(),
+      ));
+      await tester.pumpAndSettle();
+
+      // switch to the roles tab
+      await tester.tap(find.text('ذمہ داریاں'));
+      await tester.pumpAndSettle();
+
+      // real list: Urdu name, description, permission + member counts —
+      // no "coming soon" placeholder anywhere
+      expect(find.text('استاد'), findsOneWidget);
+      expect(find.text('جماعت کا مدرس'), findsOneWidget);
+      expect(find.text('2 اختیارات'), findsOneWidget);
+      expect(find.text('1 ارکان'), findsOneWidget);
+      expect(find.textContaining('جلد'), findsNothing);
+
+      // preview sheet: granted and not-granted across the whole catalog
+      await tester.tap(find.text('استاد'));
+      await tester.pumpAndSettle();
+      expect(find.text('اختیارات کا جائزہ (2/6)'), findsOneWidget);
+      expect(find.text('حاضری درج کر سکتا ہے'), findsOneWidget);
+      expect(find.text('فیس دیکھ سکتا ہے'), findsOneWidget);
+      expect(
+          find.byWidgetPredicate((w) =>
+              w is Icon && w.icon == Icons.check_circle_outline),
+          findsWidgets);
+      expect(
+          find.byWidgetPredicate(
+              (w) => w is Icon && w.icon == Icons.cancel_outlined),
+          findsWidgets);
     });
   });
 
