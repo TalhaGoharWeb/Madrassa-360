@@ -56,6 +56,17 @@ class _TeacherHomeScreenState extends ConsumerState<TeacherHomeScreen> {
     final tabs = _buildTabs();
     final index = _currentIndex.clamp(0, tabs.length - 1);
 
+    // BottomNavigationBar requires at least 2 items; with a single
+    // permission-gated tab, show the screen directly without a nav bar.
+    if (tabs.length < 2) {
+      return Scaffold(
+        body: IndexedStack(
+          index: 0,
+          children: [for (final t in tabs) t.screen],
+        ),
+      );
+    }
+
     return Scaffold(
       body: IndexedStack(
         index: index,
