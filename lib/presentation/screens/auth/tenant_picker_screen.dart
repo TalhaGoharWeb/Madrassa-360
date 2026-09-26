@@ -143,8 +143,19 @@ class _TenantPickerScreenState extends ConsumerState<TenantPickerScreen> {
                       : CircleAvatar(
                           backgroundColor:
                               AppColors.primary.withValues(alpha: 0.1),
-                          child: const Icon(Icons.mosque,
-                              color: AppColors.primary),
+                          // No uploaded logo → show the app icon itself as
+                          // the brand mark, never a generic glyph.
+                          child: ClipOval(
+                            child: Image.asset(
+                              'assets/images/app_logo.png',
+                              width: 40,
+                              height: 40,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  const Icon(Icons.mosque,
+                                      color: AppColors.primary),
+                            ),
+                          ),
                         ),
                   title: Text(m.tenantName, style: AppTypography.titleMedium),
                   subtitle: Column(
