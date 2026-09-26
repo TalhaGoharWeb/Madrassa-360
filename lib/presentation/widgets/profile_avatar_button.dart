@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_typography.dart';
 import '../../providers/auth_provider.dart';
 import '../screens/common/profile_screen.dart';
 
@@ -34,10 +35,9 @@ class ProfileAvatarButton extends ConsumerWidget {
             child: initial.isNotEmpty
                 ? Text(
                     initial,
-                    style: const TextStyle(
+                    style: AppTypography.labelLarge.copyWith(
                       color: AppColors.primary,
                       fontWeight: FontWeight.bold,
-                      fontSize: 16,
                     ),
                   )
                 : const Icon(

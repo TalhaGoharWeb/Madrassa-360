@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
+import '../constants/app_typography.dart';
 
 /// کسٹم بٹن
 /// Custom Button Widgets
@@ -55,8 +56,7 @@ class PrimaryButton extends StatelessWidget {
                   ],
                   Text(
                     text,
-                    style: const TextStyle(
-                      fontSize: 16,
+                    style: AppTypography.labelLarge.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -102,8 +102,7 @@ class SecondaryButton extends StatelessWidget {
             ],
             Text(
               text,
-              style: const TextStyle(
-                fontSize: 16,
+              style: AppTypography.labelLarge.copyWith(
                 fontWeight: FontWeight.w600,
               ),
             ),

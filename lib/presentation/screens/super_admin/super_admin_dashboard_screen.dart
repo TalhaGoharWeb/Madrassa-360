@@ -201,7 +201,9 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
                           backgroundColor: const Color(0xFF1A237E),
                           child: Text(
                             m.nameUrdu.isNotEmpty ? m.nameUrdu[0] : 'م',
-                            style: const TextStyle(color: Colors.white),
+                            style: AppTypography.bodyMedium.copyWith(
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                         title: Text(m.nameUrdu, style: AppTypography.bodyLarge),
