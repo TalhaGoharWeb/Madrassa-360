@@ -220,6 +220,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
               width: 112,
               height: 112,
               fit: BoxFit.cover,
+              // Never let a missing/corrupt logo break login (or tests):
+              // fall back to the mosque glyph.
+              errorBuilder: (context, error, stackTrace) => const Icon(
+                Icons.mosque,
+                size: 64,
+                color: Colors.white,
+              ),
             ),
           ),
         ),
