@@ -114,8 +114,11 @@ class _MasterAdminShellState extends State<MasterAdminShell> {
           // operator should never have to hunt for the way out.
           TextButton.icon(
             onPressed: _backToApp,
-            icon: const Icon(Icons.home_outlined,
-                color: Colors.white, size: 20),
+            icon: const Icon(
+              Icons.home_outlined,
+              color: Colors.white,
+              size: 20,
+            ),
             label: Text(
               'Back to app',
               style: AppTypography.labelSmall.copyWith(
