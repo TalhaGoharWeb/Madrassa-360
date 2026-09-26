@@ -202,12 +202,12 @@ class FeeHistoryScreen extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       itemCount: fees.length,
       itemBuilder: (context, index) {
-        return _buildFeeHistoryTile(fees[index]);
+        return _buildFeeHistoryTile(context, fees[index]);
       },
     );
   }
 
-  Widget _buildFeeHistoryTile(Fee fee) {
+  Widget _buildFeeHistoryTile(BuildContext context, Fee fee) {
     final isPaid = fee.status == FeeStatus.paid;
 
     return AppCard(

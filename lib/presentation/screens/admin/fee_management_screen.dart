@@ -18,7 +18,7 @@ import '../../widgets/common/app_widgets.dart';
 
 /// فیس کی فہرست
 /// Fee Management Screen for Admin
-class FeeManagementScreen extends StatefulWidget {
+class FeeManagementScreen extends ConsumerStatefulWidget {
   const FeeManagementScreen({super.key});
 
   @override
@@ -818,6 +818,7 @@ class _FeeManagementScreenState extends ConsumerState<FeeManagementScreen>
   Future<void> _printReceipt(
       BuildContext context, Fee record, String receiptNo) async {
     Navigator.pop(context);
+    final messenger = ScaffoldMessenger.of(context);
     try {
       final tenantId = ref.read(currentTenantIdProvider);
       final db = ref.read(appDatabaseProvider);
@@ -832,7 +833,7 @@ class _FeeManagementScreenState extends ConsumerState<FeeManagementScreen>
       await Printing.layoutPdf(onLayout: (_) async => bytes);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(content: Text('پرنٹ میں خرابی: $e')),
       );
     }

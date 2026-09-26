@@ -19,7 +19,7 @@ import '../../widgets/common/app_widgets.dart';
 
 /// نتائج کی سکرین
 /// Results Screen with Grades and Result Cards
-class ResultsScreen extends StatefulWidget {
+class ResultsScreen extends ConsumerStatefulWidget {
   const ResultsScreen({super.key});
 
   @override
