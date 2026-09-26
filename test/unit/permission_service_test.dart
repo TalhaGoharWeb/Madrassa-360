@@ -3,7 +3,8 @@
 // Implementation files under test:
 //   lib/core/constants/app_permissions.dart   (canonical catalog + Urdu labels)
 //   lib/core/services/permission_service.dart (EffectivePermissions,
-//     validateServerCodes, has/hasAll/hasAny, tenantRoleDefaults)
+//     validateServerCodes, has/hasAll/hasAny; role defaults live in
+//     AppPermissions.fallbackFor)
 //
 // The app uses the canonical DOTTED codes from supabase/migrations/019
 // (e.g. 'students.view') plus the 56 still-live legacy underscore codes
