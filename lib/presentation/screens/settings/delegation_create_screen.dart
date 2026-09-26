@@ -97,7 +97,7 @@ class _DelegationCreateScreenState
               Text(
                 'صرف وہ اختیارات دکھائے گئے ہیں جو آپ کے پاس خود موجود '
                 'ہیں — آپ کوئی ایسا اختیار نہیں سونپ سکتے جو آپ کے پاس نہ ہو۔',
-                style: AppTypography.bodySmall
+                style: AppTypography.bodyMedium
                     .copyWith(color: AppColors.textSecondary),
               ),
               const SizedBox(height: 8),
@@ -173,7 +173,9 @@ class _DelegationCreateScreenState
     final usersAsync = ref.watch(tenantUsersProvider(''));
     final selfId = ref.watch(currentUserProvider)?.id;
     return usersAsync.when(
-      loading: () => const UxCard(child: Text('صارفین لوڈ ہو رہے ہیں…')),
+      loading: () => UxCard(
+        child: Text('صارفین لوڈ ہو رہے ہیں…', style: AppTypography.bodyMedium),
+      ),
       error: (e, _) => UxCard(
         child: Text(delegationErrorMessage(e),
             style: AppTypography.bodySmall
@@ -281,9 +283,10 @@ class _DelegationCreateScreenState
                                     .copyWith(color: AppColors.primary),
                               ),
                             ),
-                            title: Text(u.name),
+                            title:
+                                Text(u.name, style: AppTypography.bodyMedium),
                             subtitle: Text(u.roleUrdu,
-                                style: AppTypography.bodySmall
+                                style: AppTypography.bodyMedium
                                     .copyWith(color: AppColors.textSecondary)),
                             onTap: () => Navigator.pop(ctx, u.id),
                           );

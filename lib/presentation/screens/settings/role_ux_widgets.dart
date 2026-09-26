@@ -117,7 +117,7 @@ class UxEmptyState extends StatelessWidget {
               const SizedBox(height: 6),
               Text(
                 hint!,
-                style: AppTypography.bodySmall
+                style: AppTypography.bodyMedium
                     .copyWith(color: AppColors.textSecondary),
                 textAlign: TextAlign.center,
               ),
