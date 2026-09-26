@@ -301,10 +301,7 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
                           ),
                           if (_status != null) ...[
                             const SizedBox(height: 8),
-                            Text(
-                              _status!,
-                              style: AppTypography.bodySmall,
-                            ),
+                            Text(_status!, style: AppTypography.bodySmall),
                           ],
                         ],
                       ),
@@ -356,14 +353,9 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
             ),
             if (b.note != null)
               Text(b.note!,
-                  style: AppTypography.bodySmall.copyWith(
-                    color: Colors.red,
-                  )),
+                  style: AppTypography.bodySmall.copyWith(color: Colors.red)),
             const SizedBox(height: 4),
-            Text(
-              _cloudLabel(b.cloudStatus),
-              style: AppTypography.bodySmall,
-            ),
+            Text(_cloudLabel(b.cloudStatus), style: AppTypography.bodySmall),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,

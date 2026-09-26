@@ -353,8 +353,8 @@ class _PlatformUsersScreenState extends State<PlatformUsersScreen> {
                             ),
                           ),
                           if (isSelf)
-                            const Padding(
-                              padding: EdgeInsets.only(left: 6),
+                            Padding(
+                              padding: const EdgeInsets.only(left: 6),
                               child: Text(
                                 '(you)',
                                 style: AppTypography.bodySmall.copyWith(

@@ -688,9 +688,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             },
             child: Text(
               'لاگ آؤٹ',
-              style: AppTypography.bodyMedium.copyWith(
-                color: AppColors.error,
-              ),
+              style: AppTypography.bodyMedium.copyWith(color: AppColors.error),
             ),
           ),
         ],

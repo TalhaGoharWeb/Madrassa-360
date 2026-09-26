@@ -308,9 +308,7 @@ class _ReportFilterSheetState extends ConsumerState<_ReportFilterSheet> {
                     )),
               Text(_def.titleEn,
                   textAlign: TextAlign.center,
-                  style: AppTypography.bodySmall.copyWith(
-                      color: Colors.grey,
-                    )),
+                  style: AppTypography.bodySmall.copyWith(color: Colors.grey)),
               const SizedBox(height: 12),
               if (_def.needsStudent) ...[
                 _label('طالب علم'),
@@ -502,9 +500,7 @@ class _ReportFilterSheetState extends ConsumerState<_ReportFilterSheet> {
             child:
                 Text(
                   '— $hint —',
-                  style: AppTypography.bodySmall.copyWith(
-                    color: Colors.grey,
-                  ),
+                  style: AppTypography.bodySmall.copyWith(color: Colors.grey),
                 ),
           ),
           for (final e in items.entries)
