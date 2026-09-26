@@ -153,7 +153,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                   ),
                                 ),
                                 isLast: true,
-                            ),
+                              ),
                           ]),
                           const SizedBox(height: 20),
                         ],
