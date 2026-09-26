@@ -36,7 +36,7 @@ ArchitecturesInstallIn64BitMode=x64compatible
 UsePreviousAppDir=yes
 DirExistsWarning=no
 ; Keep the uninstaller from offering to reboot; nothing we install needs it.
-RestartIfNeededByRunner=no
+RestartIfNeededByRun=no
 ; Per-machine install under Program Files — requires elevation.
 PrivilegesRequired=admin
 UninstallDisplayName=Madrassa 360
