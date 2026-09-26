@@ -13,8 +13,9 @@
 --       "read own user_roles"      06_rbac.sql:608              DROPPED
 --       "platform admin manage     06_rbac.sql:616              DROPPED
 --         user_roles"
---   function public.get_user_role()  02_rls.sql:10 (zero-arg). All its
---     callers (02 policies) were dropped by 007's legacy sweep.   DROPPED
+--   function public.get_user_role()  02_rls.sql:10 (zero-arg). Its callers are
+--     the legacy policies; 007 drops the known names, and 013 (b0) sweeps
+--     any survivors by dependency (live projects carry renamed variants).  DROPPED
 --   function public.get_my_role()  05_new_modules.sql:241 AND
 --     06_rbac.sql:531 (same zero-arg signature; 06 replaced 05's
 --     definition via CREATE OR REPLACE). Callers: 05's policies
@@ -78,6 +79,33 @@ DROP TABLE IF EXISTS public.user_roles;
 -- ═══════════════════════════════════════════════════════════════
 -- (b) Drop the orphaned legacy helpers.
 -- ═══════════════════════════════════════════════════════════════
+
+-- (b0) Drop ANY policy still calling get_user_role()/get_my_role().
+-- 007's legacy sweep drops policies by exact verified name, but live
+-- projects can carry the same legacy policies under different names
+-- (observed: admin_all_students vs students_admin_all, etc.). Those
+-- survivors are still the OLD insecure policies, and they block the
+-- function DROP below. New tenant-bound policies never call these
+-- helpers, so a dependency-based sweep is precise and name-agnostic.
+DO $$
+DECLARE
+  r RECORD;
+BEGIN
+  FOR r IN
+    SELECT p.schemaname, p.tablename, p.policyname
+      FROM pg_policies p
+     WHERE p.schemaname = 'public'
+       AND (p.qual       ILIKE '%get_user_role()%'
+         OR p.with_check ILIKE '%get_user_role()%'
+         OR p.qual       ILIKE '%get_my_role()%'
+         OR p.with_check ILIKE '%get_my_role()%')
+  LOOP
+    EXECUTE format('DROP POLICY IF EXISTS %I ON %I.%I',
+                   r.policyname, r.schemaname, r.tablename);
+    RAISE NOTICE '013: dropped legacy policy %.% (%) still calling a legacy helper',
+      r.schemaname, r.tablename, r.policyname;
+  END LOOP;
+END $$;
 
 DROP FUNCTION IF EXISTS public.get_user_role();
 DROP FUNCTION IF EXISTS public.get_my_role();
