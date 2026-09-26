@@ -6,8 +6,30 @@ import '../data/repositories/auth_repository.dart';
 import '../core/errors/app_exceptions.dart';
 import '../core/errors/error_boundary.dart';
 import '../core/services/permission_service.dart';
+import '../core/services/storage_service.dart';
 import '../core/services/supabase_service.dart';
 import '../core/services/tenant_context.dart';
+
+// ─────────────────────────────────────────────────────────────
+// "Remember me" contract (login screen ⇄ auth gate ⇄ cold start)
+//
+// The Supabase SDK persists the session on-device by default; the auth
+// gate restores it on cold start so the user is not asked for credentials
+// every launch. The checkbox on the login screen controls this:
+//
+//   auth_remember_me = true   (default) → restore the session on next launch
+//   auth_remember_me = false            → sign the persisted session out on
+//                                          next launch and show the login form
+//
+// Only the e-mail is ever remembered in prefs — never the password.
+// OS-level password autofill is enabled via autofillHints on the fields.
+// ─────────────────────────────────────────────────────────────
+
+/// Whether the last login asked to stay signed in across restarts.
+const kRememberMeKey = 'auth_remember_me';
+
+/// E-mail to pre-fill on the login form (saved only when remembered).
+const kRememberedEmailKey = 'auth_remembered_email';
 
 /// تصدیق کی حالت کا انتظام
 /// Authentication State Management (Supabase) — Phase 3
@@ -167,6 +189,34 @@ class AuthNotifier extends StateNotifier<AuthState> {
           break;
       }
     });
+  }
+
+  // ── Cold-start session restore ───────────────────────────────
+
+  /// Restore a persisted Supabase session on app launch (called once by
+  /// the auth gate). Honors the "remember me" choice made at login:
+  /// when the user unchecked it, the persisted session is signed out
+  /// instead of restored, so the next launch shows the login form.
+  Future<void> restoreSession() async {
+    try {
+      final remember =
+          StorageService.getBool(kRememberMeKey, defaultValue: true) ?? true;
+      if (!remember) {
+        await _repo.signOut();
+        await _handleSignedOut();
+        return;
+      }
+      if (_repo.isSignedIn) {
+        // The SIGNED_IN event may also fire for the restored session;
+        // _handleSignedIn is idempotent.
+        await _handleSignedIn();
+      } else {
+        await _handleSignedOut();
+      }
+    } catch (e, st) {
+      ErrorBoundary.handleErrorSimple(e, st, tag: 'auth/restore-session');
+      await _handleSignedOut();
+    }
   }
 
   // ── Sign in ──────────────────────────────────────────────────
