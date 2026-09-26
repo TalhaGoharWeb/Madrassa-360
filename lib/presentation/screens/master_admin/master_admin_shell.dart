@@ -131,8 +131,7 @@ class _MasterAdminShellState extends State<MasterAdminShell> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
               ),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             ),
           ),
           const SizedBox(width: 4),
