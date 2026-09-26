@@ -99,11 +99,18 @@ class TenantContext extends StateNotifier<String?> {
     await prefs.setString(prefsKey, id);
   }
 
-  /// Switch the active tenant and persist the choice.
+  /// Switch the active tenant, persist the choice, and reload the
+  /// effective permission set for the new tenant.
+  ///
+  /// Phase 5 fix (audit §C3): permissions are per active tenant, so they
+  /// must be reloaded on every switch — previously the client kept the
+  /// previous tenant's permission set and showed the wrong UI to
+  /// multi-tenant users until the next sign-in.
   Future<void> switchTenant(String id) async {
     state = id;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(prefsKey, id);
+    await _ref.read(authProvider.notifier).refreshPermissions();
   }
 
   /// Re-fetch memberships and re-resolve the active tenant
