@@ -841,8 +841,8 @@ END $$;
 -- (f) Views — run as the caller so underlying RLS applies
 -- Requires PostgreSQL 15+ (security_invoker on views).
 -- ═══════════════════════════════════════════════════════════════
-ALTER VIEW public.attendance_summary SET (security_invoker = true);
-ALTER VIEW public.fee_summary         SET (security_invoker = true);
+ALTER VIEW IF EXISTS public.attendance_summary SET (security_invoker = true);
+ALTER VIEW IF EXISTS public.fee_summary         SET (security_invoker = true);
 
 
 -- ═══════════════════════════════════════════════════════════════
