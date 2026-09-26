@@ -71,6 +71,11 @@ jobs:
         run: dart run build_runner build --delete-conflicting-outputs
 
       - name: Build Windows (release)
+        # The Firebase C++ SDK's CMakeLists declares cmake_minimum_required(<3.5),
+        # which CMake 4 (on windows-latest runners) rejects. This env var is
+        # CMake's documented escape hatch: treat the floor as 3.5.
+        env:
+          CMAKE_POLICY_VERSION_MINIMUM: "3.5"
         run: flutter build windows --release
 
       - name: Verify Inno Setup script exists
