@@ -1,17 +1,28 @@
 /// کردار کے مطابق ہوم — روٹر
-/// Role-aware home router (Phase 7a).
+/// Role-aware home router (Phases 7a + 7b).
 ///
 /// [RoleHomeScreen] is the post-login destination (wired to
 /// [AuthRoute.home]): it resolves the user's PRIMARY role in the active
 /// tenant through [RoleService] and returns the matching dashboard:
 ///
+///   clerk (daftar_dar)                        → ClerkDashboard (دفتر)
+///   accountant / nazim_maliyat                → AccountantDashboard (مالیات)
+///   academic admin (nazim_taleem, nazim_hifz)  → AcademicAdminDashboard
+///   hostel (nazim_darul_iqama, warden,        → HostelDashboard (دارالاقامہ)
+///     hostel_manager)
+///   librarian                                 → LibraryDashboard (کتب خانہ)
+///   exam staff (mumtahin)                     → ExamDashboard (امتحانات)
 ///   principal-level authority (permission-derived) → PrincipalDashboard
 ///   teacher-family role keys                      → TeacherHome (tabs)
 ///   parent / student role keys                     → GenericDashboard
 ///   any other staff role                           → PrincipalDashboard
 ///       (its sections self-gate on permissions + enabled modules, so an
-///       accountant sees only finance, a librarian only the library, …)
+///       unknown staff role still sees only what it may)
 ///   no role keys / unknown                        → GenericDashboard
+///
+/// Staff-dashboard mapping runs BEFORE the permission-derived principal
+/// check: e.g. nazim_taleem technically satisfies isPrincipal(), but the
+/// mission routes academic admins to the تعلیمی نظام dashboard.
 ///
 /// The fallback is NEVER blank: greeting + latest announcements + profile.
 /// Platform operators with zero tenant memberships also land here, with a
@@ -33,6 +44,12 @@ import '../../../providers/auth_provider.dart';
 import '../../../providers/tenant_branding_provider.dart';
 import '../common/announcements_screen.dart';
 import '../common/profile_screen.dart';
+import 'academic_admin_dashboard.dart';
+import 'accountant_dashboard.dart';
+import 'clerk_dashboard.dart';
+import 'exam_dashboard.dart';
+import 'hostel_dashboard.dart';
+import 'library_dashboard.dart';
 import 'principal_dashboard.dart';
 import 'teacher_home.dart';
 
@@ -43,6 +60,15 @@ const _teacherRoleKeys = {'teacher', 'ustad', 'ustad_hifz'};
 /// Learner-family role keys → generic dashboard.
 const _learnerRoleKeys = {'parent', 'student'};
 
+/// Phase 7b staff dashboards — checked before the permission-derived
+/// principal check (see file doc comment).
+const _clerkRoleKeys = {'daftar_dar'};
+const _accountantRoleKeys = {'accountant', 'nazim_maliyat'};
+const _academicRoleKeys = {'nazim_taleem', 'nazim_hifz'};
+const _hostelRoleKeys = {'nazim_darul_iqama', 'warden', 'hostel_manager'};
+const _librarianRoleKeys = {'librarian'};
+const _examRoleKeys = {'mumtahin'};
+
 class RoleHomeScreen extends ConsumerWidget {
   const RoleHomeScreen({super.key});
 
@@ -50,12 +76,6 @@ class RoleHomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final roleService = ref.watch(roleServiceProvider);
     final roleKeys = ref.watch(activeRoleKeysProvider);
-
-    // Permission-derived principal authority — never role-name string
-    // matching for feature gating (RoleService contract).
-    if (roleService.isPrincipal()) {
-      return const PrincipalDashboardScreen();
-    }
 
     if (roleKeys.isEmpty) {
       return const GenericDashboardScreen();
@@ -67,6 +87,33 @@ class RoleHomeScreen extends ConsumerWidget {
 
     if (roleKeys.any(_learnerRoleKeys.contains)) {
       return const GenericDashboardScreen();
+    }
+
+    // Phase 7b staff dashboards (before the permission-derived
+    // principal check — see the file doc comment).
+    if (roleKeys.any(_clerkRoleKeys.contains)) {
+      return const ClerkDashboardScreen();
+    }
+    if (roleKeys.any(_accountantRoleKeys.contains)) {
+      return const AccountantDashboardScreen();
+    }
+    if (roleKeys.any(_academicRoleKeys.contains)) {
+      return const AcademicAdminDashboardScreen();
+    }
+    if (roleKeys.any(_hostelRoleKeys.contains)) {
+      return const HostelDashboardScreen();
+    }
+    if (roleKeys.any(_librarianRoleKeys.contains)) {
+      return const LibraryDashboardScreen();
+    }
+    if (roleKeys.any(_examRoleKeys.contains)) {
+      return const ExamDashboardScreen();
+    }
+
+    // Permission-derived principal authority — never role-name string
+    // matching for feature gating (RoleService contract).
+    if (roleService.isPrincipal()) {
+      return const PrincipalDashboardScreen();
     }
 
     // Any other staff role: the principal dashboard's sections gate

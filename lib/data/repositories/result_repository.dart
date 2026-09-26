@@ -43,6 +43,10 @@ abstract class IResultRepository {
   });
   Future<SubjectResult> upsertResult(SubjectResult result,
       {required String tenantId});
+
+  /// Creates a new exam header row (used by the step-by-step exam wizard).
+  /// Local-first: writes the envelope + sync_queue row in one transaction.
+  Future<Exam> createExam(Exam exam, {required String tenantId});
 }
 
 // ─────────────────────────────────────────────
@@ -197,5 +201,49 @@ class LocalResultRepository implements IResultRepository {
     _engine?.notifyLocalChange();
     unawaited(_engine?.syncNow() ?? Future.value());
     return result;
+  }
+
+  // ── Exam creation (exam wizard, Phase 7b) ──────────────────────────
+
+  @override
+  Future<Exam> createExam(Exam exam, {required String tenantId}) async {
+    final nowIso = DateTime.now().toUtc().toIso8601String();
+
+    // Server-shaped payload kept in the envelope's data JSON and queued.
+    // exam_date / total_marks live in data (and on the server); the
+    // envelope's indexed columns are name + class_id (see file header).
+    final data = {
+      ...exam.toJson(),
+      'id': exam.id,
+      'tenant_id': tenantId,
+    };
+
+    await _db.transaction(() async {
+      await SyncEngine.writeLocalRow(
+        _db,
+        table: 'exams',
+        id: exam.id,
+        tenantId: tenantId,
+        indexed: {
+          'name': exam.name,
+          'class_id': exam.classId,
+        },
+        data: data,
+      );
+
+      await SyncQueue.enqueue(
+        _db,
+        tenantId: tenantId,
+        entity: 'exams',
+        entityId: exam.id,
+        operation: 'create',
+        payload: {...data, 'updated_at': nowIso},
+        baseRevision: 0,
+      );
+    });
+
+    _engine?.notifyLocalChange();
+    unawaited(_engine?.syncNow() ?? Future.value());
+    return exam;
   }
 }
