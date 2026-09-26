@@ -946,7 +946,7 @@ class _AccountCard extends StatelessWidget {
                           color:
                               active ? AppColors.warning : AppColors.success),
                       title: Text(active ? 'غیر فعال کریں' : 'فعال کریں'))),
-              const PopupMenuItem(
+              PopupMenuItem(
                   value: 'delete',
                   child: ListTile(
                       dense: true,

@@ -66,9 +66,7 @@ class _MadrasaManagementScreenState extends State<MadrasaManagementScreen> {
             child: TextField(
               onChanged: (v) => setState(() => _search = v),
               textDirection: TextDirection.rtl,
-              style: AppTypography.bodyMedium.copyWith(
-                color: Colors.white,
-              ),
+              style: AppTypography.bodyMedium.copyWith(color: Colors.white),
               decoration: InputDecoration(
                 hintText: 'تلاش کریں...',
                 hintStyle: AppTypography.bodyMedium.copyWith(

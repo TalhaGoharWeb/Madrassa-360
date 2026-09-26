@@ -79,7 +79,7 @@ class _CrashScreenState extends State<CrashScreen> {
                         ),
                       ),
                       const SizedBox(height: 20),
-                      const Text(
+                      Text(
                         'کچھ غلط ہو گیا',
                         style: AppTypography.titleLarge.copyWith(
                           fontWeight: FontWeight.bold,
@@ -88,7 +88,7 @@ class _CrashScreenState extends State<CrashScreen> {
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 8),
-                      const Text(
+                      Text(
                         'Something went wrong',
                         style: AppTypography.bodyMedium.copyWith(
                           color: Colors.black54,
@@ -96,7 +96,7 @@ class _CrashScreenState extends State<CrashScreen> {
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 12),
-                      const Text(
+                      Text(
                         'ایپ کو ایک غیر متوقع خرابی کا سامنا کرنا پڑا۔\nآپ کا ڈیٹا محفوظ ہے — دوبارہ شروع کرنے کی کوشش کریں۔',
                         style: AppTypography.bodyMedium.copyWith(
                           color: Colors.black87,
@@ -104,7 +104,7 @@ class _CrashScreenState extends State<CrashScreen> {
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 4),
-                      const Text(
+                      Text(
                         'The app hit an unexpected error. Your data is safe — please try restarting.',
                         style: AppTypography.bodySmall.copyWith(
                           color: Colors.black54,
