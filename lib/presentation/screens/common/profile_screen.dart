@@ -11,6 +11,7 @@ import '../../../providers/auth_provider.dart';
 import '../../../providers/tenant_branding_provider.dart';
 import '../auth/login_screen.dart';
 import '../settings/user_management_hub.dart';
+import '../settings/delegation_screen.dart';
 import 'about_screen.dart';
 
 /// پروفائل سکرین
@@ -118,6 +119,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       if (!canManage) {
                         return const SizedBox.shrink();
                       }
+                      // Delegation management needs `roles.assign` (Phase 8b).
+                      final canDelegate =
+                          ref.watch(roleServiceProvider).canManageRoles();
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -135,7 +139,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                       const UserManagementHubScreen(),
                                 ),
                               ),
-                              isLast: true,
+                              isLast: !canDelegate,
+                            ),
+                            if (canDelegate)
+                              _SettingsTile(
+                                icon: Icons.handshake_outlined,
+                                label: 'اختیار سونپنا',
+                                subtitle: 'کسی صارف کو عارضی اختیار دیں',
+                                onTap: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const DelegationScreen(),
+                                  ),
+                                ),
+                                isLast: true,
                             ),
                           ]),
                           const SizedBox(height: 20),

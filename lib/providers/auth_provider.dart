@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as sb;
 import '../data/repositories/auth_repository.dart';
+import '../data/delegation_repository.dart';
 import '../core/errors/app_exceptions.dart';
 import '../core/errors/error_boundary.dart';
 import '../core/services/authorization_service.dart';
@@ -436,6 +437,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
       _ref.read(roleServiceProvider).clearCache();
       if (userId != null) {
         await PermissionService.clearPersistedCache(userId);
+        // Phase 8b: drop this user's cached delegation lists too.
+        await DelegationRepository.clearDelegationCache(userId);
       }
       _ref.invalidate(tenantMembershipsProvider);
       await _ref.read(activeTenantIdProvider.notifier).clear();
