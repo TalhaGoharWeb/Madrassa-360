@@ -132,7 +132,7 @@ class NetworkStatusWidget extends StatelessWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.all(8),
                 color: Colors.red,
-                child: const Row(
+                child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(Icons.signal_wifi_off, color: Colors.white, size: 16),
