@@ -2,7 +2,15 @@
 //
 // Master-Admin only (platform_admins). Creates a complete tenant in one call:
 // tenants row → tenant_settings update → tenant_modules → tenant_subscriptions
-// + licenses → auth user (tenant_owner) → tenant_membership → audit_logs.
+// + licenses → auth user (tenant_owner) → role templates (tenant_roles) →
+// tenant_membership → audit_logs.
+//
+// NOTE: step 7b seeds the per-tenant role templates via the
+// provision_role_templates() RPC (migration 021) BEFORE the owner
+// membership is inserted, because the 019 tenant_memberships_validate_role
+// trigger requires tenant_owner to exist in tenant_roles. Template seeding
+// is non-fatal: a failure is logged and provisioning continues, since the
+// templates can be backfilled later.
 //
 // Body:
 //   { name, name_urdu?, slug?, address?, city?, district?, province?, country?,
@@ -328,6 +336,28 @@ Deno.serve(async (req: Request): Promise<Response> => {
       throw step("create_admin_user", msg);
     }
     created.authUserId = authData.user.id;
+
+    // ── 7b. Seed per-tenant role templates (non-fatal) ────────────────
+    // The tenant needs tenant_roles rows (including tenant_owner) before
+    // the membership insert below — the 019 trigger rejects unknown role
+    // keys. Failure here must NOT break provisioning: log and continue;
+    // the templates can be backfilled later via provision_role_templates().
+    try {
+      const { error: tplErr } = await supabase.rpc("provision_role_templates", {
+        p_tenant_id: tenant.id,
+      });
+      if (tplErr) {
+        console.error(
+          `[provision-tenant] provision_role_templates failed for tenant ${tenant.id}: ${tplErr.message}`,
+        );
+      }
+    } catch (e) {
+      console.error(
+        `[provision-tenant] provision_role_templates threw for tenant ${tenant.id}: ${
+          String(e)
+        }`,
+      );
+    }
 
     // ── 8. Owner membership ──────────────────────────────────────────────
     const { data: membership, error: memErr } = await supabase
