@@ -10,6 +10,10 @@ import '../core/services/storage_service.dart';
 import '../core/services/supabase_service.dart';
 import '../core/services/tenant_context.dart';
 
+// Re-export for convenience so screens don't need a separate import.
+// (Directives must precede all declarations in this file.)
+export '../data/repositories/auth_repository.dart' show AppUser, UserRole;
+
 // ─────────────────────────────────────────────────────────────
 // "Remember me" contract (login screen ⇄ auth gate ⇄ cold start)
 //
@@ -40,9 +44,6 @@ const kRememberedEmailKey = 'auth_remembered_email';
 ///   - exactly 1 membership → [AuthRoute.home] (tenant auto-selected)
 ///   - >1 memberships → [AuthRoute.tenantPicker]
 /// Session expiry surfaces as SIGNED_OUT → route falls back to login.
-
-// Re-export for convenience so screens don't need a separate import
-export '../data/repositories/auth_repository.dart' show AppUser, UserRole;
 
 // ─────────────────────────────────────────────────────────────
 // AuthRoute — post-login routing decision
