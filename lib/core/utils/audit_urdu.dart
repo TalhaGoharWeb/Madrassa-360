@@ -16,6 +16,8 @@
 /// to a clean generic Urdu sentence, and [auditActionLabelUrdu] falls back
 /// to «دیگر عمل».
 
+import '../services/scope_policy.dart';
+
 // ── Asia/Karachi time ────────────────────────────────────────────────
 // Pakistan observes no daylight saving: UTC+5 year-round.
 
@@ -316,6 +318,22 @@ String auditMessageUrdu({
           return say('کی رکنیت اپ ڈیٹ کی', 'کی رکنیت اپ ڈیٹ کی گئی', 'صارف');
         default:
           return say('کی رکنیت ختم کی', 'کی رکنیت ختم کی گئی', 'صارف');
+      }
+    }
+    if (table == 'permission_scopes') {
+      // The 019 trigger stores the full row JSON in new_data (INSERT /
+      // UPDATE) or old_data (DELETE), so the scope type is available for
+      // a human sentence like «اجازت کا دائرہ کار "مقرر کردہ جماعتیں"
+      // مقرر کیا گیا».
+      final scopeDesc = scopeTypeUrdu('${data['scope_type'] ?? 'all'}');
+      final target = '$ent ${_q(scopeDesc)}';
+      switch (suffix) {
+        case 'created':
+          return say('مقرر کیا', 'مقرر کیا گیا', target);
+        case 'updated':
+          return say('تبدیل کیا', 'تبدیل کیا گیا', target);
+        default:
+          return say('ختم کیا', 'ختم کیا گیا', target);
       }
     }
     switch (suffix) {

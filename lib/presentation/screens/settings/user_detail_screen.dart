@@ -16,6 +16,7 @@ import '../../../core/services/tenant_context.dart';
 import '../../../data/role_ux_repository.dart';
 import '../../../providers/role_ux_provider.dart';
 import 'role_ux_widgets.dart';
+import 'scope_manager_screen.dart';
 import 'user_wizard_screen.dart';
 
 class UserDetailScreen extends ConsumerStatefulWidget {
@@ -267,6 +268,28 @@ class _UserDetailScreenState extends ConsumerState<UserDetailScreen> {
               if (updated == true && mounted) {
                 showUxSnack(context, 'ذمہ داریاں محفوظ ہو گئیں');
               }
+            },
+          ),
+          const SizedBox(height: 8),
+          Builder(
+            builder: (context) {
+              final canManage = ref.watch(roleServiceProvider).canManageRoles();
+              if (!canManage) return const SizedBox.shrink();
+              return OutlinedButton.icon(
+                icon: const Icon(Icons.data_object_outlined),
+                label: const Text('ڈیٹا حدود کا انتظام'),
+                onPressed: () async {
+                  final saved = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ScopeEditorScreen(initialUser: _user),
+                    ),
+                  );
+                  if (saved == true && context.mounted) {
+                    showUxSnack(context, 'ڈیٹا حدود محفوظ ہو گئیں');
+                  }
+                },
+              );
             },
           ),
           const SizedBox(height: 8),
