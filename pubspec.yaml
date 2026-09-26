@@ -104,10 +104,19 @@ flutter:
     - version.json   # release source of truth; read at runtime by UpdateService
   
   # Fonts
+  # JameelNooriNastaleeq → v4 TTF (display). The family name is kept because
+  # tenant branding rows and PDF rendering reference it.
+  # JameelNooriKasheeda → kasheeda subset TTF (hero moments only).
+  # NotoNaskhArabic → body and small text.
   fonts:
     - family: JameelNooriNastaleeq
       fonts:
-        - asset: assets/Jameel Noori Nastaleeq Regular - [UrduFonts.com].ttf
-          weight: 400
-        - asset: assets/Jameel Noori Nastaleeq Kasheeda - [UrduFonts.com].ttf
+        - asset: assets/fonts/JameelNooriNastaleeq-v4.ttf
+    - family: JameelNooriKasheeda
+      fonts:
+        - asset: assets/fonts/JameelNooriNastaleeqKasheeda-subset.ttf
+    - family: NotoNaskhArabic
+      fonts:
+        - asset: assets/fonts/NotoNaskhArabic-Regular.ttf
+        - asset: assets/fonts/NotoNaskhArabic-Bold.ttf
           weight: 700

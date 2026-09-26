@@ -218,7 +218,7 @@ void main() {
         const RoleHomeScreen(),
       );
       expect(find.text('آج مدرسے کا حال'), findsOneWidget);
-      expect(find.text('اہم امور'), findsOneWidget);
+      expect(find.text('❁ اہم امور'), findsOneWidget);
     });
 
     testWidgets('teacher role key → teacher home', (tester) async {

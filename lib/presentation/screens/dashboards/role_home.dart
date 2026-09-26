@@ -36,6 +36,7 @@ import '../../../core/constants/app_typography.dart';
 import '../../../core/services/role_service.dart';
 import '../../widgets/dashboard/alert_card.dart';
 import '../../widgets/dashboard/dashboard_scaffold.dart';
+import '../../widgets/dashboard/day_timeline.dart';
 import '../../widgets/dashboard/quick_actions.dart';
 import '../../../core/widgets/master_admin_guard.dart'
     show fetchPlatformAdminRole;
@@ -139,6 +140,7 @@ class GenericDashboardScreen extends ConsumerWidget {
       greeting: 'السلام علیکم ورحمۃ اللہ',
       userName: userName,
       madrasaName: madrasaName,
+      schedule: const DayTimeline(),
       stats: _RoleInfoCard(),
       alertsTitle: 'تازہ اعلانات',
       alerts: announcements.isEmpty
