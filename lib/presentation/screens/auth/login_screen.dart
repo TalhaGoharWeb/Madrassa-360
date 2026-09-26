@@ -302,7 +302,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
             children: [
               Checkbox(
                 value: _rememberMe,
-                activeThumbColor: AppColors.primary,
+                activeColor: AppColors.primary,
                 onChanged: (value) {
                   setState(() => _rememberMe = value ?? true);
                 },
