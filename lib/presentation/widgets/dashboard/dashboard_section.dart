@@ -47,7 +47,6 @@ class DashboardSection extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(top: 16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -57,72 +56,84 @@ class DashboardSection extends StatelessWidget {
           ),
         ],
       ),
-      child: Theme(
-        // Remove the default divider lines for a calmer look.
-        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-        child: ExpansionTile(
-          initiallyExpanded: initiallyExpanded,
-          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          childrenPadding: const EdgeInsets.only(left: 8, right: 8, bottom: 12),
-          leading: icon == null
-              ? null
-              : Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(icon, color: AppColors.primary, size: 22),
-                ),
-          title: Text(
-            title,
-            style: AppTypography.titleMedium.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          children: [
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                mainAxisSpacing: 8,
-                crossAxisSpacing: 8,
-                mainAxisExtent: 96,
-              ),
-              itemCount: tiles.length,
-              itemBuilder: (context, index) {
-                final tile = tiles[index];
-                return InkWell(
-                  onTap: tile.onTap,
-                  borderRadius: BorderRadius.circular(10),
-                  child: Container(
+      // Material canvas: ExpansionTile's header is a ListTile whose ink
+      // effects paint on the nearest Material — without this the framework
+      // asserts (and splashes would hide behind the card's background).
+      child: Material(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        clipBehavior: Clip.antiAlias,
+        child: Theme(
+          // Remove the default divider lines for a calmer look.
+          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+          child: ExpansionTile(
+            initiallyExpanded: initiallyExpanded,
+            tilePadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            childrenPadding:
+                const EdgeInsets.only(left: 8, right: 8, bottom: 12),
+            leading: icon == null
+                ? null
+                : Container(
+                    padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: AppColors.background,
+                      color: AppColors.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(tile.icon, color: tile.color, size: 26),
-                        const SizedBox(height: 6),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
-                          child: Text(
-                            tile.label,
-                            style: AppTypography.labelMedium,
-                            textAlign: TextAlign.center,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
+                    child: Icon(icon, color: AppColors.primary, size: 22),
                   ),
-                );
-              },
+            title: Text(
+              title,
+              style: AppTypography.titleMedium.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ],
+            children: [
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  mainAxisSpacing: 8,
+                  crossAxisSpacing: 8,
+                  mainAxisExtent: 96,
+                ),
+                itemCount: tiles.length,
+                itemBuilder: (context, index) {
+                  final tile = tiles[index];
+                  return InkWell(
+                    onTap: tile.onTap,
+                    borderRadius: BorderRadius.circular(10),
+                    // Ink (not Container): the tile background paints onto the
+                    // Material above, so the ink splash renders above it.
+                    child: Ink(
+                      decoration: BoxDecoration(
+                        color: AppColors.background,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(tile.icon, color: tile.color, size: 26),
+                          const SizedBox(height: 6),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: Text(
+                              tile.label,
+                              style: AppTypography.labelMedium,
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );

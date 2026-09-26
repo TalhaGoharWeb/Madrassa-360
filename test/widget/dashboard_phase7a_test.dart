@@ -15,7 +15,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:madrasa_360/core/constants/app_permissions.dart';
 import 'package:madrasa_360/core/services/role_service.dart';
-import 'package:madrasa_360/data/repositories/auth_repository.dart';
 import 'package:madrasa_360/presentation/screens/dashboards/role_home.dart';
 import 'package:madrasa_360/presentation/widgets/dashboard/alert_card.dart';
 import 'package:madrasa_360/presentation/widgets/dashboard/dashboard_scaffold.dart';
