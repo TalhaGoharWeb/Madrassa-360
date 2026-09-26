@@ -36,6 +36,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
   bool _isLoading = false;
   bool _rememberMe = true;
+  bool _obscurePassword = true;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
@@ -193,26 +194,32 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   Widget _buildHeader() {
     return Column(
       children: [
-        // Logo Container
+        // App logo — the real brand mark, presented as an app-icon tile
+        // with a soft light ring so it sits proudly on the gradient.
         Container(
-          width: 100,
-          height: 100,
+          width: 112,
+          height: 112,
           decoration: BoxDecoration(
-            color: Colors.white,
-            shape: BoxShape.circle,
+            borderRadius: BorderRadius.circular(28),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.9),
+              width: 3,
+            ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.2),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
+                color: Colors.black.withValues(alpha: 0.25),
+                blurRadius: 24,
+                offset: const Offset(0, 12),
               ),
             ],
           ),
-          child: const Center(
-            child: Icon(
-              Icons.mosque,
-              size: 50,
-              color: AppColors.primary,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(25),
+            child: Image.asset(
+              'assets/images/app_logo.png',
+              width: 112,
+              height: 112,
+              fit: BoxFit.cover,
             ),
           ),
         ),
@@ -379,7 +386,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   Widget _buildPasswordInput() {
     return TextFormField(
       controller: _passwordController,
-      obscureText: true,
+      obscureText: _obscurePassword,
       textAlign: TextAlign.right,
       autofillHints: const [AutofillHints.password],
       onEditingComplete: () => TextInput.finishAutofillContext(),
@@ -390,6 +397,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           color: AppColors.textSecondary.withValues(alpha: 0.5),
         ),
         prefixIcon: const Icon(Icons.lock, color: AppColors.primary),
+        // Show/hide toggle — passwords are long and typos are the
+        // most common login failure.
+        suffixIcon: IconButton(
+          tooltip: _obscurePassword ? 'پاس ورڈ دکھائیں' : 'پاس ورڈ چھپائیں',
+          icon: Icon(
+            _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+            color: AppColors.textSecondary,
+          ),
+          onPressed: () =>
+              setState(() => _obscurePassword = !_obscurePassword),
+        ),
         filled: true,
         fillColor: AppColors.background,
         border: OutlineInputBorder(
