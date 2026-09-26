@@ -12,6 +12,7 @@
 /// URL so `SupabaseService.client` exists, but no network is ever touched.
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -33,9 +34,13 @@ import 'fake_auth_repository.dart';
 /// test (an Image errorBuilder alone is not enough — the image-service error
 /// is still reported to the test zone and fails the test).
 class _TestAssetBundle extends CachingAssetBundle {
+  /// A 1x1 transparent PNG, served for any image asset request.
+  static final ByteData _pixels = ByteData.view(base64Decode(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+  ).buffer);
+
   @override
-  Future<ByteData> load(String key) async =>
-      ByteData.view(kTransparentImage.buffer);
+  Future<ByteData> load(String key) async => _pixels;
 
   @override
   Future<String> loadString(String key, {bool cache = true}) =>

@@ -398,6 +398,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   }
 
   Widget _buildPasswordInput() {
+    final tooltip = _obscurePassword ? 'پاس ورڈ دکھائیں' : 'پاس ورڈ چھپائیں';
     return TextFormField(
       controller: _passwordController,
       obscureText: _obscurePassword,
@@ -414,9 +415,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         // Show/hide toggle — passwords are long and typos are the
         // most common login failure.
         suffixIcon: IconButton(
-          tooltip: _obscurePassword
-              ? 'پاس ورڈ دکھائیں'
-              : 'پاس ورڈ چھپائیں',
+          tooltip: tooltip,
           icon: Icon(
             _obscurePassword
                 ? Icons.visibility_outlined
