@@ -15,11 +15,20 @@
 //   create_user       {email, password, user_metadata?, app_metadata?, tenant_id?, role?}
 //   update_user       {user_id, email?, password?, user_metadata?, app_metadata?}
 //   set_active        {user_id, active}
-//   delete_user       {user_id}
+//   delete_user       {user_id}          (tenant owner/admin or platform admin only)
 //   assign_membership {user_id, tenant_id, role}
 //   remove_membership {user_id, tenant_id}
 //   list_users        {tenant_id?, search?, limit?, offset?}
+//   safety_check      {tenant_id, user_id}  (last-owner / last-assign-holder pre-check)
 //   set_platform_role {user_id, role: 'platform_owner'|'platform_support'|null}
+//
+// Caller rights (Phase 8a): besides the legacy tenant_owner/tenant_admin
+// ranks, callers holding the Phase-6 template roles are authorized through
+// their EFFECTIVE permissions (user_effective_permission RPC):
+//   users.view       -> list_users, safety_check, create_user (bare auth user)
+//   roles.assign     -> create_user (with membership), assign_membership, remove_membership
+//   users.deactivate -> set_active
+// delete_user stays restricted to legacy tenant owner/admin + platform admin.
 //
 // Every mutating action is written to public.audit_logs. Passwords are never
 // logged and never returned.
@@ -56,9 +65,34 @@ interface CallerScope {
   isPlatformOwner: boolean;
   /** tenant_id -> caller's rank in that tenant (tenant_owner/tenant_admin only) */
   tenantRanks: Map<string, number>;
+  /** tenants where the caller may manage users (owner/admin, or users.view) */
+  userTenants: Set<string>;
+  /** tenants where the caller may assign roles (owner/admin, or roles.assign) */
+  roleTenants: Set<string>;
+  /** tenants where the caller may (de)activate users (owner/admin, or users.deactivate) */
+  deactivateTenants: Set<string>;
 }
 
-/** Resolve the caller: platform_admins row, else active owner/admin memberships. */
+/** Effective-permission check for one code via the 020 RPC (service role). */
+async function holdsPermission(
+  supabase: SupabaseClient,
+  tenantId: string,
+  userId: string,
+  code: string,
+): Promise<boolean> {
+  const { data, error } = await supabase.rpc("user_effective_permission", {
+    p_tenant_id: tenantId,
+    p_user_id: userId,
+    p_code: code,
+  });
+  if (error) return false;
+  return data === true;
+}
+
+/** Resolve the caller: platform_admins row, else active memberships.
+ * Legacy tenant_owner/tenant_admin callers get rank-based rights;
+ * Phase-6 template-role callers get rights from their effective
+ * permissions (users.view / roles.assign / users.deactivate). */
 async function resolveCaller(
   supabase: SupabaseClient,
   req: Request,
@@ -81,22 +115,47 @@ async function resolveCaller(
     .maybeSingle();
 
   const tenantRanks = new Map<string, number>();
+  const userTenants = new Set<string>();
+  const roleTenants = new Set<string>();
+  const deactivateTenants = new Set<string>();
+
   if (!adminRow) {
     const { data: memberships, error: memErr } = await supabase
       .from("tenant_memberships")
       .select("tenant_id, role")
       .eq("user_id", caller.id)
-      .eq("is_active", true)
-      .in("role", ["tenant_owner", "tenant_admin"]);
+      .eq("is_active", true);
     if (memErr) {
       return json({ error: "auth_check_failed", message: "Could not verify caller memberships." }, 500);
     }
     for (const m of memberships ?? []) {
-      tenantRanks.set(m.tenant_id, TENANT_ROLE_RANK[m.role] ?? 0);
+      const role = m.role as string;
+      const tenantId = m.tenant_id as string;
+      if (role === "tenant_owner" || role === "tenant_admin") {
+        tenantRanks.set(tenantId, TENANT_ROLE_RANK[role] ?? 0);
+        userTenants.add(tenantId);
+        roleTenants.add(tenantId);
+        deactivateTenants.add(tenantId);
+      } else {
+        // Phase-6 template roles: rights from effective permissions.
+        const [canView, canAssign, canDeactivate] = await Promise.all([
+          holdsPermission(supabase, tenantId, caller.id, "users.view"),
+          holdsPermission(supabase, tenantId, caller.id, "roles.assign"),
+          holdsPermission(supabase, tenantId, caller.id, "users.deactivate"),
+        ]);
+        if (canView) userTenants.add(tenantId);
+        if (canAssign) roleTenants.add(tenantId);
+        if (canDeactivate) deactivateTenants.add(tenantId);
+      }
     }
-    if (tenantRanks.size === 0) {
+    if (
+      tenantRanks.size === 0 &&
+      userTenants.size === 0 &&
+      roleTenants.size === 0 &&
+      deactivateTenants.size === 0
+    ) {
       return json(
-        { error: "forbidden", message: "Caller is not a platform admin or tenant owner/admin." },
+        { error: "forbidden", message: "Caller is not a platform admin or tenant manager." },
         403,
       );
     }
@@ -107,21 +166,37 @@ async function resolveCaller(
     isPlatformAdmin: !!adminRow,
     isPlatformOwner: adminRow?.role === "platform_owner",
     tenantRanks,
+    userTenants,
+    roleTenants,
+    deactivateTenants,
   };
 }
 
-/** Target user's tenant footprint: tenant_id -> rank (active memberships only). */
+/** Right check for one tenant: platform admins pass; otherwise the
+ * per-right tenant set built by resolveCaller. */
+function callerCan(
+  scope: CallerScope,
+  tenantId: string,
+  right: "users" | "roles" | "deactivate",
+): boolean {
+  if (scope.isPlatformAdmin) return true;
+  if (right === "users") return scope.userTenants.has(tenantId);
+  if (right === "roles") return scope.roleTenants.has(tenantId);
+  return scope.deactivateTenants.has(tenantId);
+}
+
+/** Target user's tenant footprint: tenant_id -> role key (active memberships only). */
 async function targetFootprint(
   supabase: SupabaseClient,
   userId: string,
-): Promise<Map<string, number>> {
+): Promise<Map<string, string>> {
   const { data } = await supabase
     .from("tenant_memberships")
     .select("tenant_id, role")
     .eq("user_id", userId)
     .eq("is_active", true);
-  const map = new Map<string, number>();
-  for (const m of data ?? []) map.set(m.tenant_id, TENANT_ROLE_RANK[m.role] ?? 0);
+  const map = new Map<string, string>();
+  for (const m of data ?? []) map.set(m.tenant_id as string, m.role as string);
   return map;
 }
 
@@ -135,15 +210,19 @@ async function isPlatformAdminUser(supabase: SupabaseClient, userId: string): Pr
 }
 
 /**
- * Can this caller mutate the target user? Platform admins: yes (except
- * platform-role changes are gated separately). Tenant callers: the target
- * must not be a platform admin, must live entirely inside the caller's
- * scoped tenants, and must hold no role above the caller's rank there.
+ * Can this caller mutate the target user with the given [right]?
+ * Platform admins: yes (except platform-role changes are gated separately).
+ * Tenant callers: the target must not be a platform admin, must live
+ * entirely inside the caller's scoped tenants for that right, and —
+ * for legacy rank-based callers — must hold no role above the caller's
+ * rank there. Permission-based (Phase-6) callers may never touch a
+ * tenant_owner: only owners / platform admins may manage owners.
  */
 async function canMutateUser(
   supabase: SupabaseClient,
   scope: CallerScope,
   targetUserId: string,
+  right: "users" | "roles" | "deactivate",
 ): Promise<{ ok: true } | { ok: false; message: string }> {
   if (scope.isPlatformAdmin) return { ok: true };
   if (targetUserId === scope.callerId) {
@@ -156,16 +235,56 @@ async function canMutateUser(
   if (footprint.size === 0) {
     return { ok: false, message: "Target user has no tenant membership in your scope." };
   }
-  for (const [tenantId, rank] of footprint) {
-    const callerRank = scope.tenantRanks.get(tenantId);
-    if (!callerRank) {
+  for (const [tenantId, roleKey] of footprint) {
+    if (!callerCan(scope, tenantId, right)) {
       return { ok: false, message: "Target belongs to a tenant outside your administration." };
     }
-    if (rank > callerRank) {
+    const callerRank = scope.tenantRanks.get(tenantId) ?? 0;
+    const targetRank = TENANT_ROLE_RANK[roleKey] ?? 0;
+    if (callerRank > 0 && targetRank > callerRank) {
       return { ok: false, message: "Target holds a higher role than you in a shared tenant." };
+    }
+    if (callerRank === 0 && roleKey === "tenant_owner") {
+      return { ok: false, message: "Only a tenant owner or platform admin can manage a tenant owner." };
     }
   }
   return { ok: true };
+}
+
+/** Is [role] an active tenant role key for [tenantId]? (nicer 400 than the
+ * DB trigger's exception when the client sends a bad key.) */
+async function isActiveTenantRole(
+  supabase: SupabaseClient,
+  tenantId: string,
+  role: string,
+): Promise<boolean> {
+  const { data } = await supabase
+    .from("tenant_roles")
+    .select("key")
+    .eq("tenant_id", tenantId)
+    .eq("key", role)
+    .eq("is_active", true)
+    .maybeSingle();
+  return !!data;
+}
+
+/** Rank gate for assigning [role] in [tenantId]: legacy callers cannot
+ * assign above their own rank; permission-based callers cannot assign
+ * the tenant_owner key. Returns an error message, or null when allowed. */
+function assignRoleGate(
+  scope: CallerScope,
+  tenantId: string,
+  role: string,
+): string | null {
+  const callerRank = scope.tenantRanks.get(tenantId) ?? 0;
+  const targetRank = TENANT_ROLE_RANK[role] ?? 0;
+  if (callerRank > 0 && targetRank > callerRank) {
+    return "You cannot assign a role above your own.";
+  }
+  if (callerRank === 0 && role === "tenant_owner") {
+    return "Only a tenant owner or platform admin can assign the owner role.";
+  }
+  return null;
 }
 
 /** Refuse to leave a tenant with zero active owners. */
@@ -245,16 +364,25 @@ async function handleCreateUser(
   if (tenantId && !isUuid(tenantId)) {
     return json({ error: "invalid_tenant", message: "tenant_id must be a UUID." }, 400);
   }
-  if (role && !(role in TENANT_ROLE_RANK)) {
-    return json({ error: "invalid_role", message: `Unknown tenant role: ${role}.` }, 400);
-  }
-  if (tenantId && role && !scope.isPlatformAdmin) {
-    const callerRank = scope.tenantRanks.get(tenantId);
-    if (!callerRank) {
-      return json({ error: "forbidden", message: "You do not administer this tenant." }, 403);
+  if (tenantId && role) {
+    // The key must be an active role of THIS tenant (legacy keys and
+    // Phase-6 template keys both live in tenant_roles).
+    if (!(await isActiveTenantRole(supabase, tenantId, role))) {
+      return json({ error: "invalid_role", message: `Unknown or inactive role for this tenant: ${role}.` }, 400);
     }
-    if ((TENANT_ROLE_RANK[role] ?? 0) > callerRank) {
-      return json({ error: "forbidden", message: "You cannot assign a role above your own." }, 403);
+  }
+  if (!scope.isPlatformAdmin) {
+    if (tenantId && role) {
+      if (!callerCan(scope, tenantId, "roles")) {
+        return json({ error: "forbidden", message: "You do not administer this tenant." }, 403);
+      }
+      const gateMsg = assignRoleGate(scope, tenantId, role);
+      if (gateMsg) {
+        return json({ error: "forbidden", message: gateMsg }, 403);
+      }
+    } else if (scope.userTenants.size === 0 && scope.tenantRanks.size === 0) {
+      // Bare auth-user creation (no membership): needs user-management rights.
+      return json({ error: "forbidden", message: "You cannot create users." }, 403);
     }
   }
 
@@ -307,7 +435,7 @@ async function handleUpdateUser(
   if (!userId || !isUuid(userId)) {
     return json({ error: "invalid_user", message: "user_id must be a UUID." }, 400);
   }
-  const gate = await canMutateUser(supabase, scope, userId);
+  const gate = await canMutateUser(supabase, scope, userId, "users");
   if (!gate.ok) return json({ error: "forbidden", message: gate.message }, 403);
 
   const attrs: Record<string, unknown> = {};
@@ -353,14 +481,14 @@ async function handleSetActive(
   if (typeof b.active !== "boolean") {
     return json({ error: "invalid_active", message: "active must be a boolean." }, 400);
   }
-  const gate = await canMutateUser(supabase, scope, userId);
+  const gate = await canMutateUser(supabase, scope, userId, "deactivate");
   if (!gate.ok) return json({ error: "forbidden", message: gate.message }, 403);
 
   if (!b.active && !scope.isPlatformAdmin) {
     // Deactivating: ensure no tenant loses its last owner.
     const footprint = await targetFootprint(supabase, userId);
-    for (const [tenantId, rank] of footprint) {
-      if (rank >= 100 && scope.tenantRanks.has(tenantId)) {
+    for (const [tenantId, roleKey] of footprint) {
+      if (roleKey === "tenant_owner" && callerCan(scope, tenantId, "deactivate")) {
         const remaining = await ownerCount(supabase, tenantId, userId);
         if (remaining === 0) {
           return json(
@@ -391,8 +519,19 @@ async function handleDeleteUser(
   if (!userId || !isUuid(userId)) {
     return json({ error: "invalid_user", message: "user_id must be a UUID." }, 400);
   }
-  const gate = await canMutateUser(supabase, scope, userId);
+  // delete_user stays restricted: legacy tenant owner/admin or platform
+  // admin only (permission-based managers use set_active instead).
+  const gate = await canMutateUser(supabase, scope, userId, "deactivate");
   if (!gate.ok) return json({ error: "forbidden", message: gate.message }, 403);
+  const isLegacyManager =
+    scope.isPlatformAdmin ||
+    [...scope.tenantRanks.values()].some((r) => r >= 90);
+  if (!isLegacyManager) {
+    return json(
+      { error: "forbidden", message: "Only a tenant owner/admin or platform admin can delete users." },
+      403,
+    );
+  }
 
   if (await isPlatformAdminUser(supabase, userId)) {
     // Only a platform_owner may delete platform admins, and never the last one.
@@ -408,8 +547,8 @@ async function handleDeleteUser(
     await supabase.from("platform_admins").delete().eq("user_id", userId);
   } else if (!scope.isPlatformAdmin) {
     const footprint = await targetFootprint(supabase, userId);
-    for (const [tenantId, rank] of footprint) {
-      if (rank >= 100 && scope.tenantRanks.has(tenantId)) {
+    for (const [tenantId, roleKey] of footprint) {
+      if (roleKey === "tenant_owner" && callerCan(scope, tenantId, "deactivate")) {
         const remaining = await ownerCount(supabase, tenantId, userId);
         if (remaining === 0) {
           return json(
@@ -440,18 +579,18 @@ async function handleAssignMembership(
   if (!userId || !isUuid(userId) || !tenantId || !isUuid(tenantId)) {
     return json({ error: "invalid_input", message: "user_id and tenant_id must be UUIDs." }, 400);
   }
-  if (!role || !(role in TENANT_ROLE_RANK)) {
-    return json({ error: "invalid_role", message: `Unknown tenant role: ${role ?? "(none)"}.` }, 400);
+  if (!role || !(await isActiveTenantRole(supabase, tenantId, role))) {
+    return json({ error: "invalid_role", message: `Unknown or inactive role for this tenant: ${role ?? "(none)"}.` }, 400);
   }
   if (!scope.isPlatformAdmin) {
-    const callerRank = scope.tenantRanks.get(tenantId);
-    if (!callerRank) {
+    if (!callerCan(scope, tenantId, "roles")) {
       return json({ error: "forbidden", message: "You do not administer this tenant." }, 403);
     }
-    if ((TENANT_ROLE_RANK[role] ?? 0) > callerRank) {
-      return json({ error: "forbidden", message: "You cannot assign a role above your own." }, 403);
+    const gateMsg = assignRoleGate(scope, tenantId, role);
+    if (gateMsg) {
+      return json({ error: "forbidden", message: gateMsg }, 403);
     }
-    const gate = await canMutateUser(supabase, scope, userId);
+    const gate = await canMutateUser(supabase, scope, userId, "roles");
     if (!gate.ok) return json({ error: "forbidden", message: gate.message }, 403);
   } else if (await isPlatformAdminUser(supabase, userId)) {
     return json({ error: "forbidden", message: "Platform admins are managed via set_platform_role." }, 403);
@@ -477,7 +616,7 @@ async function handleRemoveMembership(
   if (!userId || !isUuid(userId) || !tenantId || !isUuid(tenantId)) {
     return json({ error: "invalid_input", message: "user_id and tenant_id must be UUIDs." }, 400);
   }
-  if (!scope.isPlatformAdmin && !scope.tenantRanks.get(tenantId)) {
+  if (!scope.isPlatformAdmin && !callerCan(scope, tenantId, "roles")) {
     return json({ error: "forbidden", message: "You do not administer this tenant." }, 403);
   }
 
@@ -531,9 +670,9 @@ async function handleListUsers(
       tenantIds = (data ?? []).map((t) => t.id as string);
     }
   } else {
-    tenantIds = [...scope.tenantRanks.keys()];
+    tenantIds = [...scope.userTenants];
     if (filterTenant) {
-      if (!scope.tenantRanks.has(filterTenant)) {
+      if (!callerCan(scope, filterTenant, "users")) {
         return json({ error: "forbidden", message: "You do not administer this tenant." }, 403);
       }
       tenantIds = [filterTenant];
@@ -574,6 +713,89 @@ async function handleListUsers(
   users.sort((a, b) => String(a.email ?? "").localeCompare(String(b.email ?? "")));
   const total = users.length;
   return json({ users: users.slice(offset, offset + limit), total, limit, offset });
+}
+
+/**
+ * safety_check {tenant_id, user_id} — principal-safety pre-check for the
+ * 8a UI: counts active tenant_owners and active holders of roles.assign
+ * in the tenant, and reports whether the target is the last of each.
+ * The client refuses the destructive/demoting action with a plain-Urdu
+ * explanation BEFORE attempting it; the DB triggers remain the backstop.
+ */
+async function handleSafetyCheck(
+  supabase: SupabaseClient,
+  scope: CallerScope,
+  b: Record<string, unknown>,
+): Promise<Response> {
+  const tenantId = cleanStr(b.tenant_id);
+  const userId = cleanStr(b.user_id);
+  if (!tenantId || !isUuid(tenantId) || !userId || !isUuid(userId)) {
+    return json({ error: "invalid_input", message: "tenant_id and user_id must be UUIDs." }, 400);
+  }
+  if (!callerCan(scope, tenantId, "users")) {
+    return json({ error: "forbidden", message: "You do not administer this tenant." }, 403);
+  }
+
+  const { data: ownerRows } = await supabase
+    .from("tenant_memberships")
+    .select("user_id")
+    .eq("tenant_id", tenantId)
+    .eq("role", "tenant_owner")
+    .eq("is_active", true);
+  const ownerIds = (ownerRows ?? []).map((r) => r.user_id as string);
+
+  // Tenant role keys that currently grant roles.assign.
+  const { data: permRow } = await supabase
+    .from("permissions")
+    .select("id")
+    .eq("code", "roles.assign")
+    .maybeSingle();
+  const holderIds: string[] = [];
+  if (permRow) {
+    const { data: trpRows } = await supabase
+      .from("tenant_role_permissions")
+      .select("tenant_role_id")
+      .eq("permission_id", (permRow as Record<string, unknown>).id as string);
+    const roleIds = (trpRows ?? []).map((r) => r.tenant_role_id as string);
+    if (roleIds.length > 0) {
+      const { data: roleRows } = await supabase
+        .from("tenant_roles")
+        .select("key")
+        .in("id", roleIds)
+        .eq("tenant_id", tenantId)
+        .eq("is_active", true);
+      const assignKeys = (roleRows ?? []).map((r) => r.key as string);
+      if (assignKeys.length > 0) {
+        const { data: holderRows } = await supabase
+          .from("tenant_memberships")
+          .select("user_id")
+          .eq("tenant_id", tenantId)
+          .in("role", assignKeys)
+          .eq("is_active", true);
+        for (const r of holderRows ?? []) holderIds.push(r.user_id as string);
+      }
+    }
+  }
+
+  const { data: targetMem } = await supabase
+    .from("tenant_memberships")
+    .select("role")
+    .eq("tenant_id", tenantId)
+    .eq("user_id", userId)
+    .eq("is_active", true)
+    .maybeSingle();
+  const targetRole = targetMem ? (targetMem.role as string) : null;
+
+  await audit(supabase, scope, tenantId, "safety_check", "tenant_membership", userId, {
+    target_role: targetRole,
+  });
+  return json({
+    owner_count: ownerIds.length,
+    is_last_owner: ownerIds.length === 1 && ownerIds[0] === userId,
+    assign_holder_count: holderIds.length,
+    is_last_assign_holder: holderIds.length === 1 && holderIds[0] === userId,
+    target_role: targetRole,
+  });
 }
 
 async function handleSetPlatformRole(
@@ -660,6 +882,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
         return await handleRemoveMembership(supabase, scope, b);
       case "list_users":
         return await handleListUsers(supabase, scope, b);
+      case "safety_check":
+        return await handleSafetyCheck(supabase, scope, b);
       case "set_platform_role":
         return await handleSetPlatformRole(supabase, scope, b);
       default:
@@ -667,7 +891,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
           {
             error: "unknown_action",
             message:
-              "action must be one of: create_user, update_user, set_active, delete_user, assign_membership, remove_membership, list_users, set_platform_role.",
+              "action must be one of: create_user, update_user, set_active, delete_user, assign_membership, remove_membership, list_users, safety_check, set_platform_role.",
           },
           400,
         );
