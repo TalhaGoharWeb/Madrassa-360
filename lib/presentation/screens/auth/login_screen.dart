@@ -222,14 +222,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
               fit: BoxFit.cover,
               // A missing or unbundled asset must never break the login
               // screen: fall back to a simple brand mark instead.
-              errorBuilder: (context, error, stackTrace) => Container(
-                width: 112,
-                height: 112,
-                color: AppColors.primary,
-                child: const Center(
-                  child: Icon(Icons.mosque, size: 50, color: Colors.white),
-                ),
-              ),
+              errorBuilder: (context, error, stackTrace) =>
+                  const Icon(Icons.mosque, size: 64, color: Colors.white),
             ),
           ),
         ),
