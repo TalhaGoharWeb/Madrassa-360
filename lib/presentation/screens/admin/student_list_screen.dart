@@ -177,7 +177,7 @@ class _StudentListScreenState extends State<StudentListScreen> {
                 ),
                 Text(
                   label,
-                  style: AppTypography.labelSmall.copyWith(fontSize: 9),
+                  style: AppTypography.labelSmall,
                 ),
               ],
             ),
@@ -304,7 +304,6 @@ class _StudentListScreenState extends State<StudentListScreen> {
         text,
         style: AppTypography.labelSmall.copyWith(
           color: color,
-          fontSize: 10,
         ),
       ),
     );
