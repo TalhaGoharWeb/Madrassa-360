@@ -4,7 +4,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/services/tenant_context.dart';
 import '../../../providers/auth_provider.dart';
-import '../main_screen.dart';
+import '../dashboards/role_home.dart';
 import 'login_screen.dart';
 
 /// ادارے کا انتخاب
@@ -48,7 +48,7 @@ class _TenantPickerScreenState extends ConsumerState<TenantPickerScreen> {
       await ref.read(authProvider.notifier).selectTenant(tenantId);
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const MainScreen()),
+        MaterialPageRoute(builder: (_) => const RoleHomeScreen()),
       );
     } finally {
       if (mounted) setState(() => _switchingId = null);
