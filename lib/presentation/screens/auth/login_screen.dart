@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../core/services/storage_service.dart';
 import '../../../core/utils/error_handler.dart';
 import '../../../core/utils/validators.dart';
 import '../../../core/widgets/loading_widget.dart';
@@ -33,6 +35,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   final _formKey = GlobalKey<FormState>();
 
   bool _isLoading = false;
+  bool _rememberMe = true;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
@@ -40,6 +43,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   @override
   void initState() {
     super.initState();
+    // Restore the "remember me" choice and the remembered e-mail (never the
+    // password) so returning users don't retype everything.
+    _rememberMe =
+        StorageService.getBool(kRememberMeKey, defaultValue: true) ?? true;
+    final rememberedEmail = StorageService.getString(kRememberedEmailKey);
+    if (rememberedEmail != null && rememberedEmail.isNotEmpty) {
+      _emailController.text = rememberedEmail;
+    }
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 800),
@@ -83,6 +94,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           ref.read(authProvider).errorMessage ?? 'لاگ ان میں خرابی';
       ErrorHandler.showErrorSnackBar(context, errorMsg);
       return;
+    }
+
+    // Persist the "remember me" choice; the e-mail is remembered for
+    // pre-fill, the password is never stored — the Supabase session (or
+    // the OS password manager via autofill) handles that.
+    await StorageService.saveBool(kRememberMeKey, _rememberMe);
+    if (_rememberMe) {
+      await StorageService.saveString(
+          kRememberedEmailKey, _emailController.text.trim());
+    } else {
+      await StorageService.remove(kRememberedEmailKey);
     }
 
     // Route per the provider's post-login decision.
@@ -141,7 +163,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                   padding: const EdgeInsets.all(24),
                   child: Form(
                     key: _formKey,
-                    child: Column(
+                    // Groups the e-mail + password fields so the OS password
+                    // manager can offer saved credentials (autofillHints).
+                    child: AutofillGroup(
+                      child: Column(
                       children: [
                         const SizedBox(height: 40),
                         // Logo & App Name
@@ -269,6 +294,29 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
               ),
             ),
           ),
+
+          // Remember me — controls whether the session survives app restarts
+          // (see the "Remember me" contract in providers/auth_provider.dart).
+          Row(
+            children: [
+              Checkbox(
+                value: _rememberMe,
+                activeColor: AppColors.primary,
+                onChanged: (value) {
+                  setState(() => _rememberMe = value ?? true);
+                },
+              ),
+              GestureDetector(
+                onTap: () => setState(() => _rememberMe = !_rememberMe),
+                child: Text(
+                  'مجھے یاد رکھیں',
+                  style: AppTypography.bodyMedium.copyWith(
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 16),
 
           // Login Button
@@ -286,6 +334,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
             ),
           ),
         ],
+        ),
       ),
     );
   }
@@ -296,6 +345,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       keyboardType: TextInputType.emailAddress,
       textAlign: TextAlign.right,
       autocorrect: false,
+      autofillHints: const [AutofillHints.email],
       style: AppTypography.bodyLarge,
       decoration: InputDecoration(
         hintText: 'اپنا ای میل درج کریں',
@@ -331,6 +381,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       controller: _passwordController,
       obscureText: true,
       textAlign: TextAlign.right,
+      autofillHints: const [AutofillHints.password],
+      onEditingComplete: () => TextInput.finishAutofillContext(),
       style: AppTypography.bodyLarge,
       decoration: InputDecoration(
         hintText: 'اپنا پاس ورڈ درج کریں',

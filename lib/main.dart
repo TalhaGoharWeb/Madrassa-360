@@ -18,7 +18,7 @@ import 'core/widgets/master_admin_guard.dart';
 import 'data/local/app_database.dart';
 import 'presentation/screens/crash_screen.dart';
 import 'providers/tenant_branding_provider.dart';
-import 'presentation/screens/auth/login_screen.dart';
+import 'presentation/screens/auth/auth_gate.dart';
 import 'presentation/screens/master_admin/master_admin_shell.dart';
 
 /// مدرسہ  360 — ایپ انٹری پوائنٹ
@@ -258,8 +258,9 @@ class Madrasa360App extends StatelessWidget {
             );
           },
 
-          // Home Screen - Start with Login
-          home: const LoginScreen(),
+          // Home Screen — the auth gate restores any persisted session
+          // (honoring "remember me") and routes to the app or login.
+          home: const AuthGate(),
 
           // Named routes — '/master' is the platform-operator console, gated by
           // MasterAdminGuard (platform_admins lookup; fails closed).
