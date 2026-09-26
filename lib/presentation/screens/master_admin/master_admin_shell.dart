@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/widgets/master_admin_guard.dart';
+import '../main_screen.dart';
 import 'audit_logs_screen.dart';
 import 'licenses_screen.dart';
 import 'madrasa_detail_screen.dart';
@@ -82,6 +83,23 @@ class _MasterAdminShellState extends State<MasterAdminShell> {
     );
   }
 
+  /// Leaves the platform console and returns to the normal app shell.
+  /// A plain pop() is enough when the console was pushed on top of the app,
+  /// but if the console is the only route in the stack (deep link, restored
+  /// session), popping would close the app — so fall back to an explicit
+  /// replacement with [MainScreen]. Either way the operator is never
+  /// stranded inside the console.
+  void _backToApp() {
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop();
+    } else {
+      navigator.pushReplacement(
+        MaterialPageRoute(builder: (_) => const MainScreen()),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -92,6 +110,29 @@ class _MasterAdminShellState extends State<MasterAdminShell> {
               : 'Platform Admin Console',
         ),
         actions: [
+          // Always-visible exit: the drawer also has "Back to app", but an
+          // operator should never have to hunt for the way out.
+          TextButton.icon(
+            onPressed: _backToApp,
+            icon: const Icon(Icons.home_outlined,
+                color: Colors.white, size: 20),
+            label: Text(
+              'Back to app',
+              style: AppTypography.labelSmall.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            style: TextButton.styleFrom(
+              backgroundColor: Colors.white.withValues(alpha: 0.15),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            ),
+          ),
+          const SizedBox(width: 4),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Center(
@@ -183,7 +224,10 @@ class _MasterAdminShellState extends State<MasterAdminShell> {
                 leading: const Icon(Icons.arrow_back,
                     color: AppColors.textSecondary),
                 title: const Text('Back to app'),
-                onTap: () => Navigator.of(context).pop(),
+                onTap: () {
+                  Navigator.of(context).pop(); // close the drawer first
+                  _backToApp();
+                },
               ),
             ],
           ),
