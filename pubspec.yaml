@@ -22,7 +22,7 @@ dependencies:
   shared_preferences: ^2.2.2
   
   # Network & Connectivity
-  connectivity_plus: ^5.0.2
+  connectivity_plus: ^6.1.5
   
   # Utilities
   intl: ^0.20.3

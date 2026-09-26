@@ -19,7 +19,7 @@ import 'storage_service.dart';
 class OfflineSyncService {
   static const String _pendingAttendanceKey = 'pending_attendance_queue';
 
-  static StreamSubscription<ConnectivityResult>? _sub;
+  static StreamSubscription<List<ConnectivityResult>>? _sub;
   static IAttendanceRepository? _attendanceRepo;
 
   /// Call once from main.dart after SupabaseService.init().
@@ -27,8 +27,8 @@ class OfflineSyncService {
     _attendanceRepo = attendanceRepository;
     _sub?.cancel();
     _sub = Connectivity().onConnectivityChanged.listen(
-      (result) async {
-        final online = result != ConnectivityResult.none;
+      (results) async {
+        final online = results.any((r) => r != ConnectivityResult.none);
         if (online && _attendanceRepo != null) {
           await flushAttendance(_attendanceRepo!);
         }
