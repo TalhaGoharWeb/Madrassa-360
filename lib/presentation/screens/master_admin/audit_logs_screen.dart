@@ -331,7 +331,7 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
                               ? 'از تاریخ'
                               : formatAuditDayUrdu(_fromDay!),
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 12),
+                          style: AppTypography.labelLarge,
                         ),
                       ),
                     ),
@@ -345,7 +345,7 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
                               ? 'تک تاریخ'
                               : formatAuditDayUrdu(_toDay!),
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 12),
+                          style: AppTypography.labelLarge,
                         ),
                       ),
                     ),
@@ -378,16 +378,19 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
     if (_missingTable != null) {
       return const EmptyStateWidget(
         icon: Icons.receipt_long_outlined,
-        title: 'audit_logs table not provisioned',
-        message: 'The audit_logs table is built by a parallel worker. '
-            'This screen will light up once the migration lands.',
+        title: 'آڈٹ ریکارڈ ابھی تیار نہیں',
+        message: 'آڈٹ ریکارڈ رکھنے والا نظام ابھی تیار ہو رہا ہے — '
+            'یہ صفحہ خود بخود فعال ہو جائے گا۔',
       );
     }
     if (_error != null) {
       return EmptyStateWidget(
         icon: Icons.error_outline,
-        title: 'خرابی / Error',
-        message: _error,
+        title: 'خرابی ہو گئی',
+        // Never surface raw server text to the user; the honest Urdu
+        // message stays above the retry action.
+        message: 'لاگز لوڈ نہیں ہو سکے — انٹرنیٹ چیک کریں اور دوبارہ '
+            'کوشش کریں۔',
         actionLabel: 'دوبارہ کوشش کریں',
         onAction: _refresh,
       );
@@ -443,7 +446,7 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
         subtitle: Text(
           createdAt == null ? '—' : formatAuditDateUrdu(createdAt),
           style:
-              AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
+              AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary),
         ),
         children: [
           Padding(
@@ -472,7 +475,7 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
       Padding(
         padding: const EdgeInsets.only(top: 8, bottom: 4),
         child: Text('تبدیلیاں',
-            style: AppTypography.bodySmall
+            style: AppTypography.bodyMedium
                 .copyWith(color: AppColors.textSecondary)),
       ),
       for (final d in diffs)
@@ -484,13 +487,13 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
               SizedBox(
                 width: 110,
                 child: Text(d.labelUrdu,
-                    style: AppTypography.bodySmall
+                    style: AppTypography.bodyMedium
                         .copyWith(color: AppColors.textSecondary)),
               ),
               Expanded(
                 child: RichText(
                   text: TextSpan(
-                    style: AppTypography.bodySmall
+                    style: AppTypography.bodyMedium
                         .copyWith(color: AppColors.textPrimary),
                     children: [
                       TextSpan(
@@ -524,7 +527,7 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
       Padding(
         padding: const EdgeInsets.only(top: 8, bottom: 4),
         child: Text('اضافی معلومات',
-            style: AppTypography.bodySmall
+            style: AppTypography.bodyMedium
                 .copyWith(color: AppColors.textSecondary)),
       ),
       for (final e in entries) _kv(fieldLabelUrdu(e.key), e.value),
@@ -570,12 +573,12 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
           SizedBox(
             width: 90,
             child: Text(label,
-                style: AppTypography.bodySmall
+                style: AppTypography.bodyMedium
                     .copyWith(color: AppColors.textSecondary)),
           ),
           Expanded(
             child: SelectableText((value ?? '—').toString(),
-                style: AppTypography.bodySmall),
+                style: AppTypography.bodyMedium),
           ),
         ],
       ),

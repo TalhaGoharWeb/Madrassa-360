@@ -497,8 +497,12 @@ class _ScopeEditorScreenState extends ConsumerState<ScopeEditorScreen> {
                         style: AppTypography.bodyMedium
                             .copyWith(color: AppColors.textSecondary)),
                   const SizedBox(height: 4),
+                  // Never surface a raw role key; the Urdu label map
+                  // covers known keys and prettifies unknown ones.
                   RoleBadge(
-                      label: u.roleUrdu.isNotEmpty ? u.roleUrdu : u.roleKey),
+                      label: u.roleUrdu.isNotEmpty
+                          ? u.roleUrdu
+                          : roleKeyUrdu(u.roleKey)),
                 ],
               ),
             ),
