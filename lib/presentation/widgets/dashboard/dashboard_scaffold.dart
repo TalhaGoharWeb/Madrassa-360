@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/utils/date_utils.dart' as app_date;
+import '../profile_avatar_button.dart';
 
 /// Shared dashboard shell. [stats], [alerts], [quickActions] and
 /// [todayTasks] are the ordered body slots; [sections] renders below them.
@@ -78,7 +79,9 @@ class DashboardScaffold extends StatelessWidget {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: Text(madrasaName),
-        actions: actions,
+        // Every dashboard gets the profile button: existing actions first
+        // (e.g. the notifications bell), then the tappable avatar.
+        actions: [...?actions, const ProfileAvatarButton()],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),

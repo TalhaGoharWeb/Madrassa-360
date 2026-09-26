@@ -96,7 +96,7 @@ class _CrashScreenState extends State<CrashScreen> {
                       const Text(
                         'ایپ کو ایک غیر متوقع خرابی کا سامنا کرنا پڑا۔\nآپ کا ڈیٹا محفوظ ہے — دوبارہ شروع کرنے کی کوشش کریں۔',
                         style: TextStyle(
-                            fontSize: 14, color: Colors.black87, height: 1.6),
+                            fontSize: 15, color: Colors.black87, height: 1.6),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 4),
@@ -117,7 +117,7 @@ class _CrashScreenState extends State<CrashScreen> {
                           child: Text(
                             widget.details!,
                             style: const TextStyle(
-                              fontSize: 11,
+                              fontSize: 13,
                               fontFamily: 'monospace',
                               color: Colors.black54,
                             ),

@@ -102,7 +102,7 @@ class _ReportsHubScreenState extends ConsumerState<ReportsHubScreen>
                 style: const TextStyle(
                     fontFamily: 'JameelNooriNastaleeq', fontSize: 17)),
             subtitle: Text('${r.titleEn}\n${r.descriptionUr}',
-                style: const TextStyle(fontSize: 12)),
+                style: const TextStyle(fontSize: 14)),
             isThreeLine: true,
             trailing: const Icon(Icons.arrow_forward_ios, size: 16),
             onTap: () => _openFilters(context, tenantId, r),
@@ -308,7 +308,7 @@ class _ReportFilterSheetState extends ConsumerState<_ReportFilterSheet> {
                       fontWeight: FontWeight.bold)),
               Text(_def.titleEn,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                  style: const TextStyle(fontSize: 14, color: Colors.grey)),
               const SizedBox(height: 12),
               if (_def.needsStudent) ...[
                 _label('طالب علم'),

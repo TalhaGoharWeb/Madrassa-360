@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'app_colors.dart';
 
 /// مدرسہ 360 - خطاطی
-/// Typography styles using Jameel Noori Nastaleeq font
+/// Typography styles using Jameel Noori Nastaleeq font.
+///
+/// Scale tuned for Urdu/Nastaliq readability: body text never drops below
+/// 15-16sp and line heights stay at 1.5+ so tall Nastaliq glyphs don't clip.
 class AppTypography {
   AppTypography._();
 
@@ -14,65 +17,65 @@ class AppTypography {
 
   // Heading Styles
   static TextStyle get headingLarge => _baseUrduStyle.copyWith(
-        fontSize: 28,
+        fontSize: 34,
         fontWeight: FontWeight.bold,
         color: AppColors.textPrimary,
-        height: 2.0, // Extra line height for Nastaliq
+        height: 1.8, // Extra line height for Nastaliq
       );
 
   static TextStyle get headingMedium => _baseUrduStyle.copyWith(
-        fontSize: 24,
+        fontSize: 28,
         fontWeight: FontWeight.bold,
         color: AppColors.textPrimary,
         height: 1.8,
       );
 
   static TextStyle get headingSmall => _baseUrduStyle.copyWith(
-        fontSize: 20,
+        fontSize: 24,
         fontWeight: FontWeight.w600,
         color: AppColors.textPrimary,
-        height: 1.8,
+        height: 1.7,
       );
 
   // Title Styles
   static TextStyle get titleLarge => _baseUrduStyle.copyWith(
-        fontSize: 18,
+        fontSize: 22,
         fontWeight: FontWeight.w600,
         color: AppColors.textPrimary,
-        height: 1.8,
+        height: 1.7,
       );
 
   static TextStyle get titleMedium => _baseUrduStyle.copyWith(
-        fontSize: 16,
+        fontSize: 19,
         fontWeight: FontWeight.w500,
         color: AppColors.textPrimary,
         height: 1.7,
       );
 
   static TextStyle get titleSmall => _baseUrduStyle.copyWith(
-        fontSize: 14,
+        fontSize: 16,
         fontWeight: FontWeight.w500,
         color: AppColors.textPrimary,
-        height: 1.6,
+        height: 1.7,
       );
 
   // Body Styles
   static TextStyle get bodyLarge => _baseUrduStyle.copyWith(
-        fontSize: 16,
+        fontSize: 17,
         fontWeight: FontWeight.normal,
         color: AppColors.textPrimary,
-        height: 1.8,
+        height: 1.7,
       );
 
   static TextStyle get bodyMedium => _baseUrduStyle.copyWith(
-        fontSize: 14,
+        fontSize: 16,
         fontWeight: FontWeight.normal,
         color: AppColors.textPrimary,
         height: 1.7,
       );
 
   static TextStyle get bodySmall => _baseUrduStyle.copyWith(
-        fontSize: 12,
+        fontSize: 14,
         fontWeight: FontWeight.normal,
         color: AppColors.textSecondary,
         height: 1.6,
@@ -80,21 +83,21 @@ class AppTypography {
 
   // Label Styles
   static TextStyle get labelLarge => _baseUrduStyle.copyWith(
-        fontSize: 14,
+        fontSize: 16,
         fontWeight: FontWeight.w500,
         color: AppColors.textPrimary,
         height: 1.6,
       );
 
   static TextStyle get labelMedium => _baseUrduStyle.copyWith(
-        fontSize: 12,
+        fontSize: 14,
         fontWeight: FontWeight.w500,
         color: AppColors.textSecondary,
-        height: 1.5,
+        height: 1.6,
       );
 
   static TextStyle get labelSmall => _baseUrduStyle.copyWith(
-        fontSize: 10,
+        fontSize: 12,
         fontWeight: FontWeight.w500,
         color: AppColors.textSecondary,
         height: 1.5,
@@ -102,7 +105,7 @@ class AppTypography {
 
   // Button Text
   static TextStyle get buttonText => _baseUrduStyle.copyWith(
-        fontSize: 16,
+        fontSize: 18,
         fontWeight: FontWeight.w600,
         color: Colors.white,
         height: 1.6,
@@ -110,22 +113,22 @@ class AppTypography {
 
   // App Bar Title
   static TextStyle get appBarTitle => _baseUrduStyle.copyWith(
-        fontSize: 20,
+        fontSize: 24,
         fontWeight: FontWeight.bold,
         color: Colors.white,
-        height: 1.8,
+        height: 1.7,
       );
 
   // Navigation Bar Label
   static TextStyle get navLabel => _baseUrduStyle.copyWith(
-        fontSize: 12,
+        fontSize: 14,
         fontWeight: FontWeight.w500,
         height: 1.5,
       );
 
   /// Helper to create custom style
   static TextStyle custom({
-    double fontSize = 14,
+    double fontSize = 15,
     FontWeight fontWeight = FontWeight.normal,
     Color color = AppColors.textPrimary,
     double height = 1.7,

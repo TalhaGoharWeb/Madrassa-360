@@ -110,7 +110,6 @@ class _ParentMainScreenState extends State<ParentMainScreen> {
               style: AppTypography.navLabel.copyWith(
                 color: isSelected ? AppColors.primary : AppColors.textSecondary,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                fontSize: 11,
               ),
             ),
           ],

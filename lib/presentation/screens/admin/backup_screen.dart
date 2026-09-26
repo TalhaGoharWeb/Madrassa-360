@@ -296,7 +296,7 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
                           if (_status != null) ...[
                             const SizedBox(height: 8),
                             Text(_status!,
-                                style: const TextStyle(fontSize: 12)),
+                                style: const TextStyle(fontSize: 14)),
                           ],
                         ],
                       ),
@@ -340,14 +340,14 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
                   : '${_fmtDate(m.exportedAt)} • '
                       '${BackupService.formatBytes(b.sizeBytes)} • '
                       '${m.totalRows} ریکارڈ',
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
+              style: const TextStyle(fontSize: 14, color: Colors.grey),
             ),
             if (b.note != null)
               Text(b.note!,
-                  style: const TextStyle(fontSize: 12, color: Colors.red)),
+                  style: const TextStyle(fontSize: 14, color: Colors.red)),
             const SizedBox(height: 4),
             Text(_cloudLabel(b.cloudStatus),
-                style: const TextStyle(fontSize: 12)),
+                style: const TextStyle(fontSize: 14)),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
