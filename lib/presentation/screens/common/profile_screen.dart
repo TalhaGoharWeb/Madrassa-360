@@ -313,9 +313,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                     size: 48, color: Colors.white),
                       ),
                     ),
-                    Positioned(
+                    // Directional badge position so it mirrors with the
+                    // app-wide RTL layout (Phase 13).
+                    Positioned.directional(
+                      textDirection: Directionality.of(context),
+                      end: 2,
                       bottom: 2,
-                      right: 2,
                       child: Container(
                         padding: const EdgeInsets.all(5),
                         decoration: const BoxDecoration(
@@ -730,7 +733,8 @@ class _GroupLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(right: 4, bottom: 4),
+      // Directional indent so the label mirrors with RTL (Phase 13).
+      padding: const EdgeInsetsDirectional.only(start: 4, bottom: 4),
       child: Text(
         text,
         style: AppTypography.labelMedium.copyWith(

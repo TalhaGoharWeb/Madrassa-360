@@ -241,6 +241,10 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
                 flex: 3,
                 child: DropdownButtonFormField<String?>(
                   initialValue: _tenantFilter,
+                  // The button already fills its Expanded cell; isExpanded
+                  // keeps the internal selected-value row within bounds so
+                  // long names ellipsize instead of overflowing (Phase 13).
+                  isExpanded: true,
                   decoration: const InputDecoration(
                     labelText: 'مدرسہ',
                     contentPadding:
@@ -248,7 +252,9 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
                   ),
                   items: [
                     const DropdownMenuItem<String?>(
-                        value: null, child: Text('تمام مدارس')),
+                        value: null,
+                        child: Text('تمام مدارس',
+                            overflow: TextOverflow.ellipsis)),
                     for (final t in _tenants)
                       DropdownMenuItem<String?>(
                         value: t['id'] as String,
@@ -269,6 +275,7 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
                 flex: 2,
                 child: DropdownButtonFormField<String?>(
                   initialValue: _actionFilter,
+                  isExpanded: true,
                   decoration: const InputDecoration(
                     labelText: 'عمل کی قسم',
                     contentPadding:
@@ -276,7 +283,9 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
                   ),
                   items: [
                     const DropdownMenuItem<String?>(
-                        value: null, child: Text('تمام اعمال')),
+                        value: null,
+                        child: Text('تمام اعمال',
+                            overflow: TextOverflow.ellipsis)),
                     for (final a in _actions)
                       DropdownMenuItem<String?>(
                           value: a, child: Text(auditActionLabelUrdu(a))),
@@ -296,6 +305,7 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
                 flex: 3,
                 child: DropdownButtonFormField<String?>(
                   initialValue: _actorFilter,
+                  isExpanded: true,
                   decoration: const InputDecoration(
                     labelText: 'صارف',
                     contentPadding:
@@ -303,7 +313,9 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
                   ),
                   items: [
                     const DropdownMenuItem<String?>(
-                        value: null, child: Text('تمام صارفین')),
+                        value: null,
+                        child: Text('تمام صارفین',
+                            overflow: TextOverflow.ellipsis)),
                     for (final id in _actorIds)
                       DropdownMenuItem<String?>(
                         value: id,
@@ -320,33 +332,35 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
               const SizedBox(width: 8),
               Expanded(
                 flex: 2,
-                child: Row(
+                // Wrap (not a squeezed Row of Expanded buttons): on a 360px
+                // phone the two date buttons cannot share ~125px without
+                // overflowing, so they stack; on wider screens they sit
+                // side by side (Phase 13 responsiveness).
+                child: Wrap(
+                  spacing: 4,
+                  runSpacing: 4,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () => _pickDay(true),
-                        icon: const Icon(Icons.calendar_today, size: 16),
-                        label: Text(
-                          _fromDay == null
-                              ? 'از تاریخ'
-                              : formatAuditDayUrdu(_fromDay!),
-                          overflow: TextOverflow.ellipsis,
-                          style: AppTypography.labelLarge,
-                        ),
+                    OutlinedButton.icon(
+                      onPressed: () => _pickDay(true),
+                      icon: const Icon(Icons.calendar_today, size: 16),
+                      label: Text(
+                        _fromDay == null
+                            ? 'از تاریخ'
+                            : formatAuditDayUrdu(_fromDay!),
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.labelLarge,
                       ),
                     ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () => _pickDay(false),
-                        icon: const Icon(Icons.calendar_today, size: 16),
-                        label: Text(
-                          _toDay == null
-                              ? 'تک تاریخ'
-                              : formatAuditDayUrdu(_toDay!),
-                          overflow: TextOverflow.ellipsis,
-                          style: AppTypography.labelLarge,
-                        ),
+                    OutlinedButton.icon(
+                      onPressed: () => _pickDay(false),
+                      icon: const Icon(Icons.calendar_today, size: 16),
+                      label: Text(
+                        _toDay == null
+                            ? 'تک تاریخ'
+                            : formatAuditDayUrdu(_toDay!),
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.labelLarge,
                       ),
                     ),
                     if (_fromDay != null || _toDay != null)
