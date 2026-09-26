@@ -36,6 +36,8 @@ class _UserManagementHubScreenState
   late final TabController _tabs;
   String _search = '';
 
+  bool _bulkActive = false;
+
   @override
   void initState() {
     super.initState();
@@ -84,13 +86,16 @@ class _UserManagementHubScreenState
           _UsersTab(
             search: _search,
             onSearch: (v) => setState(() => _search = v),
+            onBulkActive: (v) => setState(() => _bulkActive = v),
           ),
           const _RolesTab(),
         ],
       ),
       floatingActionButton: AnimatedBuilder(
         animation: _tabs,
-        builder: (context, _) => _tabs.index == 0
+        // Hide the FAB while the bulk-action bar is up: it would float
+        // over the bar's activate/deactivate menu.
+        builder: (context, _) => _tabs.index == 0 && !_bulkActive
             ? FloatingActionButton.extended(
                 onPressed: () async {
                   final created = await Navigator.push(
@@ -115,10 +120,17 @@ class _UserManagementHubScreenState
 // ─────────────────────────────────────────────────────────────
 
 class _UsersTab extends ConsumerStatefulWidget {
-  const _UsersTab({required this.search, required this.onSearch});
+  const _UsersTab({
+    required this.search,
+    required this.onSearch,
+    required this.onBulkActive,
+  });
 
   final String search;
   final ValueChanged<String> onSearch;
+
+  /// True while the bulk-action bar is visible (hub hides its FAB then).
+  final ValueChanged<bool> onBulkActive;
 
   @override
   ConsumerState<_UsersTab> createState() => _UsersTabState();
@@ -127,6 +139,10 @@ class _UsersTab extends ConsumerStatefulWidget {
 class _UsersTabState extends ConsumerState<_UsersTab> {
   final Set<String> _selected = {};
   bool _selectionMode = false;
+
+  void _notifyBulk() {
+    widget.onBulkActive(_selectionMode && _selected.isNotEmpty);
+  }
 
   void _toggleSelect(TenantUser u) {
     setState(() {
@@ -137,6 +153,7 @@ class _UsersTabState extends ConsumerState<_UsersTab> {
       }
       if (_selected.isEmpty) _selectionMode = false;
     });
+    _notifyBulk();
   }
 
   @override
@@ -166,10 +183,13 @@ class _UsersTabState extends ConsumerState<_UsersTab> {
                 tooltip: _selectionMode ? 'ختم کریں' : 'منتخب کریں',
                 icon: Icon(
                     _selectionMode ? Icons.close : Icons.checklist_outlined),
-                onPressed: () => setState(() {
-                  _selectionMode = !_selectionMode;
-                  if (!_selectionMode) _selected.clear();
-                }),
+                onPressed: () {
+                  setState(() {
+                    _selectionMode = !_selectionMode;
+                    if (!_selectionMode) _selected.clear();
+                  });
+                  _notifyBulk();
+                },
               ),
             ],
           ),
@@ -331,6 +351,7 @@ class _UsersTabState extends ConsumerState<_UsersTab> {
         _selected.clear();
         _selectionMode = false;
       });
+      _notifyBulk();
     } else {
       showUxSnack(context, err, isError: true);
     }
@@ -398,6 +419,7 @@ class _UsersTabState extends ConsumerState<_UsersTab> {
         _selected.clear();
         _selectionMode = false;
       });
+      _notifyBulk();
     } else {
       showUxSnack(context, err, isError: true);
     }

@@ -476,7 +476,10 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('1 منتخب'), findsOneWidget);
 
-      // destructive action must ask first
+      // destructive action must ask first (FAB hides while bulk bar is up,
+      // so the menu button is tappable)
+      await tester.ensureVisible(find.byType(PopupMenuButton<bool>));
+      await tester.pumpAndSettle();
       await tester.tap(find.byType(PopupMenuButton<bool>));
       await tester.pumpAndSettle();
       await tester.tap(find.text('غیر فعال کریں'));
@@ -513,6 +516,8 @@ void main() {
       await tester.tap(find.byIcon(Icons.checklist_outlined));
       await tester.pumpAndSettle();
       await tester.tap(find.text('محمد احمد'));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.byType(PopupMenuButton<bool>));
       await tester.pumpAndSettle();
       await tester.tap(find.byType(PopupMenuButton<bool>));
       await tester.pumpAndSettle();
@@ -600,10 +605,11 @@ void main() {
         classes: _classes(),
       );
       await pumpWizard(tester, repo);
-      expect(find.text('بنیادی معلومات'), findsOneWidget);
+      // 'بنیادی معلومات' appears both in the stepper and the section title
+      expect(find.text('بنیادی معلومات'), findsWidgets);
 
       await next(tester); // empty form must not advance
-      expect(find.text('بنیادی معلومات'), findsOneWidget);
+      expect(find.text('بنیادی معلومات'), findsWidgets);
       expect(find.text('نام درج کرنا ضروری ہے۔'), findsOneWidget);
     });
 
@@ -633,6 +639,8 @@ void main() {
       expect(find.text('ان کو یہ اختیارات حاصل ہوں گے'), findsOneWidget);
       expect(find.text('حاضری درج کر سکتا ہے'), findsOneWidget);
       expect(find.text('مزید اختیارات'), findsOneWidget);
+      await tester.ensureVisible(find.text('مزید اختیارات'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('مزید اختیارات'));
       await tester.pumpAndSettle();
       expect(find.text('فیس دیکھ سکتا ہے'), findsOneWidget);
@@ -642,6 +650,8 @@ void main() {
       expect(find.text('یہ اختیارات کن لوگوں پر لاگو ہوں گے؟'), findsOneWidget);
       expect(find.text('صرف میری مقرر کردہ جماعتیں'), findsOneWidget);
       expect(find.text('جماعت اول'), findsOneWidget);
+      await tester.ensureVisible(find.text('جماعت اول'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('جماعت اول'));
       await tester.pumpAndSettle();
       await next(tester);

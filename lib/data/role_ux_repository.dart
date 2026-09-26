@@ -681,10 +681,15 @@ class SupabaseRoleUxRepository implements RoleUxRepository {
         .eq('tenant_id', tenantId)
         .order('name');
     return (rows as List)
-        .map((r) => ClassRef(
-              id: (r as Map<String, dynamic>)['id'] as String? ?? '',
-              name: ((r as Map<String, dynamic>)['name'] as String?) ?? '',
-            ))
+        .map((r) {
+          final m = r as Map<String, dynamic>;
+          final id = m['id'];
+          final name = m['name'];
+          return ClassRef(
+            id: id is String ? id : '',
+            name: name is String ? name : '',
+          );
+        })
         .where((c) => c.id.isNotEmpty)
         .toList();
   }
@@ -701,10 +706,15 @@ class SupabaseRoleUxRepository implements RoleUxRepository {
         .order('name')
         .limit(25);
     return (rows as List)
-        .map((r) => StudentRef(
-              id: (r as Map<String, dynamic>)['id'] as String? ?? '',
-              name: ((r as Map<String, dynamic>)['name'] as String?) ?? '',
-            ))
+        .map((r) {
+          final m = r as Map<String, dynamic>;
+          final id = m['id'];
+          final name = m['name'];
+          return StudentRef(
+            id: id is String ? id : '',
+            name: name is String ? name : '',
+          );
+        })
         .where((s) => s.id.isNotEmpty)
         .toList();
   }
