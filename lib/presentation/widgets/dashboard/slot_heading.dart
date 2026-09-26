@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_typography.dart';
 
 /// Small bold heading used above a dashboard slot's content.
+/// Prefixed with the ❁ ornament per the v3 visual language.
 class SlotHeading extends StatelessWidget {
   final String title;
 
@@ -19,7 +20,7 @@ class SlotHeading extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Text(
-        title,
+        '❁ $title',
         style: AppTypography.titleMedium.copyWith(
           fontWeight: FontWeight.bold,
         ),
