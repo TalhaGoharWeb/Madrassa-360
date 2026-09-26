@@ -131,7 +131,6 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
               style: AppTypography.navLabel.copyWith(
                 color: isSelected ? AppColors.primary : AppColors.textSecondary,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                fontSize: 10,
               ),
             ),
           ],

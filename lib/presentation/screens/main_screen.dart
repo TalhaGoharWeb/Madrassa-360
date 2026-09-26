@@ -141,7 +141,6 @@ class _MainScreenState extends State<MainScreen> {
               style: AppTypography.navLabel.copyWith(
                 color: isSelected ? AppColors.primary : AppColors.textSecondary,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                fontSize: 11,
               ),
             ),
           ],
@@ -177,7 +176,6 @@ class _MainScreenState extends State<MainScreen> {
               style: AppTypography.navLabel.copyWith(
                 color: AppColors.warning,
                 fontWeight: FontWeight.bold,
-                fontSize: 11,
               ),
             ),
           ],

@@ -201,6 +201,30 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Widget _buildProfileHeader() {
+    // Real session data — never mock: name/email from the auth provider,
+    // Urdu role label from the role service (tenant's own display_urdu
+    // wins), institution name from tenant branding. SharedPreferences
+    // values are only fallbacks for locally-edited phone/photo.
+    final user = ref.watch(currentUserProvider);
+    final branding = ref.watch(tenantBrandingProvider).valueOrNull;
+    final roleService = ref.watch(roleServiceProvider);
+    final roleKeys = ref.watch(activeRoleKeysProvider);
+
+    final authName = (user?.name ?? '').trim();
+    final displayName = authName.isNotEmpty
+        ? authName
+        : (_name.isNotEmpty ? _name : 'اپنا نام شامل کریں');
+    final authEmail = (user?.email ?? '').trim();
+    final displayEmail = authEmail.isNotEmpty ? authEmail : _email;
+    final authPhone = (user?.phone ?? '').trim();
+    final displayPhone = authPhone.isNotEmpty ? authPhone : _phone;
+    final hasRealName = displayName != 'اپنا نام شامل کریں';
+    final initial = hasRealName ? displayName.trim()[0] : '';
+
+    final roleKey =
+        roleKeys.isNotEmpty ? roleKeys.first : (user?.role.name ?? '');
+    final madrasaName = branding?.displayName() ?? 'مدرسہ 360';
+
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -258,8 +282,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       child: ClipOval(
                         child: _photoPath != null
                             ? Image.file(File(_photoPath!), fit: BoxFit.cover)
-                            : const Icon(Icons.person,
-                                size: 48, color: Colors.white),
+                            : initial.isNotEmpty
+                                ? Center(
+                                    child: Text(
+                                      initial,
+                                      style: AppTypography.titleLarge.copyWith(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  )
+                                : const Icon(Icons.person,
+                                    size: 48, color: Colors.white),
                       ),
                     ),
                     Positioned(
@@ -282,42 +316,68 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
               // Name
               Text(
-                _name.isEmpty ? 'اپنا نام شامل کریں' : _name,
+                displayName,
                 style: AppTypography.titleLarge.copyWith(
-                  color: _name.isEmpty ? Colors.white60 : Colors.white,
+                  color: hasRealName ? Colors.white : Colors.white60,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 6),
 
-              // Role badge
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.white30),
+              // Role badge — real Urdu label from the role service
+              // (tenant's own display_urdu wins over template labels).
+              FutureBuilder<String>(
+                future: roleKey.isEmpty
+                    ? Future.value('مہمان')
+                    : roleService.roleUrduLabel(roleKey),
+                builder: (context, snap) => Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.white30),
+                  ),
+                  child: Text(
+                    snap.data ?? '…',
+                    style:
+                        AppTypography.labelMedium.copyWith(color: Colors.white),
+                  ),
                 ),
-                child: Text(
-                  'استاد',
-                  style:
-                      AppTypography.labelMedium.copyWith(color: Colors.white),
-                ),
+              ),
+              const SizedBox(height: 8),
+
+              // Institution / tenant name
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.mosque, color: Colors.white70, size: 16),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Text(
+                      madrasaName,
+                      style: AppTypography.labelMedium
+                          .copyWith(color: Colors.white70),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 12),
 
               // Contact info pills
-              if (_phone.isNotEmpty || _email.isNotEmpty)
+              if (displayPhone.isNotEmpty || displayEmail.isNotEmpty)
                 Wrap(
                   spacing: 10,
                   runSpacing: 6,
                   alignment: WrapAlignment.center,
                   children: [
-                    if (_phone.isNotEmpty)
-                      _ContactPill(icon: Icons.phone_outlined, label: _phone),
-                    if (_email.isNotEmpty)
-                      _ContactPill(icon: Icons.email_outlined, label: _email),
+                    if (displayPhone.isNotEmpty)
+                      _ContactPill(
+                          icon: Icons.phone_outlined, label: displayPhone),
+                    if (displayEmail.isNotEmpty)
+                      _ContactPill(
+                          icon: Icons.email_outlined, label: displayEmail),
                   ],
                 ),
             ],
@@ -328,9 +388,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   void _showEditProfileSheet(BuildContext context) {
-    final nameCtrl = TextEditingController(text: _name);
-    final phoneCtrl = TextEditingController(text: _phone);
-    final emailCtrl = TextEditingController(text: _email);
+    // Prefill from the signed-in user first; locally saved values are the
+    // fallback (e.g. device-local phone/photo customisations).
+    final user = ref.read(currentUserProvider);
+    final nameCtrl =
+        TextEditingController(text: _name.isNotEmpty ? _name : user?.name);
+    final phoneCtrl =
+        TextEditingController(text: _phone.isNotEmpty ? _phone : user?.phone);
+    final emailCtrl =
+        TextEditingController(text: _email.isNotEmpty ? _email : user?.email);
     String? tempPhotoPath = _photoPath;
 
     showModalBottomSheet(
