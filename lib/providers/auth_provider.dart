@@ -5,7 +5,9 @@ import 'package:supabase_flutter/supabase_flutter.dart' as sb;
 import '../data/repositories/auth_repository.dart';
 import '../core/errors/app_exceptions.dart';
 import '../core/errors/error_boundary.dart';
+import '../core/services/authorization_service.dart';
 import '../core/services/permission_service.dart';
+import '../core/services/role_service.dart';
 import '../core/services/storage_service.dart';
 import '../core/services/supabase_service.dart';
 import '../core/services/tenant_context.dart';
@@ -73,8 +75,9 @@ class AuthState {
   final String? errorMessage;
   final bool isAuthenticated;
 
-  /// The resolved permission codes for the current user.
-  /// Populated after login by [PermissionService.loadForUser].
+  /// The resolved permission codes for the ACTIVE tenant.
+  /// Populated at sign-in and reloaded on every tenant switch by
+  /// [AuthorizationService] (via `get_my_permissions_detailed`).
   final Set<String> permissions;
 
   /// Where the UI should navigate after the auth state settles.
@@ -272,9 +275,37 @@ class AuthNotifier extends StateNotifier<AuthState> {
   // ── Tenant selection (multi-tenant users) ────────────────────
 
   /// Switch to [tenantId] and move the route to [AuthRoute.home].
+  /// [TenantContext.switchTenant] persists the choice and reloads the
+  /// effective permission set for the new tenant (Phase 5).
   Future<void> selectTenant(String tenantId) async {
     await _ref.read(activeTenantIdProvider.notifier).switchTenant(tenantId);
     state = state.copyWith(route: AuthRoute.home);
+  }
+
+  /// Re-loads the effective permission set for the current active tenant
+  /// into [AuthState.permissions]. Called after tenant switches and on
+  /// session refreshes. No-op when signed out or when no tenant is active.
+  Future<void> refreshPermissions() async {
+    final tenantId = _ref.read(activeTenantIdProvider);
+    final user = state.user;
+    if (tenantId == null || user == null) return;
+    List<TenantMembership> memberships = <TenantMembership>[];
+    try {
+      memberships = await _ref.read(tenantMembershipsProvider.future);
+    } catch (_) {
+      // Offline: fall through with no memberships — AuthorizationService
+      // falls back to the persisted cache / static role defaults.
+    }
+    final perms = await _loadPermissionsForActiveTenant(
+      tenantId: tenantId,
+      memberships: memberships,
+      isPlatformAdmin: state.isPlatformAdmin,
+    );
+    if (!mounted) return;
+    state = state.copyWith(
+      permissions: perms,
+      user: user.copyWith(permissions: perms),
+    );
   }
 
   /// Clear a displayed error message.
@@ -282,8 +313,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   // ── Internals ────────────────────────────────────────────────
 
-  /// Full post-sign-in wiring: user → permissions → tenant context →
+  /// Full post-sign-in wiring: user → tenant context → permissions →
   /// memberships → platform-admin check → routing decision.
+  ///
+  /// Permissions are loaded AFTER the tenant context is initialized and
+  /// are scoped to the active tenant (Phase 5 — audit §C3).
   Future<void> _handleSignedIn() async {
     try {
       final user = await _repo.getSessionUser();
@@ -291,12 +325,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
         await _handleSignedOut();
         return;
       }
-      final perms = await PermissionService.loadForUser(
-        userId: user.id,
-        roleName: user.role.name,
-        madrasaId: user.madrasaId,
-      );
-      final userWithPerms = user.copyWith(permissions: perms);
 
       // Phase 3 wiring: restore/pick the active tenant, then load memberships.
       List<TenantMembership> memberships = <TenantMembership>[];
@@ -312,6 +340,14 @@ class AuthNotifier extends StateNotifier<AuthState> {
         tenantLoadOk = false;
         ErrorBoundary.handleErrorSimple(e, st, tag: 'auth/tenant-wiring');
       }
+
+      final tenantId = _ref.read(activeTenantIdProvider);
+      final perms = await _loadPermissionsForActiveTenant(
+        tenantId: tenantId,
+        memberships: memberships,
+        isPlatformAdmin: isPlatformAdmin,
+      );
+      final userWithPerms = user.copyWith(permissions: perms);
 
       final route = _resolveRoute(
         memberships: memberships,
@@ -332,6 +368,40 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  /// Loads the effective permission set for [tenantId] via
+  /// [AuthorizationService] (server RPC → offline cache → static fallback).
+  /// Returns an empty set when no tenant is active.
+  Future<Set<String>> _loadPermissionsForActiveTenant({
+    required String? tenantId,
+    required List<TenantMembership> memberships,
+    required bool isPlatformAdmin,
+  }) async {
+    if (tenantId == null) return <String>{};
+    final roleKey = _roleKeyForTenant(
+      memberships: memberships,
+      tenantId: tenantId,
+      isPlatformAdmin: isPlatformAdmin,
+    );
+    return _ref
+        .read(authorizationServiceProvider)
+        .ensureLoaded(tenantId, roleKey: roleKey);
+  }
+
+  /// The `tenant_memberships.role` key for [tenantId]. Used ONLY to pick the
+  /// static offline fallback — it is never sent to the server as authority.
+  String _roleKeyForTenant({
+    required List<TenantMembership> memberships,
+    required String tenantId,
+    required bool isPlatformAdmin,
+  }) {
+    for (final m in memberships) {
+      if (m.tenantId == tenantId && m.isActive) return m.role;
+    }
+    // Platform admins may operate without a membership row.
+    if (isPlatformAdmin) return 'platform_owner';
+    return '';
+  }
+
   /// Lightweight refresh on TOKEN_REFRESHED / USER_UPDATED:
   /// update user + permissions, keep the current route.
   Future<void> _refreshSessionUser() async {
@@ -341,15 +411,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
         await _handleSignedOut();
         return;
       }
-      final perms = await PermissionService.loadForUser(
-        userId: user.id,
-        roleName: user.role.name,
-        madrasaId: user.madrasaId,
-      );
+      // AuthorizationService serves the in-memory set when the tenant has
+      // not changed, so this stays cheap on every token refresh.
+      await refreshPermissions();
       state = state.copyWith(
-        user: user.copyWith(permissions: perms),
+        user: user.copyWith(permissions: state.permissions),
         isAuthenticated: true,
-        permissions: perms,
       );
     } catch (e, st) {
       ErrorBoundary.handleErrorSimple(e, st, tag: 'auth/session-refresh');
@@ -360,7 +427,16 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   /// Tear down everything tied to the session.
   Future<void> _handleSignedOut() async {
+    final userId = state.user?.id;
     try {
+      // Phase 5: drop in-memory authorization state and this user's
+      // persisted offline permission cache (keyed per user, so a later
+      // device user can never read it).
+      _ref.read(authorizationServiceProvider).clearCache();
+      _ref.read(roleServiceProvider).clearCache();
+      if (userId != null) {
+        await PermissionService.clearPersistedCache(userId);
+      }
       _ref.invalidate(tenantMembershipsProvider);
       await _ref.read(activeTenantIdProvider.notifier).clear();
     } catch (e, st) {
@@ -442,7 +518,9 @@ final currentUserRoleProvider = Provider<UserRole?>((ref) {
   return ref.watch(authProvider).user?.role;
 });
 
-/// The current user's set of permission codes.
+/// The current user's effective permission set for the ACTIVE tenant.
+/// Watches [authProvider]; reloaded by [AuthorizationService] at sign-in,
+/// on tenant switches, and on session refreshes (Phase 5).
 final userPermissionsProvider = Provider<Set<String>>((ref) {
   return ref.watch(authProvider).permissions;
 });
@@ -452,14 +530,15 @@ final isPlatformAdminProvider = Provider<bool>((ref) {
   return ref.watch(authProvider).isPlatformAdmin;
 });
 
-/// Returns true when the current user holds [permission].
-/// Usage: `ref.watch(hasPermissionProvider('view_students'))`
+/// Returns true when the current user holds [permission] in the ACTIVE tenant.
+/// Usage: `ref.watch(hasPermissionProvider('students.view'))`
 final hasPermissionProvider = Provider.family<bool, String>((ref, permission) {
   return ref.watch(userPermissionsProvider).contains(permission);
 });
 
-/// Returns true when the current user holds ALL of the supplied permissions.
-/// Usage: `ref.watch(hasAllPermissionsProvider({'create_students', 'edit_students'}))`
+/// Returns true when the current user holds ALL of the supplied permissions
+/// in the ACTIVE tenant.
+/// Usage: `ref.watch(hasAllPermissionsProvider({'students.create', 'students.edit'}))`
 final hasAllPermissionsProvider =
     Provider.family<bool, Set<String>>((ref, required) {
   final perms = ref.watch(userPermissionsProvider);
