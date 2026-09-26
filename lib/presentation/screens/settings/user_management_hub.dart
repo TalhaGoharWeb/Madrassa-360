@@ -17,6 +17,7 @@ import '../../../core/services/role_service.dart';
 import '../../../data/role_ux_repository.dart';
 import '../../../providers/role_ux_provider.dart';
 import 'role_ux_widgets.dart';
+import 'scope_manager_screen.dart';
 import 'user_detail_screen.dart';
 import 'user_wizard_screen.dart';
 
@@ -69,6 +70,18 @@ class _UserManagementHubScreenState
       appBar: AppBar(
         title: const Text('صارفین اور ذمہ داریاں'),
         centerTitle: true,
+        actions: [
+          IconButton(
+            tooltip: 'ڈیٹا حدود',
+            icon: const Icon(Icons.data_object_outlined),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ScopeManagerScreen()),
+              );
+            },
+          ),
+        ],
         bottom: TabBar(
           controller: _tabs,
           labelColor: AppColors.primary,
