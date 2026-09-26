@@ -478,9 +478,11 @@ void main() {
 
       // destructive action must ask first (FAB hides while bulk bar is up,
       // so the menu button is tappable)
-      await tester.ensureVisible(find.byType(PopupMenuButton<bool>));
+      final bulkMenu = find.byTooltip('فعال / غیر فعال');
+      expect(bulkMenu, findsOneWidget);
+      await tester.ensureVisible(bulkMenu);
       await tester.pumpAndSettle();
-      await tester.tap(find.byType(PopupMenuButton<bool>));
+      await tester.tap(bulkMenu);
       await tester.pumpAndSettle();
       await tester.tap(find.text('غیر فعال کریں'));
       await tester.pumpAndSettle();
@@ -517,9 +519,11 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('محمد احمد'));
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.byType(PopupMenuButton<bool>));
+      final bulkMenu = find.byTooltip('فعال / غیر فعال');
+      expect(bulkMenu, findsOneWidget);
+      await tester.ensureVisible(bulkMenu);
       await tester.pumpAndSettle();
-      await tester.tap(find.byType(PopupMenuButton<bool>));
+      await tester.tap(bulkMenu);
       await tester.pumpAndSettle();
       await tester.tap(find.text('غیر فعال کریں'));
       await tester.pumpAndSettle();

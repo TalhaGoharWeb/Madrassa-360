@@ -56,7 +56,7 @@ class TenantUser {
     final parts =
         name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
     if (parts.isEmpty) return '?';
-    final runes = (s) => String.fromCharCodes(s.runes.take(2));
+    String runes(String s) => String.fromCharCodes(s.runes.take(2));
     if (parts.length == 1) {
       return runes(parts.first);
     }
