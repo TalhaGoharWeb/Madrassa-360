@@ -63,8 +63,7 @@ class DashboardSection extends StatelessWidget {
         child: ExpansionTile(
           initiallyExpanded: initiallyExpanded,
           tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          childrenPadding:
-              const EdgeInsets.only(left: 8, right: 8, bottom: 12),
+          childrenPadding: const EdgeInsets.only(left: 8, right: 8, bottom: 12),
           leading: icon == null
               ? null
               : Container(

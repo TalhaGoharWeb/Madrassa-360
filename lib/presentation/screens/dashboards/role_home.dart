@@ -20,16 +20,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_typography.dart';
-import '../../core/services/role_service.dart';
-import '../../core/widgets/dashboard/alert_card.dart';
-import '../../core/widgets/dashboard/dashboard_scaffold.dart';
-import '../../core/widgets/dashboard/quick_actions.dart';
-import '../../core/widgets/master_admin_guard.dart' show fetchPlatformAdminRole;
-import '../../providers/announcement_provider.dart';
-import '../../providers/auth_provider.dart';
-import '../../providers/tenant_branding_provider.dart';
+import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_typography.dart';
+import '../../../core/services/role_service.dart';
+import '../../widgets/dashboard/alert_card.dart';
+import '../../widgets/dashboard/dashboard_scaffold.dart';
+import '../../widgets/dashboard/quick_actions.dart';
+import '../../../core/widgets/master_admin_guard.dart'
+    show fetchPlatformAdminRole;
+import '../../../providers/announcement_provider.dart';
+import '../../../providers/auth_provider.dart';
+import '../../../providers/tenant_branding_provider.dart';
 import '../common/announcements_screen.dart';
 import '../common/profile_screen.dart';
 import 'principal_dashboard.dart';

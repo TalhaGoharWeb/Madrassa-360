@@ -37,7 +37,7 @@ final todayCollectionProvider = FutureProvider<double>((ref) async {
     final today = _todayStr();
     return fees
         .where((f) => f.paidDate == today)
-        .fold(0.0, (sum, f) => sum + f.amountPaid);
+        .fold<double>(0.0, (sum, f) => sum + f.amountPaid);
   } catch (_) {
     return 0.0;
   }
@@ -45,8 +45,7 @@ final todayCollectionProvider = FutureProvider<double>((ref) async {
 
 /// Exams that have no results entered yet (drives the "نتائج باقی" alert).
 /// Empty when logged out or on failure — the alert simply doesn't render.
-final examsWithoutResultsProvider =
-    FutureProvider<List<Exam>>((ref) async {
+final examsWithoutResultsProvider = FutureProvider<List<Exam>>((ref) async {
   final tenantId = ref.watch(currentTenantIdProvider);
   if (tenantId == null) return const [];
   try {
@@ -74,10 +73,9 @@ final teacherTodayAttendanceStatusProvider =
     final now = DateTime.now();
     var done = 0;
     for (final classId in classIds) {
-      final records = await ref
-          .watch(classAttendanceProvider(
-            AttendanceParams(classId: classId, date: now),
-          ).future);
+      final records = await ref.watch(classAttendanceProvider(
+        AttendanceParams(classId: classId, date: now),
+      ).future);
       if (records.isNotEmpty) done++;
     }
     return (done: done, total: classIds.length);

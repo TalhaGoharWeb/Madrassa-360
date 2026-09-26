@@ -17,19 +17,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_permissions.dart';
-import '../../core/constants/app_typography.dart';
-import '../../core/widgets/dashboard/alert_card.dart';
-import '../../core/widgets/dashboard/dashboard_scaffold.dart';
-import '../../core/widgets/dashboard/quick_actions.dart';
-import '../../core/widgets/dashboard/stat_card.dart';
-import '../../core/widgets/dashboard/today_tasks.dart';
-import '../../providers/announcement_provider.dart';
-import '../../providers/auth_provider.dart';
-import '../../providers/dashboard_data_provider.dart';
-import '../../providers/teacher_portal_provider.dart';
-import '../../providers/tenant_branding_provider.dart';
+import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_permissions.dart';
+import '../../../core/constants/app_typography.dart';
+import '../../widgets/dashboard/alert_card.dart';
+import '../../widgets/dashboard/dashboard_scaffold.dart';
+import '../../widgets/dashboard/quick_actions.dart';
+import '../../widgets/dashboard/stat_card.dart';
+import '../../widgets/dashboard/today_tasks.dart';
+import '../../../providers/announcement_provider.dart';
+import '../../../providers/auth_provider.dart';
+import '../../../providers/dashboard_data_provider.dart';
+import '../../../providers/teacher_portal_provider.dart';
+import '../../../providers/tenant_branding_provider.dart';
 import '../common/announcements_screen.dart';
 import 'role_home.dart' show ComingSoonScreen;
 
@@ -255,7 +255,9 @@ class _TodayTasks extends ConsumerWidget {
     final labels = [
       (
         'آج کی حاضری مکمل کریں',
-        attTotal == 0 ? 'کوئی جماعت تفویض نہیں' : '$attDone میں سے $attTotal جماعتیں مکمل'
+        attTotal == 0
+            ? 'کوئی جماعت تفویض نہیں'
+            : '$attDone میں سے $attTotal جماعتیں مکمل'
       ),
       ('آج کے اسباق درج کریں', ''),
       ('نمبرات درج کریں', ''),

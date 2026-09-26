@@ -81,7 +81,9 @@ class MyStudentsScreen extends ConsumerWidget {
                             alpha: 0.1,
                           ),
                           child: Text(
-                            s.name.isEmpty ? '؟' : String.fromCharCode(s.name.runes.first),
+                            s.name.isEmpty
+                                ? '؟'
+                                : String.fromCharCode(s.name.runes.first),
                             style: AppTypography.titleMedium.copyWith(
                               color: AppColors.primary,
                             ),

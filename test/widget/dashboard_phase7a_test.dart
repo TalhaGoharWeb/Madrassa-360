@@ -63,8 +63,7 @@ ProviderContainer _container({
 
 void main() {
   group('StatCard', () {
-    testWidgets('renders icon, Urdu label and value together',
-        (tester) async {
+    testWidgets('renders icon, Urdu label and value together', (tester) async {
       await _pump(
         tester,
         _container(),

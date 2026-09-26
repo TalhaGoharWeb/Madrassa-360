@@ -89,8 +89,9 @@ class TodayTasks extends StatelessWidget {
           const Divider(height: 20),
           ...List.generate(tasks.length, (i) {
             final task = tasks[i];
-            final action =
-                rowActions != null && i < rowActions!.length ? rowActions![i] : null;
+            final action = rowActions != null && i < rowActions!.length
+                ? rowActions![i]
+                : null;
             return InkWell(
               onTap: () => onToggle(i, !task.done),
               borderRadius: BorderRadius.circular(8),
@@ -110,9 +111,8 @@ class TodayTasks extends StatelessWidget {
                           Text(
                             task.label,
                             style: AppTypography.bodyMedium.copyWith(
-                              decoration: task.done
-                                  ? TextDecoration.lineThrough
-                                  : null,
+                              decoration:
+                                  task.done ? TextDecoration.lineThrough : null,
                               color: task.done
                                   ? AppColors.textSecondary
                                   : AppColors.textPrimary,

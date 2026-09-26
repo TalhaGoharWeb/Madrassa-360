@@ -13,21 +13,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_permissions.dart';
-import '../../core/constants/app_typography.dart';
-import '../../core/services/role_service.dart';
-import '../../core/widgets/dashboard/alert_card.dart';
-import '../../core/widgets/dashboard/dashboard_scaffold.dart';
-import '../../core/widgets/dashboard/dashboard_section.dart';
-import '../../core/widgets/dashboard/quick_actions.dart';
-import '../../core/widgets/dashboard/stat_card.dart';
-import '../../providers/admin_dashboard_provider.dart';
-import '../../providers/announcement_provider.dart';
-import '../../providers/auth_provider.dart';
-import '../../providers/fee_provider.dart';
-import '../../providers/dashboard_data_provider.dart';
-import '../../providers/tenant_branding_provider.dart';
+import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_permissions.dart';
+import '../../../core/constants/app_typography.dart';
+import '../../../core/services/role_service.dart';
+import '../../widgets/dashboard/alert_card.dart';
+import '../../widgets/dashboard/dashboard_scaffold.dart';
+import '../../widgets/dashboard/dashboard_section.dart';
+import '../../widgets/dashboard/quick_actions.dart';
+import '../../widgets/dashboard/stat_card.dart';
+import '../../../providers/admin_dashboard_provider.dart';
+import '../../../providers/announcement_provider.dart';
+import '../../../providers/auth_provider.dart';
+import '../../../providers/fee_provider.dart';
+import '../../../providers/dashboard_data_provider.dart';
+import '../../../providers/tenant_branding_provider.dart';
 import '../admin/darja_screen.dart';
 import '../admin/fee_management_screen.dart';
 import '../admin/finance_screen.dart';
@@ -259,15 +259,16 @@ class _TodayOverview extends ConsumerWidget {
     final stats = ref.watch(dashboardStatsProvider).valueOrNull ??
         const DashboardStats.zero();
     final feeSummary = ref.watch(feeSummaryProvider).valueOrNull;
-    final todayCollection = ref.watch(todayCollectionProvider).valueOrNull ?? 0.0;
+    final todayCollection =
+        ref.watch(todayCollectionProvider).valueOrNull ?? 0.0;
 
     final marked = stats.todayPresent + stats.todayAbsent + stats.todayLeave;
     final attendancePct =
         marked == 0 ? null : (stats.todayPresent * 100 / marked);
 
-    final canSeeFees = (can(AppPermissions.viewFees) ||
-            can(AppPermissions.collectFees)) &&
-        moduleOk('fees');
+    final canSeeFees =
+        (can(AppPermissions.viewFees) || can(AppPermissions.collectFees)) &&
+            moduleOk('fees');
     final canSeeAttendance = can(AppPermissions.viewAttendance) ||
         can(AppPermissions.markAttendance);
 
@@ -327,11 +328,11 @@ class _TodayOverview extends ConsumerWidget {
                 child: StatCard(
                   icon: Icons.fact_check_outlined,
                   label: 'آج حاضری',
-                  value: attendancePct == null
-                      ? '—'
-                      : '${attendancePct.round()}٪',
+                  value:
+                      attendancePct == null ? '—' : '${attendancePct.round()}٪',
                   color: AppColors.present,
-                  subtitle: attendancePct == null ? 'ابھی شروع نہیں ہوئی' : null,
+                  subtitle:
+                      attendancePct == null ? 'ابھی شروع نہیں ہوئی' : null,
                   onTap: attendancePct == null
                       ? () => go(const AttendanceScreen())
                       : null,

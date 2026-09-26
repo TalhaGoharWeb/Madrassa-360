@@ -13,10 +13,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_permissions.dart';
-import '../../core/constants/app_typography.dart';
-import '../../providers/auth_provider.dart';
+import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_permissions.dart';
+import '../../../core/constants/app_typography.dart';
+import '../../../providers/auth_provider.dart';
 import '../teacher/attendance_screen.dart';
 import '../teacher/results_screen.dart';
 import 'my_classes_screen.dart';
@@ -100,8 +100,7 @@ class _TeacherHomeScreenState extends ConsumerState<TeacherHomeScreen> {
   /// Permission-gated tab list. Finance / users / settings / master-admin
   /// routes are deliberately absent — no tab can be constructed for them.
   List<_TeacherTab> _buildTabs() {
-    bool can(String permission) =>
-        ref.watch(hasPermissionProvider(permission));
+    bool can(String permission) => ref.watch(hasPermissionProvider(permission));
 
     final canStudents = can(AppPermissions.viewStudents);
     final canAttendance = can(AppPermissions.viewAttendance) ||

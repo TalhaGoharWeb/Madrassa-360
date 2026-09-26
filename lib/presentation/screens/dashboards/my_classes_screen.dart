@@ -60,8 +60,7 @@ class MyClassesScreen extends ConsumerWidget {
               return InkWell(
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (_) =>
-                        AttendanceScreen(initialClassId: a.classId),
+                    builder: (_) => AttendanceScreen(initialClassId: a.classId),
                   ),
                 ),
                 borderRadius: BorderRadius.circular(12),
@@ -96,8 +95,7 @@ class MyClassesScreen extends ConsumerWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(a.className,
-                                style: AppTypography.titleMedium),
+                            Text(a.className, style: AppTypography.titleMedium),
                             if (subtitle.isNotEmpty)
                               Text(subtitle,
                                   style: AppTypography.bodySmall.copyWith(
