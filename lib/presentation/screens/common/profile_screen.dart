@@ -543,8 +543,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       );
                     }
                   },
-                  child:
-                      Text('محفوظ کریں', style: AppTypography.labelLarge),
+                  child: Text('محفوظ کریں', style: AppTypography.labelLarge),
                 ),
               ),
               const SizedBox(height: 8),
