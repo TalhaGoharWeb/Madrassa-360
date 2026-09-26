@@ -13,8 +13,9 @@ class NetworkService {
   /// Initialize network monitoring
   static void init() {
     _connectionStatusController = StreamController<bool>.broadcast();
-    _connectivity.onConnectivityChanged.listen((result) {
-      _connectionStatusController?.add(result != ConnectivityResult.none);
+    _connectivity.onConnectivityChanged.listen((results) {
+      _connectionStatusController
+          ?.add(results.any((r) => r != ConnectivityResult.none));
     });
   }
 
@@ -25,8 +26,8 @@ class NetworkService {
   /// Check if device is connected to internet
   static Future<bool> isConnected() async {
     try {
-      final result = await _connectivity.checkConnectivity();
-      return result != ConnectivityResult.none;
+      final results = await _connectivity.checkConnectivity();
+      return results.any((r) => r != ConnectivityResult.none);
     } catch (e) {
       return false;
     }
@@ -46,7 +47,11 @@ class NetworkService {
 
   /// Get connection type
   static Future<String> getConnectionType() async {
-    final result = await _connectivity.checkConnectivity();
+    final results = await _connectivity.checkConnectivity();
+    final result = results.firstWhere(
+      (r) => r != ConnectivityResult.none,
+      orElse: () => ConnectivityResult.none,
+    );
     switch (result) {
       case ConnectivityResult.wifi:
         return 'WiFi';
