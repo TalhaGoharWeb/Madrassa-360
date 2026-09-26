@@ -450,13 +450,12 @@ class _UserAccountsTabState extends State<_UserAccountsTab> {
                 ),
               );
             },
-            child:
-                Text(
-                  'حذف کریں',
-                  style: AppTypography.bodyMedium.copyWith(
-                    color: Colors.white,
-                  ),
-                ),
+            child: Text(
+              'حذف کریں',
+              style: AppTypography.bodyMedium.copyWith(
+                color: Colors.white,
+              ),
+            ),
           ),
         ],
       ),
@@ -815,13 +814,12 @@ class _RolesTabState extends State<_RolesTab> {
                     err == null ? AppColors.error : AppColors.warning,
               ));
             },
-            child:
-                Text(
-                  'حذف کریں',
-                  style: AppTypography.bodyMedium.copyWith(
-                    color: Colors.white,
-                  ),
-                ),
+            child: Text(
+              'حذف کریں',
+              style: AppTypography.bodyMedium.copyWith(
+                color: Colors.white,
+              ),
+            ),
           ),
         ],
       ),
@@ -952,8 +950,7 @@ class _AccountCard extends StatelessWidget {
                       dense: true,
                       leading: Icon(Icons.delete_outline,
                           color: AppColors.error, size: 18),
-                      title: Text(
-                          'حذف کریں',
+                      title: Text('حذف کریں',
                           style: AppTypography.bodyMedium.copyWith(
                             color: AppColors.error,
                           )))),
