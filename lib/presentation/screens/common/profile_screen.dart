@@ -6,9 +6,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../core/services/role_service.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/tenant_branding_provider.dart';
 import '../auth/login_screen.dart';
+import '../settings/user_management_hub.dart';
 import 'about_screen.dart';
 
 /// پروفائل سکرین
@@ -107,6 +109,40 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ]),
 
                   const SizedBox(height: 20),
+
+                  // Administration group (Phase 8a — permission-gated)
+                  Builder(
+                    builder: (context) {
+                      final canManage =
+                          ref.watch(roleServiceProvider).canManageUsers();
+                      if (!canManage) {
+                        return const SizedBox.shrink();
+                      }
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _GroupLabel('انتظام'),
+                          const SizedBox(height: 8),
+                          _SettingsGroup(children: [
+                            _SettingsTile(
+                              icon: Icons.people_alt_outlined,
+                              label: 'صارفین اور ذمہ داریاں',
+                              subtitle: 'صارفین بنائیں، ذمہ داریاں سونپیں',
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      const UserManagementHubScreen(),
+                                ),
+                              ),
+                              isLast: true,
+                            ),
+                          ]),
+                          const SizedBox(height: 20),
+                        ],
+                      );
+                    },
+                  ),
 
                   // Support group
                   _GroupLabel('معاونت'),
