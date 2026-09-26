@@ -220,6 +220,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
               width: 112,
               height: 112,
               fit: BoxFit.cover,
+              // A missing or unbundled asset must never break the login
+              // screen (or its widget tests): fall back to a simple mark.
+              errorBuilder: (context, error, stackTrace) => Container(
+                width: 112,
+                height: 112,
+                color: AppColors.primary,
+                child: const Center(
+                  child: Icon(
+                    Icons.mosque,
+                    size: 50,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
             ),
           ),
         ),
@@ -402,7 +416,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         suffixIcon: IconButton(
           tooltip: _obscurePassword ? 'پاس ورڈ دکھائیں' : 'پاس ورڈ چھپائیں',
           icon: Icon(
-            _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+            _obscurePassword
+                ? Icons.visibility_outlined
+                : Icons.visibility_off_outlined,
             color: AppColors.textSecondary,
           ),
           onPressed: () =>
