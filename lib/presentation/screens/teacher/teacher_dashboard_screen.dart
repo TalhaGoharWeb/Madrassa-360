@@ -5,6 +5,7 @@ import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/teacher_portal_provider.dart';
+import '../common/dashboard_guide_screen.dart';
 
 /// استاد ڈیش بورڈ
 /// Teacher Dashboard Screen
@@ -22,6 +23,9 @@ class TeacherDashboardScreen extends StatelessWidget {
       return Scaffold(
         appBar: AppBar(
           title: Text(AppStrings.dashboard),
+          actions: const [
+            DashboardGuideButton(roleKey: 'teacher'),
+          ],
         ),
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(16),

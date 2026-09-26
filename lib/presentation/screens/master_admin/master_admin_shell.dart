@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/widgets/master_admin_guard.dart';
+import '../common/dashboard_guide_screen.dart';
 import '../main_screen.dart';
 import 'audit_logs_screen.dart';
 import 'licenses_screen.dart';
@@ -110,6 +111,7 @@ class _MasterAdminShellState extends State<MasterAdminShell> {
               : 'Platform Admin Console',
         ),
         actions: [
+          const DashboardGuideButton(roleKey: 'master'),
           // Always-visible exit: the drawer also has "Back to app", but an
           // operator should never have to hunt for the way out.
           TextButton.icon(

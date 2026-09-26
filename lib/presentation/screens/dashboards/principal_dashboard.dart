@@ -22,6 +22,7 @@ import '../../widgets/dashboard/dashboard_scaffold.dart';
 import '../../widgets/dashboard/schedule_slot.dart';
 import '../../widgets/dashboard/dashboard_section.dart';
 import '../../widgets/dashboard/quick_actions.dart';
+import '../common/dashboard_guide_screen.dart';
 import '../../widgets/dashboard/stat_card.dart';
 import '../../../providers/admin_dashboard_provider.dart';
 import '../../../providers/announcement_provider.dart';
@@ -73,6 +74,7 @@ class PrincipalDashboardScreen extends ConsumerWidget {
         userName: userName,
         roleLabel: snap.data?.isEmpty == true ? null : snap.data,
         madrasaName: madrasaName,
+        actions: const [DashboardGuideButton(roleKey: 'principal')],
         schedule: ScheduleSlot(scheduleProvider: principalDayScheduleProvider),
         stats: _TodayOverview(can: can, moduleOk: moduleOk),
         alertsTitle: 'اہم امور',

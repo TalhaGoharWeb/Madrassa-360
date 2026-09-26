@@ -44,6 +44,7 @@ import '../../../providers/announcement_provider.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/tenant_branding_provider.dart';
 import '../common/announcements_screen.dart';
+import '../common/dashboard_guide_screen.dart';
 import '../common/profile_screen.dart';
 import 'academic_admin_dashboard.dart';
 import 'accountant_dashboard.dart';
@@ -174,6 +175,15 @@ class GenericDashboardScreen extends ConsumerWidget {
           label: 'میری پروفائل',
           onTap: () => Navigator.of(context).push(
             MaterialPageRoute(builder: (_) => const ProfileScreen()),
+          ),
+        ),
+        QuickActionItem(
+          icon: Icons.help_outline,
+          label: 'رہنمائی',
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => const DashboardGuideScreen(roleKey: 'generic'),
+            ),
           ),
         ),
         // Platform console — visible only to platform operators.
