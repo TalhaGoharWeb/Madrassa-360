@@ -167,17 +167,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                     // manager can offer saved credentials (autofillHints).
                     child: AutofillGroup(
                       child: Column(
-                      children: [
-                        const SizedBox(height: 40),
-                        // Logo & App Name
-                        _buildHeader(),
-                        const SizedBox(height: 48),
-                        // Login Card
-                        _buildLoginCard(),
-                        const SizedBox(height: 24),
-                        // Footer
-                        _buildFooter(),
-                      ],
+                        children: [
+                          const SizedBox(height: 40),
+                          // Logo & App Name
+                          _buildHeader(),
+                          const SizedBox(height: 48),
+                          // Login Card
+                          _buildLoginCard(),
+                          const SizedBox(height: 24),
+                          // Footer
+                          _buildFooter(),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -334,7 +335,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
             ),
           ),
         ],
-        ),
       ),
     );
   }
