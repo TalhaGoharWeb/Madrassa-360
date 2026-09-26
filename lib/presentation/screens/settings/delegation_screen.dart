@@ -126,7 +126,7 @@ class _DelegationList extends ConsumerWidget {
           Expanded(
             child: Text(
               'آف لائن — آخری محفوظ فہرست دکھائی جا رہی ہے',
-              style: AppTypography.bodySmall
+              style: AppTypography.bodyMedium
                   .copyWith(color: AppColors.textPrimary),
             ),
           ),
@@ -219,7 +219,7 @@ class _DelegationCard extends ConsumerWidget {
             const SizedBox(height: 4),
             Text(
               'سونپنے والا: $delegatorName',
-              style: AppTypography.bodySmall
+              style: AppTypography.bodyMedium
                   .copyWith(color: AppColors.textSecondary),
             ),
           ],

@@ -271,7 +271,7 @@ class MaLoadingScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Platform Admin')),
+      appBar: AppBar(title: const Text('پلیٹ فارم منتظم')),
       body: LoadingWidget(message: message),
     );
   }
@@ -291,10 +291,10 @@ class MaErrorScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Platform Admin')),
+      appBar: AppBar(title: const Text('پلیٹ فارم منتظم')),
       body: EmptyStateWidget(
         icon: Icons.error_outline,
-        title: 'خرابی / Error',
+        title: 'خرابی',
         message: message,
         actionLabel: 'دوبارہ کوشش کریں',
         onAction: onRetry,
