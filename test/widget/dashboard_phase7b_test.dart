@@ -62,9 +62,8 @@ ProviderContainer _container({
     // The dashboards gate module features on tenantModulesProvider; with
     // no tenant the real provider yields an empty set, so enable the
     // modules under test explicitly (same pattern as the reports hub test).
-    tenantModulesProvider
-        .overrideWith((ref) async => {'fees', 'academics', 'hostel',
-                                      'library', 'exams', 'reports'}),
+    tenantModulesProvider.overrideWith((ref) async =>
+        {'fees', 'academics', 'hostel', 'library', 'exams', 'reports'}),
   ]);
   addTearDown(c.dispose);
   return c;
@@ -89,8 +88,7 @@ void main() {
       expect(find.byType(ClerkDashboardScreen), findsOneWidget);
     });
 
-    testWidgets('accountant routes to the finance dashboard',
-        (tester) async {
+    testWidgets('accountant routes to the finance dashboard', (tester) async {
       await _pump(
         tester,
         _container(
@@ -108,7 +106,8 @@ void main() {
       expect(find.byType(AccountantDashboardScreen), findsOneWidget);
     });
 
-    testWidgets('nazim_taleem routes to the academic dashboard (not '
+    testWidgets(
+        'nazim_taleem routes to the academic dashboard (not '
         'principal, despite satisfying isPrincipal)', (tester) async {
       await _pump(
         tester,
@@ -130,8 +129,7 @@ void main() {
         ),
         const RoleHomeScreen(),
       );
-      expect(
-          find.byType(AcademicAdminDashboardScreen), findsOneWidget);
+      expect(find.byType(AcademicAdminDashboardScreen), findsOneWidget);
       expect(find.byType(PrincipalDashboardScreen), findsNothing);
     });
 
@@ -151,8 +149,7 @@ void main() {
       expect(find.byType(HostelDashboardScreen), findsOneWidget);
     });
 
-    testWidgets('librarian routes to the library dashboard',
-        (tester) async {
+    testWidgets('librarian routes to the library dashboard', (tester) async {
       await _pump(
         tester,
         _container(
@@ -231,8 +228,7 @@ void main() {
   });
 
   group('Accountant dashboard', () {
-    testWidgets('renders مالی خلاصہ in plain Urdu, no jargon',
-        (tester) async {
+    testWidgets('renders مالی خلاصہ in plain Urdu, no jargon', (tester) async {
       await _pump(
         tester,
         _container(
@@ -331,8 +327,7 @@ void main() {
   });
 
   group('Exam wizard', () {
-    testWidgets('opens on step 1 with a progress indicator',
-        (tester) async {
+    testWidgets('opens on step 1 with a progress indicator', (tester) async {
       await _pump(
         tester,
         _container(
