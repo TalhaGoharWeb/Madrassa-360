@@ -22,7 +22,8 @@ class FeeManagementScreen extends ConsumerStatefulWidget {
   const FeeManagementScreen({super.key});
 
   @override
-  State<FeeManagementScreen> createState() => _FeeManagementScreenState();
+  ConsumerState<FeeManagementScreen> createState() =>
+      _FeeManagementScreenState();
 }
 
 class _FeeManagementScreenState extends ConsumerState<FeeManagementScreen>
