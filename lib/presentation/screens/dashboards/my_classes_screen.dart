@@ -28,7 +28,7 @@ class MyClassesScreen extends ConsumerWidget {
         error: (_, __) => Center(
           child: Text(
             'جماعتیں لوڈ کرنے میں خطا',
-            style: AppTypography.bodyMedium,
+            style: AppTypography.labelNastaliq,
           ),
         ),
         data: (assignments) {
@@ -38,7 +38,7 @@ class MyClassesScreen extends ConsumerWidget {
                 padding: const EdgeInsets.all(32),
                 child: Text(
                   'ابھی کوئی جماعت تفویض نہیں',
-                  style: AppTypography.bodyMedium.copyWith(
+                  style: AppTypography.labelNastaliq.copyWith(
                     color: AppColors.textSecondary,
                   ),
                   textAlign: TextAlign.center,
@@ -98,7 +98,8 @@ class MyClassesScreen extends ConsumerWidget {
                             Text(a.className, style: AppTypography.titleMedium),
                             if (subtitle.isNotEmpty)
                               Text(subtitle,
-                                  style: AppTypography.bodySmall.copyWith(
+                                  style: AppTypography.labelNastaliq.copyWith(
+                                    fontSize: 15,
                                     color: AppColors.textSecondary,
                                   )),
                           ],

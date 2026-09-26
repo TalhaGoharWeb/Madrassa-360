@@ -360,8 +360,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ),
                   child: Text(
                     snap.data ?? '…',
-                    style:
-                        AppTypography.labelMedium.copyWith(color: Colors.white),
+                    style: AppTypography.labelNastaliq.copyWith(
+                      fontSize: 15,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ),
@@ -376,7 +378,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   Flexible(
                     child: Text(
                       madrasaName,
-                      style: AppTypography.labelMedium
+                      style: AppTypography.labelNastaliq
                           .copyWith(color: Colors.white70),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -537,13 +539,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     if (mounted) {
                       messenger.showSnackBar(
                         const SnackBar(
-                          content: Text('پروفائل محفوظ کر دیا گیا'),
+                          content: Text('پروفائل محفوظ کر دیا گیا',
+                              style: AppTypography.labelNastaliq.copyWith(
+                                color: Colors.white,
+                              )),
                           backgroundColor: Colors.green,
                         ),
                       );
                     }
                   },
-                  child: Text('محفوظ کریں', style: AppTypography.labelLarge),
+                  child: Text('محفوظ کریں', style: AppTypography.labelNastaliq),
                 ),
               ),
               const SizedBox(height: 8),
@@ -571,7 +576,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('محفوظ کریں'),
+            child: Text('محفوظ کریں', style: AppTypography.labelNastaliq),
           ),
         ],
       ),
@@ -593,7 +598,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('بند کریں'),
+            child: Text('بند کریں', style: AppTypography.labelNastaliq),
           ),
         ],
       ),
@@ -621,8 +626,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 children: [
                   Text(
                     'استعمال کرنے کے طریقے:',
-                    style: AppTypography.bodyLarge
-                        .copyWith(fontWeight: FontWeight.bold),
+                    style: AppTypography.labelNastaliq
+                        .copyWith(fontSize: 17, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -635,8 +640,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   const SizedBox(height: 16),
                   Text(
                     'رابطہ کریں:',
-                    style: AppTypography.bodyLarge
-                        .copyWith(fontWeight: FontWeight.bold),
+                    style: AppTypography.labelNastaliq
+                        .copyWith(fontSize: 17, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -649,7 +654,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('بند کریں'),
+                child: Text('بند کریں', style: AppTypography.labelNastaliq),
               ),
             ],
           );
@@ -665,12 +670,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         title: Text('لاگ آؤٹ کی تصدیق', style: AppTypography.titleLarge),
         content: Text(
           'کیا آپ واقعی لاگ آؤٹ کرنا چاہتے ہیں؟',
-          style: AppTypography.bodyLarge,
+          style: AppTypography.labelNastaliq
+              .copyWith(fontSize: 17, fontWeight: FontWeight.normal),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('منسوخ کریں'),
+            child: Text('منسوخ کریں', style: AppTypography.labelNastaliq),
           ),
           TextButton(
             onPressed: () async {
@@ -687,7 +693,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             },
             child: Text(
               'لاگ آؤٹ',
-              style: AppTypography.bodyMedium.copyWith(color: AppColors.error),
+              style: AppTypography.labelNastaliq.copyWith(
+                fontSize: 17,
+                fontWeight: FontWeight.normal,
+                color: AppColors.error,
+              ),
             ),
           ),
         ],
@@ -700,7 +710,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       builder: (context, setState) {
         bool value = initialValue;
         return SwitchListTile(
-          title: Text(label, style: AppTypography.bodyMedium),
+          title: Text(label, style: AppTypography.labelNastaliq),
           value: value,
           onChanged: (newValue) => setState(() => value = newValue),
           activeThumbColor: AppColors.primary,
@@ -711,11 +721,19 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   Widget _buildLanguageOption(String language, bool isSelected) {
     return ListTile(
-      title: Text(language, style: AppTypography.bodyLarge),
+      title: Text(language,
+          style: AppTypography.isUrduText(language)
+              ? AppTypography.labelNastaliq
+                  .copyWith(fontSize: 17, fontWeight: FontWeight.normal)
+              : AppTypography.bodyLarge),
       trailing: isSelected ? Icon(Icons.check, color: AppColors.primary) : null,
       onTap: () {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$language منتخب کی گئی')),
+          SnackBar(
+              content: Text('$language منتخب کی گئی',
+                  style: AppTypography.labelNastaliq.copyWith(
+                    color: Colors.white,
+                  ))),
         );
       },
     );
@@ -736,9 +754,8 @@ class _GroupLabel extends StatelessWidget {
       padding: const EdgeInsetsDirectional.only(start: 4, bottom: 4),
       child: Text(
         text,
-        style: AppTypography.labelMedium.copyWith(
+        style: AppTypography.labelNastaliq.copyWith(
           color: AppColors.textSecondary,
-          letterSpacing: 0.5,
         ),
       ),
     );
@@ -812,12 +829,14 @@ class _SettingsTile extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(label,
-                          style: AppTypography.bodyLarge
-                              .copyWith(color: textColour)),
+                          style: AppTypography.labelNastaliq.copyWith(
+                              fontSize: 17,
+                              fontWeight: FontWeight.normal,
+                              color: textColour)),
                       if (subtitle != null)
                         Text(subtitle!,
-                            style: AppTypography.labelSmall
-                                .copyWith(color: AppColors.textSecondary)),
+                            style: AppTypography.labelNastaliq.copyWith(
+                                fontSize: 15, color: AppColors.textSecondary)),
                     ],
                   ),
                 ),
@@ -857,7 +876,8 @@ class _ContactPill extends StatelessWidget {
           Icon(icon, color: Colors.white70, size: 14),
           const SizedBox(width: 5),
           Text(label,
-              style: AppTypography.labelSmall.copyWith(color: Colors.white70)),
+              style: AppTypography.labelNastaliq
+                  .copyWith(fontSize: 15, color: Colors.white70)),
         ],
       ),
     );

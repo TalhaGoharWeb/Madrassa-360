@@ -35,7 +35,7 @@ class ProfileAvatarButton extends ConsumerWidget {
             child: initial.isNotEmpty
                 ? Text(
                     initial,
-                    style: AppTypography.labelLarge.copyWith(
+                    style: AppTypography.labelNastaliq.copyWith(
                       color: AppColors.primary,
                       fontWeight: FontWeight.bold,
                     ),

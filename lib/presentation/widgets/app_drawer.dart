@@ -74,7 +74,10 @@ class AppDrawer extends ConsumerWidget {
                           isSelected ? headerColor : AppColors.textSecondary),
                   title: Text(
                     item.label,
-                    style: AppTypography.bodyMedium.copyWith(
+                    style: (AppTypography.isUrduText(item.label)
+                            ? AppTypography.labelNastaliq
+                            : AppTypography.bodyMedium)
+                        .copyWith(
                       color: isSelected ? headerColor : AppColors.textSecondary,
                       fontWeight:
                           isSelected ? FontWeight.bold : FontWeight.normal,

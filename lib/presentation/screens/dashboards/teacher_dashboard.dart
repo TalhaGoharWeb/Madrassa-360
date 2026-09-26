@@ -293,7 +293,7 @@ class _LatestAnnouncements extends ConsumerWidget {
         ),
         child: Text(
           'ابھی کوئی اعلان نہیں',
-          style: AppTypography.bodyMedium,
+          style: AppTypography.labelNastaliq,
           textAlign: TextAlign.center,
         ),
       );

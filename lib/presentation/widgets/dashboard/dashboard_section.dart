@@ -96,7 +96,8 @@ class DashboardSection extends StatelessWidget {
                   crossAxisCount: 3,
                   mainAxisSpacing: 8,
                   crossAxisSpacing: 8,
-                  mainAxisExtent: 96,
+                  // Tall enough for two Nastaliq label lines (15sp, height 2.0).
+                  mainAxisExtent: 104,
                 ),
                 itemCount: tiles.length,
                 itemBuilder: (context, index) {
@@ -120,7 +121,9 @@ class DashboardSection extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(horizontal: 4),
                             child: Text(
                               tile.label,
-                              style: AppTypography.labelMedium,
+                              style: AppTypography.labelNastaliq.copyWith(
+                                fontSize: 15,
+                              ),
                               textAlign: TextAlign.center,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,

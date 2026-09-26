@@ -60,7 +60,10 @@ class AlertCard extends StatelessWidget {
           Expanded(
             child: Text(
               message,
-              style: AppTypography.bodyMedium,
+              style: AppTypography.labelNastaliq.copyWith(
+                fontSize: 17,
+                fontWeight: FontWeight.normal,
+              ),
             ),
           ),
           const SizedBox(width: 8),
@@ -72,8 +75,9 @@ class AlertCard extends StatelessWidget {
             ),
             child: Text(
               actionLabel,
-              style: AppTypography.labelMedium.copyWith(
+              style: AppTypography.labelNastaliq.copyWith(
                 fontWeight: FontWeight.bold,
+                color: color,
               ),
             ),
           ),

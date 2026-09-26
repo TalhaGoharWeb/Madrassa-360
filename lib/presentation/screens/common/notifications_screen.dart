@@ -126,7 +126,9 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
             _isUrdu
                 ? 'اطلاعات لوڈ نہیں ہو سکیں'
                 : 'Could not load notifications',
-            style: AppTypography.bodyMedium,
+            style: _isUrdu
+                ? AppTypography.labelNastaliq
+                : AppTypography.bodyMedium,
           ),
         ),
         data: (rows) {
@@ -147,7 +149,9 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                     _isUrdu
                         ? 'فیس، نتائج اور اعلانات کی اطلاعات یہاں نظر آئیں گی'
                         : 'Fee, result and announcement updates will appear here',
-                    style: AppTypography.bodySmall,
+                    style: _isUrdu
+                        ? AppTypography.labelNastaliq.copyWith(fontSize: 15)
+                        : AppTypography.bodySmall,
                     textAlign: TextAlign.center,
                   ),
                 ],
@@ -192,9 +196,14 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                 title: Text(
                   n.titleFor(urdu: _isUrdu),
                   style: (read
-                          ? AppTypography.bodyMedium
-                          : AppTypography.bodyMedium
-                              .copyWith(fontWeight: FontWeight.bold))
+                          ? (_isUrdu
+                              ? AppTypography.labelNastaliq
+                              : AppTypography.bodyMedium)
+                          : (_isUrdu
+                              ? AppTypography.labelNastaliq
+                                  .copyWith(fontWeight: FontWeight.bold)
+                              : AppTypography.bodyMedium
+                                  .copyWith(fontWeight: FontWeight.bold)))
                       .copyWith(
                     fontFamily: _isUrdu ? 'JameelNooriNastaleeq' : null,
                   ),
@@ -214,7 +223,11 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                     const SizedBox(height: 2),
                     Text(
                       _timeAgo(n.createdAtDate, _isUrdu),
-                      style: AppTypography.bodySmall.copyWith(
+                      style: (_isUrdu
+                              ? AppTypography.labelNastaliq
+                                  .copyWith(fontSize: 15)
+                              : AppTypography.bodySmall)
+                          .copyWith(
                         color: Colors.grey.shade600,
                         fontFamily: null,
                       ),

@@ -185,7 +185,7 @@ class _Header extends StatelessWidget {
             const SizedBox(height: 2),
             Text(
               roleLabel!,
-              style: AppTypography.bodySmall.copyWith(
+              style: AppTypography.labelNastaliq.copyWith(
                 color: Colors.white70,
               ),
             ),
@@ -204,7 +204,7 @@ class _Header extends StatelessWidget {
                   const SizedBox(width: 6),
                   Text(
                     dateLine,
-                    style: AppTypography.bodySmall.copyWith(
+                    style: AppTypography.labelNastaliq.copyWith(
                       color: Colors.white70,
                     ),
                   ),
@@ -238,7 +238,8 @@ class _HijriChip extends StatelessWidget {
       ),
       child: Text(
         hijriLine,
-        style: AppTypography.labelSmall.copyWith(
+        style: AppTypography.labelNastaliq.copyWith(
+          fontSize: 15,
           color: Colors.white,
         ),
       ),

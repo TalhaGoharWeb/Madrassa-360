@@ -27,9 +27,13 @@ class AppTypography {
   static const String naskhFamily = 'NotoNaskhArabic';
 
   /// Base display style: Jameel Noori Nastaleeq v4.
+  ///
+  /// Defensive fallback to the embedded Naskh family: if the Nastaliq file
+  /// ever lacks a glyph (Latin letters, digits), text still renders in an
+  /// embedded Urdu font — never the platform system font.
   static TextStyle get _displayBase => const TextStyle(
         fontFamily: nastaliqFamily,
-        fontFamilyFallback: ['NotoNastaliqUrdu'],
+        fontFamilyFallback: [naskhFamily],
       );
 
   /// Base hero style: Kasheeda (falls back to regular Nastaliq).
@@ -39,8 +43,13 @@ class AppTypography {
       );
 
   /// Base body style: Noto Naskh Arabic.
+  ///
+  /// Defensive fallback to the Nastaliq family: if the Naskh family ever
+  /// fails to resolve at runtime, Urdu text must still render in an
+  /// embedded Urdu font — never the platform system font.
   static TextStyle get _bodyBase => const TextStyle(
         fontFamily: naskhFamily,
+        fontFamilyFallback: [nastaliqFamily],
       );
 
   // ------------------------------------------------------------------
@@ -83,6 +92,27 @@ class AppTypography {
       );
 
   static TextStyle get titleSmall => _displayBase.copyWith(
+        fontSize: 16,
+        fontWeight: FontWeight.w500,
+        color: AppColors.textPrimary,
+        height: 2.0,
+      );
+
+  /// True when [text] contains Urdu/Arabic-script characters.
+  ///
+  /// Use for bilingual labels whose language is only known from the string
+  /// itself: pick [labelNastaliq] for Urdu text, a Naskh style for Latin.
+  static bool isUrduText(String text) => RegExp(
+        r'[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]',
+      ).hasMatch(text);
+
+  /// Small Nastaliq label — stat-card labels, quick-action / section tile
+  /// labels, chips, short status lines, tab labels.
+  ///
+  /// Nastaleeq stays legible at >= 15sp; every use keeps line height >= 2.0
+  /// so nuqtas never clip. This is the style that guarantees short Urdu UI
+  /// text always renders in the embedded Jameel Noori Nastaleeq family.
+  static TextStyle get labelNastaliq => _displayBase.copyWith(
         fontSize: 16,
         fontWeight: FontWeight.w500,
         color: AppColors.textPrimary,
@@ -169,10 +199,10 @@ class AppTypography {
         height: 2.0,
       );
 
-  static TextStyle get navLabel => _bodyBase.copyWith(
-        fontSize: 14,
+  static TextStyle get navLabel => _displayBase.copyWith(
+        fontSize: 15,
         fontWeight: FontWeight.w500,
-        height: 1.6,
+        height: 2.0,
       );
 
   /// Helper to create a custom display (Nastaliq) style.
