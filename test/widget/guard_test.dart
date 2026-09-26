@@ -7,7 +7,10 @@
 //
 // Guards are presentation-only (RLS remains the enforcement); these tests
 // pin the show/hide behavior. ScopeGuard needs Supabase for scope rows, so
-// only its "no active tenant -> unrestricted" contract is covered here.
+// only its fail-closed contracts are covered here: with no resolvable scope
+// (no active tenant, or no signed-in session because Supabase is
+// uninitialized in tests) the guard hides the child — mirroring migration
+// 022, where `scope_allows()` denies when no `permission_scopes` row exists.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -131,9 +134,9 @@ void main() {
   });
 
   group('ScopeGuard', () {
-    testWidgets('shows the child when no scope restricts it (no tenant)',
+    testWidgets('hides the child when no scope can be resolved (no tenant)',
         (tester) async {
-      // No active tenant -> _ensureLoaded returns {} -> unrestricted.
+      // No active tenant -> _ensureLoaded returns null -> fail closed.
       final c = ProviderContainer();
       addTearDown(c.dispose);
 
@@ -148,7 +151,33 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      expect(find.text('حاضری لگائیں'), findsOneWidget);
+      expect(find.text('حاضری لگائیں'), findsNothing);
+    });
+
+    testWidgets('hides the child when the session cannot be resolved',
+        (tester) async {
+      // Tenant active but Supabase uninitialized in tests -> no user id ->
+      // fail closed (022: no row means deny).
+      final c = ProviderContainer(overrides: [
+        activeTenantIdProvider.overrideWith((ref) => TenantContext(ref)),
+      ]);
+      addTearDown(c.dispose);
+      c.read(activeTenantIdProvider.notifier).state = 'tenant-1';
+
+      await tester.pumpWidget(_harness(
+        c,
+        const ScopeGuard(
+          permission: AppPermissions.markAttendance,
+          classId: 'c1',
+          fallback: Text('رسائی نہیں'),
+          child: Text('حاضری لگائیں'),
+        ),
+      ));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('حاضری لگائیں'), findsNothing);
+      expect(find.text('رسائی نہیں'), findsOneWidget);
     });
   });
 }
