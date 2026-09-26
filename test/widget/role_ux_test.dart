@@ -477,11 +477,10 @@ void main() {
       expect(find.text('1 منتخب'), findsOneWidget);
 
       // destructive action must ask first (FAB hides while bulk bar is up,
-      // so the menu button is tappable)
+      // so the menu button is tappable; no ensureVisible — the bar is fixed,
+      // and ensureVisible would page the TabBarView away)
       final bulkMenu = find.byTooltip('فعال / غیر فعال');
       expect(bulkMenu, findsOneWidget);
-      await tester.ensureVisible(bulkMenu);
-      await tester.pumpAndSettle();
       await tester.tap(bulkMenu);
       await tester.pumpAndSettle();
       await tester.tap(find.text('غیر فعال کریں'));
@@ -521,8 +520,6 @@ void main() {
       await tester.pumpAndSettle();
       final bulkMenu = find.byTooltip('فعال / غیر فعال');
       expect(bulkMenu, findsOneWidget);
-      await tester.ensureVisible(bulkMenu);
-      await tester.pumpAndSettle();
       await tester.tap(bulkMenu);
       await tester.pumpAndSettle();
       await tester.tap(find.text('غیر فعال کریں'));
