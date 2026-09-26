@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:uuid/uuid.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
@@ -25,6 +26,26 @@ class _StaffListScreenState extends State<StaffListScreen> {
   final _searchController = TextEditingController();
   WidgetRef? _ref;
 
+  /// Dials the staff member's phone number (real device action).
+  Future<void> _callStaff(String phone) async {
+    final number = phone.trim();
+    if (number.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('فون نمبر درج نہیں')),
+      );
+      return;
+    }
+    final uri = Uri(scheme: 'tel', path: number);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('کال شروع نہیں ہو سکی')),
+      );
+    }
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -41,12 +62,6 @@ class _StaffListScreenState extends State<StaffListScreen> {
       return Scaffold(
         appBar: AppBar(
           title: Text(AppStrings.staff),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.filter_list),
-              onPressed: () {},
-            ),
-          ],
         ),
         body: staffAsync.isLoading
             ? const Center(child: CircularProgressIndicator())
@@ -320,7 +335,7 @@ class _StaffListScreenState extends State<StaffListScreen> {
               ),
               const SizedBox(height: 8),
               IconButton(
-                onPressed: () {},
+                onPressed: () => _callStaff(staff.phone),
                 icon: const Icon(Icons.phone, size: 20),
                 color: AppColors.primary,
                 style: IconButton.styleFrom(
@@ -475,7 +490,10 @@ class _StaffListScreenState extends State<StaffListScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: ElevatedButton.icon(
-                          onPressed: () {},
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _callStaff(staff.phone);
+                          },
                           icon: const Icon(Icons.phone),
                           label: const Text('فون کریں'),
                         ),

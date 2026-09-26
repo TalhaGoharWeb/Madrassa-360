@@ -212,7 +212,7 @@ class FeeHistoryScreen extends StatelessWidget {
 
     return AppCard(
       margin: const EdgeInsets.only(bottom: 8),
-      onTap: () {},
+      onTap: () => _showFeeDetails(context, fee),
       child: Row(
         children: [
           // Status Icon
@@ -290,6 +290,83 @@ class FeeHistoryScreen extends StatelessWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  /// never invented data.
+  void _showFeeDetails(BuildContext context, Fee fee) {
+    final rows = <(String, String)>[
+      ('مہینہ', fee.month),
+      ('طالب علم', fee.studentName),
+      ('جماعت', fee.studentClass),
+      ('واجب الادا', '${fee.amountDue.toInt()} روپے'),
+      ('ادا شدہ', '${fee.amountPaid.toInt()} روپے'),
+      ('باقی', '${fee.remaining.toInt()} روپے'),
+      ('حیثیت', fee.status.urduLabel),
+      ('آخری تاریخ', fee.dueDate),
+      ('ادائیگی کی تاریخ', fee.paidDate ?? '—'),
+    ];
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.divider,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'فیس کی تفصیل',
+              style: AppTypography.titleMedium
+                  .copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            for (final row in rows)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        row.$1,
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      row.$2,
+                      style: AppTypography.bodyMedium
+                          .copyWith(fontWeight: FontWeight.w600),
+                      textAlign: TextAlign.end,
+                    ),
+                  ],
+                ),
+              ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('بند کریں'),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

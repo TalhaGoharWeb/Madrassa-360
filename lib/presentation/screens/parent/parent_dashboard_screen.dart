@@ -7,6 +7,9 @@ import '../../../data/models/attendance_status.dart';
 import '../../../data/models/student.dart';
 import '../../../providers/parent_portal_provider.dart';
 import '../../widgets/common/app_widgets.dart';
+import '../common/announcements_screen.dart';
+import '../common/notifications_screen.dart';
+import 'fee_history_screen.dart';
 
 /// والدین ڈیش بورڈ
 /// Parent Dashboard Screen with Child Overview
@@ -35,7 +38,11 @@ class _ParentDashboardScreenState extends ConsumerState<ParentDashboardScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.notifications_outlined),
-            onPressed: () {},
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const NotificationsScreen(),
+              ),
+            ),
           ),
         ],
       ),
@@ -249,9 +256,9 @@ class _ParentDashboardScreenState extends ConsumerState<ParentDashboardScreen> {
             ),
           ),
 
-          // More Options
+          // More Options — real child actions (fee history, announcements).
           IconButton(
-            onPressed: () {},
+            onPressed: () => _showChildActions(context),
             icon: const Icon(Icons.more_vert, color: Colors.white),
           ),
         ],
@@ -437,6 +444,51 @@ class _ParentDashboardScreenState extends ConsumerState<ParentDashboardScreen> {
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  /// Real child actions: fee history and announcements — both
+  /// data-backed screens, never placeholders.
+  void _showChildActions(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 12),
+            ListTile(
+              leading:
+                  const Icon(Icons.receipt_long_outlined, color: Colors.green),
+              title: Text('فیس کی ہسٹری', style: AppTypography.bodyLarge),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const FeeHistoryScreen(),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.campaign_outlined, color: Colors.blue),
+              title: Text('اعلانات', style: AppTypography.bodyLarge),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const AnnouncementsScreen(),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+          ],
+        ),
       ),
     );
   }

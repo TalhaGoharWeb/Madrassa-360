@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart' hide DateUtils;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:printing/printing.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../core/reports/documents/fee_receipt.dart';
+import '../../../core/reports/report_branding.dart';
+import '../../../core/reports/urdu_pdf.dart';
 import '../../../core/services/tenant_context.dart';
+import '../../../core/sync/sync_providers.dart';
 import '../../../core/utils/date_utils.dart';
 import '../../../data/models/fee.dart';
 import '../../../providers/admin_dashboard_provider.dart';
@@ -20,7 +25,7 @@ class FeeManagementScreen extends StatefulWidget {
   State<FeeManagementScreen> createState() => _FeeManagementScreenState();
 }
 
-class _FeeManagementScreenState extends State<FeeManagementScreen>
+class _FeeManagementScreenState extends ConsumerState<FeeManagementScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   String _selectedStatus = 'all';
@@ -790,19 +795,8 @@ class _FeeManagementScreenState extends State<FeeManagementScreen>
                   const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton.icon(
-                      onPressed: () {
-                        // Phase 6 (mock purge): there is no print engine yet —
-                        // the old code showed a fake "printing…" success. Be
-                        // honest instead.
-                        // TODO(phase-8): wire to a real receipt printer via the
-                        // `printing` package once the dependency is approved.
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('رسید پرنٹنگ جلد دستیاب ہوگی'),
-                          ),
-                        );
-                        Navigator.pop(context);
-                      },
+                      onPressed: () =>
+                          _printReceipt(context, record, receiptNo),
                       icon: const Icon(Icons.print),
                       label: const Text('پرنٹ کریں'),
                       style: ElevatedButton.styleFrom(
@@ -817,6 +811,31 @@ class _FeeManagementScreenState extends State<FeeManagementScreen>
         ),
       ),
     );
+  }
+
+  /// Real receipt printing: builds the branded Urdu PDF from the fee
+  /// record's real data and opens the system print dialog.
+  Future<void> _printReceipt(
+      BuildContext context, Fee record, String receiptNo) async {
+    Navigator.pop(context);
+    try {
+      final tenantId = ref.read(currentTenantIdProvider);
+      final db = ref.read(appDatabaseProvider);
+      final branding = await loadReportBranding(db, tenantId ?? '');
+      final bytes = await FeeReceiptPdf.build(
+        branding: branding,
+        urdu: UrduPdf(),
+        record: record,
+        receiptNo: receiptNo,
+        monthLabel: _monthLabel(record.month),
+      );
+      await Printing.layoutPdf(onLayout: (_) async => bytes);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('پرنٹ میں خرابی: $e')),
+      );
+    }
   }
 
   Widget _buildReceiptRow(String label, String value) {

@@ -3,9 +3,10 @@
 ///
 /// * Stats: درجات، اساتذہ، طلبہ، آج حاضری، زیرِ تکمیل نتائج — all from
 ///   real queries ([academicOverviewProvider]).
-/// * Quick actions: استاد مقرر کریں، جماعت بنائیں، نصاب ترتیب دیں،
+/// * Quick actions: استاد مقرر کریں، جماعت بنائیں،
 ///   امتحان بنائیں (step-by-step wizard)، نتائج دیکھیں — each gated on
-///   its own permission.
+///   its own permission. (نصاب has no data source yet, so the action is
+///   omitted rather than shown as a placeholder.)
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -27,7 +28,6 @@ import '../admin/student_list_screen.dart';
 import '../teacher/attendance_screen.dart';
 import '../teacher/results_screen.dart';
 import 'exam_wizard_screen.dart';
-import 'role_home.dart' show ComingSoonScreen;
 
 class AcademicAdminDashboardScreen extends ConsumerWidget {
   const AcademicAdminDashboardScreen({super.key});
@@ -255,13 +255,6 @@ class _AcademicQuickActions extends ConsumerWidget {
           icon: Icons.school_outlined,
           label: 'جماعت بنائیں',
           onTap: () => go(const DarjaScreen()),
-        ),
-      if (can(AppPermissions.manageDarjas) && moduleOk('academics'))
-        QuickActionItem(
-          icon: Icons.menu_book_outlined,
-          label: 'نصاب ترتیب دیں',
-          color: AppColors.info,
-          onTap: () => go(const ComingSoonScreen(title: 'نصاب')),
         ),
       if (can(AppPermissions.createExams))
         QuickActionItem(

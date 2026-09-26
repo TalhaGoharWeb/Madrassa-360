@@ -1,10 +1,13 @@
 /// استاد ہوم — ٹیب شیل
 /// Teacher home shell (Phase 7a, §7 + §42 role-specific navigation).
 ///
-/// Bottom-nav menu: ڈیش بورڈ، میری جماعتیں، میرے طلبہ، حاضری، تدریس،
+/// Bottom-nav menu: ڈیش بورڈ، میری جماعتیں، میرے طلبہ، حاضری،
 /// امتحانات، نتائج. Each tab is included ONLY when the teacher holds the
 /// relevant permission (via [hasPermissionProvider] — the same mechanism
 /// [PermissionGuard] uses, i.e. guards, not mere omission).
+///
+/// تدریس (lesson logging) has no data source yet, so the tab is omitted
+/// entirely — never a "coming soon" tab.
 ///
 /// Finance, payroll, settings, user management and master admin are NEVER
 /// added here: there is no code path in this shell that can render them
@@ -19,9 +22,9 @@ import '../../../core/constants/app_typography.dart';
 import '../../../providers/auth_provider.dart';
 import '../teacher/attendance_screen.dart';
 import '../teacher/results_screen.dart';
+import 'exam_dashboard.dart';
 import 'my_classes_screen.dart';
 import 'my_students_screen.dart';
-import 'role_home.dart' show ComingSoonScreen;
 import 'teacher_dashboard.dart';
 
 class _TeacherTab {
@@ -160,20 +163,12 @@ class _TeacherHomeScreenState extends ConsumerState<TeacherHomeScreen> {
       ));
     }
 
-    // تدریس has no screen yet — clean placeholder, never a dead button.
-    tabs.add(const _TeacherTab(
-      label: 'تدریس',
-      icon: Icons.menu_book_outlined,
-      activeIcon: Icons.menu_book,
-      screen: ComingSoonScreen(title: 'تدریس', showAppBar: false),
-    ));
-
     if (canExams) {
       tabs.add(const _TeacherTab(
         label: 'امتحانات',
         icon: Icons.assignment_outlined,
         activeIcon: Icons.assignment,
-        screen: ComingSoonScreen(title: 'امتحانات', showAppBar: false),
+        screen: ExamDashboardScreen(),
       ));
     }
 

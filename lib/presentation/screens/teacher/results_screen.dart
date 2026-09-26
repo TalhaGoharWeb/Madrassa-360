@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:printing/printing.dart';
+import 'package:uuid/uuid.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../core/reports/documents/result_documents.dart';
+import '../../../core/reports/report_branding.dart';
+import '../../../core/reports/urdu_pdf.dart';
+import '../../../core/services/tenant_context.dart';
+import '../../../core/sync/sync_providers.dart';
 import '../../../data/models/result.dart';
 import '../../../data/models/student.dart';
 import '../../../providers/result_provider.dart';
@@ -19,7 +26,7 @@ class ResultsScreen extends StatefulWidget {
   State<ResultsScreen> createState() => _ResultsScreenState();
 }
 
-class _ResultsScreenState extends State<ResultsScreen>
+class _ResultsScreenState extends ConsumerState<ResultsScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
@@ -33,6 +40,20 @@ class _ResultsScreenState extends State<ResultsScreen>
   /// class — never the old hard-coded name list.
   String _entryClassId = '';
 
+  /// Exam type picked in the ENTRY tab (null = not picked yet).
+  String? _entryExamType;
+
+  /// Fixed subject set for the entry tab (each out of 100).
+  static const _entrySubjects = ['قرآن', 'حدیث', 'فقہ'];
+
+  /// Marks controllers keyed by '<studentId>::<subject>'.
+  final Map<String, TextEditingController> _marksControllers = {};
+
+  TextEditingController _marksController(String studentId, String subject) {
+    final key = '$studentId::$subject';
+    return _marksControllers.putIfAbsent(key, TextEditingController.new);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -42,6 +63,9 @@ class _ResultsScreenState extends State<ResultsScreen>
   @override
   void dispose() {
     _tabController.dispose();
+    for (final c in _marksControllers.values) {
+      c.dispose();
+    }
     super.dispose();
   }
 
@@ -571,7 +595,7 @@ class _ResultsScreenState extends State<ResultsScreen>
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
-                      onPressed: () {},
+                      onPressed: () => _shareResult(result),
                       icon: const Icon(Icons.share),
                       label: const Text('شیئر کریں'),
                     ),
@@ -632,6 +656,8 @@ class _ResultsScreenState extends State<ResultsScreen>
                     'ہفتہ وار ٹیسٹ',
                     'سالانہ امتحان'
                   ],
+                  value: _entryExamType,
+                  onChanged: (v) => setState(() => _entryExamType = v),
                 ),
               ],
             ),
@@ -668,8 +694,7 @@ class _ResultsScreenState extends State<ResultsScreen>
                           Icons.people_outline)
                       : Column(
                           children: [
-                            for (final s in students)
-                              _buildStudentEntryCard(s.name, s.rollNo),
+                            for (final s in students) _buildStudentEntryCard(s),
                           ],
                         ),
                 );
@@ -678,22 +703,12 @@ class _ResultsScreenState extends State<ResultsScreen>
 
           const SizedBox(height: 24),
 
-          // Save Button
+          // Save Button — persists through ResultNotifier (exam header +
+          // one SubjectResult row per student × subject).
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: () {
-                // Phase 6 (mock purge): marks entry has no backing Exam
-                // record yet, so persisting would be fake — be honest.
-                // TODO(phase-8): persist via ResultNotifier.save once an
-                // exam entity (examId) exists for the selected exam type.
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                        'نتائج کی مستقل محفوظ سازی امتحان ماڈیول کے ساتھ آئے گی'),
-                  ),
-                );
-              },
+              onPressed: _saveEntryResults,
               icon: const Icon(Icons.save),
               label: const Text('نتائج محفوظ کریں'),
               style: ElevatedButton.styleFrom(
@@ -758,7 +773,9 @@ class _ResultsScreenState extends State<ResultsScreen>
     );
   }
 
-  Widget _buildStudentEntryCard(String name, String rollNo) {
+  Widget _buildStudentEntryCard(Student student) {
+    final name = student.name;
+    final rollNo = student.rollNo;
     return AppCard(
       margin: const EdgeInsets.only(bottom: 12),
       child: Column(
@@ -799,19 +816,20 @@ class _ResultsScreenState extends State<ResultsScreen>
           ),
           const Divider(height: 24),
 
-          // Subject Input Fields
+          // Subject Input Fields — controllers captured per student so
+          // the save button can persist real marks.
           Row(
             children: [
               Expanded(
-                child: _buildMarksInput('قرآن'),
+                child: _buildMarksInput(student.id, _entrySubjects[0]),
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: _buildMarksInput('حدیث'),
+                child: _buildMarksInput(student.id, _entrySubjects[1]),
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: _buildMarksInput('فقہ'),
+                child: _buildMarksInput(student.id, _entrySubjects[2]),
               ),
             ],
           ),
@@ -820,7 +838,7 @@ class _ResultsScreenState extends State<ResultsScreen>
     );
   }
 
-  Widget _buildMarksInput(String subject) {
+  Widget _buildMarksInput(String studentId, String subject) {
     return Column(
       children: [
         Text(
@@ -831,6 +849,7 @@ class _ResultsScreenState extends State<ResultsScreen>
         SizedBox(
           height: 40,
           child: TextField(
+            controller: _marksController(studentId, subject),
             keyboardType: TextInputType.number,
             textAlign: TextAlign.center,
             style: AppTypography.bodyMedium,
@@ -978,16 +997,163 @@ class _ResultsScreenState extends State<ResultsScreen>
     );
   }
 
-  void _printResults(String type) {
-    // Phase 6 (mock purge): there is no print engine yet — the old code
-    // showed a fake green "printing…" snackbar. Be honest instead.
-    // TODO(phase-8): wire to a real result printer via the `printing`
-    // package once the dependency is approved.
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('نتائج پرنٹنگ جلد دستیاب ہوگی'),
-        duration: Duration(seconds: 2),
-      ),
-    );
+  /// Persists the entry tab: creates the exam header (class + exam type
+  /// are required) and upserts one SubjectResult row per student ×
+  /// subject — all tenant-scoped through [ResultNotifier].
+  Future<void> _saveEntryResults() async {
+    final classId = _entryClassId;
+    final examType = _entryExamType;
+    if (classId.isEmpty || examType == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('براہ کرم جماعت اور امتحان کی قسم منتخب کریں'),
+        ),
+      );
+      return;
+    }
+    final tenantId = ref.read(currentTenantIdProvider);
+    if (tenantId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('کوئی فعال ادارہ نہیں')),
+      );
+      return;
+    }
+    final classes = ref.read(teacherAssignedClassesProvider).valueOrNull ??
+        const <AssignedClass>[];
+    String className = '';
+    for (final c in classes) {
+      if (c.id == classId) className = c.name;
+    }
+    final students =
+        ref.read(teacherClassStudentsProvider(classId)).valueOrNull ??
+            const <Student>[];
+
+    final marks = <({String studentId, String subject, double value})>[];
+    for (final s in students) {
+      for (final subject in _entrySubjects) {
+        final text = _marksControllers['${s.id}::$subject']?.text.trim() ?? '';
+        if (text.isEmpty) continue;
+        final value = double.tryParse(text);
+        if (value == null || value < 0) continue;
+        marks.add((studentId: s.id, subject: subject, value: value));
+      }
+    }
+    if (marks.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('کوئی نمبر درج نہیں کیے گئے')),
+      );
+      return;
+    }
+
+    try {
+      final notifier = ref.read(resultNotifierProvider.notifier);
+      final now = DateTime.now();
+      final exam = await notifier.createExam(
+        name: '$examType — $className',
+        classId: classId,
+        examDate:
+            '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}',
+        totalMarks: _entrySubjects.length * 100,
+      );
+      for (final m in marks) {
+        await notifier.save(SubjectResult(
+          id: const Uuid().v4(),
+          tenantId: tenantId,
+          examId: exam.id,
+          studentId: m.studentId,
+          subject: m.subject,
+          marksObtained: m.value,
+          totalMarks: 100,
+        ));
+      }
+      for (final c in _marksControllers.values) {
+        c.clear();
+      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${marks.length} نتائج محفوظ ہو گئے')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('محفوظ کرنے میں خرابی: $e')),
+      );
+    }
+  }
+
+  /// Shares one student's result card as a PDF through the system
+  /// share sheet.
+  Future<void> _shareResult(StudentResult result) async {
+    try {
+      final tenantId = ref.read(currentTenantIdProvider);
+      final db = ref.read(appDatabaseProvider);
+      final branding = await loadReportBranding(db, tenantId ?? '');
+      final bytes = await ResultDocuments.resultCard(
+        branding: branding,
+        urdu: UrduPdf(),
+        result: result,
+      );
+      await Printing.sharePdf(
+        bytes: bytes,
+        filename: 'result_${result.studentId}.pdf',
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('شیئر کرنے میں خرابی: $e')),
+      );
+    }
+  }
+
+  /// Prints the teacher-scoped results list (all / excellent / failed)
+  /// as a branded Urdu PDF.
+  Future<void> _printResults(String type) async {
+    final classes = ref.read(teacherAssignedClassesProvider).valueOrNull ??
+        const <AssignedClass>[];
+    final allowed = <String>{};
+    for (final c in classes) {
+      final students =
+          ref.read(teacherClassStudentsProvider(c.id)).valueOrNull ??
+              const <Student>[];
+      for (final s in students) {
+        allowed.add(s.id);
+      }
+    }
+    final all =
+        ref.read(allResultsProvider).valueOrNull ?? const <StudentResult>[];
+    var list = all.where((r) => allowed.contains(r.studentId)).toList();
+    late final String titleUr;
+    late final String titleEn;
+    switch (type) {
+      case 'excellent':
+        list = list.where((r) => r.percentage >= 90).toList();
+        titleUr = 'ممتاز طلباء کے نتائج';
+        titleEn = 'Excellent results';
+      case 'failed':
+        list = list.where((r) => r.percentage < 50).toList();
+        titleUr = 'ناکام طلباء کے نتائج';
+        titleEn = 'Failed students results';
+      default:
+        titleUr = 'کل طلباء کے نتائج';
+        titleEn = 'All results';
+    }
+    try {
+      final tenantId = ref.read(currentTenantIdProvider);
+      final db = ref.read(appDatabaseProvider);
+      final branding = await loadReportBranding(db, tenantId ?? '');
+      final bytes = await ResultDocuments.resultsSummary(
+        branding: branding,
+        urdu: UrduPdf(),
+        titleUr: titleUr,
+        titleEn: titleEn,
+        results: list,
+      );
+      await Printing.layoutPdf(onLayout: (_) async => bytes);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('پرنٹ میں خرابی: $e')),
+      );
+    }
   }
 }
