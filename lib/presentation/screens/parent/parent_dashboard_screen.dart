@@ -9,6 +9,7 @@ import '../../../providers/parent_portal_provider.dart';
 import '../../widgets/common/app_widgets.dart';
 import '../common/announcements_screen.dart';
 import '../common/notifications_screen.dart';
+import '../common/dashboard_guide_screen.dart';
 import 'fee_history_screen.dart';
 
 /// والدین ڈیش بورڈ
@@ -36,6 +37,7 @@ class _ParentDashboardScreenState extends ConsumerState<ParentDashboardScreen> {
       appBar: AppBar(
         title: Text(AppStrings.home),
         actions: [
+          const DashboardGuideButton(roleKey: 'parent'),
           IconButton(
             icon: const Icon(Icons.notifications_outlined),
             onPressed: () => Navigator.of(context).push(

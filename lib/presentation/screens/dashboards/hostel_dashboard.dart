@@ -17,6 +17,7 @@ import '../../../core/services/role_service.dart';
 import '../../widgets/dashboard/dashboard_scaffold.dart';
 import '../../widgets/dashboard/day_timeline.dart';
 import '../../widgets/dashboard/quick_actions.dart';
+import '../common/dashboard_guide_screen.dart';
 import '../../widgets/dashboard/slot_heading.dart';
 import '../../widgets/dashboard/stat_card.dart';
 import '../../../providers/auth_provider.dart';
@@ -52,6 +53,7 @@ class HostelDashboardScreen extends ConsumerWidget {
         userName: userName,
         roleLabel: snap.data?.isEmpty == true ? null : snap.data,
         madrasaName: madrasaName,
+        actions: const [DashboardGuideButton(roleKey: 'hostel')],
         schedule: const DayTimeline(),
         stats: _HostelStats(can: can, moduleOk: moduleOk),
         quickActionsTitle: 'فوری عمل',

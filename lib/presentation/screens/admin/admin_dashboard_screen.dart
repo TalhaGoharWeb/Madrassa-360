@@ -18,6 +18,7 @@ import '../common/announcements_screen.dart';
 import '../teacher/attendance_screen.dart';
 import '../teacher/results_screen.dart';
 import '../common/notifications_screen.dart';
+import '../common/dashboard_guide_screen.dart';
 import '../reports/reports_hub_screen.dart';
 import 'backup_screen.dart';
 
@@ -66,6 +67,7 @@ class AdminDashboardScreen extends StatelessWidget {
                       AppTypography.appBarTitle.copyWith(color: Colors.white),
                 ),
           actions: [
+            const DashboardGuideButton(roleKey: 'admin'),
             IconButton(
               icon: const Icon(Icons.notifications_outlined),
               onPressed: () => Navigator.of(context).push(

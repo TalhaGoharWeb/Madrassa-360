@@ -4,6 +4,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../providers/madrasa_provider.dart';
 import '../../../providers/auth_provider.dart';
+import '../common/dashboard_guide_screen.dart';
 import 'madrasa_management_screen.dart';
 
 /// @deprecated Phase-3 replacement: the legacy single-tenant Super Admin
@@ -73,6 +74,11 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
                           Text('سپر ایڈمن پینل',
                               style: AppTypography.headingSmall
                                   .copyWith(color: Colors.white)),
+                          const Spacer(),
+                          const DashboardGuideButton(
+                            roleKey: 'super_admin',
+                            color: Colors.white,
+                          ),
                         ]),
                         const SizedBox(height: 6),
                         Text('مدرسہ 360 — فرنچائز نیٹ ورک',

@@ -19,6 +19,7 @@ import '../../widgets/dashboard/alert_card.dart';
 import '../../widgets/dashboard/dashboard_scaffold.dart';
 import '../../widgets/dashboard/schedule_slot.dart';
 import '../../widgets/dashboard/quick_actions.dart';
+import '../common/dashboard_guide_screen.dart';
 import '../../widgets/dashboard/slot_heading.dart';
 import '../../widgets/dashboard/stat_card.dart';
 import '../../../providers/auth_provider.dart';
@@ -53,6 +54,7 @@ class ExamDashboardScreen extends ConsumerWidget {
         userName: userName,
         roleLabel: snap.data?.isEmpty == true ? null : snap.data,
         madrasaName: madrasaName,
+        actions: const [DashboardGuideButton(roleKey: 'exam')],
         schedule: ScheduleSlot(scheduleProvider: examDayScheduleProvider),
         stats: _ExamStats(can: can),
         alertsTitle: 'اہم امور',
