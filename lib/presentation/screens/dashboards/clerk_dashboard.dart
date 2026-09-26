@@ -36,8 +36,7 @@ class ClerkDashboardScreen extends ConsumerStatefulWidget {
       _ClerkDashboardScreenState();
 }
 
-class _ClerkDashboardScreenState
-    extends ConsumerState<ClerkDashboardScreen> {
+class _ClerkDashboardScreenState extends ConsumerState<ClerkDashboardScreen> {
   final List<bool> _done = [false, false, false];
 
   @override
@@ -54,8 +53,7 @@ class _ClerkDashboardScreenState
     bool moduleOk(String module) =>
         enabledModules == null || enabledModules.contains(module);
 
-    bool can(String permission) =>
-        ref.watch(hasPermissionProvider(permission));
+    bool can(String permission) => ref.watch(hasPermissionProvider(permission));
 
     return FutureBuilder<String>(
       future: roleKeys.isEmpty
@@ -92,8 +90,7 @@ class _ClerkStats extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final admissions =
-        ref.watch(newAdmissionsProvider).valueOrNull ?? const [];
+    final admissions = ref.watch(newAdmissionsProvider).valueOrNull ?? const [];
     final todayCollection =
         ref.watch(todayCollectionProvider).valueOrNull ?? 0.0;
 
@@ -296,8 +293,7 @@ class _ClerkTasks extends ConsumerWidget {
           MaterialPageRoute(builder: (_) => screen),
         );
 
-    final admissions =
-        ref.watch(newAdmissionsProvider).valueOrNull ?? const [];
+    final admissions = ref.watch(newAdmissionsProvider).valueOrNull ?? const [];
 
     // (task, row action, slot in the caller's done-state list) — the slot
     // keeps toggle state aligned even when a permission hides a row.
@@ -340,8 +336,7 @@ class _ClerkTasks extends ConsumerWidget {
     if (entries.isEmpty) return const SizedBox.shrink();
     return TodayTasks(
       tasks: [
-        for (final e in entries)
-          e.task.copyWith(done: done[e.slot]),
+        for (final e in entries) e.task.copyWith(done: done[e.slot]),
       ],
       onToggle: (i, v) => onToggle(entries[i].slot, v),
       rowActions: [for (final e in entries) e.action],

@@ -40,8 +40,7 @@ class LibraryDashboardScreen extends ConsumerWidget {
     bool moduleOk(String module) =>
         enabledModules == null || enabledModules.contains(module);
 
-    bool can(String permission) =>
-        ref.watch(hasPermissionProvider(permission));
+    bool can(String permission) => ref.watch(hasPermissionProvider(permission));
 
     return FutureBuilder<String>(
       future: roleKeys.isEmpty
@@ -94,9 +93,8 @@ class _LibraryStats extends ConsumerWidget {
                 label: 'کل کتب',
                 value: '${overview.totalBooks}',
                 color: AppColors.primary,
-                subtitle: overview.totalBooks == 0
-                    ? 'ابھی کوئی کتاب درج نہیں'
-                    : null,
+                subtitle:
+                    overview.totalBooks == 0 ? 'ابھی کوئی کتاب درج نہیں' : null,
                 onTap: () => go(const LibraryScreen()),
               ),
             ),

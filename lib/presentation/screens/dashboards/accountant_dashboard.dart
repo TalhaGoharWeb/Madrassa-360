@@ -55,8 +55,7 @@ class _AccountantDashboardScreenState
     bool moduleOk(String module) =>
         enabledModules == null || enabledModules.contains(module);
 
-    bool can(String permission) =>
-        ref.watch(hasPermissionProvider(permission));
+    bool can(String permission) => ref.watch(hasPermissionProvider(permission));
 
     return FutureBuilder<String>(
       future: roleKeys.isEmpty
@@ -94,9 +93,8 @@ class _FinanceSummary extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final todayCollection =
         ref.watch(todayCollectionProvider).valueOrNull ?? 0.0;
-    final overview =
-        ref.watch(financeOverviewProvider).valueOrNull ??
-            const FinanceOverview.zero();
+    final overview = ref.watch(financeOverviewProvider).valueOrNull ??
+        const FinanceOverview.zero();
     final feeSummary = ref.watch(feeSummaryProvider).valueOrNull;
 
     final canSeeFees =
@@ -121,9 +119,8 @@ class _FinanceSummary extends ConsumerWidget {
                   label: 'آج کی وصولی',
                   value: formatRs(todayCollection),
                   color: AppColors.success,
-                  subtitle: todayCollection == 0
-                      ? 'ابھی کوئی وصولی نہیں'
-                      : null,
+                  subtitle:
+                      todayCollection == 0 ? 'ابھی کوئی وصولی نہیں' : null,
                   onTap: () => go(const FeeManagementScreen()),
                 ),
               ),
@@ -135,9 +132,8 @@ class _FinanceSummary extends ConsumerWidget {
                   label: 'آج کے اخراجات',
                   value: formatRs(overview.todayExpenses),
                   color: AppColors.warning,
-                  subtitle: overview.todayExpenses == 0
-                      ? 'ابھی کوئی خرچ نہیں'
-                      : null,
+                  subtitle:
+                      overview.todayExpenses == 0 ? 'ابھی کوئی خرچ نہیں' : null,
                   onTap: () => go(const FinanceScreen()),
                 ),
               ),
@@ -153,12 +149,10 @@ class _FinanceSummary extends ConsumerWidget {
                   label: 'بقایا فیس',
                   value: formatRs(feeSummary?.totalDue ?? 0),
                   color: AppColors.error,
-                  subtitle: (feeSummary != null &&
-                          feeSummary.pendingCount > 0)
+                  subtitle: (feeSummary != null && feeSummary.pendingCount > 0)
                       ? '${feeSummary.pendingCount} طلبہ کی باقی'
                       : 'کوئی بقایا نہیں',
-                  onTap: (feeSummary != null &&
-                          feeSummary.pendingCount > 0)
+                  onTap: (feeSummary != null && feeSummary.pendingCount > 0)
                       ? () => go(const FeeManagementScreen())
                       : null,
                 ),
@@ -373,8 +367,7 @@ class _FinanceTasks extends ConsumerWidget {
             done: e.slot == 0
                 ? (todayCollection > 0 || done[e.slot])
                 : e.slot == 1
-                    ? ((overview?.todayExpenses ?? 0) > 0 ||
-                        done[e.slot])
+                    ? ((overview?.todayExpenses ?? 0) > 0 || done[e.slot])
                     : done[e.slot],
           ),
       ],
