@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../providers/auth_provider.dart';
-import '../main_screen.dart';
+import '../dashboards/role_home.dart';
 import 'login_screen.dart';
 import 'no_access_screen.dart';
 import 'tenant_picker_screen.dart';
@@ -15,7 +15,7 @@ import 'tenant_picker_screen.dart';
 /// meanwhile. Once the restore settles it renders the same destination the
 /// login screen would navigate to:
 ///
-///   authenticated + home         → [MainScreen]
+///   authenticated + home         → [RoleHomeScreen]
 ///   authenticated + tenantPicker → [TenantPickerScreen]
 ///   authenticated + noAccess     → [NoAccessScreen]
 ///   anything else                → [LoginScreen]
@@ -52,7 +52,7 @@ class _AuthGateState extends ConsumerState<AuthGate> {
     if (!auth.isAuthenticated) return const LoginScreen();
     switch (auth.route) {
       case AuthRoute.home:
-        return const MainScreen();
+        return const RoleHomeScreen();
       case AuthRoute.tenantPicker:
         return const TenantPickerScreen();
       case AuthRoute.noAccess:

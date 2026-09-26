@@ -11,7 +11,7 @@
 /// Fakes: [FakeAuthRepository] overrides [authRepositoryProvider];
 /// `tenantMembershipsProvider` is overridden with two fixture memberships;
 /// `appDatabaseProvider` gets an in-memory Drift database because the
-/// post-selection [MainScreen] build watches [pendingSyncCountProvider].
+/// post-selection [RoleHomeScreen] build watches [pendingSyncCountProvider].
 
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -21,7 +21,7 @@ import 'package:madrasa_360/core/services/tenant_context.dart';
 import 'package:madrasa_360/data/local/app_database.dart';
 import 'package:madrasa_360/data/local/database_provider.dart';
 import 'package:madrasa_360/presentation/screens/auth/tenant_picker_screen.dart';
-import 'package:madrasa_360/presentation/screens/main_screen.dart';
+import 'package:madrasa_360/presentation/screens/dashboards/role_home.dart';
 import 'package:madrasa_360/providers/auth_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -113,9 +113,9 @@ void main() {
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getString(TenantContext.prefsKey), 'tenant-2');
 
-      // Auth route moved home and the app shell was pushed.
+      // Auth route moved home and the role-aware home was pushed.
       expect(container.read(authProvider).route, AuthRoute.home);
-      expect(find.byType(MainScreen), findsOneWidget);
+      expect(find.byType(RoleHomeScreen), findsOneWidget);
       expect(find.byType(TenantPickerScreen), findsNothing);
     });
 
