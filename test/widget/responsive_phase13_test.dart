@@ -308,15 +308,17 @@ Future<void> _pumpResponsive(
     FlutterError.onError = previous;
   }
   final thrown = tester.takeException();
+  // TEMP DEBUG: dump full diagnostics of thrown error
+  if (thrown is FlutterError) {
+    // ignore: avoid_print
+    print('THROWN DEBUG START');
+    print(thrown.toString());
+    print('THROWN DEBUG END');
+  }
   expect(thrown, isNull,
       reason: '$screenType threw at ${size.width}x${size.height}: $thrown');
   final overflows =
       errors.where((e) => e.toString().contains('overflowed')).toList();
-  // TEMP DEBUG: dump full render tree for overflow diagnosis
-  for (final e in overflows) {
-    // ignore: avoid_print
-    print('OVERFLOW DEBUG FULL: ${e.toString()}');
-  }
   expect(overflows, isEmpty,
       reason: '$screenType overflowed at ${size.width}x${size.height}: '
           '${overflows.map((e) => e.summary).join(' | ')}');
