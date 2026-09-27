@@ -162,7 +162,7 @@ class _ParentDashboardScreenState extends ConsumerState<ParentDashboardScreen> {
               onSelected: (_) => setState(() => _selectedChildId = child.id),
               selectedColor: AppColors.primary.withValues(alpha: 0.2),
               checkmarkColor: AppColors.primary,
-              labelStyle: AppTypography.labelMedium.copyWith(
+              labelStyle: AppTypography.labelNastaliq.copyWith(
                 color: isSelected ? AppColors.primary : AppColors.textSecondary,
               ),
             ),

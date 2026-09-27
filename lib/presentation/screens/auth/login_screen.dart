@@ -360,7 +360,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       style: AppTypography.bodyLarge,
       decoration: InputDecoration(
         hintText: 'اپنا ای میل درج کریں',
-        hintStyle: AppTypography.bodyMedium.copyWith(
+        hintStyle: AppTypography.labelNastaliq.copyWith(
           color: AppColors.textSecondary.withValues(alpha: 0.5),
         ),
         prefixIcon: const Icon(Icons.email_outlined, color: AppColors.primary),
@@ -398,7 +398,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       style: AppTypography.bodyLarge,
       decoration: InputDecoration(
         hintText: 'اپنا پاس ورڈ درج کریں',
-        hintStyle: AppTypography.bodyMedium.copyWith(
+        hintStyle: AppTypography.labelNastaliq.copyWith(
           color: AppColors.textSecondary.withValues(alpha: 0.5),
         ),
         prefixIcon: const Icon(Icons.lock, color: AppColors.primary),

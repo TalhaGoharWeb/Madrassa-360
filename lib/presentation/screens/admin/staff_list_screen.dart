@@ -134,7 +134,7 @@ class _StaffListScreenState extends State<StaffListScreen> {
               },
               selectedColor: AppColors.primary.withValues(alpha: 0.2),
               checkmarkColor: AppColors.primary,
-              labelStyle: AppTypography.labelMedium.copyWith(
+              labelStyle: AppTypography.labelNastaliq.copyWith(
                 color: isSelected ? AppColors.primary : AppColors.textSecondary,
               ),
             ),
@@ -510,6 +510,7 @@ class _StaffListScreenState extends State<StaffListScreen> {
   }
 
   void _showNewStaffDialog() {
+    final formKey = GlobalKey<FormState>();
     final TextEditingController nameController = TextEditingController();
     final TextEditingController fatherNameController = TextEditingController();
     final TextEditingController designationController = TextEditingController();
@@ -529,10 +530,12 @@ class _StaffListScreenState extends State<StaffListScreen> {
             style: AppTypography.titleLarge,
           ),
           content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Photo Picker
+            child: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Photo Picker
                 Center(
                   child: GestureDetector(
                     onTap: () async {
@@ -559,6 +562,7 @@ class _StaffListScreenState extends State<StaffListScreen> {
                   controller: nameController,
                   decoration: const InputDecoration(
                     labelText: 'نام',
+                    hintText: 'عملے کا پورا نام لکھیں',
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.person),
                   ),
@@ -576,6 +580,7 @@ class _StaffListScreenState extends State<StaffListScreen> {
                   controller: fatherNameController,
                   decoration: const InputDecoration(
                     labelText: 'والد کا نام',
+                    hintText: 'والد کا پورا نام لکھیں',
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.family_restroom),
                   ),
@@ -593,6 +598,7 @@ class _StaffListScreenState extends State<StaffListScreen> {
                   controller: designationController,
                   decoration: const InputDecoration(
                     labelText: 'عہدہ',
+                    hintText: 'مثلاً استاد، ناظم، خادم',
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.work),
                   ),
@@ -611,6 +617,7 @@ class _StaffListScreenState extends State<StaffListScreen> {
                   keyboardType: TextInputType.phone,
                   decoration: const InputDecoration(
                     labelText: 'فون نمبر',
+                    hintText: '03XX-XXXXXXX',
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.phone),
                   ),
@@ -651,6 +658,7 @@ class _StaffListScreenState extends State<StaffListScreen> {
                   keyboardType: TextInputType.number,
                   decoration: const InputDecoration(
                     labelText: 'ماہانہ تنخواہ',
+                    hintText: 'روپے میں تنخواہ لکھیں',
                     border: OutlineInputBorder(),
                     prefixText: 'ر ',
                     prefixIcon: Icon(Icons.payments),
@@ -667,6 +675,7 @@ class _StaffListScreenState extends State<StaffListScreen> {
                   },
                 ),
               ],
+              ),
             ),
           ),
           actions: [
@@ -676,13 +685,18 @@ class _StaffListScreenState extends State<StaffListScreen> {
             ),
             ElevatedButton(
               onPressed: () async {
-                if (nameController.text.isNotEmpty &&
-                    fatherNameController.text.isNotEmpty &&
-                    designationController.text.isNotEmpty &&
-                    phoneController.text.isNotEmpty &&
-                    salaryController.text.isNotEmpty) {
-                  final salary = double.tryParse(salaryController.text);
-                  if (salary != null && salary > 0) {
+                // Validate form - shows Urdu error messages on invalid fields
+                if (!formKey.currentState!.validate()) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('براہ کرم تمام ضروری معلومات درست درج کریں'),
+                      backgroundColor: Colors.orange,
+                    ),
+                  );
+                  return;
+                }
+                // Form is valid, proceed with save
+                {
                     try {
                       showDialog(
                         context: context,
@@ -690,9 +704,13 @@ class _StaffListScreenState extends State<StaffListScreen> {
                         builder: (_) =>
                             const Center(child: CircularProgressIndicator()),
                       );
+                      final tenantId = _ref!.read(currentTenantIdProvider);
+                      if (tenantId == null || tenantId.isEmpty) {
+                        throw StateError('کوئی فعال مدرسہ منتخب نہیں ہے');
+                      }
                       final staff = Staff(
                         id: const Uuid().v4(),
-                        tenantId: _ref!.read(currentTenantIdProvider) ?? '',
+                        tenantId: tenantId,
                         name: nameController.text.trim(),
                         fatherName: fatherNameController.text.trim(),
                         designation: designationController.text.trim(),
@@ -727,7 +745,6 @@ class _StaffListScreenState extends State<StaffListScreen> {
                         ));
                       }
                     }
-                  }
                 }
               },
               style: ElevatedButton.styleFrom(

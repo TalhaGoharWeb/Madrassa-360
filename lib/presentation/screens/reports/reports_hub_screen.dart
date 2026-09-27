@@ -62,8 +62,7 @@ class _ReportsHubScreenState extends ConsumerState<ReportsHubScreen>
         bottom: TabBar(
           controller: _tabs,
           indicatorColor: Colors.white,
-          labelStyle:
-              TextStyle(fontFamily: 'JameelNooriNastaleeq', fontSize: 16),
+          labelStyle: AppTypography.labelNastaliq,
           tabs: const [Tab(text: 'طلبہ'), Tab(text: 'انتظامیہ')],
         ),
       ),

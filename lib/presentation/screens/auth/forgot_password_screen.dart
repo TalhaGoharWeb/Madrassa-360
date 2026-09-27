@@ -100,7 +100,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
             style: AppTypography.bodyLarge,
             decoration: InputDecoration(
               hintText: 'اپنا ای میل درج کریں',
-              hintStyle: AppTypography.bodyMedium.copyWith(
+              hintStyle: AppTypography.labelNastaliq.copyWith(
                 color: AppColors.textSecondary.withValues(alpha: 0.5),
               ),
               prefixIcon:
