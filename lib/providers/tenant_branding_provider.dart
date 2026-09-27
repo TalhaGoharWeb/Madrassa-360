@@ -20,6 +20,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/services/supabase_service.dart';
+import '../services/tenant_logo_service.dart';
 import '../core/services/tenant_context.dart';
 
 // ─────────────────────────────────────────────
@@ -42,6 +43,7 @@ class TenantBranding {
   final String fontFamily;
   final bool darkModeEnabled;
   final String language;
+  final bool useLogoOnReports;
 
   const TenantBranding({
     required this.name,
@@ -58,6 +60,7 @@ class TenantBranding {
     required this.fontFamily,
     required this.darkModeEnabled,
     required this.language,
+    this.useLogoOnReports = true,
   });
 
   /// Neutral product defaults used when logged out or when the tenant row
@@ -71,6 +74,7 @@ class TenantBranding {
         fontFamily: 'JameelNooriNastaleeq',
         darkModeEnabled: false,
         language: 'ur',
+        useLogoOnReports: true,
       );
 
   /// Builds branding from a `tenants` row joined with its `tenant_settings`
@@ -102,6 +106,8 @@ class TenantBranding {
           : 'JameelNooriNastaleeq',
       darkModeEnabled: s['dark_mode_enabled'] as bool? ?? false,
       language: (s['language'] as String?) ?? 'ur',
+      useLogoOnReports:
+          (tenant['use_logo_on_reports'] as bool?) ?? true,
     );
   }
 
@@ -153,7 +159,7 @@ final tenantBrandingProvider = FutureProvider<TenantBranding>((ref) async {
     client
         .from('tenants')
         .select(
-            'name, name_urdu, logo_url, phone, email, website, address, city')
+            'name, name_urdu, logo_url, use_logo_on_reports, phone, email, website, address, city')
         .eq('id', tenantId)
         .maybeSingle(),
     client
@@ -166,7 +172,14 @@ final tenantBrandingProvider = FutureProvider<TenantBranding>((ref) async {
 
   final tenantRow = results[0];
   if (tenantRow == null) return TenantBranding.fallback();
-  return TenantBranding.fromRows(tenantRow, results[1]);
+  final branding = TenantBranding.fromRows(tenantRow, results[1]);
+
+  // Sync the offline logo cache for reports (non-blocking, never throws).
+  // The cache file is the source of truth for report headers:
+  // present = show logo, absent = neutral emblem.
+  ref.read(tenantLogoServiceProvider).ensureLogoCached(tenantId);
+
+  return branding;
 });
 
 // ─────────────────────────────────────────────
