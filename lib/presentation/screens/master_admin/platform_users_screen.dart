@@ -282,6 +282,11 @@ class _PlatformUsersScreenState extends State<PlatformUsersScreen> {
       );
     }
     return Scaffold(
+      appBar: AppBar(
+        title: Text('پلیٹ فارم صارفین', style: AppTypography.appBarTitle),
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+      ),
       body: _admins.isEmpty
           ? const EmptyStateWidget(
               icon: Icons.admin_panel_settings_outlined,

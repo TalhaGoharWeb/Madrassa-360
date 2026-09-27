@@ -116,6 +116,11 @@ class _PlansScreenState extends State<PlansScreen> {
       );
     }
     return Scaffold(
+      appBar: AppBar(
+        title: Text('لائسنس پلانز', style: AppTypography.appBarTitle),
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+      ),
       body: _plans.isEmpty
           ? EmptyStateWidget(
               icon: Icons.card_membership_outlined,
