@@ -221,9 +221,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
               height: 112,
               fit: BoxFit.cover,
               // A missing or unbundled asset must never break the login
-              // screen: fall back to a simple brand mark instead.
-              errorBuilder: (context, error, stackTrace) =>
-                  const Icon(Icons.mosque, size: 64, color: Colors.white),
+              // screen: fall back to a branded mark (teal tile with 360 in
+              // Nastaleeq) — never a generic mosque icon.
+              errorBuilder: (context, error, stackTrace) => Container(
+                width: 112,
+                height: 112,
+                color: AppColors.primary,
+                child: Center(
+                  child: Text(
+                    '360',
+                    style: AppTypography.labelNastaliq.copyWith(
+                      color: Colors.white,
+                      fontSize: 36,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
         ),
@@ -239,8 +253,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         const SizedBox(height: 8),
         Text(
           AppStrings.appTagline,
-          style: AppTypography.bodyMedium.copyWith(
+          style: AppTypography.labelNastaliq.copyWith(
             color: Colors.white70,
+            fontSize: 18,
           ),
         ),
       ],
@@ -277,7 +292,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           // Email Input
           Text(
             'ای میل',
-            style: AppTypography.labelLarge,
+            style: AppTypography.labelNastaliq,
           ),
           const SizedBox(height: 8),
           _buildEmailInput(),
@@ -286,7 +301,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           // Password Input
           Text(
             'پاس ورڈ',
-            style: AppTypography.labelLarge,
+            style: AppTypography.labelNastaliq,
           ),
           const SizedBox(height: 8),
           _buildPasswordInput(),
@@ -299,7 +314,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
               onPressed: _openForgotPassword,
               child: Text(
                 'پاس ورڈ بھول گئے؟',
-                style: AppTypography.bodyMedium.copyWith(
+                style: AppTypography.labelNastaliq.copyWith(
                   color: AppColors.primary,
                   fontWeight: FontWeight.bold,
                 ),
@@ -322,7 +337,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                 onTap: () => setState(() => _rememberMe = !_rememberMe),
                 child: Text(
                   'مجھے یاد رکھیں',
-                  style: AppTypography.bodyMedium.copyWith(
+                  style: AppTypography.labelNastaliq.copyWith(
                     color: AppColors.textPrimary,
                   ),
                 ),
