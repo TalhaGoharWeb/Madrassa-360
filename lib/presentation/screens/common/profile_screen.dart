@@ -11,6 +11,7 @@ import '../../../providers/auth_provider.dart';
 import '../../../providers/tenant_branding_provider.dart';
 import '../auth/login_screen.dart';
 import '../settings/user_management_hub.dart';
+import '../settings/madrassa_logo_screen.dart';
 import '../settings/delegation_screen.dart';
 import 'about_screen.dart';
 
@@ -139,8 +140,35 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                       const UserManagementHubScreen(),
                                 ),
                               ),
-                              isLast: !canDelegate,
                             ),
+                            // Madrassa logo — mohtamim/owner/admin only
+                            // (screen itself enforces the gate too).
+                            Builder(builder: (context) {
+                              final roles =
+                                  ref.watch(roleServiceProvider);
+                              final canLogo = roles.isTenantOwner() ||
+                                  roles.isTenantAdmin() ||
+                                  roles
+                                      .activeRoleKeys()
+                                      .contains('mohtamim');
+                              if (!canLogo) {
+                                return const SizedBox.shrink();
+                              }
+                              return _SettingsTile(
+                                icon: Icons.image_outlined,
+                                label: 'مدرسے کا لوگو',
+                                subtitle:
+                                    'لوگو اپ لوڈ کریں، رپورٹس پر دکھائیں',
+                                onTap: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        const MadrassaLogoScreen(),
+                                  ),
+                                ),
+                                isLast: !canDelegate,
+                              );
+                            }),
                             if (canDelegate)
                               _SettingsTile(
                                 icon: Icons.handshake_outlined,
