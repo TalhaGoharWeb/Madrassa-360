@@ -88,6 +88,13 @@ class _SuperAdminDashboardState extends ConsumerState<SuperAdminDashboard> {
       appBar: AppBar(
         title: Text('سپر ایڈمن پینل', style: AppTypography.appBarTitle),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add_business),
+            tooltip: 'نیا مدرسہ بنائیں',
+            onPressed: _showCreateTenantDialog,
+          ),
+        ],
       ),
       body: FutureBuilder<bool>(
         future: _accessFuture,
@@ -100,6 +107,105 @@ class _SuperAdminDashboardState extends ConsumerState<SuperAdminDashboard> {
         },
       ),
     );
+  }
+
+
+  /// Show dialog to create a new madrassa/tenant.
+  Future<void> _showCreateTenantDialog() async {
+    final nameCtrl = TextEditingController();
+    final urduCtrl = TextEditingController();
+    final slugCtrl = TextEditingController();
+    final emailCtrl = TextEditingController();
+    
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('نیا مدرسہ بنائیں', style: AppTypography.labelNastaliq),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Madrassa Name (English)',
+                  hintText: 'e.g., Jamia Islamia',
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: urduCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'مدرسے کا نام (اردو)',
+                  hintText: 'e.g., جامعہ اسلامیہ',
+                ),
+                textDirection: TextDirection.rtl,
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: slugCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Slug (unique)',
+                  hintText: 'e.g., jamia-islamia',
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: emailCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Owner Email',
+                  hintText: 'owner@example.com',
+                ),
+                keyboardType: TextInputType.emailAddress,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'The owner will be added as Mohtamim and can manage their madrassa.',
+                style: AppTypography.bodySmall,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('منسوخ کریں', style: AppTypography.labelNastaliq),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('بنائیں', style: AppTypography.labelNastaliq),
+          ),
+        ],
+      ),
+    );
+    
+    if (result == true && mounted) {
+      try {
+        await ref.read(superAdminServiceProvider).createTenant(
+          name: nameCtrl.text,
+          nameUrdu: urduCtrl.text,
+          slug: slugCtrl.text,
+          ownerEmail: emailCtrl.text,
+        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('مدرسہ کامیابی سے بن گیا', style: AppTypography.labelNastaliq)),
+          );
+          _refresh();
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: $e')),
+          );
+        }
+      }
+    }
+    
+    nameCtrl.dispose();
+    urduCtrl.dispose();
+    slugCtrl.dispose();
+    emailCtrl.dispose();
   }
 
   Widget _accessDenied() {
