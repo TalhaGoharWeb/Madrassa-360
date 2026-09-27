@@ -312,6 +312,11 @@ Future<void> _pumpResponsive(
       reason: '$screenType threw at ${size.width}x${size.height}: $thrown');
   final overflows =
       errors.where((e) => e.toString().contains('overflowed')).toList();
+  // TEMP DEBUG: dump full render tree for overflow diagnosis
+  for (final e in overflows) {
+    // ignore: avoid_print
+    print('OVERFLOW DEBUG FULL: ${e.toString()}');
+  }
   expect(overflows, isEmpty,
       reason: '$screenType overflowed at ${size.width}x${size.height}: '
           '${overflows.map((e) => e.summary).join(' | ')}');

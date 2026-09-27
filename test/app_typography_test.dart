@@ -77,8 +77,7 @@ void main() {
       expect(s.height, greaterThanOrEqualTo(2.0));
     });
 
-    test('labelNastaliq uses JameelNooriNastaleeq, >= 15sp, height >= 2.0',
-        () {
+    test('labelNastaliq uses JameelNooriNastaleeq, >= 15sp, height >= 2.0', () {
       final s = AppTypography.labelNastaliq;
       expect(s.fontFamily, AppTypography.nastaliqFamily);
       expect(s.fontFamily, 'JameelNooriNastaleeq');
