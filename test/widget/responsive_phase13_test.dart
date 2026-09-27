@@ -308,16 +308,6 @@ Future<void> _pumpResponsive(
     FlutterError.onError = previous;
   }
   final thrown = tester.takeException();
-  // TEMP DEBUG: dump diagnostics of thrown error
-  if (thrown is FlutterError) {
-    final fe = thrown as FlutterError;
-    // ignore: avoid_print
-    print('THROWN DIAG COUNT: ${fe.diagnostics.length}');
-    for (final d in fe.diagnostics) {
-      print('DIAG: ${d.toString()}');
-    }
-    print('THROWN DIAG END');
-  }
   expect(thrown, isNull,
       reason: '$screenType threw at ${size.width}x${size.height}: $thrown');
   final overflows =

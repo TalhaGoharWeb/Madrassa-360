@@ -875,9 +875,12 @@ class _ContactPill extends StatelessWidget {
         children: [
           Icon(icon, color: Colors.white70, size: 14),
           const SizedBox(width: 5),
-          Text(label,
-              style: AppTypography.labelNastaliq
-                  .copyWith(fontSize: 15, color: Colors.white70)),
+          Flexible(
+            child: Text(label,
+                style: AppTypography.labelSmall
+                    .copyWith(fontSize: 15, color: Colors.white70),
+                overflow: TextOverflow.ellipsis),
+          ),
         ],
       ),
     );
