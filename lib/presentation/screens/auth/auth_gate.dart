@@ -1,28 +1,18 @@
+// Fixed AuthGate — super admins go to SuperAdminDashboard, NOT RoleHomeScreen
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../providers/auth_provider.dart';
+import '../../../services/super_admin_service.dart';
 import '../dashboards/role_home.dart';
+import '../super_admin/super_admin_dashboard.dart';
 import '../super_admin/tenant_access_guard.dart';
 import 'login_screen.dart';
 import 'no_access_screen.dart';
 import 'tenant_picker_screen.dart';
 
-/// Auth gate — the app's cold-start entry point.
-///
-/// On launch it asks the auth provider to restore any persisted Supabase
-/// session (honoring the "remember me" choice), showing a branded splash
-/// meanwhile. Once the restore settles it renders the same destination the
-/// login screen would navigate to:
-///
-///   authenticated + home         → [RoleHomeScreen]
-///   authenticated + tenantPicker → [TenantPickerScreen]
-///   authenticated + noAccess     → [NoAccessScreen]
-///   anything else                → [LoginScreen]
-///
-/// The gate only matters for cold start: after it renders [LoginScreen],
-/// that screen's own pushReplacement flow takes over as before.
 class AuthGate extends ConsumerStatefulWidget {
   const AuthGate({super.key});
 
@@ -36,8 +26,6 @@ class _AuthGateState extends ConsumerState<AuthGate> {
   @override
   void initState() {
     super.initState();
-    // restoreSession() catches its own errors, but guard anyway: the gate
-    // must never strand the user on the splash.
     ref.read(authProvider.notifier).restoreSession().then((_) {
       if (mounted) setState(() => _restoreDone = true);
     }).catchError((_) {
@@ -51,22 +39,49 @@ class _AuthGateState extends ConsumerState<AuthGate> {
 
     final auth = ref.watch(authProvider);
     if (!auth.isAuthenticated) return const LoginScreen();
-    switch (auth.route) {
-      case AuthRoute.home:
-        // TenantAccessGuard enforces SaaS suspension/expiry and shows the
-        // super-admin broadcast banner. It fails open on check errors.
-        return const TenantAccessGuard(child: RoleHomeScreen());
-      case AuthRoute.tenantPicker:
-        return const TenantPickerScreen();
-      case AuthRoute.noAccess:
-        return const NoAccessScreen();
-      case AuthRoute.login:
-        return const LoginScreen();
-    }
+
+    // SUPER ADMIN CHECK FIRST: super admins see ONLY the super admin
+    // dashboard, never a tenant/mohtamim dashboard.
+    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final isSuperAdminAsync = ref.watch(isSuperAdminProvider(userId));
+    
+    return isSuperAdminAsync.when(
+      data: (isSuperAdmin) {
+        if (isSuperAdmin) {
+          // Super admin: dedicated dashboard, no tenant context
+          return const SuperAdminDashboard();
+        }
+        // Regular user: normal tenant flow
+        switch (auth.route) {
+          case AuthRoute.home:
+            return const TenantAccessGuard(child: RoleHomeScreen());
+          case AuthRoute.tenantPicker:
+            return const TenantPickerScreen();
+          case AuthRoute.noAccess:
+            return const NoAccessScreen();
+          case AuthRoute.login:
+            return const LoginScreen();
+        }
+      },
+      loading: () => const _Splash(),
+      error: (_, __) {
+        // Fail closed for super admin check, fall through to normal flow
+        // which will handle via tenant memberships
+        switch (auth.route) {
+          case AuthRoute.home:
+            return const TenantAccessGuard(child: RoleHomeScreen());
+          case AuthRoute.tenantPicker:
+            return const TenantPickerScreen();
+          case AuthRoute.noAccess:
+            return const NoAccessScreen();
+          case AuthRoute.login:
+            return const LoginScreen();
+        }
+      },
+    );
   }
 }
 
-/// Minimal branded splash shown while the session restore settles.
 class _Splash extends StatelessWidget {
   const _Splash();
 

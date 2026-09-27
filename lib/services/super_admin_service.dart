@@ -249,6 +249,65 @@ class SuperAdminService {
 
   /// Suspend a tenant with a reason. Updates the lifecycle `status`
   /// (present since 001) and best-effort `suspension_reason`.
+  /// Create a new madrassa/tenant.
+  ///
+  /// Creates the tenant record and adds the owner as mohtamim.
+  /// The owner can then log in and manage their madrassa.
+  /// Only super admins can call this (enforced via _requireSuperAdmin).
+  Future<String> createTenant({
+    required String name,
+    required String nameUrdu,
+    required String slug,
+    required String ownerEmail,
+  }) async {
+    await _requireSuperAdmin();
+    
+    final trimmedName = name.trim();
+    final trimmedUrdu = nameUrdu.trim();
+    final trimmedSlug = slug.trim().toLowerCase();
+    final trimmedEmail = ownerEmail.trim().toLowerCase();
+    
+    if (trimmedName.isEmpty) throw ArgumentError('Madrassa name is required');
+    if (trimmedUrdu.isEmpty) throw ArgumentError('Urdu name is required');
+    if (trimmedSlug.isEmpty) throw ArgumentError('Slug is required');
+    if (trimmedEmail.isEmpty) throw ArgumentError('Owner email is required');
+    
+    // Create tenant
+    final tenantResult = await _client.from('tenants').insert({
+      'name': trimmedName,
+      'name_urdu': trimmedUrdu,
+      'slug': trimmedSlug,
+      'status': 'active',
+    }).select('id').single();
+    
+    final tenantId = tenantResult['id'] as String;
+    
+    // Find owner user ID
+    final userResult = await _client
+        .from('auth.users')
+        .select('id')
+        .eq('email', trimmedEmail)
+        .maybeSingle();
+    
+    if (userResult == null) {
+      // Tenant created but owner not found — super admin must invite them
+      // to sign up first, then assign via tenant management.
+      return tenantId;
+    }
+    
+    final ownerId = userResult['id'] as String;
+    
+    // Add owner as mohtamim
+    await _client.from('tenant_memberships').insert({
+      'tenant_id': tenantId,
+      'user_id': ownerId,
+      'role': 'mohtamim',
+      'is_active': true,
+    });
+    
+    return tenantId;
+  }
+
   Future<void> suspendTenant(String tenantId, String reason) async {
     final trimmed = reason.trim();
     if (trimmed.isEmpty) {
