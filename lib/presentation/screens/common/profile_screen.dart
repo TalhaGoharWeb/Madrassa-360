@@ -9,9 +9,11 @@ import '../../../core/constants/app_typography.dart';
 import '../../../core/services/role_service.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/tenant_branding_provider.dart';
+import '../../../services/super_admin_service.dart';
 import '../auth/login_screen.dart';
 import '../settings/user_management_hub.dart';
 import '../settings/delegation_screen.dart';
+import '../super_admin/super_admin_dashboard.dart';
 import 'about_screen.dart';
 
 /// پروفائل سکرین
@@ -35,10 +37,27 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   static const _kEmail = 'profile_email';
   static const _kPhoto = 'profile_photo_path';
 
+  /// True when the signed-in user is a super admin (SaaS operator).
+  /// Loaded once; fails closed (stays false on error).
+  bool _isSuperAdmin = false;
+
   @override
   void initState() {
     super.initState();
     _loadProfile();
+    _checkSuperAdmin();
+  }
+
+  Future<void> _checkSuperAdmin() async {
+    try {
+      final uid = ref.read(currentUserProvider)?.id ?? '';
+      if (uid.isEmpty) return;
+      final ok =
+          await ref.read(superAdminServiceProvider).isSuperAdmin(uid);
+      if (mounted && ok) setState(() => _isSuperAdmin = true);
+    } catch (_) {
+      // Fail closed — entry stays hidden.
+    }
   }
 
   Future<void> _loadProfile() async {
@@ -160,6 +179,28 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       );
                     },
                   ),
+
+                  // Super Admin group — visible only to SaaS operators.
+                  if (_isSuperAdmin) ...[
+                    const SizedBox(height: 20),
+                    _GroupLabel('سپر ایڈمن'),
+                    const SizedBox(height: 8),
+                    _SettingsGroup(children: [
+                      _SettingsTile(
+                        icon: Icons.admin_panel_settings_outlined,
+                        label: 'سپر ایڈمن پینل',
+                        subtitle: 'تمام مدارس، رسائی، میعاد، پیغامات',
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const SuperAdminDashboard(),
+                          ),
+                        ),
+                        isLast: true,
+                      ),
+                    ]),
+                    const SizedBox(height: 20),
+                  ],
 
                   // Support group
                   _GroupLabel('معاونت'),

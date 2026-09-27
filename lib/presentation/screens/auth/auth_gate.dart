@@ -4,6 +4,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../providers/auth_provider.dart';
 import '../dashboards/role_home.dart';
+import '../super_admin/tenant_access_guard.dart';
 import 'login_screen.dart';
 import 'no_access_screen.dart';
 import 'tenant_picker_screen.dart';
@@ -52,7 +53,9 @@ class _AuthGateState extends ConsumerState<AuthGate> {
     if (!auth.isAuthenticated) return const LoginScreen();
     switch (auth.route) {
       case AuthRoute.home:
-        return const RoleHomeScreen();
+        // TenantAccessGuard enforces SaaS suspension/expiry and shows the
+        // super-admin broadcast banner. It fails open on check errors.
+        return const TenantAccessGuard(child: RoleHomeScreen());
       case AuthRoute.tenantPicker:
         return const TenantPickerScreen();
       case AuthRoute.noAccess:
