@@ -538,7 +538,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     await _saveProfile(name, phone, email, tempPhotoPath);
                     if (mounted) {
                       messenger.showSnackBar(
-                        const SnackBar(
+                        SnackBar(
                           content: Text('پروفائل محفوظ کر دیا گیا',
                               style: AppTypography.labelNastaliq.copyWith(
                                 color: Colors.white,

@@ -1,7 +1,8 @@
 // v3 — typography system tests.
 //
 // Locks the v3 type contract: Jameel Noori for display (height ≥ 2.0),
-// Kasheeda for hero moments, Noto Naskh Arabic for body/small text.
+// Kasheeda for hero moments, Noto Naskh Arabic for body text.
+// Short Urdu UI labels (navLabel, labelNastaliq) use Jameel Noori Nastaleeq.
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:madrasa_360/core/constants/app_typography.dart';
@@ -58,7 +59,6 @@ void main() {
       'labelMedium': AppTypography.labelMedium,
       'labelSmall': AppTypography.labelSmall,
       'buttonText': AppTypography.buttonText,
-      'navLabel': AppTypography.navLabel,
     };
 
     for (final entry in body.entries) {
@@ -67,5 +67,23 @@ void main() {
         expect(entry.value.fontFamily, 'NotoNaskhArabic');
       });
     }
+  });
+
+  group('AppTypography short Urdu labels (Jameel Noori)', () {
+    test('navLabel uses JameelNooriNastaleeq with height >= 2.0', () {
+      final s = AppTypography.navLabel;
+      expect(s.fontFamily, AppTypography.nastaliqFamily);
+      expect(s.fontFamily, 'JameelNooriNastaleeq');
+      expect(s.height, greaterThanOrEqualTo(2.0));
+    });
+
+    test('labelNastaliq uses JameelNooriNastaleeq, >= 15sp, height >= 2.0',
+        () {
+      final s = AppTypography.labelNastaliq;
+      expect(s.fontFamily, AppTypography.nastaliqFamily);
+      expect(s.fontFamily, 'JameelNooriNastaleeq');
+      expect(s.fontSize, greaterThanOrEqualTo(15));
+      expect(s.height, greaterThanOrEqualTo(2.0));
+    });
   });
 }
