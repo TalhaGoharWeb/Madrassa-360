@@ -51,7 +51,7 @@ class _FeeManagementScreenState extends ConsumerState<FeeManagementScreen>
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: Colors.white,
-          labelStyle: AppTypography.labelLarge,
+          labelStyle: AppTypography.labelNastaliq,
           tabs: const [
             Tab(text: 'فیس کی تفصیل'),
             Tab(text: 'وصولی'),
@@ -214,7 +214,7 @@ class _FeeManagementScreenState extends ConsumerState<FeeManagementScreen>
               },
               selectedColor: color.withValues(alpha: 0.2),
               checkmarkColor: color,
-              labelStyle: AppTypography.labelMedium.copyWith(
+              labelStyle: AppTypography.labelNastaliq.copyWith(
                 color: isSelected ? color : AppColors.textSecondary,
               ),
             ),

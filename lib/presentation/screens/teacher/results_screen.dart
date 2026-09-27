@@ -77,7 +77,7 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen>
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: Colors.white,
-          labelStyle: AppTypography.labelLarge,
+          labelStyle: AppTypography.labelNastaliq,
           tabs: const [
             Tab(text: 'نتائج'),
             Tab(text: 'نتیجہ درج کریں'),
@@ -184,7 +184,7 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen>
               },
               selectedColor: AppColors.primary.withValues(alpha: 0.2),
               checkmarkColor: AppColors.primary,
-              labelStyle: AppTypography.labelMedium.copyWith(
+              labelStyle: AppTypography.labelNastaliq.copyWith(
                 color: isSelected ? AppColors.primary : AppColors.textSecondary,
               ),
             ),

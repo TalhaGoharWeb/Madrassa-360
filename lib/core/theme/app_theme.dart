@@ -110,9 +110,9 @@ class AppTheme {
         ),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        labelStyle: AppTypography.bodyMedium,
-        hintStyle:
-            AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary),
+        labelStyle: AppTypography.labelNastaliq,
+        hintStyle: AppTypography.labelNastaliq
+            .copyWith(color: AppColors.textSecondary),
       ),
 
       // ListTile Theme

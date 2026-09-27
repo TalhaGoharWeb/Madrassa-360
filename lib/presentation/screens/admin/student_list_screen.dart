@@ -128,7 +128,7 @@ class _StudentListScreenState extends State<StudentListScreen> {
               },
               selectedColor: AppColors.primary.withValues(alpha: 0.2),
               checkmarkColor: AppColors.primary,
-              labelStyle: AppTypography.labelMedium.copyWith(
+              labelStyle: AppTypography.labelNastaliq.copyWith(
                 color: isSelected ? AppColors.primary : AppColors.textSecondary,
               ),
             ),
@@ -587,6 +587,7 @@ class _StudentListScreenState extends State<StudentListScreen> {
   }
 
   void _showNewAdmissionDialog() {
+    final formKey = GlobalKey<FormState>();
     final TextEditingController nameController = TextEditingController();
     final TextEditingController fatherNameController = TextEditingController();
     final TextEditingController phoneController = TextEditingController();
@@ -605,10 +606,12 @@ class _StudentListScreenState extends State<StudentListScreen> {
             style: AppTypography.titleLarge,
           ),
           content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Photo Picker
+            child: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Photo Picker
                 Center(
                   child: GestureDetector(
                     onTap: () async {
@@ -635,6 +638,7 @@ class _StudentListScreenState extends State<StudentListScreen> {
                   controller: nameController,
                   decoration: const InputDecoration(
                     labelText: 'طالب علم کا نام',
+                    hintText: 'طالب علم کا پورا نام لکھیں',
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.person),
                   ),
@@ -652,6 +656,7 @@ class _StudentListScreenState extends State<StudentListScreen> {
                   controller: fatherNameController,
                   decoration: const InputDecoration(
                     labelText: 'والد کا نام',
+                    hintText: 'والد کا پورا نام لکھیں',
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.family_restroom),
                   ),
@@ -670,6 +675,7 @@ class _StudentListScreenState extends State<StudentListScreen> {
                   keyboardType: TextInputType.phone,
                   decoration: const InputDecoration(
                     labelText: 'فون نمبر',
+                    hintText: '03XX-XXXXXXX',
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.phone),
                   ),
@@ -734,11 +740,13 @@ class _StudentListScreenState extends State<StudentListScreen> {
                   maxLines: 2,
                   decoration: const InputDecoration(
                     labelText: 'پتہ (اختیاری)',
+                    hintText: 'مکمل پتہ لکھیں',
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.location_on),
                   ),
                 ),
               ],
+              ),
             ),
           ),
           actions: [
@@ -748,8 +756,18 @@ class _StudentListScreenState extends State<StudentListScreen> {
             ),
             ElevatedButton(
               onPressed: () async {
-                if (nameController.text.isNotEmpty &&
-                    fatherNameController.text.isNotEmpty) {
+                // Validate form - shows Urdu error messages on invalid fields
+                if (!formKey.currentState!.validate()) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('براہ کرم تمام ضروری معلومات درست درج کریں'),
+                      backgroundColor: Colors.orange,
+                    ),
+                  );
+                  return;
+                }
+                // Form is valid, proceed with save
+                {
                   try {
                     showDialog(
                       context: context,

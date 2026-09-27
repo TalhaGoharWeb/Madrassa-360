@@ -69,7 +69,7 @@ class _MadrasaManagementScreenState extends State<MadrasaManagementScreen> {
               style: AppTypography.bodyMedium.copyWith(color: Colors.white),
               decoration: InputDecoration(
                 hintText: 'تلاش کریں...',
-                hintStyle: AppTypography.bodyMedium.copyWith(
+                hintStyle: AppTypography.labelNastaliq.copyWith(
                   color: Colors.white54,
                 ),
                 prefixIcon: const Icon(Icons.search, color: Colors.white54),
