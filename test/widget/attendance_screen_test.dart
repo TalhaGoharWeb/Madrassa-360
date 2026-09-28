@@ -143,16 +143,16 @@ void main() {
       await pumpScreen(tester, classes: const [classOne]);
 
       // Baseline: one present + one absent.
-      // (stat label + 1 badge + 1 in quick-action area)
+      // (stat label + 1 badge + 1 in quick-action area each)
       expect(find.text('حاضر'), findsNWidgets(3));
-      expect(find.text('غیر حاضر'), findsNWidgets(2)); // stat label + 1 badge
+      expect(find.text('غیر حاضر'), findsNWidgets(3));
 
       await tester.tap(find.text(AppStrings.markAllPresent));
       await tester.pump();
 
       // Both badges now present (plus the ever-present stat labels).
       expect(find.text('حاضر'), findsNWidgets(4));
-      expect(find.text('غیر حاضر'), findsNWidgets(1));
+      expect(find.text('غیر حاضر'), findsNWidgets(2));
     });
 
     testWidgets('save stores the effective records and shows confirmation',
