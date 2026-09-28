@@ -51,7 +51,7 @@ class M360EmptyState extends StatelessWidget {
               width: 96,
               height: 96,
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
+                color: AppColors.primary.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, size: 48, color: AppColors.primary),
@@ -178,7 +178,7 @@ class _ShimmerBoxState extends State<_ShimmerBox>
 
   @override
   Widget build(BuildContext context) {
-    final base = AppColors.divider.withOpacity(0.45);
+    final base = AppColors.divider.withValues(alpha: 0.45);
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, _) {
@@ -236,7 +236,7 @@ class M360ErrorState extends StatelessWidget {
               width: 96,
               height: 96,
               decoration: BoxDecoration(
-                color: AppColors.error.withOpacity(0.1),
+                color: AppColors.error.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: const Icon(

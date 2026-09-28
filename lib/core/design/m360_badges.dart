@@ -155,9 +155,9 @@ class M360Badge extends StatelessWidget {
           vertical: M360Spacing.xxs,
         ),
         decoration: BoxDecoration(
-          color: base.withOpacity(0.15),
+          color: base.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(M360Radius.pill),
-          border: Border.all(color: base.withOpacity(0.35), width: 1),
+          border: Border.all(color: base.withValues(alpha: 0.35), width: 1),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,

@@ -190,7 +190,7 @@ class M360StatCard extends StatelessWidget {
                   height: 44,
                   decoration: BoxDecoration(
                     color: iconBackground ??
-                        AppColors.primary.withOpacity(0.12),
+                        AppColors.primary.withValues(alpha: 0.12),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(icon, color: AppColors.primary, size: 24),

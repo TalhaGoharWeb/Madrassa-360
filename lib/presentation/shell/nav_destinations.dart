@@ -28,7 +28,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:madrasa_360/core/notifications/notification_providers.dart'
     show unreadNotificationsCountProvider;
 import 'package:madrasa_360/providers/announcement_provider.dart'
-    show announcementListProvider';
+    show announcementListProvider;
 
 import 'package:madrasa_360/core/constants/app_permissions.dart';
 import 'package:madrasa_360/core/constants/app_typography.dart';

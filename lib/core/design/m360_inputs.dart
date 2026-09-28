@@ -166,7 +166,7 @@ class M360TextField extends StatelessWidget {
         disabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(M360Radius.md),
           borderSide:
-              BorderSide(color: AppColors.divider.withOpacity(0.6)),
+              BorderSide(color: AppColors.divider.withValues(alpha: 0.6)),
         ),
         errorStyle: AppTypography.bodySmall.copyWith(
           color: AppColors.error,

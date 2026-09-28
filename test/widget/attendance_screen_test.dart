@@ -174,7 +174,7 @@ void main() {
 
       await tester.tap(find.text(AppStrings.markAllAbsent));
       await tester.pump();
-      await tester.tap(find.byType(FloatingActionButton));
+      await tester.tap(find.text(AppStrings.saveAttendance));
       await tester.pumpAndSettle();
 
       // The real notifier merged the bulk edit and called the repository.
@@ -191,16 +191,14 @@ void main() {
   });
 
   group('AttendanceScreen fail-closed', () {
-    testWidgets('save FAB is disabled when no class is assigned',
+    testWidgets('save button is hidden when no class is assigned',
         (tester) async {
       await pumpScreen(tester, classes: const []);
 
       // Fail-closed placeholder, no roster, no save possible.
       expect(find.text(AppStrings.noClassAssigned), findsOneWidget);
-      final fab = tester.widget<FloatingActionButton>(
-        find.byType(FloatingActionButton),
-      );
-      expect(fab.onPressed, isNull);
+      // The sticky save bar is not rendered when there's no roster.
+      expect(find.text(AppStrings.saveAttendance), findsNothing);
       expect(fakeAttendance.saved, isNull);
     });
   });

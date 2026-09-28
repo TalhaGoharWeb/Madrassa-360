@@ -319,7 +319,7 @@ class _ButtonContent extends StatelessWidget {
             label,
             textDirection: TextDirection.rtl,
             style: AppTypography.labelNastaliq
-                .copyWith(color: spinnerColor.withOpacity(0.85)),
+                .copyWith(color: spinnerColor.withValues(alpha: 0.85)),
           ),
         ],
       );
