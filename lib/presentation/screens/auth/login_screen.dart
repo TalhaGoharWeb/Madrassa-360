@@ -9,7 +9,7 @@ import '../../../core/utils/error_handler.dart';
 import '../../../core/utils/validators.dart';
 import '../../../core/widgets/loading_widget.dart';
 import '../../../providers/auth_provider.dart';
-import '../dashboards/role_home.dart';
+import '../../shell/app_shell.dart';
 import 'forgot_password_screen.dart';
 import 'no_access_screen.dart';
 import 'tenant_picker_screen.dart';
@@ -113,7 +113,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     Widget? destination;
     switch (route) {
       case AuthRoute.home:
-        destination = const RoleHomeScreen();
+        destination = const AppShell();
         break;
       case AuthRoute.tenantPicker:
         destination = const TenantPickerScreen();
