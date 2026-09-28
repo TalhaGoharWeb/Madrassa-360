@@ -83,7 +83,7 @@ class StatCard extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     subtitle!,
-                    style: AppTypography.caption.copyWith(
+                    style: AppTypography.bodySmall.copyWith(
                       color: AppColors.textSecondary,
                     ),
                     maxLines: 1,
