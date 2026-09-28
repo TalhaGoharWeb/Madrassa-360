@@ -1,0 +1,19 @@
+# Android release signing — template (DO NOT put real values here)
+#
+# Copy this file to android/key.properties and fill in the REAL values for a
+# local release build. NEVER commit the real android/key.properties — it is
+# gitignored, and CI generates it from GitHub Secrets instead.
+#
+#   cp android/key.properties.example android/key.properties
+#
+# How to create a keystore (once, on a secure machine):
+#   keytool -genkeypair -v -keystore android/keystore.jks \
+#       -alias madrassa360 -keyalg RSA -keysize 2048 -validity 10000
+#
+# Then back it up OFF the machine (encrypted), base64 it, and store it as the
+# ANDROID_KEYSTORE_BASE64 GitHub secret. See docs/DEPLOYMENT.md.
+
+storePassword=<your keystore password>
+keyAlias=<your key alias, e.g. madrassa360>
+keyPassword=<your key password>
+storeFile=keystore.jks

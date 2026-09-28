@@ -1,0 +1,101 @@
+name: Build Windows
+
+# Builds the Windows release bundle and compiles the Inno Setup installer.
+# Triggers: manual dispatch, release tags (v*), or as a reusable workflow
+# called by release.yaml.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Installer version override (defaults to version.json)'
+        required: false
+        default: ''
+  push:
+    tags:
+      - 'v*'
+  workflow_call:
+
+permissions:
+  contents: read
+  actions: write # upload installer artifact
+
+env:
+  FLUTTER_VERSION: '3.47.4'
+
+jobs:
+  build-windows:
+    name: Build Windows installer
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Resolve version
+        id: version
+        shell: pwsh
+        run: |
+          $override = "${{ inputs.version }}"
+          if ($override) {
+            $v = $override
+          } else {
+            $v = (Get-Content version.json -Raw | ConvertFrom-Json).version
+          }
+          "version=$v" >> $env:GITHUB_OUTPUT
+          Write-Host "Building installer for version $v"
+
+      - name: Write assets/.env from secrets
+        shell: pwsh
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          if (-not $env:SUPABASE_URL -or -not $env:SUPABASE_ANON_KEY) {
+            Write-Error "SUPABASE_URL and SUPABASE_ANON_KEY GitHub secrets must be set (repo Settings > Secrets and variables > Actions). The installer would otherwise ship without backend config and show the crash screen on launch."
+            exit 1
+          }
+          $content = "SUPABASE_URL=$($env:SUPABASE_URL)`nSUPABASE_ANON_KEY=$($env:SUPABASE_ANON_KEY)`n"
+          Set-Content -Path assets/.env -Value $content -NoNewline
+          Write-Host "assets/.env written (values masked)."
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Generate code (build_runner)
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Build Windows (release)
+        # The Firebase C++ SDK's CMakeLists declares cmake_minimum_required(<3.5),
+        # which CMake 4 (on windows-latest runners) rejects. This env var is
+        # CMake's documented escape hatch: treat the floor as 3.5.
+        env:
+          CMAKE_POLICY_VERSION_MINIMUM: "3.5"
+        run: flutter build windows --release
+
+      - name: Verify Inno Setup script exists
+        shell: pwsh
+        run: |
+          if (-not (Test-Path installer/madrassa360.iss)) {
+            Write-Error "installer/madrassa360.iss not found. It is produced by the Windows packaging workstream."
+            exit 1
+          }
+
+      - name: Compile installer with Inno Setup
+        uses: Minionguyjpro/Inno-Setup-Action@v1.2.2
+        with:
+          path: installer/madrassa360.iss
+          options: /O+ /O"installer/Output" /F"Madrassa360-Setup-${{ steps.version.outputs.version }}"
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer
+          path: installer/Output/Madrassa360-Setup-${{ steps.version.outputs.version }}.exe
+          if-no-files-found: error
+          retention-days: 30

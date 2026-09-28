@@ -1,0 +1,97 @@
+name: Release
+
+# Cut a release from a v* tag:
+#   1. verify the tag matches version.json
+#   2. run the full CI suite (reuses ci.yaml)
+#   3. build the Windows installer + Android APK/AAB (reuses the build workflows)
+#   4. auto-generate release notes from commits since the previous tag
+#   5. create the GitHub Release with all artifacts attached
+#
+# Trigger: push a tag like v1.0.0 after bumping version.json.
+# See docs/DEPLOYMENT.md for the full release process.
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+# Minimal permissions: write releases, read artifacts. Nothing else.
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  verify-version:
+    name: Verify tag matches version.json
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check tag matches version.json
+        run: |
+          VERSION=$(python3 -c "import json; print(json.load(open('version.json'))['version'])")
+          TAG="${{ github.ref_name }}"
+          echo "version.json: $VERSION"
+          echo "tag:          $TAG"
+          if [ "v$VERSION" != "$TAG" ]; then
+            echo "::error::Tag $TAG does not match version.json ($VERSION). Bump version.json (and pubspec.yaml) and tag v$VERSION instead."
+            exit 1
+          fi
+
+  ci:
+    name: Full CI suite
+    needs: verify-version
+    uses: ./.github/workflows/ci.yaml
+
+  build-windows:
+    name: Windows installer
+    needs: [verify-version, ci]
+    uses: ./.github/workflows/build-windows.yaml
+
+  build-android:
+    name: Android APK + AAB
+    needs: [verify-version, ci]
+    uses: ./.github/workflows/build-android.yaml
+
+  publish:
+    name: Create GitHub Release
+    needs: [build-windows, build-android]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # needed to diff against the previous tag
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+
+      - name: Generate release notes from commit history
+        run: |
+          TAG="${{ github.ref_name }}"
+          PREV_TAG=$(git describe --tags --abbrev=0 "$TAG^" 2>/dev/null || true)
+          {
+            echo "# Madrassa-360 $TAG"
+            echo
+            if [ -n "$PREV_TAG" ]; then
+              echo "Changes since $PREV_TAG:"
+              echo
+              git log "$PREV_TAG..$TAG" --pretty=format:'- %s (%h)'
+            else
+              echo "Initial release. Full history:"
+              echo
+              git log --pretty=format:'- %s (%h)'
+            fi
+            echo
+          } > RELEASE_NOTES.md
+          cat RELEASE_NOTES.md
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release-assets/windows-installer/Madrassa360-Setup-*.exe
+            release-assets/android-apk/app-release.apk
+            release-assets/android-aab/app-release.aab
+            version.json
+          body_path: RELEASE_NOTES.md
