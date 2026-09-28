@@ -81,7 +81,8 @@ class M360ResponsiveTable<T> extends StatefulWidget {
     this.rowActions = const [],
     this.emptyIcon = Icons.table_chart_outlined,
     this.emptyTitle = 'کوئی ریکارڈ نہیں ملا',
-    this.emptyDescription = 'اس فہرست میں دکھانے کے لیے کوئی ریکارڈ موجود نہیں ہے۔',
+    this.emptyDescription =
+        'اس فہرست میں دکھانے کے لیے کوئی ریکارڈ موجود نہیں ہے۔',
   });
 
   /// Column definitions (Urdu headers).

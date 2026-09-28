@@ -213,9 +213,15 @@ class PlannedScreen extends StatelessWidget {
           const Icon(Icons.construction_outlined,
               size: 56, color: Color(0xFF009688)),
           const SizedBox(height: 16),
-          Text(labelUr, style: AppTypography.labelNastaliq.copyWith(fontSize: 22)),
+          Text(
+            labelUr,
+            style: AppTypography.labelNastaliq.copyWith(fontSize: 22),
+          ),
           const SizedBox(height: 8),
-          Text('یہ سہولت جلد آرہی ہے', style: AppTypography.bodySmall),
+          Text(
+            'یہ سہولت جلد آرہی ہے',
+            style: AppTypography.bodySmall,
+          ),
         ],
       ),
     );

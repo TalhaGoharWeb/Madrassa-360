@@ -82,7 +82,9 @@ class _AppShellState extends ConsumerState<AppShell> {
     }
 
     final active =
-        visible.any((d) => d.id == _selectedId) ? _selectedId : visible.first.id;
+        visible.any((d) => d.id == _selectedId)
+            ? _selectedId
+            : visible.first.id;
     final destination = findDestination(active)!;
     final group = findGroupOf(active);
 
@@ -155,7 +157,10 @@ class _AppShellState extends ConsumerState<AppShell> {
 /// App bar with breadcrumb title (group › destination), madrassa switcher
 /// (multi-tenant only) and the notifications bell.
 class _ShellAppBar extends ConsumerWidget {
-  const _ShellAppBar({required this.groupLabel, required this.destinationLabel});
+  const _ShellAppBar({
+    required this.groupLabel,
+    required this.destinationLabel,
+  });
 
   final String? groupLabel;
   final String destinationLabel;

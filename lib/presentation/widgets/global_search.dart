@@ -158,11 +158,16 @@ class _SearchResults extends ConsumerWidget {
     }
 
     final matchedStudents = (students.valueOrNull ?? [])
-        .where((s) => _matches(query, [s.name, s.rollNo, s.fatherName, s.darjaName]))
+        .where(
+          (s) => _matches(query, [s.name, s.rollNo, s.fatherName, s.darjaName]),
+        )
         .toList();
     final matchedStaff = (staff.valueOrNull ?? [])
         .where((s) =>
-            _matches(query, [s.name, s.fatherName, s.designation, s.department ?? '']))
+            _matches(
+              query,
+              [s.name, s.fatherName, s.designation, s.department ?? ''],
+            ))
         .toList();
     final matchedDarjas = (darjas.valueOrNull ?? [])
         .where((d) => _matches(query, [d.nameUrdu, d.nameEnglish]))
