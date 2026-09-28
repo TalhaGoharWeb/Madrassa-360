@@ -53,7 +53,7 @@ class M360PrimaryButton extends StatelessWidget {
     final button = ElevatedButton(
       onPressed: _disabled ? null : onPressed,
       style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.primary,
+        backgroundColor: AppColors.accent,
         foregroundColor: Colors.white,
         disabledBackgroundColor: AppColors.divider,
         disabledForegroundColor: Colors.white,

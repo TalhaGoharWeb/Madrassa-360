@@ -67,10 +67,10 @@ class AppTheme {
         ),
       ),
 
-      // Elevated Button Theme
+      // Elevated Button Theme — Warm Action Orange for primary CTAs (10%)
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
+          backgroundColor: AppColors.accent,
           foregroundColor: Colors.white,
           elevation: 2,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -81,9 +81,9 @@ class AppTheme {
         ),
       ),
 
-      // Floating Action Button Theme
+      // Floating Action Button Theme — Warm Action Orange
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
-        backgroundColor: AppColors.primary,
+        backgroundColor: AppColors.accent,
         foregroundColor: Colors.white,
         elevation: 4,
       ),
