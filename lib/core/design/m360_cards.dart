@@ -237,8 +237,7 @@ class M360StatCard extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(
                         horizontal: M360Spacing.sm,
                       ),
-                      minimumSize:
-                          const Size(64, M360TouchTarget.minHeight),
+                      minimumSize: const Size(64, M360TouchTarget.minHeight),
                     ),
                     child: Text(
                       actionLabel!,
