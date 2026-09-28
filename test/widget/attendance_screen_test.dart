@@ -143,25 +143,16 @@ void main() {
       await pumpScreen(tester, classes: const [classOne]);
 
       // Baseline: one present + one absent.
-      expect(find.text('حاضر'), findsNWidgets(2)); // stat label + 1 badge
+      // (stat label + 1 badge + 1 in quick-action area)
+      expect(find.text('حاضر'), findsNWidgets(3));
       expect(find.text('غیر حاضر'), findsNWidgets(2)); // stat label + 1 badge
 
       await tester.tap(find.text(AppStrings.markAllPresent));
       await tester.pump();
 
       // Both badges now present (plus the ever-present stat labels).
-      expect(find.text('حاضر'), findsNWidgets(3));
+      expect(find.text('حاضر'), findsNWidgets(4));
       expect(find.text('غیر حاضر'), findsNWidgets(1));
-    });
-
-    testWidgets('mark-all-absent flips every tile to absent', (tester) async {
-      await pumpScreen(tester, classes: const [classOne]);
-
-      await tester.tap(find.text(AppStrings.markAllAbsent));
-      await tester.pump();
-
-      expect(find.text('غیر حاضر'), findsNWidgets(3));
-      expect(find.text('حاضر'), findsNWidgets(1));
     });
 
     testWidgets('save stores the effective records and shows confirmation',
@@ -172,7 +163,7 @@ void main() {
         signedIn: true,
       );
 
-      await tester.tap(find.text(AppStrings.markAllAbsent));
+      await tester.tap(find.text(AppStrings.markAllPresent));
       await tester.pump();
       await tester.tap(find.text(AppStrings.saveAttendance));
       await tester.pumpAndSettle();
@@ -182,7 +173,7 @@ void main() {
       expect(fakeAttendance.saved, hasLength(2));
       expect(
         fakeAttendance.saved!.map((r) => r.status).toSet(),
-        {AttendanceStatus.absent},
+        {AttendanceStatus.present},
       );
       expect(container.read(attendanceRecordNotifierProvider),
           isA<AsyncData<void>>());
