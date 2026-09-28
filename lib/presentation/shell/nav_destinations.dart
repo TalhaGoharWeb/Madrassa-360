@@ -228,7 +228,7 @@ class PlannedScreen extends StatelessWidget {
 
 /// Complete IA: six groups. Order is intentional — daily workflows first,
 /// administration last. Max 2–3 taps to any common workflow.
-const List<NavGroup> kNavGroups = [
+final List<NavGroup> kNavGroups = [
   // ── مرکزی ───────────────────────────────────────────────────────────────
   NavGroup(
     id: 'markazi',
