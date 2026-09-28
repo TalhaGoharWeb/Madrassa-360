@@ -15,13 +15,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_typography.dart';
-import '../../../data/models/fee.dart';
-import '../../../providers/dashboard_data_provider.dart';
-import '../../../providers/fee_provider.dart';
-import '../../../providers/staff_provider.dart';
-import '../../../providers/student_provider.dart';
+import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_typography.dart';
+import '../../data/models/fee.dart';
+import '../../providers/dashboard_data_provider.dart';
+import '../../providers/fee_provider.dart';
+import '../../providers/staff_provider.dart';
+import '../../providers/student_provider.dart';
 import '../screens/admin/darja_screen.dart';
 import '../screens/admin/fee_management_screen.dart';
 import '../screens/admin/staff_list_screen.dart';
