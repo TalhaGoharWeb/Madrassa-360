@@ -227,10 +227,11 @@ class StudentDialogs {
       );
       final saved =
           await ref.read(studentNotifierProvider.notifier).save(student);
-      if (pickedPhoto != null) {
+      final photoToUpload = pickedPhoto;
+      if (photoToUpload != null) {
         await ref
             .read(studentNotifierProvider.notifier)
-            .uploadPhoto(saved.id, pickedPhoto);
+            .uploadPhoto(saved.id, photoToUpload);
       }
       if (dialogContext.mounted) {
         Navigator.pop(dialogContext); // close loader
@@ -383,10 +384,11 @@ class StudentDialogs {
                     final saved = await ref
                         .read(studentNotifierProvider.notifier)
                         .save(updated);
-                    if (pickedPhoto != null) {
+                    final photoToUpload = pickedPhoto;
+                    if (photoToUpload != null) {
                       await ref
                           .read(studentNotifierProvider.notifier)
-                          .uploadPhoto(saved.id, pickedPhoto);
+                          .uploadPhoto(saved.id, photoToUpload);
                     }
                     if (dialogContext.mounted) {
                       Navigator.pop(dialogContext); // close loader
