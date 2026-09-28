@@ -41,8 +41,6 @@ import 'package:madrasa_360/presentation/screens/common/announcements_screen.dar
     show AnnouncementsScreen;
 import 'package:madrasa_360/presentation/screens/common/notifications_screen.dart'
     show NotificationsScreen;
-import 'package:madrasa_360/presentation/screens/common/profile_screen.dart'
-    show ProfileScreen;
 import 'package:madrasa_360/presentation/screens/common/dashboard_guide_screen.dart'
     show DashboardGuideScreen;
 import 'package:madrasa_360/presentation/screens/dashboards/role_home.dart'
@@ -301,14 +299,14 @@ const List<NavGroup> kNavGroups = [
         labelUr: 'میرے طلبہ',
         icon: Icons.groups_outlined,
         builder: _myStudentsBuilder,
-        visibleForRoleKeys: const ['teacher', 'ustad', 'ustad_hifz'],
+        visibleForRoleKeys: ['teacher', 'ustad', 'ustad_hifz'],
       ),
       NavDestination(
         id: 'parent-fees',
         labelUr: 'فیس کا ریکارڈ',
         icon: Icons.receipt_long_outlined,
         builder: _feeHistoryBuilder,
-        visibleForRoleKeys: const ['parent'],
+        visibleForRoleKeys: ['parent'],
       ),
     ],
   ),

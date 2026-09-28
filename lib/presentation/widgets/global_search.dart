@@ -80,9 +80,8 @@ class _GlobalSearchPageState extends ConsumerState<GlobalSearchPage> {
           onChanged: (v) => setState(() => _query = v.trim()),
         ),
       ),
-      body: _query.isEmpty
-          ? const _SearchHint()
-          : _SearchResults(query: _query),
+      body:
+          _query.isEmpty ? const _SearchHint() : _SearchResults(query: _query),
     );
   }
 }
@@ -163,8 +162,7 @@ class _SearchResults extends ConsumerWidget {
         )
         .toList();
     final matchedStaff = (staff.valueOrNull ?? [])
-        .where((s) =>
-            _matches(
+        .where((s) => _matches(
               query,
               [s.name, s.fatherName, s.designation, s.department ?? ''],
             ))
@@ -244,14 +242,13 @@ class _SearchResults extends ConsumerWidget {
             children: [
               for (final d in matchedDarjas.take(_maxPerGroup))
                 _ResultTile(
-                  leading: d.nameUrdu.isNotEmpty
-                      ? d.nameUrdu.characters.first
-                      : '?',
+                  leading:
+                      d.nameUrdu.isNotEmpty ? d.nameUrdu.characters.first : '?',
                   title: d.nameUrdu,
-                  subtitle: d.nameEnglish.isNotEmpty &&
-                          d.nameEnglish != d.nameUrdu
-                      ? d.nameEnglish
-                      : null,
+                  subtitle:
+                      d.nameEnglish.isNotEmpty && d.nameEnglish != d.nameUrdu
+                          ? d.nameEnglish
+                          : null,
                   onTap: () => go(const DarjaScreen()),
                 ),
             ],

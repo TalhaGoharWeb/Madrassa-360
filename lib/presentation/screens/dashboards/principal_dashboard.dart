@@ -210,7 +210,8 @@ class _KeyMetrics extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Tappable search entry (app-bar search icon mirrors this).
-        _SearchEntry(onTap: () => PrincipalDashboardScreen._openSearch(context)),
+        _SearchEntry(
+            onTap: () => PrincipalDashboardScreen._openSearch(context)),
         const SizedBox(height: 16),
         Text(
           'آج کا انتظامی خلاصہ',
@@ -442,10 +443,8 @@ class _ResponsiveSections extends ConsumerWidget {
       if (can(AppPermissions.createStudents) ||
           can(AppPermissions.viewStudents))
         const _RecentAdmissionsSection(),
-      if (can(AppPermissions.viewAnnouncements))
-        const _AnnouncementsSection(),
-      if (can(AppPermissions.viewExams))
-        const _UpcomingExamsSection(),
+      if (can(AppPermissions.viewAnnouncements)) const _AnnouncementsSection(),
+      if (can(AppPermissions.viewExams)) const _UpcomingExamsSection(),
     ];
 
     if (sections.isEmpty) return const SizedBox.shrink();
@@ -586,8 +585,8 @@ class _AttendanceSummarySection extends ConsumerWidget {
       onAction: go,
       child: async.when(
         loading: () => const _LoadingState(),
-        error: (e, _) => _ErrorState(onRetry: () => ref.refresh(
-              dashboardStatsProvider.future),
+        error: (e, _) => _ErrorState(
+          onRetry: () => ref.refresh(dashboardStatsProvider.future),
         ),
         data: (stats) {
           final marked =
@@ -625,10 +624,9 @@ class _AttendanceSummarySection extends ConsumerWidget {
                 child: LinearProgressIndicator(
                   value: pct,
                   minHeight: 8,
-                  backgroundColor:
-                      AppColors.divider.withValues(alpha: 0.4),
-                  valueColor: const AlwaysStoppedAnimation<Color>(
-                      AppColors.present),
+                  backgroundColor: AppColors.divider.withValues(alpha: 0.4),
+                  valueColor:
+                      const AlwaysStoppedAnimation<Color>(AppColors.present),
                 ),
               ),
               const SizedBox(height: 6),
@@ -707,8 +705,8 @@ class _PendingFeesSection extends ConsumerWidget {
       onAction: go,
       child: async.when(
         loading: () => const _LoadingState(),
-        error: (e, _) => _ErrorState(
-            onRetry: () => ref.refresh(allFeesProvider.future)),
+        error: (e, _) =>
+            _ErrorState(onRetry: () => ref.refresh(allFeesProvider.future)),
         data: (fees) {
           final pending = fees
               .where((f) =>
@@ -868,8 +866,7 @@ class _RecentAdmissionsSection extends ConsumerWidget {
                   dense: true,
                   contentPadding: EdgeInsets.zero,
                   leading: CircleAvatar(
-                    backgroundColor:
-                        AppColors.primary.withValues(alpha: 0.12),
+                    backgroundColor: AppColors.primary.withValues(alpha: 0.12),
                     child: Text(
                       s.name.isNotEmpty ? s.name.characters.first : '?',
                       style: AppTypography.customBody(
@@ -911,8 +908,7 @@ class _AnnouncementsSection extends ConsumerWidget {
           MaterialPageRoute(builder: (_) => const AnnouncementsScreen()),
         );
 
-    final sorted = [...announcements]
-      ..sort((a, b) {
+    final sorted = [...announcements]..sort((a, b) {
         if (a.isPinned != b.isPinned) return a.isPinned ? -1 : 1;
         final at = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
         final bt = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
@@ -943,8 +939,7 @@ class _AnnouncementsSection extends ConsumerWidget {
                     ),
                     title: Text(
                       a.title,
-                      style:
-                          AppTypography.labelNastaliq.copyWith(fontSize: 15),
+                      style: AppTypography.labelNastaliq.copyWith(fontSize: 15),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),

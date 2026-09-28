@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_typography.dart';
-import '../../../data/models/attendance_status.dart';
 import '../../../data/models/fee.dart';
 import '../../../data/models/student.dart';
 import '../../../providers/fee_provider.dart';
@@ -57,8 +56,7 @@ class _StudentListScreenState extends ConsumerState<StudentListScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.error_outline,
-                  size: 56, color: AppColors.error),
+              const Icon(Icons.error_outline, size: 56, color: AppColors.error),
               const SizedBox(height: 12),
               Text('طلباء لوڈ کرنے میں خطا',
                   style: AppTypography.labelNastaliq),
@@ -94,7 +92,7 @@ class _StudentListScreenState extends ConsumerState<StudentListScreen> {
                 _searchController.clear();
               }),
             ),
-            Expanded(child: _ContentBody(students: students)),
+            Expanded(child: _contentBody(students: students)),
           ],
         ),
       ),
@@ -123,7 +121,7 @@ class _StudentListScreenState extends ConsumerState<StudentListScreen> {
     return list;
   }
 
-  Widget _ContentBody({required List<Student> students}) {
+  Widget _contentBody({required List<Student> students}) {
     final filtered = _applyFilters(students);
     if (filtered.isEmpty) {
       final searching = _searchController.text.trim().isNotEmpty ||
@@ -251,7 +249,10 @@ class _FilterChips extends StatelessWidget {
           chips: statusChips,
           selectedId: selectedStatus,
           onChanged: onStatusChanged,
-          statusColors: const {'active': AppColors.success, 'inactive': AppColors.error},
+          statusColors: const {
+            'active': AppColors.success,
+            'inactive': AppColors.error
+          },
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -319,9 +320,7 @@ class _ChipRow extends StatelessWidget {
                     checkmarkColor: accent,
                     labelStyle: AppTypography.labelNastaliq.copyWith(
                       fontSize: 14,
-                      color: isSelected
-                          ? accent
-                          : AppColors.textSecondary,
+                      color: isSelected ? accent : AppColors.textSecondary,
                     ),
                   ),
                 );
@@ -400,8 +399,7 @@ class _DesktopStudentTable extends ConsumerWidget {
                       ],
                     ),
                   ),
-                  DataCell(Text(
-                      s.rollNo.isEmpty ? '—' : s.rollNo)),
+                  DataCell(Text(s.rollNo.isEmpty ? '—' : s.rollNo)),
                   DataCell(Text(_FilterChips._shortClassLabel(s.className))),
                   DataCell(attendanceBadge(s.attendanceStatus)),
                   DataCell(feeStatus == null
@@ -419,8 +417,7 @@ class _DesktopStudentTable extends ConsumerWidget {
                         ),
                         IconButton(
                           tooltip: 'ترمیم',
-                          icon: const Icon(Icons.edit,
-                              color: AppColors.info),
+                          icon: const Icon(Icons.edit, color: AppColors.info),
                           onPressed: () => onEdit(s),
                         ),
                         IconButton(
@@ -493,8 +490,8 @@ class _MobileStudentList extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(s.name,
-                        style: AppTypography.labelNastaliq
-                            .copyWith(fontSize: 17)),
+                        style:
+                            AppTypography.labelNastaliq.copyWith(fontSize: 17)),
                     Text(
                       'بن ${s.fatherName} • رول: ${s.rollNo.isEmpty ? '—' : s.rollNo}',
                       style: AppTypography.bodySmall,
@@ -507,8 +504,7 @@ class _MobileStudentList extends ConsumerWidget {
                       runSpacing: 4,
                       children: [
                         _MiniTag(
-                          label: _FilterChips
-                              ._shortClassLabel(s.className),
+                          label: _FilterChips._shortClassLabel(s.className),
                           color: AppColors.primary,
                         ),
                         attendanceBadge(s.attendanceStatus, compact: true),
@@ -522,8 +518,8 @@ class _MobileStudentList extends ConsumerWidget {
                 ),
               ),
               PopupMenuButton<String>(
-                icon: const Icon(Icons.more_vert,
-                    color: AppColors.textSecondary),
+                icon:
+                    const Icon(Icons.more_vert, color: AppColors.textSecondary),
                 onSelected: (value) {
                   if (value == 'edit') onEdit(s);
                   if (value == 'fee') onFee(s);
@@ -531,8 +527,7 @@ class _MobileStudentList extends ConsumerWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) =>
-                            StudentProfileScreen(studentId: s.id),
+                        builder: (_) => StudentProfileScreen(studentId: s.id),
                       ),
                     );
                   }
@@ -541,20 +536,20 @@ class _MobileStudentList extends ConsumerWidget {
                   PopupMenuItem(
                     value: 'profile',
                     child: Text('پروفائل دیکھیں',
-                        style: AppTypography.labelNastaliq
-                            .copyWith(fontSize: 15)),
+                        style:
+                            AppTypography.labelNastaliq.copyWith(fontSize: 15)),
                   ),
                   PopupMenuItem(
                     value: 'edit',
                     child: Text('ترمیم',
-                        style: AppTypography.labelNastaliq
-                            .copyWith(fontSize: 15)),
+                        style:
+                            AppTypography.labelNastaliq.copyWith(fontSize: 15)),
                   ),
                   PopupMenuItem(
                     value: 'fee',
                     child: Text('فیس وصول کریں',
-                        style: AppTypography.labelNastaliq
-                            .copyWith(fontSize: 15)),
+                        style:
+                            AppTypography.labelNastaliq.copyWith(fontSize: 15)),
                   ),
                 ],
               ),

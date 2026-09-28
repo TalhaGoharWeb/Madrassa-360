@@ -77,14 +77,12 @@ class _AppShellState extends ConsumerState<AppShell> {
       // Failsafe: never a blank shell (mirrors role_home's "never blank"
       // contract). This path is unreachable in practice because the
       // dashboard destination has no permission requirements.
-      return const Scaffold(
-          body: Center(child: Text('رسائی دستیاب نہیں')));
+      return const Scaffold(body: Center(child: Text('رسائی دستیاب نہیں')));
     }
 
-    final active =
-        visible.any((d) => d.id == _selectedId)
-            ? _selectedId
-            : visible.first.id;
+    final active = visible.any((d) => d.id == _selectedId)
+        ? _selectedId
+        : visible.first.id;
     final destination = findDestination(active)!;
     final group = findGroupOf(active);
 
@@ -109,8 +107,7 @@ class _AppShellState extends ConsumerState<AppShell> {
           children: [
             // RTL: the first child of a Row renders on the RIGHT in the
             // app's forced-RTL Directionality — the rail sits on the right.
-            if (isDesktop)
-              AppNavRail(selectedId: active, onSelect: _select),
+            if (isDesktop) AppNavRail(selectedId: active, onSelect: _select),
             Expanded(
               child: Column(
                 children: [
@@ -142,8 +139,7 @@ class _AppShellState extends ConsumerState<AppShell> {
               ? MobileNavBar(
                   selectedId: active,
                   onSelect: _select,
-                  onMore: () =>
-                      _scaffoldKey.currentState?.openDrawer(),
+                  onMore: () => _scaffoldKey.currentState?.openDrawer(),
                 )
               : null,
         );
@@ -251,8 +247,7 @@ class _TenantSwitcher extends ConsumerWidget {
 class _NotificationsBell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final unread =
-        ref.watch(unreadNotificationsCountProvider).valueOrNull ?? 0;
+    final unread = ref.watch(unreadNotificationsCountProvider).valueOrNull ?? 0;
     return IconButton(
       tooltip: 'اطلاعات',
       onPressed: () {

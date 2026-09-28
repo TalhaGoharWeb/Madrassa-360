@@ -111,8 +111,7 @@ class M360LoadingState extends StatelessWidget {
       physics: const NeverScrollableScrollPhysics(),
       shrinkWrap: true,
       itemCount: itemCount,
-      separatorBuilder: (_, __) =>
-          const SizedBox(height: M360Spacing.sm),
+      separatorBuilder: (_, __) => const SizedBox(height: M360Spacing.sm),
       itemBuilder: (_, __) => const _ShimmerRow(),
     );
   }
@@ -188,9 +187,8 @@ class _ShimmerBoxState extends State<_ShimmerBox>
           width: widget.width,
           height: widget.height,
           decoration: BoxDecoration(
-            borderRadius: widget.circular
-                ? null
-                : BorderRadius.circular(M360Radius.sm),
+            borderRadius:
+                widget.circular ? null : BorderRadius.circular(M360Radius.sm),
             shape: widget.circular ? BoxShape.circle : BoxShape.rectangle,
             gradient: LinearGradient(
               begin: Alignment(-1.0 + 2.0 * t, 0),

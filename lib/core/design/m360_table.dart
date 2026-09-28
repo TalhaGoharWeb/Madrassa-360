@@ -104,8 +104,7 @@ class M360ResponsiveTable<T> extends StatefulWidget {
   final String emptyDescription;
 
   @override
-  State<M360ResponsiveTable<T>> createState() =>
-      _M360ResponsiveTableState<T>();
+  State<M360ResponsiveTable<T>> createState() => _M360ResponsiveTableState<T>();
 }
 
 class _M360ResponsiveTableState<T> extends State<M360ResponsiveTable<T>> {
@@ -167,8 +166,7 @@ class _M360ResponsiveTableState<T> extends State<M360ResponsiveTable<T>> {
           sortAscending: _sortAscending,
           headingTextStyle: AppTypography.labelNastaliq,
           dataTextStyle: AppTypography.bodyMedium,
-          headingRowColor:
-              WidgetStateProperty.all(AppColors.surface),
+          headingRowColor: WidgetStateProperty.all(AppColors.surface),
           dataRowMinHeight: 56,
           dataRowMaxHeight: 72,
           headingRowHeight: 56,
@@ -231,8 +229,7 @@ class _M360ResponsiveTableState<T> extends State<M360ResponsiveTable<T>> {
       physics: const NeverScrollableScrollPhysics(),
       padding: const EdgeInsets.all(M360Spacing.md),
       itemCount: _sortedRows.length,
-      separatorBuilder: (_, __) =>
-          const SizedBox(height: M360Spacing.sm),
+      separatorBuilder: (_, __) => const SizedBox(height: M360Spacing.sm),
       itemBuilder: (context, index) {
         final row = _sortedRows[index];
         return M360Card(
@@ -303,9 +300,8 @@ class _ActionsMenu<T> extends StatelessWidget {
                 Icon(
                   action.icon,
                   size: 20,
-                  color: action.danger
-                      ? AppColors.error
-                      : AppColors.textPrimary,
+                  color:
+                      action.danger ? AppColors.error : AppColors.textPrimary,
                 ),
                 const SizedBox(width: M360Spacing.xs),
                 Text(
@@ -313,9 +309,8 @@ class _ActionsMenu<T> extends StatelessWidget {
                   textDirection: TextDirection.rtl,
                   style: AppTypography.labelNastaliq.copyWith(
                     fontSize: 15,
-                    color: action.danger
-                        ? AppColors.error
-                        : AppColors.textPrimary,
+                    color:
+                        action.danger ? AppColors.error : AppColors.textPrimary,
                   ),
                 ),
               ],

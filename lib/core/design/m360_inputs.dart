@@ -129,10 +129,8 @@ class M360TextField extends StatelessWidget {
         ),
         hintTextDirection: TextDirection.rtl,
         floatingLabelBehavior: FloatingLabelBehavior.auto,
-        prefixIcon:
-            prefixIcon == null ? null : Icon(prefixIcon, size: 22),
-        suffixIcon:
-            suffixIcon == null ? null : Icon(suffixIcon, size: 22),
+        prefixIcon: prefixIcon == null ? null : Icon(prefixIcon, size: 22),
+        suffixIcon: suffixIcon == null ? null : Icon(suffixIcon, size: 22),
         prefixIconColor: AppColors.textSecondary,
         suffixIconColor: AppColors.textSecondary,
         filled: true,
@@ -151,8 +149,7 @@ class M360TextField extends StatelessWidget {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(M360Radius.md),
-          borderSide:
-              const BorderSide(color: AppColors.primary, width: 2),
+          borderSide: const BorderSide(color: AppColors.primary, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(M360Radius.md),
@@ -160,8 +157,7 @@ class M360TextField extends StatelessWidget {
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(M360Radius.md),
-          borderSide:
-              const BorderSide(color: AppColors.error, width: 2),
+          borderSide: const BorderSide(color: AppColors.error, width: 2),
         ),
         disabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(M360Radius.md),

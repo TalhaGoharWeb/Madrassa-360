@@ -78,9 +78,8 @@ class M360PrimaryButton extends StatelessWidget {
       button: true,
       enabled: !_disabled,
       label: semanticLabel ?? label,
-      child: fullWidth
-          ? SizedBox(width: double.infinity, child: button)
-          : button,
+      child:
+          fullWidth ? SizedBox(width: double.infinity, child: button) : button,
     );
   }
 }
@@ -148,9 +147,8 @@ class M360SecondaryButton extends StatelessWidget {
       button: true,
       enabled: !_disabled,
       label: semanticLabel ?? label,
-      child: fullWidth
-          ? SizedBox(width: double.infinity, child: button)
-          : button,
+      child:
+          fullWidth ? SizedBox(width: double.infinity, child: button) : button,
     );
   }
 }
@@ -218,9 +216,8 @@ class M360DangerButton extends StatelessWidget {
       button: true,
       enabled: !_disabled,
       label: semanticLabel ?? label,
-      child: fullWidth
-          ? SizedBox(width: double.infinity, child: button)
-          : button,
+      child:
+          fullWidth ? SizedBox(width: double.infinity, child: button) : button,
     );
   }
 }

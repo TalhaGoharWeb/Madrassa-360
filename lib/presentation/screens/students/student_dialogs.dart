@@ -219,8 +219,9 @@ class StudentDialogs {
         darjaName: selectedClass,
         classId: selectedClass,
         className: selectedClass,
-        phone:
-            phoneController.text.trim().isEmpty ? null : phoneController.text.trim(),
+        phone: phoneController.text.trim().isEmpty
+            ? null
+            : phoneController.text.trim(),
         address: addressController.text.trim().isEmpty
             ? null
             : addressController.text.trim(),
@@ -562,9 +563,10 @@ class StudentDialogs {
                   }
                   final monthIdx = monthOptions.indexOf(selectedMonth);
                   final monthValue = monthValues[monthIdx < 0 ? 0 : monthIdx];
-                  final fees =
-                      innerRef.read(feesByStudentProvider(student.id)).valueOrNull ??
-                          const <Fee>[];
+                  final fees = innerRef
+                          .read(feesByStudentProvider(student.id))
+                          .valueOrNull ??
+                      const <Fee>[];
                   Fee? existing;
                   for (final f in fees) {
                     if (f.month == monthValue) {
@@ -662,8 +664,7 @@ class _LabeledField extends StatelessWidget {
       style: AppTypography.bodyMedium,
       decoration: InputDecoration(
         labelText: label,
-        labelStyle:
-            AppTypography.labelNastaliq.copyWith(fontSize: 15),
+        labelStyle: AppTypography.labelNastaliq.copyWith(fontSize: 15),
         border: const OutlineInputBorder(),
         prefixIcon: Icon(icon, color: AppColors.primary),
       ),

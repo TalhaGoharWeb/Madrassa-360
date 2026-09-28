@@ -18,8 +18,7 @@ class Responsive {
   /// Large phone / small tablet: 600 ≤ width < 1100.
   static bool isTablet(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
-    return width >= M360Breakpoint.mobile &&
-        width < M360Breakpoint.tablet;
+    return width >= M360Breakpoint.mobile && width < M360Breakpoint.tablet;
   }
 
   /// Desktop: width ≥ 1100.
@@ -101,8 +100,7 @@ class M360ConstrainedWidth extends StatelessWidget {
           maxWidth: maxWidth ?? M360Layout.maxContentWidthDesktop,
         ),
         child: Padding(
-          padding:
-              padding ?? EdgeInsets.symmetric(horizontal: gutter),
+          padding: padding ?? EdgeInsets.symmetric(horizontal: gutter),
           child: child,
         ),
       ),

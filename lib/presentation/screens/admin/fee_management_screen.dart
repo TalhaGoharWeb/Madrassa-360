@@ -1116,7 +1116,8 @@ class _CollectFeeFlowState extends ConsumerState<_CollectFeeFlow> {
         Text(
           _stepLabels[i],
           style: AppTypography.labelNastaliq.copyWith(
-            color: (done || active) ? AppColors.primary : AppColors.textSecondary,
+            color:
+                (done || active) ? AppColors.primary : AppColors.textSecondary,
             fontWeight: active ? FontWeight.bold : FontWeight.normal,
           ),
         ),
@@ -1130,7 +1131,8 @@ class _CollectFeeFlowState extends ConsumerState<_CollectFeeFlow> {
       child: Container(
         margin: const EdgeInsets.only(bottom: 26, left: 4, right: 4),
         height: 2,
-        color: done ? AppColors.success : AppColors.divider.withValues(alpha: 0.5),
+        color:
+            done ? AppColors.success : AppColors.divider.withValues(alpha: 0.5),
       ),
     );
   }
@@ -1258,13 +1260,11 @@ class _CollectFeeFlowState extends ConsumerState<_CollectFeeFlow> {
           decoration: BoxDecoration(
             color: AppColors.error.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(12),
-            border:
-                Border.all(color: AppColors.error.withValues(alpha: 0.25)),
+            border: Border.all(color: AppColors.error.withValues(alpha: 0.25)),
           ),
           child: Row(
             children: [
-              const Icon(Icons.account_balance_wallet,
-                  color: AppColors.error),
+              const Icon(Icons.account_balance_wallet, color: AppColors.error),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
@@ -1341,9 +1341,8 @@ class _CollectFeeFlowState extends ConsumerState<_CollectFeeFlow> {
                 icon: Icons.pending,
                 label: 'اس کے بعد بقایا',
                 value: '${formatPK(afterRemaining)} روپے',
-                iconColor: afterRemaining > 0
-                    ? AppColors.error
-                    : AppColors.success,
+                iconColor:
+                    afterRemaining > 0 ? AppColors.error : AppColors.success,
               ),
             ],
           ),
@@ -1364,9 +1363,8 @@ class _CollectFeeFlowState extends ConsumerState<_CollectFeeFlow> {
     final receiptNo = _receiptNo ?? _receiptNoFor(record);
     final paidAt = DateTime.tryParse(record.paidDate ?? '');
     // Display status after this payment (presentation mapping only).
-    final afterStatus = record.remaining <= 0
-        ? FeeStatus.paid
-        : FeeStatus.partial;
+    final afterStatus =
+        record.remaining <= 0 ? FeeStatus.paid : FeeStatus.partial;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1376,8 +1374,7 @@ class _CollectFeeFlowState extends ConsumerState<_CollectFeeFlow> {
           decoration: BoxDecoration(
             color: AppColors.success.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(16),
-            border:
-                Border.all(color: AppColors.success.withValues(alpha: 0.3)),
+            border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
           ),
           child: Column(
             children: [
@@ -1421,12 +1418,10 @@ class _CollectFeeFlowState extends ConsumerState<_CollectFeeFlow> {
               _receiptRow('کلاس', record.studentClass),
               _receiptRow('مہینہ', _monthLabel(record.month)),
               _receiptRow('فیس کی قسم', 'ماہانہ فیس'),
-              _receiptRow(
-                  'وصول شدہ رقم', '${formatPK(_paidAmount)} روپے'),
+              _receiptRow('وصول شدہ رقم', '${formatPK(_paidAmount)} روپے'),
               _receiptRow('بقایا', '${formatPK(record.remaining)} روپے'),
               _receiptRow('حیثیت', _statusLabel(afterStatus)),
-              _receiptRow(
-                  'تاریخ',
+              _receiptRow('تاریخ',
                   paidAt == null ? '—' : DateUtils.formatDateUrdu(paidAt)),
             ],
           ),
@@ -1555,9 +1550,8 @@ class _CollectFeeFlowState extends ConsumerState<_CollectFeeFlow> {
               Padding(
                 padding: const EdgeInsets.only(left: 8),
                 child: OutlinedButton(
-                  onPressed: _saving
-                      ? null
-                      : () => setState(() => _step = _step - 1),
+                  onPressed:
+                      _saving ? null : () => setState(() => _step = _step - 1),
                   child: Text(
                     'واپس',
                     style: AppTypography.labelNastaliq,

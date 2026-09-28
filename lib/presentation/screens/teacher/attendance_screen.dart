@@ -457,8 +457,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
             children: [
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: () =>
-                      _bulkSet(base, AttendanceStatus.present),
+                  onPressed: () => _bulkSet(base, AttendanceStatus.present),
                   icon: const Icon(Icons.done_all, size: 20),
                   label: Text(
                     AppStrings.markAllPresent,
@@ -606,11 +605,9 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
           // Order (RTL: right → left): حاضر، چھٹی، غیر حاضر، تاخیر.
           Row(
             children: [
-              _statusSegment(record, status, AttendanceStatus.present,
-                  flex: 3),
+              _statusSegment(record, status, AttendanceStatus.present, flex: 3),
               _statusSegment(record, status, AttendanceStatus.leave, flex: 3),
-              _statusSegment(record, status, AttendanceStatus.absent,
-                  flex: 3),
+              _statusSegment(record, status, AttendanceStatus.absent, flex: 3),
               _statusSegment(record, status, AttendanceStatus.late, flex: 2),
             ],
           ),
@@ -733,8 +730,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed:
-                    _saving ? null : () => _saveAttendance(base),
+                onPressed: _saving ? null : () => _saveAttendance(base),
                 icon: _saving
                     ? const SizedBox(
                         width: 20,

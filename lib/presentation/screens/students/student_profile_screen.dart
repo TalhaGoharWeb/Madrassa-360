@@ -64,8 +64,7 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.error_outline,
-                  size: 56, color: AppColors.error),
+              const Icon(Icons.error_outline, size: 56, color: AppColors.error),
               const SizedBox(height: 12),
               Text('طالب علم کی معلومات لوڈ کرنے میں خطا',
                   style: AppTypography.labelNastaliq),
@@ -103,8 +102,7 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen>
                 indicatorColor: AppColors.primary,
                 labelColor: AppColors.primaryDark,
                 unselectedLabelColor: AppColors.textSecondary,
-                labelStyle:
-                    AppTypography.labelNastaliq.copyWith(fontSize: 15),
+                labelStyle: AppTypography.labelNastaliq.copyWith(fontSize: 15),
                 unselectedLabelStyle:
                     AppTypography.labelNastaliq.copyWith(fontSize: 15),
                 tabs: _tabs.map((t) => Tab(text: t)).toList(),
@@ -371,14 +369,12 @@ class _StatCard extends StatelessWidget {
   final String label;
   final String value;
   final Color color;
-  final Widget? trailing;
 
   const _StatCard({
     required this.icon,
     required this.label,
     required this.value,
     required this.color,
-    this.trailing,
   });
 
   @override
@@ -406,9 +402,7 @@ class _StatCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          trailing ??
-              Text(value,
-                  style: AppTypography.titleLarge.copyWith(color: color)),
+          Text(value, style: AppTypography.titleLarge.copyWith(color: color)),
         ],
       ),
     );
@@ -501,8 +495,8 @@ class _ExamAverageCard extends ConsumerWidget {
         color: AppColors.textSecondary,
       );
     }
-    final avg = results.fold<double>(0, (s, r) => s + r.percentage) /
-        results.length;
+    final avg =
+        results.fold<double>(0, (s, r) => s + r.percentage) / results.length;
     return _StatCard(
       icon: Icons.school,
       label: 'امتحانی اوسط (${results.length} امتحان)',
@@ -686,8 +680,8 @@ class _AttendanceTab extends ConsumerWidget {
         else
           ...dayRecords.map((d) => AppCard(
                 margin: const EdgeInsets.only(bottom: 8),
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 child: Row(
                   children: [
                     Icon(Icons.calendar_today,
@@ -763,16 +757,13 @@ class _FeesTab extends ConsumerWidget {
     return feesAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(
-        child: Text('فیس لوڈ کرنے میں خطا',
-            style: AppTypography.labelNastaliq),
+        child: Text('فیس لوڈ کرنے میں خطا', style: AppTypography.labelNastaliq),
       ),
       data: (fees) {
         final sorted = List<Fee>.from(fees)
           ..sort((a, b) => b.month.compareTo(a.month));
-        final totalDue =
-            fees.fold<double>(0, (s, f) => s + f.amountDue);
-        final totalPaid =
-            fees.fold<double>(0, (s, f) => s + f.amountPaid);
+        final totalDue = fees.fold<double>(0, (s, f) => s + f.amountDue);
+        final totalPaid = fees.fold<double>(0, (s, f) => s + f.amountPaid);
         final balance = totalDue - totalPaid;
 
         return ListView(
@@ -786,8 +777,7 @@ class _FeesTab extends ConsumerWidget {
                     StudentDialogs.showFeeCollection(context, ref, student),
                 icon: const Icon(Icons.add, color: Colors.white, size: 18),
                 label: Text('فیس وصول کریں',
-                    style: AppTypography.buttonText
-                        .copyWith(fontSize: 15)),
+                    style: AppTypography.buttonText.copyWith(fontSize: 15)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.success,
                 ),
@@ -887,12 +877,11 @@ class _ExamsTab extends ConsumerWidget {
     return resultsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(
-        child: Text('نتائج لوڈ کرنے میں خطا',
-            style: AppTypography.labelNastaliq),
+        child:
+            Text('نتائج لوڈ کرنے میں خطا', style: AppTypography.labelNastaliq),
       ),
       data: (all) {
-        final mine =
-            all.where((r) => r.studentId == student.id).toList();
+        final mine = all.where((r) => r.studentId == student.id).toList();
         if (mine.isEmpty) {
           return const EmptyState(
             icon: Icons.school,
@@ -903,8 +892,7 @@ class _ExamsTab extends ConsumerWidget {
         return ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            const SectionHeading(
-                title: 'امتحانی نتائج', icon: Icons.school),
+            const SectionHeading(title: 'امتحانی نتائج', icon: Icons.school),
             ...mine.map((r) => _ExamCard(result: r)),
           ],
         );
@@ -921,8 +909,7 @@ class _ExamCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final pct = result.percentage;
-    final color =
-        pct >= 60 ? AppColors.success : AppColors.error;
+    final color = pct >= 60 ? AppColors.success : AppColors.error;
     return AppCard(
       child: ExpansionTile(
         tilePadding: EdgeInsets.zero,
@@ -946,8 +933,7 @@ class _ExamCard extends StatelessWidget {
             .map((s) => ListTile(
                   dense: true,
                   contentPadding: EdgeInsets.zero,
-                  title: Text(s.subject,
-                      style: AppTypography.bodyMedium),
+                  title: Text(s.subject, style: AppTypography.bodyMedium),
                   trailing: Text(
                     '${s.marksObtained.toStringAsFixed(0)}/${s.totalMarks.toStringAsFixed(0)} • ${s.grade}',
                     style: AppTypography.bodySmall,
