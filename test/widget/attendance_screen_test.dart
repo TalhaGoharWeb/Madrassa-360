@@ -148,7 +148,7 @@ void main() {
       expect(find.text('غیر حاضر'), findsNWidgets(3));
 
       await tester.tap(find.text(AppStrings.markAllPresent));
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       // Both badges now present (plus the ever-present stat labels).
       expect(find.text('حاضر'), findsNWidgets(4));
@@ -164,7 +164,7 @@ void main() {
       );
 
       await tester.tap(find.text(AppStrings.markAllPresent));
-      await tester.pump();
+      await tester.pumpAndSettle();
       await tester.tap(find.text(AppStrings.saveAttendance));
       await tester.pumpAndSettle();
 
