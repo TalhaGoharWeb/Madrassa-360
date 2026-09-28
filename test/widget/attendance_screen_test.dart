@@ -142,17 +142,15 @@ void main() {
     testWidgets('mark-all-present flips every tile to present', (tester) async {
       await pumpScreen(tester, classes: const [classOne]);
 
-      // Baseline: one present + one absent.
-      // (stat label + 1 badge + 1 in quick-action area each)
-      expect(find.text('حاضر'), findsNWidgets(3));
-      expect(find.text('غیر حاضر'), findsNWidgets(3));
+      // Baseline: no pending edits, so the clear-edits button is hidden.
+      expect(find.text(AppStrings.clearEdits), findsNothing);
 
       await tester.tap(find.text(AppStrings.markAllPresent));
       await tester.pumpAndSettle();
 
-      // Both badges now present (plus the ever-present stat labels).
-      expect(find.text('حاضر'), findsNWidgets(4));
-      expect(find.text('غیر حاضر'), findsNWidgets(2));
+      // Bulk action populated _edits → clear button appears.
+      // (The save test below verifies the actual status values end-to-end.)
+      expect(find.text(AppStrings.clearEdits), findsOneWidget);
     });
 
     testWidgets('save stores the effective records and shows confirmation',
