@@ -14,7 +14,8 @@ import '../../widgets/common/app_widgets.dart';
 import 'user_management_screen.dart';
 import 'darja_screen.dart';
 import 'library_screen.dart';
-import '../finance/finance_hub_screen.dart' show FinanceHubScreen, FinanceSection;
+import '../finance/finance_hub_screen.dart'
+    show FinanceHubScreen, FinanceSection;
 import '../common/announcements_screen.dart';
 import '../teacher/attendance_screen.dart';
 import '../teacher/results_screen.dart';

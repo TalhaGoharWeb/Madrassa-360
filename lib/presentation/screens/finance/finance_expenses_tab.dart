@@ -26,8 +26,7 @@ class FinanceExpensesTab extends ConsumerStatefulWidget {
   const FinanceExpensesTab({super.key});
 
   @override
-  ConsumerState<FinanceExpensesTab> createState() =>
-      _FinanceExpensesTabState();
+  ConsumerState<FinanceExpensesTab> createState() => _FinanceExpensesTabState();
 }
 
 class _FinanceExpensesTabState extends ConsumerState<FinanceExpensesTab> {
@@ -128,8 +127,7 @@ class _FinanceExpensesTabState extends ConsumerState<FinanceExpensesTab> {
     );
   }
 
-  Widget _list(
-      List<ExpenseEntry> all, bool canCreate, bool canApprove) {
+  Widget _list(List<ExpenseEntry> all, bool canCreate, bool canApprove) {
     final filtered = _filtered(all);
     if (filtered.isEmpty) {
       return M360EmptyState(
@@ -265,8 +263,7 @@ class _FinanceExpensesTabState extends ConsumerState<FinanceExpensesTab> {
               child: Text(
                 'حتمی اخراجات ناقابل ترمیم ہیں — تصحیح واپسی (reversal) اندراج سے ہوتی ہے۔',
                 textDirection: TextDirection.rtl,
-                style:
-                    TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
               ),
             ),
         ],
@@ -330,8 +327,8 @@ class _FinanceExpensesTabState extends ConsumerState<FinanceExpensesTab> {
     showM360SnackBar(context, err ?? success, isError: err != null);
   }
 
-  Future<void> _confirmTransition(ExpenseEntry expense, DocStatus to,
-      String title, String message) async {
+  Future<void> _confirmTransition(
+      ExpenseEntry expense, DocStatus to, String title, String message) async {
     final confirmed = await showM360ConfirmDialog(
       context,
       title: title,
@@ -446,17 +443,16 @@ class _ExpenseFormState extends ConsumerState<_ExpenseForm> {
       return;
     }
     setState(() => _saving = true);
-    final err =
-        await ref.read(financeProvider.notifier).createExpenseDraft(
-              category: category,
-              recipient: _recipientController.text.trim().isEmpty
-                  ? null
-                  : _recipientController.text.trim(),
-              amount: amount,
-              description: _descController.text.trim().isEmpty
-                  ? null
-                  : _descController.text.trim(),
-            );
+    final err = await ref.read(financeProvider.notifier).createExpenseDraft(
+          category: category,
+          recipient: _recipientController.text.trim().isEmpty
+              ? null
+              : _recipientController.text.trim(),
+          amount: amount,
+          description: _descController.text.trim().isEmpty
+              ? null
+              : _descController.text.trim(),
+        );
     if (!mounted) return;
     setState(() => _saving = false);
     if (err == null) {

@@ -127,8 +127,9 @@ class FeeRecordView {
     }
   }
 
-  double get progress =>
-      fee.amountDue > 0 ? (fee.amountPaid / fee.amountDue).clamp(0.0, 1.0) : 0.0;
+  double get progress => fee.amountDue > 0
+      ? (fee.amountPaid / fee.amountDue).clamp(0.0, 1.0)
+      : 0.0;
 
   String get amountDueLabel => formatPK(fee.amountDue);
   String get amountPaidLabel => formatPK(fee.amountPaid);
@@ -180,8 +181,7 @@ class OutstandingBalanceView {
     }
     final views = <OutstandingBalanceView>[];
     for (final entry in byStudent.entries) {
-      final records = entry.value
-        ..sort((a, b) => a.month.compareTo(b.month));
+      final records = entry.value..sort((a, b) => a.month.compareTo(b.month));
       final first = records.first;
       views.add(OutstandingBalanceView(
         studentId: entry.key,

@@ -282,8 +282,7 @@ class _FinanceLedgerTabState extends ConsumerState<FinanceLedgerTab> {
               child: Text(
                 'حتمی اندراجات ناقابل ترمیم ہیں — تصحیح واپسی (reversal) اندراج سے ہوتی ہے۔',
                 textDirection: TextDirection.rtl,
-                style:
-                    TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
               ),
             ),
         ],
@@ -386,8 +385,7 @@ class _LedgerFormState extends ConsumerState<_LedgerForm> {
           label: 'قسم',
           value: _kind,
           items: const [
-            M360DropdownItem(
-                value: LedgerKind.expense, label: 'اخراجات'),
+            M360DropdownItem(value: LedgerKind.expense, label: 'اخراجات'),
             M360DropdownItem(value: LedgerKind.income, label: 'آمدن'),
           ],
           onChanged: (v) => setState(() => _kind = v!),

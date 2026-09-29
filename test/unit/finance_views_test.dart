@@ -214,7 +214,11 @@ void main() {
 
     test('fully paid fees contribute nothing and are skipped', () {
       final result = OutstandingBalanceView.aggregate([
-        _fee(id: 'f1', amountDue: 1000, amountPaid: 1000, status: FeeStatus.paid),
+        _fee(
+            id: 'f1',
+            amountDue: 1000,
+            amountPaid: 1000,
+            status: FeeStatus.paid),
       ]);
       expect(result, isEmpty);
     });
@@ -335,7 +339,11 @@ void main() {
             paidDate: '2026-09-05',
             status: FeeStatus.paid,
           ),
-          _fee(id: 'f2', studentId: 's2', amountPaid: 0, status: FeeStatus.pending),
+          _fee(
+              id: 'f2',
+              studentId: 's2',
+              amountPaid: 0,
+              status: FeeStatus.pending),
         ],
         payments: [_payment()],
         postedIncome: 2000,

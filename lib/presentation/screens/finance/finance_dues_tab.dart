@@ -53,8 +53,7 @@ class _FinanceDuesTabState extends ConsumerState<FinanceDuesTab> {
         ),
         Expanded(
           child: duesAsync.when(
-            loading: () =>
-                const M360LoadingState(),
+            loading: () => const M360LoadingState(),
             error: (e, _) => M360ErrorState(
               message: 'واجبات لوڈ کرنے میں خطا',
               onRetry: () => ref.invalidate(outstandingBalancesProvider),
@@ -70,7 +69,8 @@ class _FinanceDuesTabState extends ConsumerState<FinanceDuesTab> {
     final filtered = _query.isEmpty
         ? dues
         : dues
-            .where((d) => d.studentName.toLowerCase().contains(_query.toLowerCase()))
+            .where((d) =>
+                d.studentName.toLowerCase().contains(_query.toLowerCase()))
             .toList();
     if (filtered.isEmpty) {
       return M360EmptyState(
@@ -164,13 +164,12 @@ class _FinanceDuesTabState extends ConsumerState<FinanceDuesTab> {
                   ),
                   const Text(
                     'روپے بقایا',
-                    style: TextStyle(
-                        color: AppColors.textSecondary, fontSize: 11),
+                    style:
+                        TextStyle(color: AppColors.textSecondary, fontSize: 11),
                   ),
                 ],
               ),
-              const Icon(Icons.chevron_left,
-                  color: AppColors.textSecondary),
+              const Icon(Icons.chevron_left, color: AppColors.textSecondary),
             ],
           ),
         ),
@@ -220,8 +219,7 @@ class _FinanceDuesTabState extends ConsumerState<FinanceDuesTab> {
                 Text(
                   'بقایا: ${view.remainingLabel} روپے',
                   textDirection: TextDirection.rtl,
-                  style: const TextStyle(
-                      color: AppColors.error, fontSize: 12),
+                  style: const TextStyle(color: AppColors.error, fontSize: 12),
                 ),
               ],
             ),

@@ -493,8 +493,9 @@ class _CollectFeeScreenState extends ConsumerState<CollectFeeScreen> {
     final receiptNo = _receiptNo ?? _receiptNoFor(record);
     final paidAt = DateTime.tryParse(record.paidDate ?? '');
     // Display status after this payment (presentation mapping only).
-    final afterKind =
-        record.remaining <= 0 ? FinancialChipKind.paid : FinancialChipKind.partial;
+    final afterKind = record.remaining <= 0
+        ? FinancialChipKind.paid
+        : FinancialChipKind.partial;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [

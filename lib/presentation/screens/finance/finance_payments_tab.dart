@@ -123,7 +123,9 @@ class _FinancePaymentsTabState extends ConsumerState<FinancePaymentsTab> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         children: [
-          _chip('سب', _statusFilter == null && _methodFilter == null,
+          _chip(
+              'سب',
+              _statusFilter == null && _methodFilter == null,
               () => setState(() {
                     _statusFilter = null;
                     _methodFilter = null;
@@ -272,8 +274,7 @@ class _FinancePaymentsTabState extends ConsumerState<FinancePaymentsTab> {
           const Text(
             'حتمی ادائیگیاں ناقابل ترمیم ہیں — تصحیح واپسی (reversal) اندراج سے ہوتی ہے۔',
             textDirection: TextDirection.rtl,
-            style:
-                TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
           ),
         ],
       ),
@@ -310,7 +311,8 @@ class _FinancePaymentsTabState extends ConsumerState<FinancePaymentsTab> {
     final confirmed = await showM360ConfirmDialog(
       context,
       title: 'مسودہ حذف کریں',
-      message: 'یہ ادائیگی کا مسودہ حذف کر دیا جائے گا۔ یہ عمل واپس نہیں ہو سکتا۔',
+      message:
+          'یہ ادائیگی کا مسودہ حذف کر دیا جائے گا۔ یہ عمل واپس نہیں ہو سکتا۔',
       confirmLabel: 'حذف کریں',
       danger: true,
     );
@@ -390,8 +392,7 @@ class _PaymentFormState extends ConsumerState<_PaymentForm> {
               for (final m in PaymentMethod.values)
                 M360DropdownItem(value: m, label: m.urduLabel),
             ],
-            onChanged: (v) =>
-                setState(() => _method = v ?? PaymentMethod.cash),
+            onChanged: (v) => setState(() => _method = v ?? PaymentMethod.cash),
           ),
           const SizedBox(height: 12),
           M360TextField(

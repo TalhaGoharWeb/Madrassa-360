@@ -25,8 +25,7 @@ class FinanceDashboardTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final overviewAsync = ref.watch(financeHubOverviewProvider);
     return overviewAsync.when(
-      loading: () =>
-          const M360LoadingState(),
+      loading: () => const M360LoadingState(),
       error: (e, _) => M360ErrorState(
         message: 'مالیاتی خلاصہ لوڈ کرنے میں خطا',
         onRetry: () => ref.invalidate(financeHubOverviewProvider),
@@ -41,8 +40,7 @@ class FinanceDashboardTab extends ConsumerWidget {
       o.totalOutstanding == 0 &&
       o.pendingRecords == 0;
 
-  Widget _buildBody(
-      BuildContext context, WidgetRef ref, FinanceHubOverview o) {
+  Widget _buildBody(BuildContext context, WidgetRef ref, FinanceHubOverview o) {
     if (_isEmpty(o)) {
       return M360EmptyState(
         icon: Icons.account_balance_wallet_outlined,
@@ -178,15 +176,13 @@ class FinanceDashboardTab extends ConsumerWidget {
                           Text(
                             o.topDues[i].studentName,
                             textDirection: TextDirection.rtl,
-                            style:
-                                const TextStyle(fontWeight: FontWeight.w600),
+                            style: const TextStyle(fontWeight: FontWeight.w600),
                           ),
                           Text(
                             '${o.topDues[i].monthCount} ریکارڈ بقایا',
                             textDirection: TextDirection.rtl,
                             style: const TextStyle(
-                                color: AppColors.textSecondary,
-                                fontSize: 12),
+                                color: AppColors.textSecondary, fontSize: 12),
                           ),
                         ],
                       ),
@@ -236,8 +232,8 @@ class FinanceDashboardTab extends ConsumerWidget {
               final p = PaymentView(o.recentPayments[i]);
               return InkWell(
                 borderRadius: BorderRadius.circular(M360Radius.md),
-                onTap: () => requestShellNav(
-                    ref, FinanceSection.payments.destinationId),
+                onTap: () =>
+                    requestShellNav(ref, FinanceSection.payments.destinationId),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 10),
                   child: Row(
@@ -260,15 +256,14 @@ class FinanceDashboardTab extends ConsumerWidget {
                             Text(
                               p.studentLabel,
                               textDirection: TextDirection.rtl,
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.w600),
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.w600),
                             ),
                             Text(
                               '${p.receiptLabel} • ${urduTimeAgo(p.payment.paymentDate)}',
                               textDirection: TextDirection.rtl,
                               style: const TextStyle(
-                                  color: AppColors.textSecondary,
-                                  fontSize: 12),
+                                  color: AppColors.textSecondary, fontSize: 12),
                             ),
                           ],
                         ),

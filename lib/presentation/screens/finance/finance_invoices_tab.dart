@@ -219,8 +219,7 @@ class _FinanceInvoicesTabState extends ConsumerState<FinanceInvoicesTab> {
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_left,
-                  color: AppColors.textSecondary),
+              const Icon(Icons.chevron_left, color: AppColors.textSecondary),
             ],
           ),
         ),
@@ -250,8 +249,7 @@ class _FinanceInvoicesTabState extends ConsumerState<FinanceInvoicesTab> {
           _kv('کل رقم', formatPK(invoice.total)),
           _kv('ادا شدہ', formatPK(invoice.amountPaid)),
           _kv('بقایا', formatPK(invoice.balanceDue)),
-          if ((invoice.notes ?? '').isNotEmpty)
-            _kv('نوٹس', invoice.notes!),
+          if ((invoice.notes ?? '').isNotEmpty) _kv('نوٹس', invoice.notes!),
         ],
       ),
       actions: [
@@ -309,8 +307,8 @@ class _FinanceInvoicesTabState extends ConsumerState<FinanceInvoicesTab> {
     showM360SnackBar(context, err ?? success, isError: err != null);
   }
 
-  Future<void> _confirmTransition(Invoice invoice, InvoiceStatus to,
-      String title, String message) async {
+  Future<void> _confirmTransition(
+      Invoice invoice, InvoiceStatus to, String title, String message) async {
     final confirmed = await showM360ConfirmDialog(
       context,
       title: title,
@@ -326,7 +324,8 @@ class _FinanceInvoicesTabState extends ConsumerState<FinanceInvoicesTab> {
     final confirmed = await showM360ConfirmDialog(
       context,
       title: 'مسودہ حذف کریں',
-      message: 'یہ انوائس کا مسودہ حذف کر دیا جائے گا۔ یہ عمل واپس نہیں ہو سکتا۔',
+      message:
+          'یہ انوائس کا مسودہ حذف کر دیا جائے گا۔ یہ عمل واپس نہیں ہو سکتا۔',
       confirmLabel: 'حذف کریں',
       danger: true,
     );
@@ -512,7 +511,8 @@ class _InvoiceFormState extends ConsumerState<_InvoiceForm> {
     );
   }
 
-  Widget _dateField(String label, DateTime value, ValueChanged<DateTime> onPick) {
+  Widget _dateField(
+      String label, DateTime value, ValueChanged<DateTime> onPick) {
     return InkWell(
       borderRadius: BorderRadius.circular(M360Radius.md),
       onTap: () async {
@@ -527,15 +527,14 @@ class _InvoiceFormState extends ConsumerState<_InvoiceForm> {
       child: InputDecorator(
         decoration: const InputDecoration(
           border: OutlineInputBorder(),
-          contentPadding:
-              EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 14),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(label,
-                style:
-                    const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                style: const TextStyle(
+                    fontSize: 11, color: AppColors.textSecondary)),
             Text(formatDateUrdu(value),
                 textDirection: TextDirection.rtl,
                 style: const TextStyle(fontWeight: FontWeight.w600)),

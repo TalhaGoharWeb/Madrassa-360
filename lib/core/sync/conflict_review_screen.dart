@@ -316,7 +316,8 @@ class _ConflictCardState extends ConsumerState<_ConflictCard> {
                   onPressed: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (_) => const FinanceHubScreen(section: FinanceSection.ledger),
+                        builder: (_) => const FinanceHubScreen(
+                            section: FinanceSection.ledger),
                       ),
                     );
                   },

@@ -85,8 +85,7 @@ class _FeeManagementScreenState extends ConsumerState<FeeManagementScreen> {
         builder: (context, ref, _) {
           final feeAsync = ref.watch(allFeesProvider);
           return feeAsync.when(
-            loading: () =>
-                const M360LoadingState(),
+            loading: () => const M360LoadingState(),
             error: (e, _) => M360ErrorState(
               message: 'فیس ریکارڈ لوڈ کرنے میں خطا',
               onRetry: () => ref.invalidate(allFeesProvider),
@@ -128,12 +127,10 @@ class _FeeManagementScreenState extends ConsumerState<FeeManagementScreen> {
                   description: records.isEmpty
                       ? 'نیا واؤچر بنا کر فیس کا ریکارڈ شروع کریں۔'
                       : 'تلاش یا فلٹر تبدیل کر کے دوبارہ کوشش کریں۔',
-                  actionLabel: records.isEmpty && canCreate
-                      ? 'نیا واؤچر بنائیں'
-                      : null,
-                  onAction: records.isEmpty && canCreate
-                      ? _showVoucherDialog
-                      : null,
+                  actionLabel:
+                      records.isEmpty && canCreate ? 'نیا واؤچر بنائیں' : null,
+                  onAction:
+                      records.isEmpty && canCreate ? _showVoucherDialog : null,
                 )
               : ListView.builder(
                   padding: const EdgeInsets.fromLTRB(16, 4, 16, 96),
@@ -169,13 +166,11 @@ class _FeeManagementScreenState extends ConsumerState<FeeManagementScreen> {
   Widget _summaryCards(List<Fee> records) {
     // All paid amounts count — including partial payments — because the
     // money is real regardless of row status.
-    final collected =
-        records.fold<double>(0, (s, r) => s + r.amountPaid);
+    final collected = records.fold<double>(0, (s, r) => s + r.amountPaid);
     final due = records
         .where((r) => r.status != FeeStatus.paid)
         .fold<double>(0, (s, r) => s + r.remaining);
-    final pastDue =
-        records.where((r) => r.status == FeeStatus.pastDue).length;
+    final pastDue = records.where((r) => r.status == FeeStatus.pastDue).length;
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -265,8 +260,7 @@ class _FeeManagementScreenState extends ConsumerState<FeeManagementScreen> {
                   color: _tileColor(view).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child:
-                    Icon(_tileIcon(record.status), color: _tileColor(view)),
+                child: Icon(_tileIcon(record.status), color: _tileColor(view)),
               ),
               const SizedBox(width: 12),
               Expanded(

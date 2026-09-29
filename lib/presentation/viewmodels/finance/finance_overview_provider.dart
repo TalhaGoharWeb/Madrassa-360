@@ -19,7 +19,8 @@ import 'financial_views.dart';
 /// Recomputes when the fee rows or the finance state change. When the
 /// finance ledger has not loaded yet the ledger totals read as zero —
 /// the dashboard shows the fee side first and fills in the rest.
-final financeHubOverviewProvider = FutureProvider<FinanceHubOverview>((ref) async {
+final financeHubOverviewProvider =
+    FutureProvider<FinanceHubOverview>((ref) async {
   final fees = await ref.watch(allFeesProvider.future);
   final finance = ref.watch(financeProvider);
   return FinanceHubOverview.compute(

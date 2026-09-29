@@ -1058,7 +1058,8 @@ class _DepartmentsSection extends StatelessWidget {
         SectionTile(
           icon: Icons.account_balance_outlined,
           label: 'مالی حساب',
-          onTap: () => go(const FinanceHubScreen(section: FinanceSection.dashboard)),
+          onTap: () =>
+              go(const FinanceHubScreen(section: FinanceSection.dashboard)),
         ),
       if (can(AppPermissions.viewReports))
         SectionTile(
