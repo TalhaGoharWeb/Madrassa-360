@@ -20,8 +20,8 @@ import '../../widgets/dashboard/dashboard_scaffold.dart';
 import '../../widgets/dashboard/schedule_slot.dart';
 import '../../widgets/dashboard/quick_actions.dart';
 import '../common/dashboard_guide_screen.dart';
-import '../../widgets/dashboard/slot_heading.dart';
-import '../../widgets/dashboard/stat_card.dart';
+import '../../widgets/dashboard/dashboard_stat_card.dart';
+import '../../../core/design/m360.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/day_schedule_provider.dart';
 import '../../../providers/dashboard_data_provider.dart';
@@ -84,11 +84,11 @@ class _ExamStats extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SlotHeading('امتحانات کا جائزہ'),
+        M360SectionHeader(title: 'امتحانات کا جائزہ'),
         Row(
           children: [
             Expanded(
-              child: StatCard(
+              child: DashboardStatCard(
                 icon: Icons.assignment_outlined,
                 label: 'جاری امتحانات',
                 value: '${summary.ongoing}',
@@ -97,7 +97,7 @@ class _ExamStats extends ConsumerWidget {
             ),
             const SizedBox(width: 10),
             Expanded(
-              child: StatCard(
+              child: DashboardStatCard(
                 icon: Icons.edit_note_outlined,
                 label: 'نمبر درج ہونا باقی',
                 value: '${summary.pendingMarks}',
@@ -117,7 +117,7 @@ class _ExamStats extends ConsumerWidget {
         Row(
           children: [
             Expanded(
-              child: StatCard(
+              child: DashboardStatCard(
                 icon: Icons.check_circle_outline,
                 label: 'نتائج تیار',
                 value: '${summary.ready}',
@@ -130,7 +130,7 @@ class _ExamStats extends ConsumerWidget {
             const SizedBox(width: 10),
             // Honest empty state: no publish flag exists in the schema.
             Expanded(
-              child: const StatCard(
+              child: const DashboardStatCard(
                 icon: Icons.publish_outlined,
                 label: 'نتائج شائع شدہ',
                 value: '—',
@@ -198,28 +198,25 @@ class _ExamQuickActions extends ConsumerWidget {
         QuickActionItem(
           icon: Icons.add_circle_outline,
           label: 'امتحان بنائیں',
-          color: AppColors.primary,
+          color: AppColors.accent,
           onTap: () => go(const ExamWizardScreen()),
         ),
       if (can(AppPermissions.enterResults))
         QuickActionItem(
           icon: Icons.edit_note_outlined,
           label: 'نمبر درج کریں',
-          color: AppColors.warning,
           onTap: () => go(const ResultsScreen()),
         ),
       if (can(AppPermissions.viewResults))
         QuickActionItem(
           icon: Icons.assessment_outlined,
           label: 'نتائج دیکھیں',
-          color: AppColors.success,
           onTap: () => go(const ResultsScreen()),
         ),
       if (can(AppPermissions.viewReports))
         QuickActionItem(
           icon: Icons.bar_chart_outlined,
           label: 'رپورٹ',
-          color: AppColors.info,
           onTap: () => go(const ReportsHubScreen()),
         ),
     ];

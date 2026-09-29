@@ -19,8 +19,8 @@ import '../../widgets/dashboard/dashboard_scaffold.dart';
 import '../../widgets/dashboard/schedule_slot.dart';
 import '../../widgets/dashboard/quick_actions.dart';
 import '../common/dashboard_guide_screen.dart';
-import '../../widgets/dashboard/slot_heading.dart';
-import '../../widgets/dashboard/stat_card.dart';
+import '../../widgets/dashboard/dashboard_stat_card.dart';
+import '../../../core/design/m360.dart';
 import '../../widgets/dashboard/today_tasks.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/day_schedule_provider.dart';
@@ -107,12 +107,12 @@ class _ClerkStats extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SlotHeading('دفتر کا جائزہ'),
+        M360SectionHeader(title: 'دفتر کا جائزہ'),
         Row(
           children: [
             if (canSeeStudents)
               Expanded(
-                child: StatCard(
+                child: DashboardStatCard(
                   icon: Icons.person_add_outlined,
                   label: 'نئے داخلے',
                   value: '${admissions.length}',
@@ -125,7 +125,7 @@ class _ClerkStats extends ConsumerWidget {
               ),
             if (canSeeStudents) const SizedBox(width: 10),
             Expanded(
-              child: const StatCard(
+              child: const DashboardStatCard(
                 icon: Icons.pending_actions_outlined,
                 label: 'زیرِ تکمیل داخلے',
                 value: '—',
@@ -140,7 +140,7 @@ class _ClerkStats extends ConsumerWidget {
           children: [
             if (canSeeFees)
               Expanded(
-                child: StatCard(
+                child: DashboardStatCard(
                   icon: Icons.payments_outlined,
                   label: 'آج کی فیس',
                   value: formatRs(todayCollection),
@@ -150,7 +150,7 @@ class _ClerkStats extends ConsumerWidget {
               ),
             if (canSeeFees) const SizedBox(width: 10),
             Expanded(
-              child: const StatCard(
+              child: const DashboardStatCard(
                 icon: Icons.folder_outlined,
                 label: 'دستاویزات باقی',
                 value: '—',
@@ -243,14 +243,13 @@ class _ClerkQuickActions extends ConsumerWidget {
         QuickActionItem(
           icon: Icons.payments_outlined,
           label: 'فیس وصول کریں',
-          color: AppColors.success,
+          color: AppColors.accent,
           onTap: () => go(const FeeManagementScreen()),
         ),
       if (can(AppPermissions.collectFees) && moduleOk('fees'))
         QuickActionItem(
           icon: Icons.receipt_outlined,
           label: 'رسید بنائیں',
-          color: AppColors.success,
           onTap: () => go(const FeeManagementScreen()),
         ),
     ];

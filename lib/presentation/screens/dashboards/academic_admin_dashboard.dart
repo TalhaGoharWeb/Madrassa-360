@@ -19,8 +19,8 @@ import '../../widgets/dashboard/dashboard_scaffold.dart';
 import '../../widgets/dashboard/day_timeline.dart';
 import '../../widgets/dashboard/quick_actions.dart';
 import '../common/dashboard_guide_screen.dart';
-import '../../widgets/dashboard/slot_heading.dart';
-import '../../widgets/dashboard/stat_card.dart';
+import '../../widgets/dashboard/dashboard_stat_card.dart';
+import '../../../core/design/m360.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/dashboard_data_provider.dart';
 import '../../../providers/tenant_branding_provider.dart';
@@ -96,12 +96,12 @@ class _AcademicStats extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SlotHeading('تعلیمی جائزہ'),
+        M360SectionHeader(title: 'تعلیمی جائزہ'),
         Row(
           children: [
             if (canSeeDarjas)
               Expanded(
-                child: StatCard(
+                child: DashboardStatCard(
                   icon: Icons.school_outlined,
                   label: 'درجات',
                   value: '${overview.darjas}',
@@ -112,7 +112,7 @@ class _AcademicStats extends ConsumerWidget {
             if (canSeeDarjas) const SizedBox(width: 10),
             if (canSeeTeachers)
               Expanded(
-                child: StatCard(
+                child: DashboardStatCard(
                   icon: Icons.person_outline,
                   label: 'اساتذہ',
                   value: '${overview.teachers}',
@@ -127,7 +127,7 @@ class _AcademicStats extends ConsumerWidget {
           children: [
             if (canSeeStudents)
               Expanded(
-                child: StatCard(
+                child: DashboardStatCard(
                   icon: Icons.people_outline,
                   label: 'طلبہ',
                   value: '${overview.students}',
@@ -138,7 +138,7 @@ class _AcademicStats extends ConsumerWidget {
             if (canSeeStudents) const SizedBox(width: 10),
             if (canSeeAttendance)
               Expanded(
-                child: StatCard(
+                child: DashboardStatCard(
                   icon: Icons.fact_check_outlined,
                   label: 'آج حاضری',
                   value: overview.attendancePct == null
@@ -160,7 +160,7 @@ class _AcademicStats extends ConsumerWidget {
           Row(
             children: [
               Expanded(
-                child: StatCard(
+                child: DashboardStatCard(
                   icon: Icons.assessment_outlined,
                   label: 'زیرِ تکمیل نتائج',
                   value: '${overview.pendingResults}',
@@ -261,14 +261,13 @@ class _AcademicQuickActions extends ConsumerWidget {
         QuickActionItem(
           icon: Icons.assignment_outlined,
           label: 'امتحان بنائیں',
-          color: AppColors.warning,
+          color: AppColors.accent,
           onTap: () => go(const ExamWizardScreen()),
         ),
       if (can(AppPermissions.viewResults))
         QuickActionItem(
           icon: Icons.assessment_outlined,
           label: 'نتائج دیکھیں',
-          color: AppColors.success,
           onTap: () => go(const ResultsScreen()),
         ),
     ];

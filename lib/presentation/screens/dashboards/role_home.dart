@@ -33,6 +33,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../core/design/m360.dart';
 import '../../../core/services/role_service.dart';
 import '../../widgets/dashboard/alert_card.dart';
 import '../../widgets/dashboard/dashboard_scaffold.dart';
@@ -141,7 +142,11 @@ class GenericDashboardScreen extends ConsumerWidget {
       stats: _RoleInfoCard(),
       alertsTitle: 'تازہ اعلانات',
       alerts: announcements.isEmpty
-          ? const _EmptyAnnouncementsNote()
+          ? const M360EmptyState(
+              icon: Icons.campaign_outlined,
+              title: 'کوئی اعلان نہیں',
+              description: 'ابھی کوئی اعلان شائع نہیں ہوا',
+            )
           : Column(
               children: announcements
                   .map((a) => AlertCard(
@@ -186,20 +191,13 @@ class GenericDashboardScreen extends ConsumerWidget {
         QuickActionItem(
           icon: Icons.admin_panel_settings_outlined,
           label: 'پلیٹ فارم',
-          color: AppColors.warning,
           onTap: () async {
             final role = await fetchPlatformAdminRole();
             if (!context.mounted) return;
             if (role != null) {
               Navigator.of(context).pushNamed('/master');
             } else {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                    content: Text('آپ کو رسائی حاصل نہیں',
-                        style: AppTypography.labelNastaliq.copyWith(
-                          color: Colors.white,
-                        ))),
-              );
+              showM360SnackBar(context, 'آپ کو رسائی حاصل نہیں', isError: true);
             }
           },
         ),
@@ -214,20 +212,7 @@ class _RoleInfoCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final roleService = ref.watch(roleServiceProvider);
     final roleKeys = ref.watch(activeRoleKeysProvider);
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+    return M360Card(
       child: Row(
         children: [
           const Icon(Icons.badge_outlined, color: AppColors.primary),
@@ -247,27 +232,6 @@ class _RoleInfoCard extends ConsumerWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _EmptyAnnouncementsNote extends StatelessWidget {
-  const _EmptyAnnouncementsNote();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        'ابھی کوئی اعلان نہیں',
-        style: AppTypography.labelNastaliq,
-        textAlign: TextAlign.center,
       ),
     );
   }

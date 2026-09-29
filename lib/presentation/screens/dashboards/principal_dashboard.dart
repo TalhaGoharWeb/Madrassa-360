@@ -39,7 +39,9 @@ import '../../widgets/dashboard/alert_card.dart';
 import '../../widgets/dashboard/dashboard_scaffold.dart';
 import '../../widgets/dashboard/dashboard_section.dart';
 import '../../widgets/dashboard/schedule_slot.dart';
-import '../../widgets/dashboard/stat_card.dart';
+import '../../widgets/dashboard/dashboard_stat_card.dart';
+import '../../../core/design/m360.dart';
+import '../../../core/utils/money_format.dart';
 import '../../widgets/global_search.dart';
 import '../../../providers/admin_dashboard_provider.dart';
 import '../../../providers/announcement_provider.dart';
@@ -158,7 +160,7 @@ class _KeyMetrics extends ConsumerWidget {
 
     final cards = <Widget>[
       if (canSeeStudents)
-        StatCard(
+        DashboardStatCard(
           icon: Icons.people_outline,
           label: 'کل طلبہ',
           value: statsLoading ? '…' : '${stats.totalStudents}',
@@ -166,7 +168,7 @@ class _KeyMetrics extends ConsumerWidget {
           onTap: () => go(const StudentListScreen()),
         ),
       if (canSeeAttendance)
-        StatCard(
+        DashboardStatCard(
           icon: Icons.fact_check_outlined,
           label: 'آج کی حاضری',
           value: attendancePct == null ? '—' : '${attendancePct.round()}٪',
@@ -175,18 +177,18 @@ class _KeyMetrics extends ConsumerWidget {
           onTap: () => go(const AttendanceScreen()),
         ),
       if (canSeeFees)
-        StatCard(
+        DashboardStatCard(
           icon: Icons.payments_outlined,
           label: 'آج کی فیس وصولی',
-          value: _formatRs(todayCollection),
+          value: formatRs(todayCollection),
           color: AppColors.success,
           onTap: () => go(const FeeManagementScreen()),
         ),
       if (canSeeFees)
-        StatCard(
+        DashboardStatCard(
           icon: Icons.account_balance_wallet_outlined,
           label: 'بقایا فیس',
-          value: feeSummary == null ? '…' : _formatRs(feeSummary.totalDue),
+          value: feeSummary == null ? '…' : formatRs(feeSummary.totalDue),
           color: AppColors.warning,
           subtitle: feeSummary == null
               ? null
@@ -194,7 +196,7 @@ class _KeyMetrics extends ConsumerWidget {
           onTap: () => go(const FeeManagementScreen()),
         ),
       if (canSeeDarjas)
-        StatCard(
+        DashboardStatCard(
           icon: Icons.school_outlined,
           label: 'فعال کلاسز',
           value: statsLoading ? '…' : '${stats.totalClasses}',
@@ -210,15 +212,17 @@ class _KeyMetrics extends ConsumerWidget {
         _SearchEntry(
             onTap: () => PrincipalDashboardScreen._openSearch(context)),
         const SizedBox(height: 16),
-        Text(
-          'آج کا انتظامی خلاصہ',
-          style: AppTypography.titleMedium.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+        const M360SectionHeader(
+          title: 'آج کا انتظامی خلاصہ',
+          padding: EdgeInsets.zero,
         ),
         const SizedBox(height: 8),
         if (cards.isEmpty)
-          const _EmptyState(message: 'دیکھنے کی اجازت نہیں ہے'),
+          const M360EmptyState(
+            icon: Icons.visibility_off_outlined,
+            title: 'رسائی نہیں',
+            description: 'اس حصے کو دیکھنے کی اجازت نہیں ہے',
+          ),
         if (cards.isNotEmpty)
           LayoutBuilder(
             builder: (context, constraints) {
@@ -363,7 +367,7 @@ class _TodayTasks extends ConsumerWidget {
         tasks.add(AlertCard(
           icon: Icons.payments_outlined,
           message:
-              '${summary.pendingCount} بقایا جات — ${_formatRs(summary.totalDue)} وصول کرنا ہے',
+              '${summary.pendingCount} بقایا جات — ${formatRs(summary.totalDue)} وصول کرنا ہے',
           actionLabel: 'فیس وصول کریں',
           onAction: () => go(const FeeManagementScreen()),
         ));
@@ -406,10 +410,10 @@ class _TodayTasks extends ConsumerWidget {
     }
 
     if (tasks.isEmpty) {
-      return const _EmptyState(
+      return const M360EmptyState(
         icon: Icons.check_circle_outline,
-        message: 'سب امور مکمل ہیں — کوئی زیر التواء کام نہیں',
-        iconColor: AppColors.success,
+        title: 'سب امور مکمل',
+        description: 'کوئی زیر التواء کام نہیں',
       );
     }
     return Column(children: tasks);
@@ -488,16 +492,15 @@ class _ResponsiveSections extends ConsumerWidget {
   }
 }
 
-/// Section card shell: Nastaliq title + optional "view all" action.
+/// Section card shell: [M360Card] + [M360SectionHeader] with an optional
+/// "view all" action.
 class _SectionCard extends StatelessWidget {
-  final IconData icon;
   final String title;
   final String? actionLabel;
   final VoidCallback? onAction;
   final Widget child;
 
   const _SectionCard({
-    required this.icon,
     required this.title,
     required this.child,
     this.actionLabel,
@@ -506,54 +509,17 @@ class _SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
+    return M360Card(
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Row(
-            children: [
-              Icon(icon, color: AppColors.primary, size: 20),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  title,
-                  style: AppTypography.labelNastaliq.copyWith(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 17,
-                  ),
-                ),
-              ),
-              if (actionLabel != null && onAction != null)
-                TextButton(
-                  onPressed: onAction,
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  child: Text(
-                    actionLabel!,
-                    style: AppTypography.labelNastaliq.copyWith(
-                      color: AppColors.primary,
-                      fontSize: 15,
-                    ),
-                  ),
-                ),
-            ],
+          M360SectionHeader(
+            title: title,
+            actionLabel: actionLabel,
+            onAction: onAction,
+            padding: EdgeInsets.zero,
           ),
           const SizedBox(height: 8),
           child,
@@ -576,20 +542,24 @@ class _AttendanceSummarySection extends ConsumerWidget {
         );
 
     return _SectionCard(
-      icon: Icons.fact_check_outlined,
       title: 'آج کی حاضری کا خلاصہ',
       actionLabel: 'حاضری',
       onAction: go,
       child: async.when(
-        loading: () => const _LoadingState(),
-        error: (e, _) => _ErrorState(
+        loading: () => const M360LoadingState(itemCount: 3),
+        error: (e, _) => M360ErrorState(
+          message: 'ڈیٹا لوڈ نہیں ہو سکا',
           onRetry: () => ref.refresh(dashboardStatsProvider.future),
         ),
         data: (stats) {
           final marked =
               stats.todayPresent + stats.todayAbsent + stats.todayLeave;
           if (stats.totalStudents == 0) {
-            return const _EmptyState(message: 'کوئی طالب علم درج نہیں');
+            return const M360EmptyState(
+              icon: Icons.people_outline,
+              title: 'کوئی طالب علم نہیں',
+              description: 'ابھی کوئی طالب علم درج نہیں ہے',
+            );
           }
           final pct = marked == 0
               ? 0.0
@@ -696,14 +666,15 @@ class _PendingFeesSection extends ConsumerWidget {
         );
 
     return _SectionCard(
-      icon: Icons.payments_outlined,
       title: 'زیر التواء فیس',
       actionLabel: 'فیس',
       onAction: go,
       child: async.when(
-        loading: () => const _LoadingState(),
-        error: (e, _) =>
-            _ErrorState(onRetry: () => ref.refresh(allFeesProvider.future)),
+        loading: () => const M360LoadingState(itemCount: 3),
+        error: (e, _) => M360ErrorState(
+          message: 'ڈیٹا لوڈ نہیں ہو سکا',
+          onRetry: () => ref.refresh(allFeesProvider.future),
+        ),
         data: (fees) {
           final pending = fees
               .where((f) =>
@@ -714,10 +685,10 @@ class _PendingFeesSection extends ConsumerWidget {
             ..sort((a, b) => (b.amountDue - b.amountPaid)
                 .compareTo(a.amountDue - a.amountPaid));
           if (pending.isEmpty) {
-            return const _EmptyState(
+            return const M360EmptyState(
               icon: Icons.check_circle_outline,
-              message: 'کوئی بقایا فیس نہیں — سب ادا شدہ',
-              iconColor: AppColors.success,
+              title: 'کوئی بقایا نہیں',
+              description: 'تمام فیس ادا شدہ ہے',
             );
           }
           final totalDue = pending.fold<double>(
@@ -733,7 +704,7 @@ class _PendingFeesSection extends ConsumerWidget {
                     ),
                   ),
                   Text(
-                    _formatRs(totalDue),
+                    formatRs(totalDue),
                     style: AppTypography.customBody(
                       fontWeight: FontWeight.bold,
                       color: AppColors.warning,
@@ -747,8 +718,7 @@ class _PendingFeesSection extends ConsumerWidget {
                   studentName: fee.studentName,
                   month: fee.month,
                   remaining: fee.amountDue - fee.amountPaid,
-                  statusLabel: fee.status.urduLabel,
-                  isPastDue: fee.status == FeeStatus.pastDue,
+                  status: fee.status,
                 ),
               if (pending.length > 3)
                 Padding(
@@ -770,16 +740,22 @@ class _FeeRow extends StatelessWidget {
   final String studentName;
   final String month;
   final double remaining;
-  final String statusLabel;
-  final bool isPastDue;
+  final FeeStatus status;
 
   const _FeeRow({
     required this.studentName,
     required this.month,
     required this.remaining,
-    required this.statusLabel,
-    required this.isPastDue,
+    required this.status,
   });
+
+  /// Maps the fee domain status to the canonical chip status.
+  M360FeeStatus get _chipStatus => switch (status) {
+        FeeStatus.paid => M360FeeStatus.paid,
+        FeeStatus.partial => M360FeeStatus.partial,
+        FeeStatus.pending => M360FeeStatus.due,
+        FeeStatus.pastDue => M360FeeStatus.overdue,
+      };
 
   @override
   Widget build(BuildContext context) {
@@ -787,15 +763,6 @@ class _FeeRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(
         children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: isPastDue ? AppColors.error : AppColors.warning,
-            ),
-          ),
-          const SizedBox(width: 8),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -810,14 +777,16 @@ class _FeeRow extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 Text(
-                  '$month • $statusLabel',
+                  month,
                   style: AppTypography.labelSmall,
                 ),
               ],
             ),
           ),
+          M360StatusChip.fee(fee: _chipStatus),
+          const SizedBox(width: 8),
           Text(
-            _formatRs(remaining),
+            formatRs(remaining),
             style: AppTypography.customBody(
               fontWeight: FontWeight.w600,
               color: AppColors.textPrimary,
@@ -843,18 +812,22 @@ class _RecentAdmissionsSection extends ConsumerWidget {
         );
 
     return _SectionCard(
-      icon: Icons.person_add_outlined,
       title: 'حالیہ داخلے',
       actionLabel: 'طلبہ',
       onAction: go,
       child: async.when(
-        loading: () => const _LoadingState(),
-        error: (e, _) => _ErrorState(
-            onRetry: () => ref.refresh(newAdmissionsProvider.future)),
+        loading: () => const M360LoadingState(itemCount: 3),
+        error: (e, _) => M360ErrorState(
+          message: 'ڈیٹا لوڈ نہیں ہو سکا',
+          onRetry: () => ref.refresh(newAdmissionsProvider.future),
+        ),
         data: (students) {
           if (students.isEmpty) {
-            return const _EmptyState(
-                message: 'پچھلے 7 دنوں میں کوئی نیا داخلہ نہیں');
+            return const M360EmptyState(
+              icon: Icons.person_add_outlined,
+              title: 'کوئی نیا داخلہ نہیں',
+              description: 'پچھلے 7 دنوں میں کوئی داخلہ نہیں ہوا',
+            );
           }
           return Column(
             children: [
@@ -913,12 +886,15 @@ class _AnnouncementsSection extends ConsumerWidget {
       });
 
     return _SectionCard(
-      icon: Icons.campaign_outlined,
       title: 'اہم اعلانات',
       actionLabel: 'سب دیکھیں',
       onAction: go,
       child: sorted.isEmpty
-          ? const _EmptyState(message: 'کوئی اعلان شائع نہیں ہوا')
+          ? const M360EmptyState(
+              icon: Icons.campaign_outlined,
+              title: 'کوئی اعلان نہیں',
+              description: 'ابھی کوئی اعلان شائع نہیں ہوا',
+            )
           : Column(
               children: [
                 for (final a in sorted.take(4))
@@ -967,14 +943,15 @@ class _UpcomingExamsSection extends ConsumerWidget {
         );
 
     return _SectionCard(
-      icon: Icons.assignment_outlined,
       title: 'آنے والے امتحانات',
       actionLabel: 'امتحانات',
       onAction: go,
       child: async.when(
-        loading: () => const _LoadingState(),
-        error: (e, _) =>
-            _ErrorState(onRetry: () => ref.refresh(allExamsProvider.future)),
+        loading: () => const M360LoadingState(itemCount: 3),
+        error: (e, _) => M360ErrorState(
+          message: 'ڈیٹا لوڈ نہیں ہو سکا',
+          onRetry: () => ref.refresh(allExamsProvider.future),
+        ),
         data: (exams) {
           final now = DateTime.now();
           final today = DateTime(now.year, now.month, now.day);
@@ -984,8 +961,11 @@ class _UpcomingExamsSection extends ConsumerWidget {
               .toList()
             ..sort((a, b) => a.date!.compareTo(b.date!));
           if (upcoming.isEmpty) {
-            return const _EmptyState(
-                message: 'کوئی آنے والا امتحان شیڈول نہیں');
+            return const M360EmptyState(
+              icon: Icons.assignment_outlined,
+              title: 'کوئی امتحان شیڈول نہیں',
+              description: 'آنے والے امتحانات کی فہرست خالی ہے',
+            );
           }
           return Column(
             children: [
@@ -1123,114 +1103,8 @@ class _DepartmentsSection extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────
-// Minimal local state widgets
-//
-// TODO(design-system): swap these with the shared loading / empty / error
-// states once the design-system workstream lands them.
-// ─────────────────────────────────────────────
-
-class _LoadingState extends StatelessWidget {
-  const _LoadingState();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.symmetric(vertical: 24),
-      child: Center(
-        child: CircularProgressIndicator(color: AppColors.primary),
-      ),
-    );
-  }
-}
-
-class _EmptyState extends StatelessWidget {
-  final IconData icon;
-  final String message;
-  final Color iconColor;
-
-  const _EmptyState({
-    this.icon = Icons.inbox_outlined,
-    required this.message,
-    this.iconColor = AppColors.textSecondary,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-      child: Row(
-        children: [
-          Icon(icon, color: iconColor, size: 22),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              message,
-              style: AppTypography.labelNastaliq.copyWith(
-                fontSize: 16,
-                fontWeight: FontWeight.normal,
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ErrorState extends StatelessWidget {
-  final VoidCallback onRetry;
-
-  const _ErrorState({required this.onRetry});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Row(
-        children: [
-          const Icon(Icons.error_outline, color: AppColors.error),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              'ڈیٹا لوڈ نہیں ہو سکا',
-              style: AppTypography.bodySmall,
-            ),
-          ),
-          TextButton(
-            onPressed: onRetry,
-            child: Text(
-              'دوبارہ کوشش کریں',
-              style: AppTypography.labelNastaliq.copyWith(
-                color: AppColors.primary,
-                fontSize: 15,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────
-
-/// Rs formatting with Pakistani digit grouping (1,25,000).
-String _formatRs(double amount) {
-  final s = amount.round().toString();
-  if (s.length <= 3) return 'Rs $s';
-  final last3 = s.substring(s.length - 3);
-  var rest = s.substring(0, s.length - 3);
-  final parts = <String>[];
-  while (rest.length > 2) {
-    parts.insert(0, rest.substring(rest.length - 2));
-    rest = rest.substring(0, rest.length - 2);
-  }
-  if (rest.isNotEmpty) parts.insert(0, rest);
-  return 'Rs ${parts.join(',')},$last3';
-}
 
 /// Relative Urdu timestamp for announcements.
 String _timeAgo(DateTime at) {

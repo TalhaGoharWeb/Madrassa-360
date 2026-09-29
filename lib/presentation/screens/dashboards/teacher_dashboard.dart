@@ -19,13 +19,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_permissions.dart';
-import '../../../core/constants/app_typography.dart';
 import '../../widgets/dashboard/alert_card.dart';
 import '../../widgets/dashboard/dashboard_scaffold.dart';
 import '../../widgets/dashboard/schedule_slot.dart';
 import '../../widgets/dashboard/quick_actions.dart';
 import '../common/dashboard_guide_screen.dart';
-import '../../widgets/dashboard/stat_card.dart';
+import '../../widgets/dashboard/dashboard_stat_card.dart';
+import '../../../core/design/m360.dart';
 import '../../widgets/dashboard/today_tasks.dart';
 import '../../../providers/announcement_provider.dart';
 import '../../../providers/auth_provider.dart';
@@ -75,7 +75,7 @@ class _TeacherDashboardScreenState
         QuickActionItem(
           icon: Icons.fact_check_outlined,
           label: 'حاضری لگائیں',
-          color: AppColors.present,
+          color: AppColors.accent,
           onTap: widget.onMarkAttendance,
         ),
       // سبق درج کریں: no lesson-logging source exists, so the action is
@@ -91,7 +91,6 @@ class _TeacherDashboardScreenState
         QuickActionItem(
           icon: Icons.edit_outlined,
           label: 'نمبر درج کریں',
-          color: AppColors.info,
           onTap: widget.onEnterResults,
         ),
     ];
@@ -161,25 +160,20 @@ class _Cards extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: Text(
-            'آج کی تدریس',
-            style: AppTypography.titleMedium.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+        const M360SectionHeader(
+          title: 'آج کی تدریس',
+          padding: EdgeInsets.only(bottom: 8),
         ),
         Row(
           children: [
-            card(StatCard(
+            card(DashboardStatCard(
               icon: Icons.school_outlined,
               label: 'میری جماعتیں',
               value: '$classCount',
               color: AppColors.primary,
             )),
             const SizedBox(width: 10),
-            card(StatCard(
+            card(DashboardStatCard(
               icon: Icons.people_outline,
               label: 'میرے طلبہ',
               value: studentCount == null ? '—' : '$studentCount',
@@ -191,7 +185,7 @@ class _Cards extends ConsumerWidget {
         const SizedBox(height: 10),
         Row(
           children: [
-            card(StatCard(
+            card(DashboardStatCard(
               icon: Icons.fact_check_outlined,
               label: 'آج کی حاضری',
               value: attTotal == 0
@@ -208,7 +202,7 @@ class _Cards extends ConsumerWidget {
             const SizedBox(width: 10),
             // No lesson-logging source exists yet — honest empty state
             // (§37), never an invented number.
-            card(const StatCard(
+            card(const DashboardStatCard(
               icon: Icons.menu_book_outlined,
               label: 'آج کے اسباق',
               value: '—',
@@ -280,18 +274,10 @@ class _LatestAnnouncements extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final announcements = ref.watch(announcementListProvider).take(3).toList();
     if (announcements.isEmpty) {
-      return Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Text(
-          'ابھی کوئی اعلان نہیں',
-          style: AppTypography.labelNastaliq,
-          textAlign: TextAlign.center,
-        ),
+      return const M360EmptyState(
+        icon: Icons.campaign_outlined,
+        title: 'کوئی اعلان نہیں',
+        description: 'ابھی کوئی اعلان شائع نہیں ہوا',
       );
     }
     return Column(

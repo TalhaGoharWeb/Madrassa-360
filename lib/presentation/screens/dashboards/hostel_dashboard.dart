@@ -12,14 +12,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_permissions.dart';
-import '../../../core/constants/app_typography.dart';
 import '../../../core/services/role_service.dart';
 import '../../widgets/dashboard/dashboard_scaffold.dart';
 import '../../widgets/dashboard/day_timeline.dart';
 import '../../widgets/dashboard/quick_actions.dart';
 import '../common/dashboard_guide_screen.dart';
-import '../../widgets/dashboard/slot_heading.dart';
-import '../../widgets/dashboard/stat_card.dart';
+import '../../widgets/dashboard/dashboard_stat_card.dart';
+import '../../../core/design/m360.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/tenant_branding_provider.dart';
 import '../reports/reports_hub_screen.dart';
@@ -75,11 +74,11 @@ class _HostelStats extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SlotHeading('دارالاقامہ کا جائزہ'),
+        M360SectionHeader(title: 'دارالاقامہ کا جائزہ'),
         const Row(
           children: [
             Expanded(
-              child: StatCard(
+              child: DashboardStatCard(
                 icon: Icons.people_outline,
                 label: 'رہائشی طلبہ',
                 value: '—',
@@ -89,7 +88,7 @@ class _HostelStats extends StatelessWidget {
             ),
             SizedBox(width: 10),
             Expanded(
-              child: StatCard(
+              child: DashboardStatCard(
                 icon: Icons.check_circle_outline,
                 label: 'آج حاضر',
                 value: '—',
@@ -103,7 +102,7 @@ class _HostelStats extends StatelessWidget {
         const Row(
           children: [
             Expanded(
-              child: StatCard(
+              child: DashboardStatCard(
                 icon: Icons.time_to_leave_outlined,
                 label: 'چھٹی پر',
                 value: '—',
@@ -113,7 +112,7 @@ class _HostelStats extends StatelessWidget {
             ),
             SizedBox(width: 10),
             Expanded(
-              child: StatCard(
+              child: DashboardStatCard(
                 icon: Icons.cancel_outlined,
                 label: 'غیر حاضر',
                 value: '—',
@@ -124,26 +123,14 @@ class _HostelStats extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 12),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: AppColors.info.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Row(
-            children: [
-              const Icon(Icons.info_outline, color: AppColors.info),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'دارالاقامہ کا ریکارڈ (طلبہ، کمرے، چھٹی) ابھی اس ایپ '
-                  'میں موجود نہیں — یہ حصہ جلد مکمل ہوگا',
-                  style: AppTypography.labelNastaliq,
-                ),
-              ),
-            ],
-          ),
+        // Honest backend-unavailable state (BackendUnavailableScreen
+        // pattern): no hostel tables exist yet — never a "جلد آرہا ہے"
+        // marketing placeholder.
+        const M360EmptyState(
+          icon: Icons.cloud_off_outlined,
+          title: 'دارالاقامہ کا ریکارڈ دستیاب نہیں',
+          description:
+              'طلبہ، کمرے اور چھٹی کا ریکارڈ ابھی بیک اینڈ سے منسلک نہیں ہے',
         ),
       ],
     );
@@ -175,14 +162,12 @@ class _HostelQuickActions extends ConsumerWidget {
         QuickActionItem(
           icon: Icons.fact_check_outlined,
           label: 'حاضری',
-          color: AppColors.success,
           onTap: () => go(const AttendanceScreen()),
         ),
       if (can(AppPermissions.viewReports))
         QuickActionItem(
           icon: Icons.bar_chart_outlined,
           label: 'رپورٹ',
-          color: AppColors.info,
           onTap: () => go(const ReportsHubScreen()),
         ),
     ];

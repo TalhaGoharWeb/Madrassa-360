@@ -17,8 +17,8 @@ import '../../widgets/dashboard/dashboard_scaffold.dart';
 import '../../widgets/dashboard/day_timeline.dart';
 import '../../widgets/dashboard/quick_actions.dart';
 import '../common/dashboard_guide_screen.dart';
-import '../../widgets/dashboard/slot_heading.dart';
-import '../../widgets/dashboard/stat_card.dart';
+import '../../widgets/dashboard/dashboard_stat_card.dart';
+import '../../../core/design/m360.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/dashboard_data_provider.dart';
 import '../../../providers/tenant_branding_provider.dart';
@@ -85,11 +85,11 @@ class _LibraryStats extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SlotHeading('کتب خانے کا جائزہ'),
+        M360SectionHeader(title: 'کتب خانے کا جائزہ'),
         Row(
           children: [
             Expanded(
-              child: StatCard(
+              child: DashboardStatCard(
                 icon: Icons.menu_book_outlined,
                 label: 'کل کتب',
                 value: '${overview.totalBooks}',
@@ -101,7 +101,7 @@ class _LibraryStats extends ConsumerWidget {
             ),
             const SizedBox(width: 10),
             Expanded(
-              child: StatCard(
+              child: DashboardStatCard(
                 icon: Icons.outbox_outlined,
                 label: 'جاری شدہ',
                 value: '${overview.issued}',
@@ -115,7 +115,7 @@ class _LibraryStats extends ConsumerWidget {
         Row(
           children: [
             Expanded(
-              child: StatCard(
+              child: DashboardStatCard(
                 icon: Icons.assignment_return_outlined,
                 label: 'واپسی باقی',
                 value: '${overview.overdue}',
@@ -203,14 +203,13 @@ class _LibraryQuickActions extends ConsumerWidget {
         QuickActionItem(
           icon: Icons.outbox_outlined,
           label: 'کتاب جاری کریں',
-          color: AppColors.success,
+          color: AppColors.accent,
           onTap: () => go(const LibraryScreen()),
         ),
       if (canManage)
         QuickActionItem(
           icon: Icons.inbox_outlined,
           label: 'کتاب واپس لیں',
-          color: AppColors.info,
           onTap: () => go(const LibraryScreen()),
         ),
       QuickActionItem(
@@ -222,7 +221,6 @@ class _LibraryQuickActions extends ConsumerWidget {
         QuickActionItem(
           icon: Icons.bar_chart_outlined,
           label: 'رپورٹ',
-          color: AppColors.info,
           onTap: () => go(const ReportsHubScreen()),
         ),
     ];

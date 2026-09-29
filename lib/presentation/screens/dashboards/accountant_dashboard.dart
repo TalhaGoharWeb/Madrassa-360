@@ -20,8 +20,8 @@ import '../../widgets/dashboard/dashboard_scaffold.dart';
 import '../../widgets/dashboard/schedule_slot.dart';
 import '../../widgets/dashboard/quick_actions.dart';
 import '../common/dashboard_guide_screen.dart';
-import '../../widgets/dashboard/slot_heading.dart';
-import '../../widgets/dashboard/stat_card.dart';
+import '../../widgets/dashboard/dashboard_stat_card.dart';
+import '../../../core/design/m360.dart';
 import '../../widgets/dashboard/today_tasks.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/day_schedule_provider.dart';
@@ -111,12 +111,12 @@ class _FinanceSummary extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SlotHeading('آج کا مالی خلاصہ'),
+        M360SectionHeader(title: 'آج کا مالی خلاصہ'),
         Row(
           children: [
             if (canSeeFees)
               Expanded(
-                child: StatCard(
+                child: DashboardStatCard(
                   icon: Icons.payments_outlined,
                   label: 'آج کی وصولی',
                   value: formatRs(todayCollection),
@@ -129,7 +129,7 @@ class _FinanceSummary extends ConsumerWidget {
             if (canSeeFees) const SizedBox(width: 10),
             if (canSeeFinance)
               Expanded(
-                child: StatCard(
+                child: DashboardStatCard(
                   icon: Icons.shopping_cart_outlined,
                   label: 'آج کے اخراجات',
                   value: formatRs(overview.todayExpenses),
@@ -146,7 +146,7 @@ class _FinanceSummary extends ConsumerWidget {
           children: [
             if (canSeeFees)
               Expanded(
-                child: StatCard(
+                child: DashboardStatCard(
                   icon: Icons.hourglass_empty_outlined,
                   label: 'بقایا فیس',
                   value: formatRs(feeSummary?.totalDue ?? 0),
@@ -162,7 +162,7 @@ class _FinanceSummary extends ConsumerWidget {
             if (canSeeFees) const SizedBox(width: 10),
             if (canSeeFinance)
               Expanded(
-                child: StatCard(
+                child: DashboardStatCard(
                   icon: Icons.account_balance_wallet_outlined,
                   label: 'نقد رقم',
                   value: formatRs(overview.cashBalance),
@@ -243,28 +243,25 @@ class _FinanceQuickActions extends ConsumerWidget {
         QuickActionItem(
           icon: Icons.payments_outlined,
           label: 'فیس وصول کریں',
-          color: AppColors.success,
+          color: AppColors.accent,
           onTap: () => go(const FeeManagementScreen()),
         ),
       if (can(AppPermissions.collectFees) && moduleOk('fees'))
         QuickActionItem(
           icon: Icons.receipt_outlined,
           label: 'رسید بنائیں',
-          color: AppColors.success,
           onTap: () => go(const FeeManagementScreen()),
         ),
       if (can(AppPermissions.createFinance))
         QuickActionItem(
           icon: Icons.remove_circle_outline,
           label: 'خرچ درج کریں',
-          color: AppColors.warning,
           onTap: () => go(const FinanceScreen()),
         ),
       if (can(AppPermissions.createFinance))
         QuickActionItem(
           icon: Icons.add_circle_outline,
           label: 'آمدن درج کریں',
-          color: AppColors.success,
           onTap: () => go(const FinanceScreen()),
         ),
       if (can(AppPermissions.viewFinance))
@@ -277,14 +274,12 @@ class _FinanceQuickActions extends ConsumerWidget {
         QuickActionItem(
           icon: Icons.bar_chart_outlined,
           label: 'مالی رپورٹ',
-          color: AppColors.info,
           onTap: () => go(const ReportsHubScreen()),
         ),
       if (can(AppPermissions.viewFinance))
         QuickActionItem(
           icon: Icons.account_balance_outlined,
           label: 'تفصیلی حسابات',
-          color: AppColors.primary,
           onTap: () => go(const FinanceScreen()),
         ),
     ];
