@@ -280,7 +280,7 @@ void main() {
     test('posted payment maps to posted chip with real fields', () {
       final view = PaymentView(_payment(amount: 2500));
       expect(view.chipKind, FinancialChipKind.posted);
-      expect(view.amountLabel, '2,500');
+      expect(view.amountLabel, '2,500 روپے');
       expect(view.methodLabel, isNotEmpty);
       expect(view.receiptLabel, 'RCPT-1');
       expect(view.studentLabel, 'احمد خان');
