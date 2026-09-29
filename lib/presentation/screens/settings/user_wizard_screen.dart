@@ -162,7 +162,7 @@ class _UserWizardScreenState extends ConsumerState<UserWizardScreen> {
             body: UxEmptyState(
               icon: Icons.error_outline,
               title: roleUxErrorMessage(snap.error ?? 'load'),
-              description: 'واپس جا کر دوبارہ کوشش کریں۔',
+              hint: 'واپس جا کر دوبارہ کوشش کریں۔',
             ),
           );
         }

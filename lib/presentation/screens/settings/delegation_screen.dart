@@ -38,8 +38,7 @@ class DelegationScreen extends ConsumerWidget {
         body: UxEmptyState(
           icon: Icons.lock_outline,
           title: 'آپ کو یہ صفحہ دیکھنے کی اجازت نہیں ہے',
-          description:
-              'اختیار سونپنے کے لیے آپ کے پاس متعلقہ اجازت ہونی ضروری ہے۔',
+          hint: 'اختیار سونپنے کے لیے آپ کے پاس متعلقہ اجازت ہونی ضروری ہے۔',
         ),
       );
     }
@@ -74,7 +73,7 @@ class _DelegationList extends ConsumerWidget {
       error: (e, _) => UxEmptyState(
         icon: Icons.error_outline,
         title: delegationErrorMessage(e),
-        description: 'تازہ کریں — سوائپ کریں یا واپس آ کر دوبارہ دیکھیں۔',
+        hint: 'تازہ کریں — سوائپ کریں یا واپس آ کر دوبارہ دیکھیں۔',
       ),
       data: (result) {
         final now = DateTime.now();

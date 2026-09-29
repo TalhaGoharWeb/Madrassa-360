@@ -14,8 +14,6 @@ import 'package:madrasa_360/core/design/m360.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_typography.dart';
-import '../../../../core/widgets/empty_state_widget.dart';
-import '../../../../core/widgets/loading_widget.dart';
 
 export '../../../../core/widgets/empty_state_widget.dart';
 export '../../../../core/widgets/loading_widget.dart';

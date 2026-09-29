@@ -204,7 +204,7 @@ class _UsersTabState extends ConsumerState<_UsersTab> {
             error: (e, _) => UxEmptyState(
               icon: Icons.error_outline,
               title: roleUxErrorMessage(e),
-              description: 'تازہ کریں — سوائپ کریں یا واپس آ کر دوبارہ دیکھیں۔',
+              hint: 'تازہ کریں — سوائپ کریں یا واپس آ کر دوبارہ دیکھیں۔',
             ),
             data: (users) {
               if (users.isEmpty) {

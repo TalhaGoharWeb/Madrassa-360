@@ -120,12 +120,10 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
                   'ریکارڈ: ${v.manifest!.totalRows}\n'
                   'تاریخ: ${_fmtDate(v.manifest!.exportedAt)}\n'
                   'چیک سم: درست',
-                  textDirection: TextDirection.rtl,
                   style: AppTypography.bodyMedium,
                 )
               : Text(
                   'وجوہات:\n${v.reasons.join('\n')}',
-                  textDirection: TextDirection.rtl,
                   style: AppTypography.bodyMedium,
                 ),
           actions: [
@@ -172,7 +170,6 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
             content: Text(
               'پرانے ڈیٹا کی حفاظتی کاپی محفوظ ہے:\n${outcome.report.preRestoreCopy}\n\n'
               'براہ کرم ایپ بند کر کے دوبارہ کھولیں۔',
-              textDirection: TextDirection.rtl,
               style: AppTypography.bodyMedium,
             ),
             actions: [
@@ -255,14 +252,12 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
                       children: [
                         Text(
                           'مکمل ڈیٹا ایک فائل میں محفوظ کریں',
-                          textDirection: TextDirection.rtl,
                           textAlign: TextAlign.center,
                           style: AppTypography.titleSmall,
                         ),
                         const SizedBox(height: 4),
                         Text(
                           'انٹرنیٹ کے بغیر بھی کام کرتا ہے',
-                          textDirection: TextDirection.rtl,
                           textAlign: TextAlign.center,
                           style: AppTypography.bodySmall,
                         ),
@@ -278,7 +273,6 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
                           const SizedBox(height: 8),
                           Text(
                             _status!,
-                            textDirection: TextDirection.rtl,
                             style: AppTypography.bodySmall,
                           ),
                         ],
@@ -294,7 +288,6 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
                     M360Card(
                       child: Text(
                         'ابھی کوئی بیک اپ نہیں — اوپر بٹن دبائیں۔',
-                        textDirection: TextDirection.rtl,
                         textAlign: TextAlign.center,
                         style: AppTypography.bodyMedium,
                       ),
@@ -325,14 +318,12 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
                 : '${_fmtDate(m.exportedAt)} • '
                     '${BackupService.formatBytes(b.sizeBytes)} • '
                     '${m.totalRows} ریکارڈ',
-            textDirection: TextDirection.rtl,
             style: AppTypography.bodySmall
                 .copyWith(color: AppColors.textSecondary),
           ),
           if (b.note != null)
             Text(
               b.note!,
-              textDirection: TextDirection.rtl,
               style: AppTypography.bodySmall.copyWith(color: AppColors.error),
             ),
           const SizedBox(height: 6),
@@ -390,7 +381,6 @@ class _CloudBadge extends StatelessWidget {
       ),
       child: Text(
         label,
-        textDirection: TextDirection.rtl,
         style: AppTypography.labelMedium
             .copyWith(color: color, fontWeight: FontWeight.w600),
       ),

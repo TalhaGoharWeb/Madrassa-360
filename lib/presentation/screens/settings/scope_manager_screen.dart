@@ -51,7 +51,7 @@ class ScopeManagerScreen extends ConsumerWidget {
         body: UxEmptyState(
           icon: Icons.lock_outline,
           title: 'آپ کو یہ صفحہ دیکھنے کی اجازت نہیں ہے',
-          description:
+          hint:
               'ڈیٹا حدود کے انتظام کے لیے آپ کے پاس متعلقہ اجازت ہونی ضروری ہے۔',
         ),
       );
@@ -99,7 +99,7 @@ class _ScopeDirectoryState extends ConsumerState<_ScopeDirectory> {
         error: (e, _) => UxEmptyState(
           icon: Icons.error_outline,
           title: roleUxErrorMessage(e),
-          description: 'تازہ کریں — سوائپ کریں یا واپس آ کر دوبارہ دیکھیں۔',
+          hint: 'تازہ کریں — سوائپ کریں یا واپس آ کر دوبارہ دیکھیں۔',
         ),
         data: (result) => _body(result),
       ),
@@ -136,7 +136,7 @@ class _ScopeDirectoryState extends ConsumerState<_ScopeDirectory> {
           const UxEmptyState(
             icon: Icons.data_object_outlined,
             title: 'ابھی کوئی محدود دائرہ کار مقرر نہیں',
-            description:
+            hint:
                 'تمام صارفین فی الحال پورے مدرسے کے دائرے میں کام کر رہے ہیں۔ '
                 'نیا دائرہ نیچے بٹن سے مقرر کریں۔',
           )
@@ -390,7 +390,7 @@ class _ScopeEditorScreenState extends ConsumerState<ScopeEditorScreen> {
           ? const UxEmptyState(
               icon: Icons.error_outline,
               title: 'مدرسہ منتخب نہیں ہے',
-              description: 'پہلے کوئی مدرسہ منتخب کریں۔',
+              hint: 'پہلے کوئی مدرسہ منتخب کریں۔',
             )
           : ListView(
               padding: const EdgeInsets.all(16),

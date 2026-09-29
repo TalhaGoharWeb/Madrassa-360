@@ -293,7 +293,7 @@ class _FeeManagementScreenState extends ConsumerState<FeeManagementScreen> {
                     ),
                     Text(
                       '${record.studentClass} - ${view.monthLabel}',
-                      style: AppTypography.bodySmall?.copyWith(
+                      style: AppTypography.bodySmall.copyWith(
                         color: AppColors.textSecondary,
                       ),
                     ),
@@ -315,12 +315,12 @@ class _FeeManagementScreenState extends ConsumerState<FeeManagementScreen> {
                         Text(
                           'ادا شدہ: ${view.amountPaidLabel}',
                           style: AppTypography.labelSmall
-                              ?.copyWith(color: AppColors.success),
+                              .copyWith(color: AppColors.success),
                         ),
                         if (record.remaining > 0)
                           Text(
                             'بقایا: ${view.remainingLabel} روپے',
-                            style: AppTypography.labelSmall?.copyWith(
+                            style: AppTypography.labelSmall.copyWith(
                               color: AppColors.error,
                               fontWeight: FontWeight.bold,
                             ),

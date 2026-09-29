@@ -343,7 +343,7 @@ class _UserDetailScreenState extends ConsumerState<UserDetailScreen> {
                 child: UxEmptyState(
                   icon: Icons.history_outlined,
                   title: 'ابھی کوئی سرگرمی ریکارڈ نہیں',
-                  description:
+                  hint:
                       'اس صارف کی سرگرمی یہاں نظر آئے گی جب وہ کام شروع کرے گا۔',
                 ),
               );

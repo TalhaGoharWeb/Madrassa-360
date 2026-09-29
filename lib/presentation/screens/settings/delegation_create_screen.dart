@@ -63,7 +63,7 @@ class _DelegationCreateScreenState
             return const UxEmptyState(
               icon: Icons.key_off_outlined,
               title: 'سونپنے کے لیے کوئی اختیار نہیں',
-              description: 'آپ کے پاس خود کوئی ایسا اختیار نہیں جو آپ کسی '
+              hint: 'آپ کے پاس خود کوئی ایسا اختیار نہیں جو آپ کسی '
                   'اور کو سونپ سکیں۔',
             );
           }
