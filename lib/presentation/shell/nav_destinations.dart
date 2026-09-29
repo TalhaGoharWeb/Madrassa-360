@@ -30,6 +30,7 @@ import 'package:madrasa_360/core/notifications/notification_providers.dart'
 import 'package:madrasa_360/providers/announcement_provider.dart'
     show announcementListProvider;
 
+import 'package:madrasa_360/core/constants/app_colors.dart';
 import 'package:madrasa_360/core/constants/app_permissions.dart';
 import 'package:madrasa_360/core/constants/app_typography.dart';
 

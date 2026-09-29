@@ -175,21 +175,18 @@ void main() {
   });
 
   group('DashboardScaffold', () {
-    testWidgets('header shows greeting, name, madrasa and Urdu date',
-        (tester) async {
+    testWidgets('header shows greeting, name and Urdu date', (tester) async {
       await _pump(
         tester,
         _container(),
         const DashboardScaffold(
           greeting: 'السلام علیکم ورحمۃ اللہ',
           userName: 'ٹیسٹ صارف',
-          madrasaName: 'ٹیسٹ مدرسہ',
           stats: Text('stats'),
         ),
       );
       expect(find.text('السلام علیکم ورحمۃ اللہ'), findsOneWidget);
       expect(find.text('ٹیسٹ صارف'), findsOneWidget);
-      expect(find.text('ٹیسٹ مدرسہ'), findsOneWidget);
       // Urdu date line carries a month name like 'ستمبر'.
       expect(find.textContaining('ستمبر'), findsWidgets);
     });

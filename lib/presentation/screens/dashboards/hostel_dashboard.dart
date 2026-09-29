@@ -21,6 +21,7 @@ import '../common/dashboard_guide_screen.dart';
 import '../../widgets/dashboard/slot_heading.dart';
 import '../../widgets/dashboard/stat_card.dart';
 import '../../../providers/auth_provider.dart';
+import '../../../providers/tenant_branding_provider.dart';
 import '../reports/reports_hub_screen.dart';
 import '../teacher/attendance_screen.dart';
 

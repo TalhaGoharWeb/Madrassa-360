@@ -23,6 +23,7 @@ import '../../widgets/dashboard/slot_heading.dart';
 import '../../widgets/dashboard/stat_card.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/dashboard_data_provider.dart';
+import '../../../providers/tenant_branding_provider.dart';
 import '../admin/darja_screen.dart';
 import '../admin/staff_list_screen.dart';
 import '../admin/student_list_screen.dart';

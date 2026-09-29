@@ -155,6 +155,12 @@ class _ReportFilterSheetState extends ConsumerState<_ReportFilterSheet> {
   List<ReportExam> _exams = [];
   bool _busy = false;
 
+  /// Inline feedback (validation / errors / save confirmation) rendered in
+  /// the sheet itself — the sheet has no Scaffold ancestor to host a
+  /// SnackBar (it works both as a shell destination and standalone).
+  String? _notice;
+  bool _noticeIsError = true;
+
   ReportDefinition get _def => widget.definition;
   ReportData get _data => ReportData(widget.db);
   ReportsService get _service => ReportsService(widget.db);
@@ -217,19 +223,25 @@ class _ReportFilterSheetState extends ConsumerState<_ReportFilterSheet> {
     final problem = _validate();
     if (problem != null) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(problem)));
+        setState(() {
+          _notice = problem;
+          _noticeIsError = true;
+        });
       }
       return;
     }
-    setState(() => _busy = true);
+    setState(() {
+      _busy = true;
+      _notice = null;
+    });
     try {
       await fn();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('خرابی: $e')),
-        );
+        setState(() {
+          _notice = 'خرابی: $e';
+          _noticeIsError = true;
+        });
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -265,9 +277,10 @@ class _ReportFilterSheetState extends ConsumerState<_ReportFilterSheet> {
         final file = File('${dir.path}/${_fileName('pdf')}');
         await file.writeAsBytes(bytes);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('محفوظ ہو گیا: ${file.path}')),
-          );
+          setState(() {
+            _notice = 'محفوظ ہو گیا';
+            _noticeIsError = false;
+          });
         }
       });
 
@@ -391,6 +404,31 @@ class _ReportFilterSheetState extends ConsumerState<_ReportFilterSheet> {
                 ),
               ],
               const SizedBox(height: 16),
+              // Inline validation / error / success notice — the sheet has
+              // no Scaffold ancestor, so feedback renders here instead of
+              // a SnackBar.
+              if (_notice != null) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color:
+                        (_noticeIsError ? AppColors.error : AppColors.success)
+                            .withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    _notice!,
+                    style: AppTypography.bodySmall.copyWith(
+                      color:
+                          _noticeIsError ? AppColors.error : AppColors.success,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
               if (_busy)
                 const Center(child: CircularProgressIndicator())
               else ...[

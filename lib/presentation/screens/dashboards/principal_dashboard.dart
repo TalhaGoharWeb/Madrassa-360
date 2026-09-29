@@ -48,6 +48,7 @@ import '../../../providers/day_schedule_provider.dart';
 import '../../../providers/fee_provider.dart';
 import '../../../providers/dashboard_data_provider.dart';
 import '../../../providers/result_provider.dart';
+import '../../../providers/tenant_branding_provider.dart';
 import '../admin/darja_screen.dart';
 import '../admin/fee_management_screen.dart';
 import '../admin/finance_screen.dart';

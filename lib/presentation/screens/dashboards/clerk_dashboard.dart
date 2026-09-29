@@ -26,6 +26,7 @@ import '../../../providers/auth_provider.dart';
 import '../../../providers/day_schedule_provider.dart';
 import '../../../providers/dashboard_data_provider.dart';
 import '../../../providers/fee_provider.dart';
+import '../../../providers/tenant_branding_provider.dart';
 import '../admin/fee_management_screen.dart';
 import '../admin/student_list_screen.dart';
 

@@ -70,6 +70,10 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
 
   bool _saving = false;
 
+  /// Inline feedback banner — used only when there is no Scaffold ancestor
+  /// to host a SnackBar (standalone / test usage). See [_snack].
+  _Banner? _banner;
+
   static DateTime _today() {
     final n = DateTime.now();
     return DateTime(n.year, n.month, n.day);
@@ -100,15 +104,24 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
 
   void _snack(String message, Color color) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          message,
-          style: AppTypography.bodyMedium.copyWith(color: Colors.white),
-        ),
-        backgroundColor: color,
+    final bar = SnackBar(
+      content: Text(
+        message,
+        style: AppTypography.bodyMedium.copyWith(color: Colors.white),
       ),
+      backgroundColor: color,
     );
+    // The screen normally lives inside AppShell's Scaffold. When used
+    // standalone (widget tests, shell-less deep links) there is no Scaffold
+    // ancestor and showSnackBar would throw — fall back to an inline banner
+    // so the feedback is never lost.
+    if (Scaffold.maybeOf(context) != null) {
+      ScaffoldMessenger.of(context).showSnackBar(bar);
+      return;
+    }
+    // Inline banner persists until the next _snack call (no auto-dismiss:
+    // a timed clear would race widget-test pumpAndSettle expectations).
+    setState(() => _banner = _Banner(message, color));
   }
 
   /// One-tap status change: selecting the loaded value drops the override
@@ -239,6 +252,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
       child: Column(
         children: [
           if (pendingCount > 0) _offlineBanner(pendingCount),
+          if (_banner != null) _inlineBanner(_banner!),
           if (tenantId == null)
             Expanded(child: _failClosed(AppStrings.noActiveTenant))
           else ...[
@@ -267,6 +281,20 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// Inline feedback banner for Scaffold-less usage (see [_snack]).
+  Widget _inlineBanner(_Banner banner) {
+    return Container(
+      width: double.infinity,
+      color: banner.color,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Text(
+        banner.message,
+        style: AppTypography.bodyMedium.copyWith(color: Colors.white),
+        textAlign: TextAlign.center,
       ),
     );
   }
@@ -782,4 +810,12 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
       ),
     );
   }
+}
+
+/// Simple value holder for the inline Scaffold-less feedback banner.
+class _Banner {
+  const _Banner(this.message, this.color);
+
+  final String message;
+  final Color color;
 }

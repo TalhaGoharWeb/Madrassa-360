@@ -82,7 +82,17 @@ class ShellPageBody extends StatelessWidget {
             ],
           );
 
-    return ColoredBox(color: backgroundColor, child: body);
+    // A Scaffold always provides a Material ancestor (ink, text selection,
+    // snackbars). The stripped screens relied on it — e.g. InkWell date
+    // chips — so ShellPageBody restores a transparent one. Inside AppShell
+    // the outer Scaffold's Material already exists; this one is inert.
+    return ColoredBox(
+      color: backgroundColor,
+      child: Material(
+        type: MaterialType.transparency,
+        child: body,
+      ),
+    );
   }
 }
 
