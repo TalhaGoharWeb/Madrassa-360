@@ -13,17 +13,29 @@
 /// tenant's rows, and `tenant_id` NULL (platform-level) rows are visible
 /// to platform admins only. This screen never bypasses RLS.
 
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:printing/printing.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:madrasa_360/core/design/m360.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../core/reports/documents/audit_log_report.dart';
+import '../../../core/reports/export/csv_export.dart';
+import '../../../core/reports/export/tabular_data.dart';
 import '../../../core/utils/audit_urdu.dart';
+import 'audit_export.dart';
 import 'widgets/ma_widgets.dart';
 
 const _pageSize = 30;
+
+/// Cap for a single export — keeps one export from exhausting memory on
+/// a huge platform log. The count is reported honestly in the UI.
+const _exportCap = 5000;
 
 class AuditLogsScreen extends StatefulWidget {
   const AuditLogsScreen({super.key});
@@ -38,6 +50,7 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
   bool _loading = true;
   bool _loadingMore = false;
   bool _hasMore = true;
+  bool _exporting = false;
   String? _error;
   String? _missingTable;
 
@@ -134,7 +147,7 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
           .range(_logs.length, _logs.length + _pageSize - 1);
       if (rows.length < _pageSize) _hasMore = false;
       _logs.addAll(List<Map<String, dynamic>>.from(rows));
-      await _resolveActorNames();
+      await _resolveActorNamesFor(_logs);
     } catch (e) {
       final msg = e.toString().toLowerCase();
       if (msg.contains('audit_logs') &&
@@ -151,8 +164,8 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
   /// Best-effort actor display names via profiles (RLS-gated). Rows whose
   /// actor has no readable profile keep rendering — with the passive
   /// Urdu voice — instead of breaking the list.
-  Future<void> _resolveActorNames() async {
-    final ids = {for (final l in _logs) l['user_id'] as String?}
+  Future<void> _resolveActorNamesFor(List<Map<String, dynamic>> rows) async {
+    final ids = {for (final l in rows) l['user_id'] as String?}
         .whereType<String>()
         .where((id) => !_actorNames.containsKey(id))
         .toList();
@@ -225,11 +238,195 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
       textDirection: TextDirection.rtl,
       child: Column(
         children: [
+          _exportBar(),
           _filtersBar(),
           Expanded(child: _buildBody()),
         ],
       ),
     );
+  }
+
+  /// Real export actions — both honour the ACTIVE filters (same query
+  /// params as the list). Buttons are never decorative: they generate
+  /// real files and report real success or failure.
+  Widget _exportBar() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      child: Row(
+        children: [
+          M360SecondaryButton(
+            icon: Icons.download_outlined,
+            label: 'CSV ڈاؤن لوڈ',
+            isLoading: _exporting,
+            onPressed: _exporting ? null : _exportCsv,
+          ),
+          const SizedBox(width: 8),
+          M360SecondaryButton(
+            icon: Icons.picture_as_pdf_outlined,
+            label: 'PDF ایکسپورٹ',
+            isLoading: _exporting,
+            onPressed: _exporting ? null : _exportPdf,
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Fetches every row matching the ACTIVE filters (paged, capped).
+  ///
+  /// Uses the identical filter params as the list query — the export can
+  /// never silently include rows the filters exclude.
+  Future<List<Map<String, dynamic>>> _fetchAllForExport() async {
+    final params = auditExportFilterParams(
+      tenantId: _tenantFilter,
+      action: _actionFilter,
+      actorId: _actorFilter,
+      fromDay: _fromDay,
+      toDay: _toDay,
+    );
+    final out = <Map<String, dynamic>>[];
+    while (out.length < _exportCap) {
+      var q = _client.from('audit_logs').select('''
+        id, tenant_id, user_id, action, entity, entity_id,
+        old_data, new_data, metadata, created_at,
+        tenants ( name, tenant_code )
+      ''');
+      final tenantId = params['tenant_id'];
+      if (tenantId != null) q = q.eq('tenant_id', tenantId);
+      final action = params['action'];
+      if (action != null) q = q.eq('action', action);
+      final actorId = params['user_id'];
+      if (actorId != null) q = q.eq('user_id', actorId);
+      final from = params['created_from'];
+      if (from != null) q = q.gte('created_at', from);
+      final to = params['created_to'];
+      if (to != null) q = q.lt('created_at', to);
+      final rows = await q
+          .order('created_at', ascending: false)
+          .range(out.length, out.length + _pageSize - 1);
+      out.addAll(List<Map<String, dynamic>>.from(rows));
+      if (rows.length < _pageSize) break;
+    }
+    await _resolveActorNamesFor(out);
+    return out;
+  }
+
+  String _actorNameOf(Map<String, dynamic> log) {
+    final id = log['user_id'] as String?;
+    if (id == null) return 'نامعلوم';
+    return _actorNames[id] ??
+        'صارف ${id.length > 8 ? id.substring(0, 8) : id}…';
+  }
+
+  /// Urdu one-line summary of the active filters (used in the PDF).
+  String _filterSummaryUr() {
+    final parts = <String>[];
+    String? tenantName;
+    for (final t in _tenants) {
+      if (t['id'] == _tenantFilter) {
+        tenantName = t['name'] as String?;
+        break;
+      }
+    }
+    parts.add(
+        _tenantFilter == null ? 'تمام مدارس' : (tenantName ?? 'منتخب مدرسہ'));
+    parts.add(_actionFilter == null
+        ? 'تمام اعمال'
+        : auditActionLabelUrdu(_actionFilter!));
+    parts.add(_actorFilter == null
+        ? 'تمام صارفین'
+        : _actorNameOf({'user_id': _actorFilter}));
+    if (_fromDay != null || _toDay != null) {
+      parts.add(
+          '${_fromDay == null ? '…' : formatAuditDayUrdu(_fromDay!)} تا ${_toDay == null ? '…' : formatAuditDayUrdu(_toDay!)}');
+    }
+    return 'فلٹر: ${parts.join('، ')}';
+  }
+
+  String _stamp() {
+    final n = DateTime.now();
+    String two(int v) => v.toString().padLeft(2, '0');
+    return '${n.year}${two(n.month)}${two(n.day)}-${two(n.hour)}${two(n.minute)}';
+  }
+
+  Future<void> _exportCsv() async {
+    setState(() => _exporting = true);
+    try {
+      final logs = await _fetchAllForExport();
+      if (logs.isEmpty) {
+        showM360SnackBar(context, 'ایکسپورٹ کے لیے کوئی ریکارڈ نہیں ملا۔');
+        return;
+      }
+      final networkCols = auditNetworkColumns(logs);
+      final headers = buildAuditExportHeaders(networkCols);
+      final data = [
+        for (final l in logs)
+          buildAuditExportRow(l,
+              actorName: _actorNames[l['user_id'] as String?],
+              networkColumns: networkCols),
+      ];
+      final csv = CsvExport.build([
+        ReportTable(
+            sheetName: 'audit_log',
+            titleUr: 'آڈٹ لاگ',
+            headers: headers,
+            rows: data),
+      ]);
+      final dir = await getApplicationDocumentsDirectory();
+      final file = File('${dir.path}/audit-log-${_stamp()}.csv');
+      await file.writeAsString(csv);
+      if (mounted) {
+        showM360SnackBar(
+            context, 'CSV محفوظ ہو گئی (${data.length} ریکارڈ): ${file.path}');
+      }
+    } catch (e) {
+      if (mounted) {
+        showM360SnackBar(context, 'CSV ایکسپورٹ ناکام ہوا۔ دوبارہ کوشش کریں۔');
+      }
+    } finally {
+      if (mounted) setState(() => _exporting = false);
+    }
+  }
+
+  Future<void> _exportPdf() async {
+    setState(() => _exporting = true);
+    try {
+      final logs = await _fetchAllForExport();
+      if (logs.isEmpty) {
+        showM360SnackBar(context, 'ایکسپورٹ کے لیے کوئی ریکارڈ نہیں ملا۔');
+        return;
+      }
+      final networkCols = auditNetworkColumns(logs);
+      final headers = buildAuditExportHeaders(networkCols);
+      final data = [
+        for (final l in logs)
+          buildAuditExportRow(l,
+              actorName: _actorNames[l['user_id'] as String?],
+              networkColumns: networkCols),
+      ];
+      final bytes = await AuditLogReport.build(
+        headers: headers,
+        rows: data,
+        filterSummaryUr: _filterSummaryUr(),
+      );
+      final dir = await getApplicationDocumentsDirectory();
+      final file = File('${dir.path}/audit-log-${_stamp()}.pdf');
+      await file.writeAsBytes(bytes);
+      // System share sheet (existing pattern from the certificates
+      // screen); the saved file is the real artifact either way.
+      await Printing.sharePdf(
+          bytes: bytes, filename: 'audit-log-${_stamp()}.pdf');
+      if (mounted) {
+        showM360SnackBar(
+            context, 'PDF محفوظ ہو گئی (${data.length} ریکارڈ): ${file.path}');
+      }
+    } catch (e) {
+      if (mounted) {
+        showM360SnackBar(context, 'PDF ایکسپورٹ ناکام ہوا۔ دوبارہ کوشش کریں۔');
+      }
+    } finally {
+      if (mounted) setState(() => _exporting = false);
+    }
   }
 
   Widget _filtersBar() {

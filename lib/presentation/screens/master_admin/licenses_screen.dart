@@ -1,7 +1,13 @@
 /// لائسنسز
-/// Master Admin — licenses table view (issued by provision-tenant).
-/// Read-mostly: issue/revoke are server-side actions; the screen surfaces
-/// records with status + expiry.
+/// Master Admin — licenses table view + REAL license operations.
+///
+/// - Read: real rows from public.licenses (platform admins: RLS FOR ALL).
+/// - Revoke: real UPDATE status='cancelled' + log_audit('license.revoked'),
+///   behind a typed destructive confirmation.
+/// - Extend: real UPDATE expires_at + log_audit('license.extended').
+/// - Status vocabulary comes from [licenseStatusFilters] (the exact CHECK
+///   values in 011_licensing.sql) — the old bogus 'revoked' filter is gone.
+/// - Never reports success unless the DB write actually persisted.
 
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -10,9 +16,8 @@ import 'package:madrasa_360/core/design/m360.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../data/repositories/license_repository.dart';
 import 'widgets/ma_widgets.dart';
-
-const _licenseStatuses = ['all', 'active', 'expired', 'revoked', 'suspended'];
 
 class LicensesScreen extends StatefulWidget {
   const LicensesScreen({super.key});
@@ -22,16 +27,18 @@ class LicensesScreen extends StatefulWidget {
 }
 
 class _LicensesScreenState extends State<LicensesScreen> {
-  final _client = Supabase.instance.client;
+  late final LicenseRepository _repo;
 
   bool _loading = true;
   String? _error;
   String _status = 'all';
-  List<Map<String, dynamic>> _rows = [];
+  String _query = '';
+  List<LicenseRecord> _rows = [];
 
   @override
   void initState() {
     super.initState();
+    _repo = LicenseRepository(Supabase.instance.client);
     _load();
   }
 
@@ -41,38 +48,69 @@ class _LicensesScreenState extends State<LicensesScreen> {
       _error = null;
     });
     try {
-      var q = _client.from('licenses').select('''
-        tenant_id, plan_id, status, issued_at, expires_at,
-        max_users, max_students, enabled_modules,
-        tenants ( name, tenant_code ),
-        license_plans ( name )
-      ''');
-      if (_status != 'all') q = q.eq('status', _status);
-      final rows =
-          await q.order('expires_at', ascending: true, nullsFirst: false);
-      _rows = List<Map<String, dynamic>>.from(rows);
+      _rows =
+          await _repo.fetchLicenses(status: _status == 'all' ? null : _status);
+    } on LicenseOperationException catch (e) {
+      _error = e.message;
     } catch (e) {
       _error = e.toString();
     }
     if (mounted) setState(() => _loading = false);
   }
 
+  List<LicenseRecord> get _visible {
+    if (_query.trim().isEmpty) return _rows;
+    final q = _query.trim().toLowerCase();
+    return _rows.where((r) {
+      return (r.tenantName ?? '').toLowerCase().contains(q) ||
+          (r.tenantCode ?? '').toLowerCase().contains(q) ||
+          (r.planName ?? '').toLowerCase().contains(q);
+    }).toList();
+  }
+
+  Future<void> _openDetail(LicenseRecord record) async {
+    // The detail dialog pops with a result token on success; the parent
+    // owns the success snackbar (the dialog's context is dead by then).
+    final result = await showM360Dialog<String>(
+      context,
+      title: 'لائسنس کی تفصیل',
+      icon: Icons.verified_outlined,
+      content: _LicenseDetailDialog(record: record, repo: _repo),
+    );
+    if (result == 'revoked') {
+      _load();
+      if (mounted) showM360SnackBar(context, 'لائسنس منسوخ کر دیا گیا۔');
+    } else if (result == 'extended') {
+      _load();
+      if (mounted) showM360SnackBar(context, 'لائسنس کی میعاد بڑھا دی گئی۔');
+    } else if (result == 'changed') {
+      _load();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+          child: M360SearchField(
+            hint: 'مدرسہ یا پلان تلاش کریں…',
+            onChanged: (v) => setState(() => _query = v),
+          ),
+        ),
         SizedBox(
           height: 52,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            itemCount: _licenseStatuses.length,
+            itemCount: licenseStatusFilters.length,
             separatorBuilder: (_, __) => const SizedBox(width: 8),
             itemBuilder: (context, i) {
-              final s = _licenseStatuses[i];
+              final s = licenseStatusFilters[i];
               final selected = s == _status;
               return ChoiceChip(
-                label: Text(s == 'all' ? 'All' : s),
+                label: Text(s == 'all' ? 'تمام' : licenseStatusUrdu(s)),
                 selected: selected,
                 selectedColor: AppColors.primary.withValues(alpha: 0.15),
                 onSelected: (_) {
@@ -101,76 +139,221 @@ class _LicensesScreenState extends State<LicensesScreen> {
         onAction: _load,
       );
     }
-    if (_rows.isEmpty) {
+    final rows = _visible;
+    if (rows.isEmpty) {
       return const EmptyStateWidget(
         icon: Icons.verified_outlined,
         title: 'کوئی لائسنس نہیں',
-        message: 'Licenses are issued automatically by provision-tenant.',
+        message: 'موجودہ فلٹر سے کوئی لائسنس نہیں ملا۔ '
+            'لائسنس provision-tenant سے خودکار جاری ہوتے ہیں۔',
       );
     }
     return RefreshIndicator(
       onRefresh: _load,
       child: ListView.separated(
         padding: const EdgeInsets.all(16),
-        itemCount: _rows.length,
+        itemCount: rows.length,
         separatorBuilder: (_, __) => const SizedBox(height: 8),
-        itemBuilder: (context, i) {
-          final r = _rows[i];
-          final tenant = r['tenants'] as Map<String, dynamic>?;
-          final plan = r['license_plans'] as Map<String, dynamic>?;
-          final status = (r['status'] as String?) ?? 'unknown';
-          final modules = (r['enabled_modules'] as List?)?.join(', ') ?? '—';
-          return M360Card(
-            margin: EdgeInsets.zero,
-            padding: EdgeInsets.zero,
-            child: ExpansionTile(
-              leading: const Icon(Icons.verified,
-                  color: AppColors.primary, size: 32),
-              title: Text(
-                (tenant?['name'] as String?) ??
-                    (r['tenant_id'] as String? ?? '—'),
-                style: AppTypography.titleMedium
-                    .copyWith(fontWeight: FontWeight.w600),
-              ),
-              subtitle: Text(
-                'پلان: ${(plan?['name'] as String?) ?? '—'}  •  '
-                'اختتام: ${(r['expires_at'] as String?)?.substring(0, 10) ?? '—'}',
-                style: AppTypography.bodySmall
-                    .copyWith(color: AppColors.textSecondary),
-              ),
-              trailing: MaStatusChip(status: status),
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _kv('Tenant code', tenant?['tenant_code']),
-                      _kv('Issued',
-                          (r['issued_at'] as String?)?.substring(0, 10)),
-                      _kv('Max users', r['max_users']),
-                      _kv('Max students', r['max_students']),
-                      _kv('Enabled modules', modules),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
+        itemBuilder: (context, i) => _row(rows[i]),
       ),
+    );
+  }
+
+  Widget _row(LicenseRecord r) {
+    return M360Card(
+      margin: EdgeInsets.zero,
+      padding: EdgeInsets.zero,
+      onTap: () => _openDetail(r),
+      child: ListTile(
+        leading: const Icon(Icons.verified, color: AppColors.primary, size: 32),
+        title: Text(
+          r.tenantName ?? r.tenantId ?? '—',
+          style:
+              AppTypography.titleMedium.copyWith(fontWeight: FontWeight.w600),
+        ),
+        subtitle: Text(
+          'پلان: ${r.planName ?? '—'}  •  '
+          'اختتام: ${r.expiresAt != null ? _day(r.expiresAt!) : '—'}',
+          style:
+              AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
+        ),
+        trailing: MaStatusChip(status: r.status),
+      ),
+    );
+  }
+
+  String _day(DateTime d) =>
+      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+}
+
+/// License detail + real revoke/extend actions.
+///
+/// Pops `true` when a write succeeded so the list reloads. Success is
+/// reported only after the repository confirms the DB write persisted.
+class _LicenseDetailDialog extends StatefulWidget {
+  final LicenseRecord record;
+  final LicenseRepository repo;
+
+  const _LicenseDetailDialog({required this.record, required this.repo});
+
+  @override
+  State<_LicenseDetailDialog> createState() => _LicenseDetailDialogState();
+}
+
+class _LicenseDetailDialogState extends State<_LicenseDetailDialog> {
+  bool _busy = false;
+  String? _error;
+
+  LicenseRecord get _r => widget.record;
+
+  String get _tenantLabel =>
+      _r.tenantName ?? _r.tenantCode ?? _r.tenantId ?? '—';
+
+  Future<void> _revoke() async {
+    // Typed destructive confirmation — the button stays disabled until
+    // the operator types the tenant name exactly.
+    final typedName = (_r.tenantName?.trim().isNotEmpty ?? false)
+        ? _r.tenantName!.trim()
+        : _r.id;
+    final confirmed = await showM360ConfirmDialog(
+      context,
+      title: 'لائسنس منسوخ کریں',
+      message: 'کیا آپ واقعی "$_tenantLabel" کا لائسنس منسوخ کرنا چاہتے ہیں؟ '
+          'اس کے بعد یہ مدرسہ سسٹم استعمال نہیں کر سکے گا۔ یہ عمل آڈٹ لاگ میں درج ہو گا۔',
+      confirmLabel: 'منسوخ کریں',
+      danger: true,
+      requireTypedConfirmation: true,
+      expectedText: typedName,
+      typedHint: 'تصدیق کے لیے مدرسے کا نام لکھیں',
+    );
+    if (!confirmed || !mounted) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await widget.repo.revokeLicense(_r);
+      if (!mounted) return;
+      // Pop with the result token — the parent shows the success
+      // snackbar on its own (live) context.
+      Navigator.of(context).pop('revoked');
+    } on LicenseOperationException catch (e) {
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _error = e.message;
+        });
+      }
+    }
+  }
+
+  Future<void> _extend() async {
+    final picked = await showM360DatePicker(
+      context,
+      initialDate: _r.expiresAt != null
+          ? _r.expiresAt!.add(const Duration(days: 30))
+          : DateTime.now().add(const Duration(days: 30)),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 3650)),
+      helpText: 'نئی میعاد ختم کی تاریخ',
+    );
+    if (picked == null || !mounted) return;
+    final newExpiry = DateTime(picked.year, picked.month, picked.day);
+    final confirmed = await showM360ConfirmDialog(
+      context,
+      title: 'میعاد بڑھائیں',
+      message: '"$_tenantLabel" کے لائسنس کی میعاد '
+          '${newExpiry.year}-${newExpiry.month.toString().padLeft(2, '0')}-'
+          '${newExpiry.day.toString().padLeft(2, '0')} تک بڑھا دی جائے؟ '
+          'یہ عمل آڈٹ لاگ میں درج ہو گا۔',
+      confirmLabel: 'میعاد بڑھائیں',
+    );
+    if (!confirmed || !mounted) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await widget.repo.extendLicense(_r, newExpiry);
+      if (!mounted) return;
+      Navigator.of(context).pop('extended');
+    } on LicenseOperationException catch (e) {
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _error = e.message;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Plain content column — showM360Dialog already provides the
+    // M360Dialog chrome; the action buttons live here so they can
+    // react to the busy/error state.
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _kv('مدرسہ', _tenantLabel),
+        _kv('مدرسہ کوڈ', _r.tenantCode),
+        _kv('پلان', _r.planName),
+        _kv('حالت', licenseStatusUrdu(_r.status)),
+        _kv('جاری ہوا', _r.issuedAt != null ? _day(_r.issuedAt!) : null),
+        _kv('میعاد ختم', _r.expiresAt != null ? _day(_r.expiresAt!) : null),
+        _kv('زیادہ سے زیادہ صارفین', _r.maxUsers),
+        _kv('زیادہ سے زیادہ طلبہ', _r.maxStudents),
+        _kv('فعال ماڈیولز',
+            _r.enabledModules.isEmpty ? null : _r.enabledModules.join(', ')),
+        if (_error != null) ...[
+          const SizedBox(height: 12),
+          Text(
+            _error!,
+            textDirection: TextDirection.rtl,
+            style: const TextStyle(color: Colors.red),
+          ),
+        ],
+        const SizedBox(height: 16),
+        Wrap(
+          alignment: WrapAlignment.end,
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            M360TertiaryButton(
+              label: 'بند کریں',
+              onPressed: _busy ? null : () => Navigator.of(context).pop(),
+            ),
+            if (!_r.isCancelled)
+              M360DangerButton(
+                label: 'لائسنس منسوخ کریں',
+                icon: Icons.cancel_outlined,
+                onPressed: _busy ? null : _revoke,
+              ),
+            // Orange primary CTA: the constructive action.
+            M360PrimaryButton(
+              label: 'میعاد بڑھائیں',
+              icon: Icons.event_available_outlined,
+              isLoading: _busy,
+              onPressed: _busy ? null : _extend,
+            ),
+          ],
+        ),
+      ],
     );
   }
 
   Widget _kv(String label, Object? value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(label,
               style: AppTypography.bodySmall
                   .copyWith(color: AppColors.textSecondary)),
+          const SizedBox(width: 12),
           Flexible(
             child: Text((value ?? '—').toString(),
                 style: AppTypography.bodySmall
@@ -181,4 +364,7 @@ class _LicensesScreenState extends State<LicensesScreen> {
       ),
     );
   }
+
+  String _day(DateTime d) =>
+      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 }
