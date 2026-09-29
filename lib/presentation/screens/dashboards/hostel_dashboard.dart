@@ -73,9 +73,9 @@ class _HostelStats extends StatelessWidget {
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const M360SectionHeader(title: 'دارالاقامہ کا جائزہ'),
-        const Row(
+      children: const [
+        M360SectionHeader(title: 'دارالاقامہ کا جائزہ'),
+        Row(
           children: [
             Expanded(
               child: DashboardStatCard(
