@@ -98,8 +98,8 @@ class _HostelStats extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 10),
-        const Row(
+        SizedBox(height: 10),
+        Row(
           children: [
             Expanded(
               child: DashboardStatCard(
@@ -122,11 +122,11 @@ class _HostelStats extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         // Honest backend-unavailable state (BackendUnavailableScreen
         // pattern): no hostel tables exist yet — never a "جلد آرہا ہے"
         // marketing placeholder.
-        const M360EmptyState(
+        M360EmptyState(
           icon: Icons.cloud_off_outlined,
           title: 'دارالاقامہ کا ریکارڈ دستیاب نہیں',
           description:
