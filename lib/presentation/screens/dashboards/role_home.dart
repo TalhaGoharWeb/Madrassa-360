@@ -13,7 +13,7 @@
 ///   librarian                                 → LibraryDashboard (کتب خانہ)
 ///   exam staff (mumtahin)                     → ExamDashboard (امتحانات)
 ///   principal-level authority (permission-derived) → PrincipalDashboard
-///   teacher-family role keys                      → TeacherHome (tabs)
+///   teacher-family role keys                      → TeacherDashboard (single shell)
 ///   parent / student role keys                     → GenericDashboard
 ///   any other staff role                           → PrincipalDashboard
 ///       (its sections self-gate on permissions + enabled modules, so an
@@ -53,10 +53,11 @@ import 'exam_dashboard.dart';
 import 'hostel_dashboard.dart';
 import 'library_dashboard.dart';
 import 'principal_dashboard.dart';
-import 'teacher_home.dart';
+import 'teacher_dashboard.dart';
+import '../../shell/shell_nav.dart';
 
-/// Teacher-family role keys → teacher home. (Permission-derived
-/// capabilities still gate every tab inside it.)
+/// Teacher-family role keys → teacher dashboard. (Permission-derived
+/// capabilities still gate every quick action and nav destination.)
 const _teacherRoleKeys = {'teacher', 'ustad', 'ustad_hifz'};
 
 /// Learner-family role keys → generic dashboard.
@@ -84,7 +85,14 @@ class RoleHomeScreen extends ConsumerWidget {
     }
 
     if (roleKeys.any(_teacherRoleKeys.contains)) {
-      return const TeacherHomeScreen();
+      // Single-shell model: the teacher dashboard renders directly in the
+      // AppShell body. Quick actions navigate via shell destinations
+      // (already permission-gated in the nav) — no nested tab shell.
+      return TeacherDashboardScreen(
+        onMarkAttendance: () => requestShellNav(ref, 'attendance'),
+        onViewStudents: () => requestShellNav(ref, 'my-students'),
+        onEnterResults: () => requestShellNav(ref, 'results'),
+      );
     }
 
     if (roleKeys.any(_learnerRoleKeys.contains)) {

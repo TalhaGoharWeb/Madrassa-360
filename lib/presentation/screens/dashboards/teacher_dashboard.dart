@@ -11,8 +11,8 @@
 /// source yet, so it renders an honest empty state (§37), not a number.
 ///
 /// Finance / payroll / settings / user management / master admin appear
-/// NOWHERE here — and the tab shell ([TeacherHomeScreen]) never adds
-/// those routes for teacher roles either.
+/// NOWHERE here — the single AppShell never adds those routes for teacher
+/// roles either.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

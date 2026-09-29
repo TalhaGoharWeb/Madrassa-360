@@ -36,9 +36,18 @@ Full change log: `docs/shell-migration-notes.md`.
    → hostel → existing `HostelDashboardScreen` (honest empty state);
    transport/certificates → honest backend-unavailable state (Phase 8 builds
    real screens). No marketing placeholders.
-6. **Route fixes** — `TenantPickerScreen` pushes `RoleHomeScreen` (bypasses
-   `AppShell`); `MasterAdminShell._backToApp()` falls back to dead
-   `MainScreen`; principal dashboard deep-pushes legacy `UserManagementScreen`.
+   **Phase 13:** the `planned:` flag and `PlannedScreen` are gone from
+   `nav_destinations.dart` — hostel/transport/certificates are real Phase 8
+   hub screens; only their *tables* are pending (honest
+   `BackendUnavailableException` states).
+6. **Route fixes** — ~~`TenantPickerScreen` pushes `RoleHomeScreen` (bypasses
+   `AppShell`);~~ **fixed:** now `pushReplacement`s to `AppShell`.
+   ~~`MasterAdminShell._backToApp()` falls back to dead~~ **fixed:** falls
+   back to `AppShell`; ~~principal dashboard deep-pushes legacy~~
+   ~~`UserManagementScreen`.~~ **fixed:** the legacy screen is referenced
+   only from the (still-present, unreferenced) dead `admin_dashboard_screen`.
+   **Phase 13** also fixed `kMobilePrimaryIds` `'fees'` → `'student_fees'`
+   (mobile bottom nav had silently dropped the fees tab).
 7. **Nested chrome** — all 19 in-shell destination screens return their own
    `Scaffold` (+ `AppBar` on most): duplicate headers under the shell's top
    bar. → strip to `ShellPageBody` (new shared helper), preserving actions

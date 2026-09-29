@@ -4,6 +4,32 @@
 **Commit:** `5599da27` · **Date:** 2026-09-29
 **Scope:** Read-only audit. No code was changed.
 
+> **Phase 13 final-state addendum (2026-09-29):** the sections below describe
+> the pre-Phase-13 tree. Material changes since then:
+> (a) 14 files deleted — `super_admin/` (3 files), `admin_main_screen`,
+> `main_screen`, `parent_dashboard_screen`, `parent_main_screen`,
+> `teacher/teacher_dashboard_screen` (duplicate class name),
+> `dashboards/teacher_home` (nested tab shell eliminated),
+> `confirm_dialog`, `custom_buttons`, `loading_overlay`,
+> `app_drawer`, `profile_avatar_button` (see
+> [phase13-final-audit.md](phase13-final-audit.md) for the log);
+> (b) teacher role keys now render `TeacherDashboardScreen` directly — no
+> `TeacherHomeScreen`, quick actions via `shellNavRequestProvider`;
+> (c) `kMobilePrimaryIds` fixed `'fees'` → `'student_fees'`;
+> (d) the m360 design system (`lib/core/design/`) is now wired (70+
+> importers in `lib/presentation/`), so "100% dead" no longer holds;
+> (e) nav IA is now 7 groups / 30 destinations — hostel/transport/
+> certificates are real Phase 8 hub screens (data layer backend-pending),
+> finance is a unified `FinanceHubScreen` (8 sections), `backup` is a live
+> destination, a command palette (Ctrl+K) exists, `TenantPickerScreen`
+> routes into `AppShell`, and `MasterAdminShell._backToApp()` falls back
+> to `AppShell` (not dead `MainScreen`).
+> Remaining dead-but-present: `admin/admin_dashboard_screen.dart` (only a
+> widget test references it), `admin/user_management_screen.dart`
+> (legacy; only from the dead admin dashboard), `madrasa_provider.dart`
+> (legacy `madrasas`-table provider). Full final checklist:
+> [phase13-final-audit.md](phase13-final-audit.md).
+
 This document covers roles/permissions, all business modules, state management,
 Supabase integration, tenant isolation, and the forms/tables/dialogs inventory.
 It is the factual input for the redesign's product map and design system.
@@ -143,7 +169,7 @@ Post-login, `RoleHomeScreen` resolves the primary role family and returns:
 | `librarian` | `LibraryDashboardScreen` (کتب خانہ) |
 | `mumtahin` | `ExamDashboardScreen` (امتحانات) |
 | permission-derived `isPrincipal()` (manageDarjas + publishExams + publishResults) | `PrincipalDashboardScreen` |
-| `teacher`, `ustad`, `ustad_hifz` | `TeacherHomeScreen` (tabs) |
+| `teacher`, `ustad`, `ustad_hifz` | `TeacherDashboardScreen` (single shell — Phase 13 deleted the nested `TeacherHomeScreen` tab shell; quick actions use `shellNavRequestProvider`) |
 | `parent`, `student` | `GenericDashboardScreen` |
 | any other staff role / no keys / unknown | `PrincipalDashboardScreen` (sections self-gate) / `GenericDashboardScreen` fallback |
 
@@ -247,7 +273,15 @@ model but **no UI to enter it**; save writes the full roster, not just overrides
 **teacher attendance is referenced in a model comment but does not exist anywhere**
 in the app; minor RTL-correct.
 
-### 2.3 Fees / Dues & Finance (فیس / مالیات)
+### 2.3 Fees / Dues & Finance (فیس / مالیات) — pre-Phase-9 snapshot below; Phase 13 notes inline
+
+**Phase 13 notes:** the fee collection wizard moved from
+`_CollectFeeFlow` (internal to `fee_management_screen.dart`) to
+`finance/collect_fee_screen.dart` (`CollectFeeScreen`), de-nested to
+`ShellPageBody` (no own Scaffold). The nav IA now exposes a unified
+`FinanceHubScreen` with 8 sections (`finance_dashboard` … `finance_reports`).
+The currency/`₹` and two-systems UX findings below were NOT re-verified
+against the unified finance code in Phase 13 — treat as pre-Phase-9.
 
 **Screens:**
 - `admin/fee_management_screen.dart` (1606 lines) — two tabs. Tab 1 (فیس کی تفصیل):
@@ -363,9 +397,12 @@ exams; docstring admits it), `studentSubjectResultsProvider` (family);
   tap-to-call.
 - `dashboards/teacher_dashboard.dart` (317) — rich teacher dashboard (greeting,
   day-schedule slot, 4 stat cards, quick actions, today's-tasks checklist,
-  announcements preview).
-- `dashboards/teacher_home.dart` (197) — teacher bottom-nav shell with
-  permission-gated tabs (ڈیش بورڈ، میری جماعتیں، میرے طلبہ، حاضری، امتحانات، نتائج).
+  announcements preview). **Phase 13:** this is now the ONLY teacher
+  dashboard — the duplicate `teacher/teacher_dashboard_screen.dart` (same
+  class name, referenced only from dead `main_screen.dart`) and the
+  `teacher_home.dart` nested tab shell were deleted; `RoleHomeScreen` renders
+  this screen directly and its quick actions navigate via
+  `shellNavRequestProvider`.
 - `dashboards/my_classes_screen.dart` (122) — assigned classes → tap opens attendance.
 - `dashboards/my_students_screen.dart` (146) — aggregated students across assigned
   classes, deduped by id.
@@ -387,14 +424,13 @@ exams; docstring admits it), `studentSubjectResultsProvider` (family);
 sync queue) but has **no UI trigger** — no delete button, no activate/deactivate
 toggle. Repo hard-filters `is_active=true` with no "show inactive" view.
 
-**UX problems (verified):**
-- **Two divergent `TeacherDashboardScreen` classes** (`dashboards/teacher_dashboard.dart`
-  vs `teacher/teacher_dashboard_screen.dart`, 281 lines). Verified: the latter is
-  only referenced by the dead `main_screen.dart` — unreachable; the former is used
-  by `TeacherHomeScreen`. Same class name in two files is a compile hazard and a
-  maintenance trap.
-- Teacher dashboard (dead copy) renders a **permanent "—" "زیر التواء" card** with an
-  inline `TODO(phase-8)` — visible dead card on every load.
+**UX problems (verified pre-Phase-13):**
+- ~~**Two divergent `TeacherDashboardScreen` classes**~~ — **resolved in
+  Phase 13**: the dead copy (`teacher/teacher_dashboard_screen.dart`) was
+  deleted; only `dashboards/teacher_dashboard.dart` remains.
+- ~~Teacher dashboard (dead copy) renders a **permanent "—" "زیر التواء" card**
+  with an inline `TODO(phase-8)` — visible dead card on every load.~~
+  (deleted with the dead copy)
 - Truncated salary prefix `'ر '` (looks like a cut-off "روپے") in add/edit fields;
   salary stat formats totals as `"0K"` for values under 1000 (no PKR formatting).
 - Add/edit dialogs declare validators but **never wire them to a `Form`** — the save
@@ -529,8 +565,8 @@ never on client).
 
 **Providers:** `madrasa_provider.dart` (135) — `MadrasaNotifier` (loadAll/create/
 update/toggleStatus/delete against the **legacy `madrasas` table**).
-**Verified: consumed only by the two dead `super_admin/` screens — effectively
-dead.** `tenant_branding_provider.dart` (245) — `tenantBrandingProvider`,
+**Phase 13: fully dead** — `super_admin/` was deleted; no references remain in
+`lib/presentation/` (follow-up deletion candidate). `tenant_branding_provider.dart` (245) — `tenantBrandingProvider`,
 `tenantModulesProvider`, `isModuleEnabledProvider` (family), reading `tenants` +
 `tenant_settings` + `tenant_modules` (live path).
 
@@ -570,10 +606,10 @@ account group (profile, notifications, language), management group
   date-range filters, **no export/share**.
 
 **Super admin** (`lib/presentation/screens/super_admin/`, 684 lines):
-`super_admin_main_screen.dart` (69), `super_admin_dashboard_screen.dart` (292),
-`madrasa_management_screen.dart` (323, legacy CRUD on `madrasas`).
-**Verified: zero references from outside the directory — the entire `super_admin/`
-tree is dead code.** Two parallel platform consoles exist; only `/master` is wired.
+**DELETED in Phase 13** — `super_admin_main_screen.dart`,
+`super_admin_dashboard_screen.dart`, `madrasa_management_screen.dart`
+(@deprecated; zero references). Only `/master` (`master_admin/`) remains,
+wired in `main.dart`.
 
 **Tables:** `tenants`, `tenant_subscriptions`, `license_plans`, `licenses`,
 `modules_catalog`, `tenant_modules`, `platform_admins`, `audit_logs`,
@@ -583,24 +619,21 @@ tree is dead code.** Two parallel platform consoles exist; only `/master` is wir
 audit log has no export despite 604 lines of filtering UI; license-plan delete
 confirmation not verified in the read (flagged for pre-redesign check).
 
-### 2.12 Parent portal (والدین)
+### 2.12 Parent portal (والدین) — Phase 13: dead shells deleted
 
-**Screens:** `parent/parent_main_screen.dart` (132) — custom bottom nav
-(home/fees/profile, IndexedStack). `parent/parent_dashboard_screen.dart` (541) —
-child selector, profile card, attendance/result stats, fee-due stat; **activity
-timeline and upcoming exams are permanent empty sections** (`_buildEmptySection`)
-with no backing data. `parent/fee_history_screen.dart` (373).
+`parent/parent_main_screen.dart` and `parent/parent_dashboard_screen.dart`
+were deleted (zero live references). What remains: `parent/fee_history_screen.dart`
+(live `parent-fees` shell destination, role key `parent`); parents otherwise
+land on `GenericDashboardScreen` via `RoleHomeScreen`.
 
-**Providers:** `parent_portal_provider.dart` (214) — `parentChildIdsProvider`
-(`student_guardians` link, guardian_user_id + tenant_id), `parentChildrenProvider`,
-`parentFeesProvider`, `parentResultsProvider`, `parentAttendanceProvider`
-(family; re-checks studentId against the guardian link — forged ids return []),
-`parentAnnouncementsProvider` — **verified: defined but consumed by no screen**;
-announcements are unreachable in the parent portal.
+**Providers:** `parent_portal_provider.dart` — scoped child/fee/result/
+attendance providers. (Not re-verified in Phase 13.)
 
-**UX problems:** two visible placeholder sections on every dashboard load;
-parent nav has no announcements tab (3 tabs only); tapping a stat doesn't drill
-into detail; no pull-to-refresh; no per-child fee breakdown on the dashboard.
+**Note:** the pre-Phase-13 UX notes below described the now-deleted
+`parent_dashboard_screen.dart`; kept for history only:
+~~two visible placeholder sections on every dashboard load;
+parent nav had no announcements tab (3 tabs only); tapping a stat didn't drill
+into detail; no pull-to-refresh; no per-child fee breakdown on the dashboard.~~
 
 ### 2.13 Library (کتب خانہ)
 
@@ -640,12 +673,13 @@ refreshPermissions); derived `currentUserProvider`, `userPermissionsProvider`,
 `isPlatformAdminProvider`. Permissions via `get_my_permissions_detailed` RPC;
 platform admin via `platform_admins` lookup.
 
-**Routing:** `AuthRoute` {home, tenantPicker, noAccess, login}. Platform admins
+**Routing (Phase 13):** `AuthRoute` {home, tenantPicker, noAccess, login}. Platform admins
 with zero tenant memberships get `home` (master area) instead of noAccess —
-deliberate. **Inconsistency:** login success → `pushReplacement` to `AppShell`,
+deliberate. ~~**Inconsistency:** login success → `pushReplacement` to `AppShell`,
 but `TenantPickerScreen` pushes `RoleHomeScreen` **directly, bypassing
 `AppShell`** — the post-picker path skips AppShell's chrome (nav rail/bottom
-nav, notification badge).
+nav, notification badge).~~ **Fixed:** `TenantPickerScreen` now
+`pushReplacement`s to `AppShell`.
 
 **UX problems:** no biometric auth; session expiry surfaces as a generic login
 screen with no "session expired" message; `no_access_screen` offers only logout
@@ -807,71 +841,78 @@ Counts from grep over `lib/presentation/` (67 screen files):
 
 ---
 
-## 6. Dead code & drift risks
+## 6. Dead code & drift risks — Phase 13 status
 
-1. **`lib/core/design/` is 100% dead code.** 8 files (~2,000 lines:
-   `design_tokens`, `m360_badges`, `m360_buttons`, `m360_cards`, `m360_inputs`,
-   `m360_states`, `m360_table`, `responsive`) — **zero** imports from anywhere in
-   `lib/`, `test/`, `integration_test/` or `tool/`. A complete design system was
-   built and never wired in; every screen uses raw Material widgets
-   (36 raw `ElevatedButton` vs 0 `M360Button`).
-2. **`lib/presentation/screens/main_screen.dart` (199 lines) is unreferenced** —
-   no import anywhere; superseded by `AppShell`. Its only dependent,
-   `lib/presentation/screens/teacher/teacher_dashboard_screen.dart` (281 lines),
-   is therefore also unreachable — a **second, orphaned teacher dashboard**
-   alongside the live `dashboards/teacher_dashboard.dart` (317 lines).
-   `role_home.dart` routes teachers to `TeacherHomeScreen`, not either of these.
+1. ~~**`lib/core/design/` is 100% dead code.**~~ — **No longer true.** The m360
+   design system is now wired: 70+ importers of `core/design` in
+   `lib/presentation/` (buttons, dialogs, states, inputs). The Phase 13
+   deletions of `custom_buttons.dart` and `confirm_dialog.dart` consolidated
+   on it.
+2. ~~**`lib/presentation/screens/main_screen.dart` (199 lines) is unreferenced**~~
+   — **deleted in Phase 13** (was the `_backToApp()` fallback; that now
+   targets `AppShell`). Its dependent `teacher/teacher_dashboard_screen.dart`
+   was deleted with it, resolving the duplicate-class hazard.
 3. **Migration drift:** `023_super_admin.sql` was applied to live Supabase
    (2026-09-27) but **does not exist in this working copy** (`supabase/migrations/`
    ends at `022`). The branch cannot reproduce the live schema from its own
-   migrations directory.
-4. **`lib/presentation/screens/super_admin/` (3 files, 684 lines) is fully dead.**
-   Verified: zero references from outside the directory. `madrasa_provider.dart`
-   (legacy `madrasas`-table provider) is consumed only by two of those dead
-   screens — effectively dead too. Two parallel platform consoles existed; only
-   `/master` (`master_admin/`) is wired in `main.dart`.
+   migrations directory. (Not re-verified in Phase 13.)
+4. ~~**`lib/presentation/screens/super_admin/` (3 files, 684 lines) is fully dead.**~~
+   — **deleted in Phase 13.** Only `/master` (`master_admin/`) remains.
+   Remaining dead-but-present files Phase 13 did NOT delete (follow-up
+   candidates): `admin/admin_dashboard_screen.dart` (only a widget test
+   references it), `admin/user_management_screen.dart` (legacy; only the dead
+   admin dashboard referenced it), `madrasa_provider.dart` (legacy
+   `madrasas`-table provider).
 5. **`parentAnnouncementsProvider` is defined but consumed by no screen** —
-   announcements are unreachable in the parent portal.
+   announcements are unreachable in the parent portal. (Not re-verified in
+   Phase 13; the parent dashboard it referenced is now deleted.)
 6. **Legacy `UserRole` enum** still exported from `auth_provider.dart` and a
    `currentUserRoleProvider` still provided, though the architecture forbids
-   trusting them.
+   trusting them. (Not re-verified in Phase 13.)
 7. **Dual permission vocabularies** (66 dotted + 56 legacy underscore codes)
    permanently double the permission surface every UI check must consider.
-8. **"جلد آرہا ہے" (coming-soon) placeholders:** 7 occurrences — the nav IA
+   (Not re-verified in Phase 13.)
+8. ~~**"جلد آرہا ہے" (coming-soon) placeholders:** 7 occurrences — the nav IA
    (`nav_destinations.dart`) marks **hostel, transport, certificates** as
-   `planned: true` with a shared `PlannedScreen`, even though permission codes
-   (`hostel.*`, `transport.*`, `certificates.*`), role fallbacks, and a
-   `HostelDashboardScreen` exist. The IA advertises modules with no screens.
-   The parent dashboard also shows permanent empty timeline/exams sections, and
-   the (dead) teacher dashboard shows a permanent "—" pending card.
+   `planned: true` with a shared `PlannedScreen`~~ — **obsolete.** Phase 8/9
+   gave all three real hub screens (`HostelScreen`, `TransportScreen`,
+   `CertificatesScreen`); the `planned:` flag and `PlannedScreen` are gone
+   from `nav_destinations.dart`. Backend tables are still pending, surfaced
+   as honest `BackendUnavailableException` states, not placeholders.
 
 ---
 
-## 7. Key findings for the redesign (summary)
+## 7. Key findings for the redesign (summary) — Phase 13 status in brackets
 
 1. **Permission architecture is sound and must be preserved as-is**: server-resolved
    effective sets, fail-closed offline chain, UI-only guards, RLS as real
    enforcement. The redesign changes *what checks where*, never *how auth works*.
+   [Unchanged in Phase 13.]
 2. **27 role keys, 122 permission codes, 10+ dashboards** — role-aware IA already
    exists (`nav_destinations.dart`); the redesign should adopt and complete it,
-   not reinvent it.
-3. **The design system exists but is orphaned** (`lib/core/design/`): the fastest
-   path to visual consistency is wiring it in (or replacing it deliberately),
-   not building a third system.
+   not reinvent it. [Done: 7 groups / 30 destinations, single AppShell.]
+3. ~~**The design system exists but is orphaned** (`lib/core/design/`)~~ — [Done:
+   m360 is wired, 70+ importers; superseded `custom_buttons`/`confirm_dialog`
+   deleted in Phase 13.]
 4. **Data layer is split-brain** (repository vs direct-Supabase providers) and
    **errors are swallowed** (~40 silent catches) — the redesign's loading/error/
    empty states need a provider-hygiene pass first.
 5. **No shared table/form/dialog components in use** — every list screen
    hand-rolls its own; this is the highest-leverage component work.
-6. **Three advertised modules have no screens** (hostel, transport, certificates)
-   — decide: build, hide, or remove from nav before calling the IA complete.
+6. ~~**Three advertised modules have no screens** (hostel, transport, certificates)
+   — decide: build, hide, or remove from nav before calling the IA complete.~~
+   — **Built (Phase 8):** `HostelScreen`, `TransportScreen`,
+   `CertificatesScreen` are real hub screens with CRUD flows; their *tables*
+   are backend-pending and surface as honest `BackendUnavailableException`
+   states. Certificate *generation* (real PDFs) is fully functional.
 7. **Migration 023 drift** must be resolved (add the file to the branch) before
-   any schema-dependent work.
+   any schema-dependent work. (Not re-verified in Phase 13.)
 8. **Cross-cutting anti-pattern:** several screens store `WidgetRef? _ref;` as a
    state field via `Consumer(builder: (ctx, ref, _) { _ref = ref; … })`
    (staff list, darja, announcements, library, super_admin screens) — works, but
-   bypasses Riverpod's intended scoping.
-9. **Route inconsistency:** `TenantPickerScreen` pushes `RoleHomeScreen` directly,
+   bypasses Riverpod's intended scoping. (Not re-verified in Phase 13; the
+   super_admin screens are now deleted.)
+9. ~~**Route inconsistency:** `TenantPickerScreen` pushes `RoleHomeScreen` directly,
    bypassing `AppShell` — multi-tenant users miss AppShell chrome after picking
-   a tenant.
+   a tenant.~~ — **Fixed:** it now `pushReplacement`s to `AppShell`.
 

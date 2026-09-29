@@ -6,7 +6,7 @@
 ///                                            tenantMembershipsProvider,
 ///                                            activeTenantIdProvider)
 ///   lib/providers/auth_provider.dart        (selectTenant → route home)
-///   lib/presentation/screens/main_screen.dart (post-selection destination)
+///   lib/presentation/screens/dashboards/role_home.dart (post-selection destination)
 ///
 /// Fakes: [FakeAuthRepository] overrides [authRepositoryProvider];
 /// `tenantMembershipsProvider` is overridden with two fixture memberships;

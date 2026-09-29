@@ -112,11 +112,16 @@ Stripped (17 screens + shared dashboard scaffold):
 - `GlobalSearchPage` (old standalone search): keep or retire once the
   palette proves sufficient — currently still reachable from the
   principal dashboard's search action.
-- `MainScreen` (`screens/main_screen.dart`): now unreferenced by the
-  shell paths; decide whether to delete or repurpose.
-- `admin_main_screen.dart` / `admin_dashboard_screen.dart`: legacy
+- `MainScreen` (`screens/main_screen.dart`): ~~now unreferenced by the
+  shell paths; decide whether to delete or repurpose.~~ **Phase 13: deleted**
+  (its only remaining role, the `_backToApp()` fallback in
+  `MasterAdminShell`, now targets `AppShell`).
+- `admin_main_screen.dart` / `admin_dashboard_screen.dart`: ~~legacy
   screens still deep-push stripped screens (works via the automatic
-  back chevron) — audit whether they should route in-shell instead.
+  back chevron) — audit whether they should route in-shell instead.~~
+  **Phase 13:** `admin_main_screen.dart` deleted; `admin_dashboard_screen.dart`
+  remains with zero live references (only a widget test) — follow-up
+  deletion candidate.
 
 ## Verification
 - `dart format --set-exit-if-changed lib` → 0 changed (run at the repo's
