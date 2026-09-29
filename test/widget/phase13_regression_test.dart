@@ -115,6 +115,7 @@ const kPhase13ExpectedRoutes = <Phase13RouteExpectation>[
   Phase13RouteExpectation('results', 'ResultsScreen', [
     AppPermissions.viewResults,
     AppPermissions.enterResults,
+    AppPermissions.editResults,
     AppPermissions.publishResults,
   ]),
   // ── حاضری ──
