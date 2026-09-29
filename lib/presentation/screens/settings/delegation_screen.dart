@@ -12,6 +12,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import 'package:madrasa_360/core/design/m360.dart';
+
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_permissions.dart';
 import '../../../core/constants/app_typography.dart';
@@ -29,21 +31,20 @@ class DelegationScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final canDelegate = ref.watch(roleServiceProvider).canManageRoles();
     if (!canDelegate) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('اختیار سونپنا')),
-        body: const UxEmptyState(
+      // Pushed route from the profile screen: keeps its root Scaffold with
+      // the m360 deep-screen app bar.
+      return const Scaffold(
+        appBar: M360AppBar(title: 'اختیار سونپنا'),
+        body: UxEmptyState(
           icon: Icons.lock_outline,
           title: 'آپ کو یہ صفحہ دیکھنے کی اجازت نہیں ہے',
-          hint: 'اختیار سونپنے کے لیے آپ کے پاس متعلقہ اجازت ہونی ضروری ہے۔',
+          description:
+              'اختیار سونپنے کے لیے آپ کے پاس متعلقہ اجازت ہونی ضروری ہے۔',
         ),
       );
     }
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('اختیار سونپنا'),
-        centerTitle: true,
-      ),
+      appBar: const M360AppBar(title: 'اختیار سونپنا'),
       body: const _DelegationList(),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
@@ -69,11 +70,11 @@ class _DelegationList extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final listAsync = ref.watch(delegationsProvider);
     return listAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const M360LoadingState(itemCount: 4),
       error: (e, _) => UxEmptyState(
         icon: Icons.error_outline,
         title: delegationErrorMessage(e),
-        hint: 'تازہ کریں — سوائپ کریں یا واپس آ کر دوبارہ دیکھیں۔',
+        description: 'تازہ کریں — سوائپ کریں یا واپس آ کر دوبارہ دیکھیں۔',
       ),
       data: (result) {
         final now = DateTime.now();
@@ -198,9 +199,10 @@ class _DelegationCard extends ConsumerWidget {
                     ],
                   ),
                 ),
-                IconButton(
+                M360IconButton(
                   tooltip: 'اختیار واپس لیں',
-                  icon: const Icon(Icons.undo_outlined, color: AppColors.error),
+                  icon: Icons.undo_outlined,
+                  color: AppColors.error,
                   onPressed: () => _revoke(context, ref, label),
                 ),
               ],
@@ -233,20 +235,7 @@ class _DelegationCard extends ConsumerWidget {
     final text = expires == null
         ? 'بغیر میعاد'
         : 'میعاد: ${DateFormat('dd/MM/yyyy').format(expires.toLocal())}';
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: AppColors.textSecondary.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        text,
-        style: AppTypography.labelSmall.copyWith(
-          color: AppColors.textSecondary,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
+    return M360Badge.custom(label: text, color: AppColors.textSecondary);
   }
 
   String _initials(String name) {

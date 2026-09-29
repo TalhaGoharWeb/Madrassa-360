@@ -1,11 +1,24 @@
+/// لاگ ان اسکرین
+/// Login Screen — Supabase Email/Password Authentication
+///
+/// There is deliberately NO self-registration here: user accounts are created
+/// by institution provisioning / invitation only. New users are directed to
+/// contact their institution administrator. Post-login navigation follows
+/// [AuthRoute] from the auth provider (home / tenantPicker / noAccess).
+///
+/// VISUAL ONLY: the m360 input/button language and [showM360SnackBar]
+/// feedback. Auth logic, routing conditions and provider calls are
+/// byte-for-byte identical to before.
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../core/design/m360.dart';
 import '../../../core/services/storage_service.dart';
-import '../../../core/utils/error_handler.dart';
 import '../../../core/utils/validators.dart';
 import '../../../core/widgets/loading_widget.dart';
 import '../../../providers/auth_provider.dart';
@@ -14,13 +27,6 @@ import 'forgot_password_screen.dart';
 import 'no_access_screen.dart';
 import 'tenant_picker_screen.dart';
 
-/// لاگ ان اسکرین
-/// Login Screen — Supabase Email/Password Authentication
-///
-/// There is deliberately NO self-registration here: user accounts are created
-/// by institution provisioning / invitation only. New users are directed to
-/// contact their institution administrator. Post-login navigation follows
-/// [AuthRoute] from the auth provider (home / tenantPicker / noAccess).
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
@@ -93,7 +99,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       // Error message is already in authProvider.state.errorMessage
       final errorMsg =
           ref.read(authProvider).errorMessage ?? 'لاگ ان میں خرابی';
-      ErrorHandler.showErrorSnackBar(context, errorMsg);
+      showM360SnackBar(context, errorMsg, isError: true);
       return;
     }
 
@@ -278,7 +284,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Title
           Center(
@@ -290,35 +296,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           const SizedBox(height: 24),
 
           // Email Input
-          Text(
-            'ای میل',
-            style: AppTypography.labelNastaliq,
-          ),
-          const SizedBox(height: 8),
           _buildEmailInput(),
           const SizedBox(height: 16),
 
           // Password Input
-          Text(
-            'پاس ورڈ',
-            style: AppTypography.labelNastaliq,
-          ),
-          const SizedBox(height: 8),
           _buildPasswordInput(),
           const SizedBox(height: 8),
 
           // Forgot password link
           Align(
             alignment: Alignment.centerLeft,
-            child: TextButton(
+            child: M360TertiaryButton(
+              label: 'پاس ورڈ بھول گئے؟',
               onPressed: _openForgotPassword,
-              child: Text(
-                'پاس ورڈ بھول گئے؟',
-                style: AppTypography.labelNastaliq.copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
             ),
           ),
 
@@ -346,8 +336,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           ),
           const SizedBox(height: 16),
 
-          // Login Button
-          _buildLoginButton(),
+          // Login Button — the single primary CTA (orange).
+          M360PrimaryButton(
+            label: AppStrings.loginButton,
+            icon: Icons.arrow_back,
+            fullWidth: true,
+            isLoading: _isLoading,
+            onPressed: _isLoading ? null : _handleLogin,
+          ),
           const SizedBox(height: 16),
 
           // No self-registration: accounts are provisioned by the institution.
@@ -366,37 +362,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   }
 
   Widget _buildEmailInput() {
+    // m360 field language (Nastaleeq label + hint, teal focus ring) while
+    // keeping autofillHints + validator identical.
     return TextFormField(
       controller: _emailController,
       keyboardType: TextInputType.emailAddress,
       textAlign: TextAlign.right,
+      textDirection: TextDirection.rtl,
       autocorrect: false,
       autofillHints: const [AutofillHints.email],
       style: AppTypography.bodyLarge,
-      decoration: InputDecoration(
-        hintText: 'اپنا ای میل درج کریں',
-        hintStyle: AppTypography.bodyMedium.copyWith(
-          color: AppColors.textSecondary.withValues(alpha: 0.5),
-        ),
+      decoration: m360FieldDecoration(
+        label: 'ای میل',
+        hint: 'اپنا ای میل درج کریں',
         prefixIcon: const Icon(Icons.email_outlined, color: AppColors.primary),
-        filled: true,
-        fillColor: AppColors.background,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.divider),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.primary, width: 2),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.error),
-        ),
       ),
       validator: (value) => Validators.email(value),
     );
@@ -408,14 +387,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       controller: _passwordController,
       obscureText: _obscurePassword,
       textAlign: TextAlign.right,
+      textDirection: TextDirection.rtl,
       autofillHints: const [AutofillHints.password],
       onEditingComplete: () => TextInput.finishAutofillContext(),
       style: AppTypography.bodyLarge,
-      decoration: InputDecoration(
-        hintText: 'اپنا پاس ورڈ درج کریں',
-        hintStyle: AppTypography.bodyMedium.copyWith(
-          color: AppColors.textSecondary.withValues(alpha: 0.5),
-        ),
+      decoration: m360FieldDecoration(
+        label: 'پاس ورڈ',
+        hint: 'اپنا پاس ورڈ درج کریں',
         prefixIcon: const Icon(Icons.lock, color: AppColors.primary),
         // Show/hide toggle — passwords are long and typos are the
         // most common login failure.
@@ -429,73 +407,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           ),
           onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
         ),
-        filled: true,
-        fillColor: AppColors.background,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.divider),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.primary, width: 2),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.error),
-        ),
       ),
       validator: (value) => Validators.required(value, fieldName: 'پاس ورڈ'),
     );
   }
 
-  Widget _buildLoginButton() {
-    return SizedBox(
-      width: double.infinity,
-      height: 56,
-      child: ElevatedButton(
-        onPressed: _isLoading ? null : _handleLogin,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          elevation: 4,
-          shadowColor: AppColors.primary.withValues(alpha: 0.4),
-        ),
-        child: _isLoading
-            ? const SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(
-                  color: Colors.white,
-                  strokeWidth: 2,
-                ),
-              )
-            : Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    AppStrings.loginButton,
-                    style: AppTypography.titleMedium.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  const Icon(Icons.arrow_back, size: 20),
-                ],
-              ),
-      ),
-    );
-  }
-
   Widget _buildFooter() {
-    // Phase 4 — neutral product credit (tenant identity is runtime-driven).
+    // Neutral product credit (tenant identity is runtime-driven).
     return Text(
       'Madrasa 360',
       style: AppTypography.bodySmall.copyWith(

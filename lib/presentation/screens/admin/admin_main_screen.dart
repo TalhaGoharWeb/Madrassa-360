@@ -1,10 +1,16 @@
-/// منتظم مین اسکرین — کردار کی بنیاد پر متحرک نیویگیشن
+/// منتظم مین اسکرین — m360 redesign (Phase 10)
 /// Admin Main Screen — permission-driven bottom navigation.
 /// All 11 staff roles land here; the nav tabs and home dashboard adapt
 /// to each user's permission set automatically.
+///
+/// Legacy navigation shell: kept only for deep-link/legacy entry points.
+/// It renders NO Scaffold or AppBar of its own — AppShell owns the only
+/// scaffold — just the tab content plus its bottom nav bar. Tab building
+/// (permissions + tenant modules) is unchanged.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../../core/config/role_config.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -64,12 +70,19 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
 
       final safeIndex = _currentIndex.clamp(0, _tabs.length - 1);
 
-      return Scaffold(
-        body: IndexedStack(
-          index: safeIndex,
-          children: _tabs.map((t) => t.screen).toList(),
-        ),
-        bottomNavigationBar: _buildNavBar(safeIndex),
+      // No Scaffold/AppBar here — this legacy shell renders only the tab
+      // content and its own bottom bar inside the host scaffold.
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            child: IndexedStack(
+              index: safeIndex,
+              children: _tabs.map((t) => t.screen).toList(),
+            ),
+          ),
+          _buildNavBar(safeIndex),
+        ],
       );
     });
   }
@@ -128,6 +141,7 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
             const SizedBox(height: 4),
             Text(
               tab.label,
+              textDirection: TextDirection.rtl,
               style: AppTypography.navLabel.copyWith(
                 color: isSelected ? AppColors.primary : AppColors.textSecondary,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,

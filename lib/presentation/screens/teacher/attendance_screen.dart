@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:madrasa_360/core/design/m360.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
@@ -21,8 +22,9 @@ import '../../shell/shell_page_body.dart';
 /// استاد حاضری اسکرین — رفتار کے لیے دوبارہ ڈیزائن
 /// Teacher Attendance Screen — speed-optimized redesign.
 ///
-/// Same provider stack and save logic as the Phase 5 local-first rewrite
-/// (nothing in the business layer changed):
+/// Phase 10 (m360): visual/UX layer only — same provider stack and save
+/// logic as the Phase 5 local-first rewrite (nothing in the business
+/// layer changed):
 ///
 /// * Roster + existing statuses load through [classAttendanceProvider]
 ///   (repository → local-first cache → Supabase); students with no record
@@ -35,17 +37,14 @@ import '../../shell/shell_page_body.dart';
 /// * Fails closed: no tenant / no assigned class / load error → a message,
 ///   never an unscoped query or a silent empty save.
 ///
-/// UX changes (presentation only):
+/// UX (presentation only):
 ///
 /// * One-tap per-student segmented control — حاضر (green) / چھٹی (amber) /
-///   غیر حاضر (red) / تاخیر (blue, compact) — replaces the slow
-///   bottom-sheet picker. Big touch targets, thumb-friendly.
-/// * "سب کو حاضر کریں" (mark all present) quick action right under the
-///   class/date header — one tap + save covers the common day.
-/// * Sticky bottom bar with live counts (حاضر X • چھٹی Y • غیر حاضر Z •
-///   تاخیر W) and the primary "حاضری محفوظ کریں" CTA with a saving state.
-/// * The floating save button is gone — saving now lives in the thumb
-///   zone at the bottom of the screen.
+///   غیر حاضر (red) / تاخیر (blue, compact) — big touch targets.
+/// * "سب کو حاضر کریں" (mark all present) quick action under the
+///   class/date header.
+/// * Sticky bottom bar with live counts and the primary
+///   "حاضری محفوظ کریں" CTA with a saving state.
 class AttendanceScreen extends ConsumerStatefulWidget {
   /// Pre-selected class (e.g. deep link from the teacher dashboard).
   /// Falls back to the teacher's first assigned class when null/invalid.
@@ -102,26 +101,20 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
         AttendanceStatus.late => Icons.access_time,
       };
 
-  void _snack(String message, Color color) {
+  void _snack(String message, {bool isError = false}) {
     if (!mounted) return;
-    final bar = SnackBar(
-      content: Text(
-        message,
-        style: AppTypography.bodyMedium.copyWith(color: Colors.white),
-      ),
-      backgroundColor: color,
-    );
     // The screen normally lives inside AppShell's Scaffold. When used
     // standalone (widget tests, shell-less deep links) there is no Scaffold
     // ancestor and showSnackBar would throw — fall back to an inline banner
     // so the feedback is never lost.
     if (Scaffold.maybeOf(context) != null) {
-      ScaffoldMessenger.of(context).showSnackBar(bar);
+      showM360SnackBar(context, message, isError: isError);
       return;
     }
     // Inline banner persists until the next _snack call (no auto-dismiss:
     // a timed clear would race widget-test pumpAndSettle expectations).
-    setState(() => _banner = _Banner(message, color));
+    setState(() => _banner =
+        _Banner(message, isError ? AppColors.error : AppColors.primaryDark));
   }
 
   /// One-tap status change: selecting the loaded value drops the override
@@ -171,7 +164,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
     final tenantId = ref.read(currentTenantIdProvider);
     final teacherId = ref.read(currentUserProvider)?.id;
     if (tenantId == null || teacherId == null || _classId == null) {
-      _snack(AppStrings.noActiveTenant, AppColors.error);
+      _snack(AppStrings.noActiveTenant, isError: true);
       return; // fail closed — never save unscoped
     }
     setState(() => _saving = true);
@@ -184,10 +177,10 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
       if (st is AsyncError) {
         // The LOCAL write failed (nothing was queued) — honest failure,
         // retryable. Never claim "saved offline" here.
-        _snack(AppStrings.saveFailed, AppColors.error);
+        _snack(AppStrings.saveFailed, isError: true);
       } else {
         setState(() => _edits = {});
-        _snack(AppStrings.attendanceSaved, AppColors.success);
+        _snack(AppStrings.attendanceSaved);
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -238,8 +231,8 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
 
     return ShellPageBody(
       actions: [
-        IconButton(
-          icon: const Icon(Icons.refresh),
+        M360IconButton(
+          icon: Icons.refresh,
           tooltip: AppStrings.refresh,
           onPressed: _classId == null
               ? null
@@ -251,6 +244,13 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
       bottomNavigationBar: _stickySaveBar(recordsAsync),
       child: Column(
         children: [
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: PageHeader(
+              title: 'حاضری',
+              description: 'طلبہ کی روزانہ حاضری درج کریں',
+            ),
+          ),
           if (pendingCount > 0) _offlineBanner(pendingCount),
           if (_banner != null) _inlineBanner(_banner!),
           if (tenantId == null)
@@ -268,7 +268,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
   Widget _offlineBanner(int count) {
     return Container(
       width: double.infinity,
-      color: Colors.orange.shade700,
+      color: AppColors.warning,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         children: [
@@ -299,17 +299,13 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
     );
   }
 
-  /// Class selector: hidden label for a single assignment, dropdown for many.
+  /// Class selector: label for a single assignment, dropdown for many.
+  /// The selection drives the roster query — picking a class re-keys
+  /// [classAttendanceProvider] so only that class's roster is shown.
   Widget _classSelector(WidgetRef ref) {
     final async = ref.watch(teacherAssignedClassesProvider);
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
-      ),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
       child: async.when(
         loading: () => const Padding(
           padding: EdgeInsets.all(12),
@@ -321,15 +317,14 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
             ),
           ),
         ),
-        error: (_, __) => Padding(
-          padding: const EdgeInsets.all(12),
-          child: Text(AppStrings.error, style: AppTypography.bodyMedium),
+        error: (_, __) => M360ErrorState(
+          message: AppStrings.error,
+          onRetry: () => ref.invalidate(teacherAssignedClassesProvider),
         ),
         data: (classes) {
           if (classes.isEmpty) return const SizedBox.shrink();
           if (classes.length == 1) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12),
+            return M360Card(
               child: Row(
                 children: [
                   const Icon(Icons.class_, color: AppColors.primary, size: 20),
@@ -339,31 +334,18 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
               ),
             );
           }
-          // Guard: a revoked class id must never reach DropdownButton.value.
+          // Guard: a revoked class id must never reach the dropdown value.
           final validValue =
               classes.any((c) => c.id == _classId) ? _classId : null;
-          return Row(
-            children: [
-              const Icon(Icons.class_, color: AppColors.primary, size: 20),
-              const SizedBox(width: 8),
-              Expanded(
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    value: validValue,
-                    hint: Text(AppStrings.selectClass),
-                    isExpanded: true,
-                    items: [
-                      for (final c in classes)
-                        DropdownMenuItem(
-                          value: c.id,
-                          child: Text(c.name),
-                        ),
-                    ],
-                    onChanged: (v) => setState(() => _classId = v),
-                  ),
-                ),
-              ),
+          return M360Dropdown<String>(
+            label: 'جماعت',
+            prefixIcon: Icons.class_,
+            items: [
+              for (final c in classes)
+                M360DropdownItem(value: c.id, label: c.name),
             ],
+            value: validValue,
+            onChanged: (v) => setState(() => _classId = v),
           );
         },
       ),
@@ -381,29 +363,18 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
       return a.maybeWhen(
         data: (classes) => classes.isEmpty
             ? _failClosed(AppStrings.noClassAssigned)
-            : const Center(child: CircularProgressIndicator()),
-        orElse: () => const Center(child: CircularProgressIndicator()),
+            : const M360LoadingState(),
+        orElse: () => const M360LoadingState(),
       );
     }
     return recordsAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (_, __) => Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline, size: 48, color: AppColors.error),
-            const SizedBox(height: 12),
-            Text(AppStrings.error, style: AppTypography.titleMedium),
-            const SizedBox(height: 8),
-            ElevatedButton(
-              onPressed: _classId == null
-                  ? null
-                  : () => ref.invalidate(classAttendanceProvider(
-                      AttendanceParams(classId: _classId!, date: _date))),
-              child: Text(AppStrings.refresh),
-            ),
-          ],
-        ),
+      loading: () => const M360LoadingState(),
+      error: (_, __) => M360ErrorState(
+        message: AppStrings.error,
+        onRetry: _classId == null
+            ? () => ref.invalidate(teacherAssignedClassesProvider)
+            : () => ref.invalidate(classAttendanceProvider(
+                AttendanceParams(classId: _classId!, date: _date))),
       ),
       data: (records) {
         if (records.isEmpty) return _failClosed(AppStrings.noData);
@@ -419,28 +390,10 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
 
   /// Fail-closed placeholder: message, no data, no actions.
   Widget _failClosed(String message) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.people_outline,
-              size: 64,
-              color: AppColors.textSecondary.withValues(alpha: 0.5),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              message,
-              style: AppTypography.titleMedium.copyWith(
-                color: AppColors.textSecondary,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
+    return M360EmptyState(
+      icon: Icons.people_outline,
+      title: message,
+      description: '',
     );
   }
 
@@ -452,61 +405,40 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
       child: Column(
         children: [
-          InkWell(
+          M360TappableCard(
             onTap: _pickDate,
-            borderRadius: BorderRadius.circular(10),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.calendar_today,
-                      color: AppColors.primary, size: 20),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      dateFormatter.format(_date),
-                      style: AppTypography.labelNastaliq,
-                    ),
+            child: Row(
+              children: [
+                const Icon(Icons.calendar_today,
+                    color: AppColors.primary, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    dateFormatter.format(_date),
+                    style: AppTypography.labelNastaliq,
                   ),
-                  const Icon(Icons.edit_calendar,
-                      color: AppColors.textSecondary, size: 18),
-                ],
-              ),
+                ),
+                const Icon(Icons.edit_calendar,
+                    color: AppColors.textSecondary, size: 18),
+              ],
             ),
           ),
           const SizedBox(height: 8),
           Row(
             children: [
               Expanded(
-                child: ElevatedButton.icon(
+                child: M360SecondaryButton(
+                  label: AppStrings.markAllPresent,
+                  icon: Icons.done_all,
+                  fullWidth: true,
                   onPressed: () => _bulkSet(base, AttendanceStatus.present),
-                  icon: const Icon(Icons.done_all, size: 20),
-                  label: Text(
-                    AppStrings.markAllPresent,
-                    style: AppTypography.labelNastaliq.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.present,
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
                 ),
               ),
               if (_edits.isNotEmpty) ...[
                 const SizedBox(width: 8),
-                TextButton.icon(
+                M360TertiaryButton(
+                  label: AppStrings.clearEdits,
                   onPressed: _clearEdits,
-                  icon: const Icon(Icons.clear_all, size: 18),
-                  label: Text(AppStrings.clearEdits),
                 ),
               ],
             ],
@@ -534,25 +466,10 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
   /// spanning the full row width underneath (thumb-friendly, one-handed).
   Widget _rosterRow(AttendanceRecord record, AttendanceStatus status) {
     final color = _colorFor(status);
-    return Container(
+    final edited = _edits.containsKey(record.studentId);
+    return M360Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: color.withValues(
-              alpha: _edits.containsKey(record.studentId) ? 0.5 : 0.15),
-          width: 1.2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+      borderColor: color.withValues(alpha: edited ? 0.5 : 0.15),
       child: Column(
         children: [
           Row(
@@ -629,6 +546,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
           const SizedBox(height: 10),
           // Rapid segmented control — one tap per student.
           // Order (RTL: right → left): حاضر، چھٹی، غیر حاضر، تاخیر.
+          // Edited rows get a stronger border tint (see borderColor above).
           Row(
             children: [
               _statusSegment(record, status, AttendanceStatus.present, flex: 3),
@@ -753,35 +671,12 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
               ],
             ),
             const SizedBox(height: 10),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: _saving ? null : () => _saveAttendance(base),
-                icon: _saving
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Icon(Icons.save, size: 22),
-                label: Text(
-                  AppStrings.saveAttendance,
-                  style: AppTypography.labelNastaliq.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  padding: const EdgeInsets.symmetric(vertical: 13),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
+            M360PrimaryButton(
+              label: AppStrings.saveAttendance,
+              icon: Icons.save,
+              fullWidth: true,
+              isLoading: _saving,
+              onPressed: _saving ? null : () => _saveAttendance(base),
             ),
           ],
         ),

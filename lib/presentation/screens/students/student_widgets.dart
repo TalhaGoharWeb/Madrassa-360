@@ -1,16 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:madrasa_360/core/design/m360.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../data/models/attendance_status.dart';
 import '../../../data/models/fee.dart';
 import '../../../data/models/student.dart';
-import '../../widgets/common/app_widgets.dart';
 
 /// Shared student presentation widgets: avatar, fee badge, attendance badge.
 ///
 /// Pure UI helpers — no providers, no business logic. Used by the student
 /// list and the student profile.
+///
+/// Phase 10 (m360): badges render on [M360Badge.custom] with the EXACT
+/// labels, icons and colors the old [StatusBadge] factories used — the
+/// admin student list (out of scope) shares these helpers, so the mapping
+/// is behavior-preserving.
 class StudentAvatar extends StatelessWidget {
   final Student student;
   final double radius;
@@ -42,10 +47,22 @@ class StudentAvatar extends StatelessWidget {
 /// Fee-status badge from [FeeStatus].
 Widget feeBadge(FeeStatus status, {bool compact = false}) {
   return switch (status) {
-    FeeStatus.paid => StatusBadge.paid(),
-    FeeStatus.pending => StatusBadge.pending(),
-    FeeStatus.pastDue => StatusBadge.pastDue(),
-    FeeStatus.partial => StatusBadge(
+    FeeStatus.paid => const M360Badge.custom(
+        label: 'ادا شدہ',
+        color: AppColors.paid,
+        icon: Icons.check_circle,
+      ),
+    FeeStatus.pending => const M360Badge.custom(
+        label: 'زیر التواء',
+        color: AppColors.pending,
+        icon: Icons.schedule,
+      ),
+    FeeStatus.pastDue => const M360Badge.custom(
+        label: 'واجب الادا',
+        color: AppColors.pastDue,
+        icon: Icons.warning,
+      ),
+    FeeStatus.partial => const M360Badge.custom(
         label: 'جزوی',
         color: AppColors.warning,
         icon: Icons.hourglass_bottom,
@@ -56,10 +73,22 @@ Widget feeBadge(FeeStatus status, {bool compact = false}) {
 /// Attendance badge from [AttendanceStatus].
 Widget attendanceBadge(AttendanceStatus status, {bool compact = false}) {
   return switch (status) {
-    AttendanceStatus.present => StatusBadge.present(),
-    AttendanceStatus.absent => StatusBadge.absent(),
-    AttendanceStatus.leave => StatusBadge.leave(),
-    AttendanceStatus.late => StatusBadge(
+    AttendanceStatus.present => const M360Badge.custom(
+        label: 'حاضر',
+        color: AppColors.present,
+        icon: Icons.check_circle,
+      ),
+    AttendanceStatus.absent => const M360Badge.custom(
+        label: 'غیر حاضر',
+        color: AppColors.absent,
+        icon: Icons.cancel,
+      ),
+    AttendanceStatus.leave => const M360Badge.custom(
+        label: 'چھٹی',
+        color: AppColors.leave,
+        icon: Icons.event_busy,
+      ),
+    AttendanceStatus.late => const M360Badge.custom(
         label: 'تاخیر',
         color: AppColors.late,
         icon: Icons.schedule,
@@ -68,7 +97,7 @@ Widget attendanceBadge(AttendanceStatus status, {bool compact = false}) {
 }
 
 /// Generic active/inactive status badge for a student.
-Widget studentStatusBadge(bool isActive) => StatusBadge(
+Widget studentStatusBadge(bool isActive) => M360Badge.custom(
       label: isActive ? 'فعال' : 'غیر فعال',
       color: isActive ? AppColors.success : AppColors.error,
       icon: isActive ? Icons.check_circle : Icons.block,
@@ -85,7 +114,7 @@ class SectionDivider extends StatelessWidget {
       width: 48,
       margin: const EdgeInsets.only(top: 4, bottom: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFFC9A227),
+        color: AppColors.gold,
         borderRadius: BorderRadius.circular(2),
       ),
     );
@@ -93,6 +122,10 @@ class SectionDivider extends StatelessWidget {
 }
 
 /// Urdu section heading (Nastaleeq) with gold accent.
+///
+/// Kept as a shared custom widget (rather than [M360SectionHeader]) because
+/// it carries an icon and an arbitrary trailing widget — both used by the
+/// admin student list, which is outside the Phase 10 scope.
 class SectionHeading extends StatelessWidget {
   final String title;
   final IconData icon;

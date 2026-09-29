@@ -16,6 +16,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:madrasa_360/core/design/m360.dart';
+
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/services/tenant_context.dart';
@@ -133,9 +135,11 @@ class _UserWizardScreenState extends ConsumerState<UserWizardScreen> {
   Widget build(BuildContext context) {
     final tenantId = ref.watch(currentTenantIdProvider);
     if (tenantId == null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('نیا صارف')),
-        body: const UxEmptyState(
+      // Pushed wizard flow: keeps its root Scaffold with the m360
+      // deep-screen app bar.
+      return const Scaffold(
+        appBar: M360AppBar(title: 'نیا صارف'),
+        body: UxEmptyState(
           icon: Icons.business_outlined,
           title: 'پہلے کوئی مدرسہ منتخب کریں',
         ),
@@ -146,31 +150,26 @@ class _UserWizardScreenState extends ConsumerState<UserWizardScreen> {
       builder: (context, snap) {
         if (snap.connectionState == ConnectionState.waiting) {
           return Scaffold(
-            appBar: AppBar(
-                title:
-                    Text(widget.isEdit ? 'ذمہ داریاں تبدیل کریں' : 'نیا صارف')),
-            body: const Center(child: CircularProgressIndicator()),
+            appBar: M360AppBar(
+                title: widget.isEdit ? 'ذمہ داریاں تبدیل کریں' : 'نیا صارف'),
+            body: const M360LoadingState(itemCount: 5),
           );
         }
         if (snap.hasError || !snap.hasData) {
           return Scaffold(
-            appBar: AppBar(
-                title:
-                    Text(widget.isEdit ? 'ذمہ داریاں تبدیل کریں' : 'نیا صارف')),
+            appBar: M360AppBar(
+                title: widget.isEdit ? 'ذمہ داریاں تبدیل کریں' : 'نیا صارف'),
             body: UxEmptyState(
               icon: Icons.error_outline,
               title: roleUxErrorMessage(snap.error ?? 'load'),
-              hint: 'واپس جا کر دوبارہ کوشش کریں۔',
+              description: 'واپس جا کر دوبارہ کوشش کریں۔',
             ),
           );
         }
         final data = snap.data!;
         return Scaffold(
-          backgroundColor: AppColors.background,
-          appBar: AppBar(
-            title: Text(widget.isEdit ? 'ذمہ داریاں تبدیل کریں' : 'نیا صارف'),
-            centerTitle: true,
-          ),
+          appBar: M360AppBar(
+              title: widget.isEdit ? 'ذمہ داریاں تبدیل کریں' : 'نیا صارف'),
           body: Column(
             children: [
               _stepper(),
@@ -379,39 +378,30 @@ class _UserWizardScreenState extends ConsumerState<UserWizardScreen> {
         children: [
           const UxSectionTitle('بنیادی معلومات', icon: Icons.person_outline),
           const SizedBox(height: 12),
-          TextFormField(
+          M360TextField(
             controller: _name,
+            label: 'نام *',
+            hint: 'مثلاً محمد احمد',
             textInputAction: TextInputAction.next,
-            decoration: const InputDecoration(
-              labelText: 'نام *',
-              hintText: 'مثلاً محمد احمد',
-              border: OutlineInputBorder(),
-            ),
             validator: (v) => (v == null || v.trim().isEmpty)
                 ? 'نام درج کرنا ضروری ہے۔'
                 : null,
           ),
           const SizedBox(height: 12),
-          TextFormField(
+          M360TextField(
             controller: _phone,
+            label: 'موبائل',
+            hint: 'مثلاً 03001234567',
             keyboardType: TextInputType.phone,
             textInputAction: TextInputAction.next,
-            decoration: const InputDecoration(
-              labelText: 'موبائل',
-              hintText: 'مثلاً 03001234567',
-              border: OutlineInputBorder(),
-            ),
           ),
           const SizedBox(height: 12),
-          TextFormField(
+          M360TextField(
             controller: _email,
+            label: 'ای میل *',
+            hint: 'مثلاً ahmad@madrassa.com',
             keyboardType: TextInputType.emailAddress,
             textInputAction: TextInputAction.next,
-            decoration: const InputDecoration(
-              labelText: 'ای میل *',
-              hintText: 'مثلاً ahmad@madrassa.com',
-              border: OutlineInputBorder(),
-            ),
             validator: (v) {
               final t = (v ?? '').trim();
               if (t.isEmpty) return 'ای میل درج کرنا ضروری ہے۔';
@@ -422,14 +412,21 @@ class _UserWizardScreenState extends ConsumerState<UserWizardScreen> {
             },
           ),
           const SizedBox(height: 12),
+          // Password field with a show/hide toggle. M360TextField has no
+          // suffix-widget slot, so this uses the shared
+          // [m360FieldDecoration] — the same decoration every
+          // design-system field uses — instead of an ad-hoc
+          // InputDecoration.
           TextFormField(
             controller: _password,
             obscureText: !_passwordVisible,
             textInputAction: TextInputAction.done,
-            decoration: InputDecoration(
-              labelText: 'پاس ورڈ *',
-              hintText: 'کم از کم 6 حروف',
-              border: const OutlineInputBorder(),
+            textDirection: TextDirection.rtl,
+            textAlign: TextAlign.right,
+            style: AppTypography.bodyLarge,
+            decoration: m360FieldDecoration(
+              label: 'پاس ورڈ *',
+              hint: 'کم از کم 6 حروف',
               suffixIcon: IconButton(
                 icon: Icon(
                     _passwordVisible ? Icons.visibility_off : Icons.visibility),
@@ -530,9 +527,9 @@ class _UserWizardScreenState extends ConsumerState<UserWizardScreen> {
         const SizedBox(height: 12),
         for (final p in curated) _permissionTile(p),
         const SizedBox(height: 8),
-        OutlinedButton.icon(
-          icon: Icon(_moreOpen ? Icons.expand_less : Icons.expand_more),
-          label: Text(_moreOpen ? 'کم اختیارات دیکھیں' : 'مزید اختیارات'),
+        M360SecondaryButton(
+          icon: _moreOpen ? Icons.expand_less : Icons.expand_more,
+          label: _moreOpen ? 'کم اختیارات دیکھیں' : 'مزید اختیارات',
           onPressed: () => setState(() => _moreOpen = !_moreOpen),
         ),
         if (_moreOpen) ...[
@@ -641,25 +638,14 @@ class _UserWizardScreenState extends ConsumerState<UserWizardScreen> {
           const SizedBox(height: 12),
           const UxSectionTitle('طلبہ تلاش کریں', icon: Icons.search),
           const SizedBox(height: 8),
-          TextField(
+          M360SearchField(
             controller: _studentSearch,
-            decoration: InputDecoration(
-              hintText: 'نام لکھ کر تلاش کریں',
-              suffixIcon: _studentSearching
-                  ? const Padding(
-                      padding: EdgeInsets.all(12),
-                      child: SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2)),
-                    )
-                  : IconButton(
-                      icon: const Icon(Icons.search),
-                      onPressed: () => _searchStudents(),
-                    ),
-              border: const OutlineInputBorder(),
-            ),
+            hint: 'نام لکھ کر تلاش کریں',
             onSubmitted: (_) => _searchStudents(),
+            // Disabled while a search is in flight — the busy state is
+            // communicated through the disabled field instead of a raw
+            // spinner in the suffix slot.
+            enabled: !_studentSearching,
           ),
           const SizedBox(height: 8),
           Wrap(
@@ -861,25 +847,19 @@ class _UserWizardScreenState extends ConsumerState<UserWizardScreen> {
         child: Row(
           children: [
             if (_step > 0)
-              TextButton(
+              M360TertiaryButton(
+                label: 'پیچھے',
                 onPressed: _saving
                     ? null
                     : () => setState(() {
                           _step--;
                           _savingError = null;
                         }),
-                child: const Text('پیچھے'),
               ),
             const Spacer(),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-              ),
+            M360PrimaryButton(
+              label: _step == 4 ? 'محفوظ کریں' : 'آگے',
+              isLoading: _saving,
               onPressed: _saving
                   ? null
                   : () async {
@@ -894,13 +874,6 @@ class _UserWizardScreenState extends ConsumerState<UserWizardScreen> {
                         await _save();
                       }
                     },
-              child: _saving
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white))
-                  : Text(_step == 4 ? 'محفوظ کریں' : 'آگے'),
             ),
           ],
         ),

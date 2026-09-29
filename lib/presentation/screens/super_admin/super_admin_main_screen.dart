@@ -36,7 +36,7 @@ class _SuperAdminMainScreenState extends State<SuperAdminMainScreen> {
         bottomNavigationBar: NavigationBar(
           selectedIndex: _index,
           onDestinationSelected: (i) => setState(() => _index = i),
-          backgroundColor: Colors.white,
+          backgroundColor: AppColors.surface,
           indicatorColor: AppColors.primary.withValues(alpha: 0.12),
           destinations: const [
             NavigationDestination(

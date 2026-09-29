@@ -1,5 +1,19 @@
+/// منتظم ڈیش بورڈ — m360 redesign (Phase 10)
+///
+/// Admin Dashboard Screen with Statistics and Overview.
+///
+/// Every number comes from [dashboardStatsProvider] — live, tenant-scoped
+/// queries. No hard-coded demo figures. Navigation cards are gated by BOTH
+/// the user's permissions AND the tenant's enabled modules
+/// ([tenantModulesProvider]). Institution identity (name/logo) comes from
+/// [tenantBrandingProvider]. The one change vs the legacy screen: the
+/// «عملہ» module card now opens the real [StaffListScreen] (it previously
+/// opened an empty placeholder).
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:madrasa_360/core/design/m360.dart';
+
 import '../../../core/config/role_config.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_permissions.dart';
@@ -10,10 +24,10 @@ import '../../../core/widgets/tenant_logo.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/admin_dashboard_provider.dart';
 import '../../../providers/tenant_branding_provider.dart';
-import '../../widgets/common/app_widgets.dart';
 import 'user_management_screen.dart';
 import 'darja_screen.dart';
 import 'library_screen.dart';
+import 'staff_list_screen.dart';
 import '../finance/finance_hub_screen.dart'
     show FinanceHubScreen, FinanceSection;
 import '../common/announcements_screen.dart';
@@ -25,15 +39,6 @@ import '../reports/reports_hub_screen.dart';
 import 'backup_screen.dart';
 
 /// منتظم ڈیش بورڈ
-/// Admin Dashboard Screen with Statistics and Overview.
-///
-/// Phase 4: every number comes from [dashboardStatsProvider] — live,
-/// tenant-scoped Supabase queries. No hard-coded demo figures remain.
-/// Navigation cards are gated by BOTH the user's permissions AND the
-/// tenant's enabled modules ([tenantModulesProvider]): a tenant without
-/// the library module never sees the library card, even for a permitted
-/// user. Institution identity (name/logo) comes from
-/// [tenantBrandingProvider].
 class AdminDashboardScreen extends StatelessWidget {
   const AdminDashboardScreen({super.key});
 
@@ -47,31 +52,29 @@ class AdminDashboardScreen extends StatelessWidget {
 
       final adminName = authState.user?.name ?? 'اسٹاف';
 
-      // Phase 4 — live tenant-scoped numbers (zeros while loading/offline).
+      // Live tenant-scoped numbers (zeros while loading/offline).
       final stats = ref.watch(dashboardStatsProvider).valueOrNull ??
           const DashboardStats.zero();
 
-      // Phase 4 — module gating. Null = modules not loaded yet → do not
-      // filter, so cards don't flicker while the tenant resolves.
+      // Module gating. Null = modules not loaded yet → do not filter, so
+      // cards don't flicker while the tenant resolves.
       final enabledModules = ref.watch(tenantModulesProvider).valueOrNull;
       bool moduleOk(String module) =>
           enabledModules == null || enabledModules.contains(module);
 
       final branding = ref.watch(tenantBrandingProvider).valueOrNull;
 
-      return Scaffold(
-        appBar: AppBar(
-          // Phase 4 — the tenant's own name in the app bar.
-          title: branding == null
-              ? Text(AppStrings.dashboard)
-              : TenantNameText(
-                  style:
-                      AppTypography.appBarTitle.copyWith(color: Colors.white),
-                ),
+      return PageContainer(
+        header: PageHeader(
+          title:
+              branding == null ? AppStrings.dashboard : branding.displayName(),
+          breadcrumb: 'ہوم',
+          description: 'آج کی صورتحال ایک نظر میں',
           actions: [
             const DashboardGuideButton(roleKey: 'admin'),
-            IconButton(
-              icon: const Icon(Icons.notifications_outlined),
+            M360IconButton(
+              icon: Icons.notifications_outlined,
+              tooltip: 'اطلاعات',
               onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (_) => const NotificationsScreen(),
@@ -80,43 +83,35 @@ class AdminDashboardScreen extends StatelessWidget {
             ),
           ],
         ),
-        body: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Role-aware welcome header (shows the tenant name)
-              _buildWelcomeHeader(
-                  adminName, roleConfig, branding?.displayName()),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Role-aware welcome header (shows the tenant name)
+            _buildWelcomeHeader(adminName, roleConfig, branding?.displayName()),
 
-              // Stats — shown only for permitted AND enabled modules
-              const SectionHeader(title: 'اہم اعداد و شمار'),
-              _buildPermissionFilteredStats(stats, perms, moduleOk),
+            // Stats — shown only for permitted AND enabled modules
+            const M360SectionHeader(title: 'اہم اعداد و شمار'),
+            _buildPermissionFilteredStats(stats, perms, moduleOk),
 
-              // User Management card — only for managers
-              if (perms.contains(AppPermissions.viewUsers))
-                _buildUserManagementCard(context),
+            // User Management card — only for managers
+            if (perms.contains(AppPermissions.viewUsers))
+              _buildUserManagementCard(context),
 
-              // Module shortcuts — filtered by permissions AND modules
-              _buildModulesSection(context, perms, moduleOk),
+            // Module shortcuts — filtered by permissions AND modules
+            _buildModulesSection(context, perms, moduleOk),
 
-              // Fee progress — only if user can view fees
-              if (perms.contains(AppPermissions.viewFees))
-                _buildFeeProgress(stats),
+            // Fee progress — only if user can view fees
+            if (perms.contains(AppPermissions.viewFees))
+              _buildFeeProgress(stats),
 
-              // Attendance overview — only if user can view attendance
-              if (perms.contains(AppPermissions.viewAttendance))
-                _buildAttendanceOverview(stats),
+            // Attendance overview — only if user can view attendance
+            if (perms.contains(AppPermissions.viewAttendance))
+              _buildAttendanceOverview(stats),
 
-              // Recent activities (real events from the tenant's data)
-              const SectionHeader(
-                title: 'حالیہ سرگرمیاں',
-                actionText: 'سب دیکھیں',
-              ),
-              _buildRecentActivities(_filteredActivities(stats, perms)),
-
-              const SizedBox(height: 100),
-            ],
-          ),
+            // Recent activities (real events from the tenant's data)
+            const M360SectionHeader(title: 'حالیہ سرگرمیاں'),
+            _buildRecentActivities(_filteredActivities(stats, perms)),
+          ],
         ),
       );
     });
@@ -125,7 +120,7 @@ class AdminDashboardScreen extends StatelessWidget {
   Widget _buildWelcomeHeader(
       String userName, RoleConfig config, String? tenantName) {
     return Container(
-      margin: const EdgeInsets.all(16),
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 4),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -150,6 +145,7 @@ class AdminDashboardScreen extends StatelessWidget {
               children: [
                 Text(
                   'السلام علیکم',
+                  textDirection: TextDirection.rtl,
                   style: AppTypography.titleMedium.copyWith(
                     color: Colors.white70,
                   ),
@@ -157,6 +153,7 @@ class AdminDashboardScreen extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   userName,
+                  textDirection: TextDirection.rtl,
                   style: AppTypography.headingSmall.copyWith(
                     color: Colors.white,
                   ),
@@ -165,6 +162,7 @@ class AdminDashboardScreen extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     tenantName,
+                    textDirection: TextDirection.rtl,
                     style: AppTypography.bodySmall.copyWith(
                       color: Colors.white70,
                     ),
@@ -187,6 +185,7 @@ class AdminDashboardScreen extends StatelessWidget {
                       const SizedBox(width: 6),
                       Text(
                         config.urduTitle,
+                        textDirection: TextDirection.rtl,
                         style: AppTypography.labelMedium.copyWith(
                           color: Colors.white,
                         ),
@@ -205,7 +204,7 @@ class AdminDashboardScreen extends StatelessWidget {
               shape: BoxShape.circle,
               border: Border.all(color: Colors.white30, width: 2),
             ),
-            // Phase 4 — tenant logo; neutral mark while loading/unset.
+            // Tenant logo; neutral mark while loading/unset.
             child: const TenantLogo(size: 66, circular: true),
           ),
         ],
@@ -243,55 +242,56 @@ class AdminDashboardScreen extends StatelessWidget {
     final cards = <Widget>[];
 
     if (perms.contains(AppPermissions.viewStudents) && moduleOk('students')) {
-      cards.add(StatCard(
+      cards.add(M360StatCard(
         icon: Icons.people,
         label: 'کل طلباء',
         value: '${stats.totalStudents}',
-        color: AppColors.primary,
+        iconBackground: AppColors.primary.withValues(alpha: 0.12),
       ));
     }
     if (perms.contains(AppPermissions.viewStaff) &&
         (moduleOk('teachers') || moduleOk('staff'))) {
-      cards.add(StatCard(
+      cards.add(M360StatCard(
         icon: Icons.school,
         label: 'اساتذہ',
         value: '${stats.totalTeachers}',
-        color: AppColors.info,
+        iconBackground: AppColors.info.withValues(alpha: 0.12),
       ));
     }
     if (perms.contains(AppPermissions.viewDarjas) && moduleOk('academics')) {
-      cards.add(StatCard(
+      cards.add(M360StatCard(
         icon: Icons.class_,
         label: 'جماعتیں',
         value: '${stats.totalClasses}',
-        color: AppColors.warning,
+        iconBackground: AppColors.warning.withValues(alpha: 0.12),
       ));
     }
     if (perms.contains(AppPermissions.viewFees) && moduleOk('fees')) {
-      cards.add(StatCard(
+      cards.add(M360StatCard(
         icon: Icons.account_balance_wallet,
         label: 'واجب الادا',
         value: formatPK(stats.pendingFees),
-        color: AppColors.error,
+        iconBackground: AppColors.error.withValues(alpha: 0.12),
+        valueColor: AppColors.error,
       ));
     }
     if (perms.contains(AppPermissions.viewAttendance) &&
         moduleOk('attendance')) {
-      cards.add(StatCard(
+      cards.add(M360StatCard(
         icon: Icons.fact_check,
         label: 'آج حاضر',
         value: '${stats.todayPresent}',
-        color: AppColors.success,
+        iconBackground: AppColors.success.withValues(alpha: 0.12),
       ));
     }
     if (perms.contains(AppPermissions.viewStaff) &&
         perms.contains(AppPermissions.createStaff) &&
         moduleOk('staff')) {
-      cards.add(StatCard(
+      cards.add(M360StatCard(
         icon: Icons.person_add,
         label: 'کل عملہ',
         value: '${stats.totalStaff}',
-        color: AppColors.success,
+        iconBackground: AppColors.success.withValues(alpha: 0.12),
       ));
     }
 
@@ -324,7 +324,7 @@ class AdminDashboardScreen extends StatelessWidget {
         label: 'درجات',
         subtitle: 'جماعتیں و سیکشن',
         icon: Icons.class_outlined,
-        color: const Color(0xFF1565C0),
+        color: AppColors.primary,
         screen: const DarjaScreen(),
         requiredPerm: AppPermissions.viewDarjas,
         module: 'academics',
@@ -333,7 +333,7 @@ class AdminDashboardScreen extends StatelessWidget {
         label: 'اعلانات',
         subtitle: 'پیغامات نشر کریں',
         icon: Icons.campaign_outlined,
-        color: const Color(0xFF2E7D32),
+        color: AppColors.success,
         screen: const AnnouncementsScreen(),
         requiredPerm: AppPermissions.viewAnnouncements,
         module: 'notifications',
@@ -342,7 +342,7 @@ class AdminDashboardScreen extends StatelessWidget {
         label: 'کتب خانہ',
         subtitle: 'کتابیں اور اجراء',
         icon: Icons.menu_book_outlined,
-        color: const Color(0xFF6A1B9A),
+        color: AppColors.info,
         screen: const LibraryScreen(),
         requiredPerm: AppPermissions.viewLibrary,
         module: 'library',
@@ -351,7 +351,7 @@ class AdminDashboardScreen extends StatelessWidget {
         label: 'مالیات',
         subtitle: 'عطیات و اخراجات',
         icon: Icons.account_balance_wallet_outlined,
-        color: const Color(0xFFE65100),
+        color: AppColors.warning,
         screen: const FinanceHubScreen(section: FinanceSection.dashboard),
         requiredPerm: AppPermissions.viewFinance,
         module: 'finance',
@@ -360,7 +360,7 @@ class AdminDashboardScreen extends StatelessWidget {
         label: 'حاضری',
         subtitle: 'حاضری لگائیں',
         icon: Icons.how_to_reg_outlined,
-        color: const Color(0xFF00838F),
+        color: AppColors.primaryDark,
         screen: const AttendanceScreen(),
         requiredPerm: AppPermissions.markAttendance,
         module: 'attendance',
@@ -369,7 +369,7 @@ class AdminDashboardScreen extends StatelessWidget {
         label: 'نتائج',
         subtitle: 'امتحانی نتائج',
         icon: Icons.assessment_outlined,
-        color: const Color(0xFF558B2F),
+        color: AppColors.success,
         screen: const ResultsScreen(),
         requiredPerm: AppPermissions.viewResults,
         module: 'results',
@@ -378,20 +378,20 @@ class AdminDashboardScreen extends StatelessWidget {
         label: 'عملہ',
         subtitle: 'اسٹاف انتظام',
         icon: Icons.badge_outlined,
-        color: const Color(0xFF37474F),
-        screen: const Placeholder(), // StaffListScreen imported in outer scope
+        color: AppColors.textSecondary,
+        screen: const StaffListScreen(),
         requiredPerm: AppPermissions.viewStaff,
         module: 'staff',
       ),
-      // Phase 6 — offline-first reporting, one-file backup, notifications
-      // inbox. Reports are tenant-module-gated; backup is a core admin
-      // function (never module-gated); the inbox follows the
-      // notifications module like announcements do.
+      // Offline-first reporting, one-file backup, notifications inbox.
+      // Reports are tenant-module-gated; backup is a core admin function
+      // (never module-gated); the inbox follows the notifications module
+      // like announcements do.
       _ModuleDef(
         label: 'رپورٹس',
         subtitle: 'رپورٹیں بنائیں اور پرنٹ کریں',
         icon: Icons.bar_chart_outlined,
-        color: const Color(0xFF0D47A1),
+        color: AppColors.info,
         screen: const ReportsHubScreen(),
         requiredPerm: AppPermissions.viewReports,
         module: 'reports',
@@ -400,7 +400,7 @@ class AdminDashboardScreen extends StatelessWidget {
         label: 'بیک اپ',
         subtitle: 'مکمل ڈیٹا ایک فائل میں',
         icon: Icons.backup_outlined,
-        color: const Color(0xFF4E342E),
+        color: AppColors.warning,
         screen: const BackupScreen(),
         requiredPerm: AppPermissions.manageSettings,
       ),
@@ -408,16 +408,16 @@ class AdminDashboardScreen extends StatelessWidget {
         label: 'اطلاعات',
         subtitle: 'پیغامات دیکھیں',
         icon: Icons.notifications_outlined,
-        color: const Color(0xFF00695C),
+        color: AppColors.primary,
         screen: const NotificationsScreen(),
         requiredPerm: AppPermissions.viewAnnouncements,
         module: 'notifications',
       ),
     ];
 
-    // Phase 4 — a card shows only when the user is permitted AND the
-    // tenant has the module enabled. A tenant with only
-    // students+attendance+fees never sees library/hostel/finance cards.
+    // A card shows only when the user is permitted AND the tenant has the
+    // module enabled. A tenant with only students+attendance+fees never
+    // sees library/hostel/finance cards.
     final visible = allModules
         .where((m) =>
             perms.contains(m.requiredPerm) &&
@@ -464,18 +464,8 @@ class AdminDashboardScreen extends StatelessWidget {
   }) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          boxShadow: [
-            BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 8,
-                offset: const Offset(0, 2))
-          ],
-        ),
-        padding: const EdgeInsets.all(14),
+      child: M360Card(
+        margin: EdgeInsets.zero,
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Container(
             padding: const EdgeInsets.all(8),
@@ -487,9 +477,11 @@ class AdminDashboardScreen extends StatelessWidget {
           ),
           const Spacer(),
           Text(label,
+              textDirection: TextDirection.rtl,
               style: AppTypography.bodyLarge
                   .copyWith(fontWeight: FontWeight.w600)),
           Text(subtitle,
+              textDirection: TextDirection.rtl,
               style: AppTypography.labelSmall
                   .copyWith(color: AppColors.textSecondary)),
         ]),
@@ -501,7 +493,7 @@ class AdminDashboardScreen extends StatelessWidget {
   Widget _buildFeeProgress(DashboardStats stats) {
     final progress = stats.monthProgress;
 
-    return AppCard(
+    return M360Card(
       margin: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -526,10 +518,12 @@ class AdminDashboardScreen extends StatelessWidget {
                   children: [
                     Text(
                       'ماہانہ فیس وصولی',
+                      textDirection: TextDirection.rtl,
                       style: AppTypography.titleMedium,
                     ),
                     Text(
                       stats.monthLabel.isNotEmpty ? stats.monthLabel : '—',
+                      textDirection: TextDirection.rtl,
                       style: AppTypography.labelSmall,
                     ),
                   ],
@@ -599,14 +593,14 @@ class AdminDashboardScreen extends StatelessWidget {
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: [Color(0xFF5C6BC0), Color(0xFF3949AB)],
+            colors: [AppColors.primary, AppColors.primaryDark],
             begin: Alignment.topRight,
             end: Alignment.bottomLeft,
           ),
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF3949AB).withValues(alpha: 0.3),
+              color: AppColors.primaryDark.withValues(alpha: 0.3),
               blurRadius: 12,
               offset: const Offset(0, 6),
             ),
@@ -630,12 +624,14 @@ class AdminDashboardScreen extends StatelessWidget {
                 children: [
                   Text(
                     'صارف انتظام',
+                    textDirection: TextDirection.rtl,
                     style:
                         AppTypography.titleMedium.copyWith(color: Colors.white),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     'صارفین بنائیں، کردار ترتیب دیں، اجازتیں دیں',
+                    textDirection: TextDirection.rtl,
                     style:
                         AppTypography.bodySmall.copyWith(color: Colors.white70),
                   ),
@@ -661,6 +657,7 @@ class AdminDashboardScreen extends StatelessWidget {
         ),
         Text(
           label,
+          textDirection: TextDirection.rtl,
           style: AppTypography.labelSmall,
         ),
       ],
@@ -674,7 +671,7 @@ class AdminDashboardScreen extends StatelessWidget {
     final leave = stats.todayLeave;
     final total = present + absent + leave;
 
-    return AppCard(
+    return M360Card(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -699,10 +696,12 @@ class AdminDashboardScreen extends StatelessWidget {
                   children: [
                     Text(
                       'آج کی حاضری',
+                      textDirection: TextDirection.rtl,
                       style: AppTypography.titleMedium,
                     ),
                     Text(
                       'کل طلباء: $total',
+                      textDirection: TextDirection.rtl,
                       style: AppTypography.labelSmall,
                     ),
                   ],
@@ -716,6 +715,7 @@ class AdminDashboardScreen extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 12),
               child: Text(
                 'آج کی حاضری ابھی درج نہیں ہوئی',
+                textDirection: TextDirection.rtl,
                 style: AppTypography.bodySmall
                     .copyWith(color: AppColors.textSecondary),
               ),
@@ -773,7 +773,9 @@ class AdminDashboardScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          Text(label, style: AppTypography.labelSmall),
+          Text(label,
+              textDirection: TextDirection.rtl,
+              style: AppTypography.labelSmall),
           Text(
             '٪$percentage',
             style: AppTypography.labelSmall.copyWith(color: color),
@@ -789,6 +791,7 @@ class AdminDashboardScreen extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Text(
           'ابھی کوئی سرگرمی نہیں',
+          textDirection: TextDirection.rtl,
           style:
               AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
         ),
@@ -849,13 +852,9 @@ class AdminDashboardScreen extends StatelessWidget {
     required String subtitle,
     required String time,
   }) {
-    return Container(
+    return M360Card(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-      ),
       child: Row(
         children: [
           Container(
@@ -871,9 +870,12 @@ class AdminDashboardScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: AppTypography.titleSmall),
+                Text(title,
+                    textDirection: TextDirection.rtl,
+                    style: AppTypography.titleSmall),
                 Text(
                   subtitle,
+                  textDirection: TextDirection.rtl,
                   style: AppTypography.bodySmall,
                 ),
               ],

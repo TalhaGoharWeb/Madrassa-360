@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'package:madrasa_360/core/design/m360.dart';
+
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../providers/madrasa_provider.dart';
@@ -12,6 +15,9 @@ import 'madrasa_management_screen.dart';
 /// lib/presentation/screens/master_admin/ (route '/master', gated by
 /// MasterAdminGuard). Kept only because other code may still reference it —
 /// do not build new features here; use MasterDashboardScreen instead.
+///
+/// Phase 10: visuals moved onto the m360 component language; the provider
+/// wiring and navigation logic are unchanged.
 @Deprecated('Use MasterDashboardScreen instead')
 class SuperAdminDashboardScreen extends StatefulWidget {
   const SuperAdminDashboardScreen({super.key});
@@ -31,6 +37,21 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
     });
   }
 
+  void _openManagement() {
+    // Pushed deep page: MadrasaManagementScreen is a shell destination, so
+    // the push site provides the deep-page root (app bar + back
+    // navigation). Navigation logic is unchanged.
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const Scaffold(
+          appBar: M360AppBar(title: 'مدارس کا انتظام'),
+          body: MadrasaManagementScreen(),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer(builder: (ctx, ref, _) {
@@ -46,247 +67,130 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
       final standard =
           madrasas.where((m) => m.subscriptionPlan == 'standard').length;
 
-      return Scaffold(
-        backgroundColor: AppColors.background,
-        body: CustomScrollView(
-          slivers: [
-            // ── Header ───────────────────────────────────────────
-            SliverToBoxAdapter(
-              child: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Color(0xFF1A237E), Color(0xFF283593)],
-                    begin: Alignment.topRight,
-                    end: Alignment.bottomLeft,
-                  ),
-                ),
-                child: SafeArea(
-                  bottom: false,
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(children: [
-                          const Icon(Icons.account_balance,
-                              color: Colors.white70, size: 28),
-                          const SizedBox(width: 10),
-                          Text('سپر ایڈمن پینل',
-                              style: AppTypography.headingSmall
-                                  .copyWith(color: Colors.white)),
-                          const Spacer(),
-                          const DashboardGuideButton(
-                            roleKey: 'super_admin',
-                            color: Colors.white,
-                          ),
-                        ]),
-                        const SizedBox(height: 6),
-                        Text('مدرسہ 360 — فرنچائز نیٹ ورک',
-                            style: AppTypography.bodyMedium
-                                .copyWith(color: Colors.white60)),
-                        if (user != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 4),
-                            child: Text(user.email,
-                                style: AppTypography.labelSmall
-                                    .copyWith(color: Colors.white38)),
-                          ),
-                      ],
-                    ),
-                  ),
+      // Shell destination hosted by SuperAdminMainScreen: no Scaffold of
+      // its own — PageContainer/PageHeader is the only chrome a page may
+      // use inside a shell. The old teal banner folds into the PageHeader;
+      // provider wiring and navigation are unchanged.
+      return PageContainer(
+        header: const PageHeader(
+          title: 'سپر ایڈمن پینل',
+          description: 'مدرسہ 360 — فرنچائز نیٹ ورک',
+          actions: [
+            DashboardGuideButton(roleKey: 'super_admin'),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (user != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: M360Email(
+                  user.email,
+                  style: AppTypography.labelSmall
+                      .copyWith(color: AppColors.textSecondary),
                 ),
               ),
-            ),
-
-            // ── Stat cards ───────────────────────────────────────
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('نیٹ ورک خلاصہ', style: AppTypography.titleMedium),
-                    const SizedBox(height: 12),
-                    GridView.count(
-                      crossAxisCount: 2,
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      mainAxisSpacing: 12,
-                      crossAxisSpacing: 12,
-                      childAspectRatio: 1.6,
-                      children: [
-                        _StatCard('کل مدارس', total.toString(),
-                            Icons.account_balance, const Color(0xFF1A237E)),
-                        _StatCard('فعال', active.toString(),
-                            Icons.check_circle_outline, AppColors.success),
-                        _StatCard('پریمیم', premium.toString(),
-                            Icons.star_outline, Colors.amber[700]!),
-                        _StatCard('اسٹینڈرڈ', standard.toString(),
-                            Icons.grade_outlined, AppColors.info),
-                      ],
-                    ),
-                  ],
+            Text('نیٹ ورک خلاصہ', style: AppTypography.titleMedium),
+            const SizedBox(height: 12),
+            GridView.count(
+              crossAxisCount: 2,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              childAspectRatio: 1.6,
+              children: [
+                M360StatCard(
+                  value: total.toString(),
+                  label: 'کل مدارس',
+                  icon: Icons.account_balance,
+                  iconBackground: AppColors.primary.withValues(alpha: 0.12),
+                  valueColor: AppColors.primary,
                 ),
-              ),
-            ),
-
-            // ── Madrasas list preview ─────────────────────────────
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-                child: Row(
-                  children: [
-                    Text('مدارس کی فہرست', style: AppTypography.titleMedium),
-                    const Spacer(),
-                    TextButton.icon(
-                      icon: const Icon(Icons.arrow_forward, size: 16),
-                      label: const Text('سب دیکھیں'),
-                      onPressed: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => const MadrasaManagementScreen())),
-                    ),
-                  ],
+                M360StatCard(
+                  value: active.toString(),
+                  label: 'فعال',
+                  icon: Icons.check_circle_outline,
+                  iconBackground: AppColors.success.withValues(alpha: 0.12),
+                  valueColor: AppColors.success,
                 ),
-              ),
+                M360StatCard(
+                  value: premium.toString(),
+                  label: 'پریمیم',
+                  icon: Icons.star_outline,
+                  iconBackground: AppColors.warning.withValues(alpha: 0.12),
+                  valueColor: AppColors.warning,
+                ),
+                M360StatCard(
+                  value: standard.toString(),
+                  label: 'اسٹینڈرڈ',
+                  icon: Icons.grade_outlined,
+                  iconBackground: AppColors.info.withValues(alpha: 0.12),
+                  valueColor: AppColors.info,
+                ),
+              ],
             ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Text('مدارس کی فہرست', style: AppTypography.titleMedium),
+                const Spacer(),
+                M360SecondaryButton(
+                  label: 'سب دیکھیں',
+                  icon: Icons.arrow_forward,
+                  onPressed: _openManagement,
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
 
             // Loading
             if (madrasaState.isLoading)
-              const SliverToBoxAdapter(
-                  child: Center(
-                      child: Padding(
-                padding: EdgeInsets.all(32),
-                child: CircularProgressIndicator(),
-              ))),
+              const M360LoadingState(itemCount: 4, padding: EdgeInsets.zero),
 
             // Empty
             if (!madrasaState.isLoading && madrasas.isEmpty)
-              SliverToBoxAdapter(
-                child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(32),
-                    child: Column(children: [
-                      Icon(Icons.account_balance_outlined,
-                          size: 64, color: AppColors.textSecondary),
-                      const SizedBox(height: 12),
-                      Text('کوئی مدرسہ نہیں',
-                          style: AppTypography.bodyLarge
-                              .copyWith(color: AppColors.textSecondary)),
-                      const SizedBox(height: 8),
-                      ElevatedButton.icon(
-                        icon: const Icon(Icons.add),
-                        label: const Text('پہلا مدرسہ شامل کریں'),
-                        style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF1A237E),
-                            foregroundColor: Colors.white),
-                        onPressed: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) =>
-                                    const MadrasaManagementScreen())),
-                      ),
-                    ]),
-                  ),
-                ),
+              M360EmptyState(
+                icon: Icons.account_balance_outlined,
+                title: 'کوئی مدرسہ نہیں',
+                description: '',
+                actionLabel: 'پہلا مدرسہ شامل کریں',
+                onAction: _openManagement,
               ),
 
             // List
-            SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (ctx, i) {
-                  final m = madrasas[i];
-                  return Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-                    child: Card(
-                      elevation: 1,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14)),
-                      child: ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: const Color(0xFF1A237E),
-                          child: Text(
-                            m.nameUrdu.isNotEmpty ? m.nameUrdu[0] : 'م',
-                            style: AppTypography.bodyMedium.copyWith(
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                        title: Text(m.nameUrdu, style: AppTypography.bodyLarge),
-                        subtitle: Text(
-                          '${m.cityUrdu} • ${m.planLabel}',
-                          style: AppTypography.labelSmall
-                              .copyWith(color: AppColors.textSecondary),
-                        ),
-                        trailing: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: m.isActive
-                                ? AppColors.success.withValues(alpha: 0.1)
-                                : AppColors.error.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            m.isActive ? 'فعال' : 'غیرفعال',
-                            style: AppTypography.labelSmall.copyWith(
-                                color: m.isActive
-                                    ? AppColors.success
-                                    : AppColors.error),
-                          ),
+            for (final m in madrasas)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: M360Card(
+                  padding: const EdgeInsets.all(8),
+                  child: ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: AppColors.primary,
+                      child: Text(
+                        m.nameUrdu.isNotEmpty ? m.nameUrdu[0] : 'م',
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: Colors.white,
                         ),
                       ),
                     ),
-                  );
-                },
-                childCount: madrasas.length,
+                    title: Text(m.nameUrdu, style: AppTypography.bodyLarge),
+                    subtitle: Text(
+                      '${m.cityUrdu} • ${m.planLabel}',
+                      style: AppTypography.labelSmall
+                          .copyWith(color: AppColors.textSecondary),
+                    ),
+                    trailing: M360Badge.custom(
+                      label: m.isActive ? 'فعال' : 'غیرفعال',
+                      color: m.isActive ? AppColors.success : AppColors.error,
+                    ),
+                  ),
+                ),
               ),
-            ),
-
-            const SliverToBoxAdapter(child: SizedBox(height: 32)),
           ],
         ),
       );
     });
-  }
-}
-
-class _StatCard extends StatelessWidget {
-  const _StatCard(this.label, this.value, this.icon, this.color);
-  final String label, value;
-  final IconData icon;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2))
-        ],
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(10)),
-          child: Icon(icon, color: color, size: 22),
-        ),
-        const SizedBox(width: 12),
-        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(value, style: AppTypography.headingSmall.copyWith(color: color)),
-          Text(label,
-              style: AppTypography.labelSmall
-                  .copyWith(color: AppColors.textSecondary)),
-        ]),
-      ]),
-    );
   }
 }

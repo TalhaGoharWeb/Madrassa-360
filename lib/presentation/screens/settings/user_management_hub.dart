@@ -11,6 +11,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:madrasa_360/core/design/m360.dart';
+
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/services/role_service.dart';
@@ -175,23 +177,16 @@ class _UsersTabState extends ConsumerState<_UsersTab> {
           child: Row(
             children: [
               Expanded(
-                child: TextField(
+                child: M360SearchField(
+                  hint: 'نام یا ذمہ داری سے تلاش کریں',
                   onChanged: widget.onSearch,
-                  decoration: InputDecoration(
-                    hintText: 'نام یا ذمہ داری سے تلاش کریں',
-                    prefixIcon: const Icon(Icons.search),
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14)),
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 10),
-                  ),
                 ),
               ),
               const SizedBox(width: 8),
-              IconButton.filledTonal(
+              M360IconButton(
                 tooltip: _selectionMode ? 'ختم کریں' : 'منتخب کریں',
-                icon: Icon(
-                    _selectionMode ? Icons.close : Icons.checklist_outlined),
+                icon: _selectionMode ? Icons.close : Icons.checklist_outlined,
+                backgroundColor: AppColors.primary.withValues(alpha: 0.12),
                 onPressed: () {
                   setState(() {
                     _selectionMode = !_selectionMode;
@@ -209,7 +204,7 @@ class _UsersTabState extends ConsumerState<_UsersTab> {
             error: (e, _) => UxEmptyState(
               icon: Icons.error_outline,
               title: roleUxErrorMessage(e),
-              hint: 'تازہ کریں — سوائپ کریں یا واپس آ کر دوبارہ دیکھیں۔',
+              description: 'تازہ کریں — سوائپ کریں یا واپس آ کر دوبارہ دیکھیں۔',
             ),
             data: (users) {
               if (users.isEmpty) {
@@ -313,9 +308,8 @@ class _UsersTabState extends ConsumerState<_UsersTab> {
           children: [
             Text('${_selected.length} منتخب', style: AppTypography.titleSmall),
             const Spacer(),
-            TextButton.icon(
-              icon: const Icon(Icons.badge_outlined, size: 18),
-              label: const Text('ذمہ داری تبدیل کریں'),
+            M360TertiaryButton(
+              label: 'ذمہ داری تبدیل کریں',
               onPressed: () => _bulkRoleChange(),
             ),
             PopupMenuButton<bool>(
@@ -561,17 +555,7 @@ class _RolesTab extends ConsumerWidget {
   }
 
   Widget _chip(String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        label,
-        style: AppTypography.labelSmall.copyWith(color: AppColors.primary),
-      ),
-    );
+    return M360Badge.custom(label: label, color: AppColors.primary);
   }
 
   /// Full permission preview: every catalog permission with ✓ granted /

@@ -16,6 +16,8 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'package:madrasa_360/core/design/m360.dart';
+
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/utils/audit_urdu.dart';
@@ -239,29 +241,18 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
             children: [
               Expanded(
                 flex: 3,
-                child: DropdownButtonFormField<String?>(
-                  initialValue: _tenantFilter,
-                  // The button already fills its Expanded cell; isExpanded
-                  // keeps the internal selected-value row within bounds so
-                  // long names ellipsize instead of overflowing (Phase 13).
-                  isExpanded: true,
-                  decoration: const InputDecoration(
-                    labelText: 'مدرسہ',
-                    contentPadding:
-                        EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  ),
+                child: M360Dropdown<String?>(
+                  label: 'مدرسہ',
+                  value: _tenantFilter,
+                  // isExpanded-style behaviour lives in the design system:
+                  // long names ellipsize instead of overflowing.
                   items: [
-                    const DropdownMenuItem<String?>(
-                        value: null,
-                        child: Text('تمام مدارس',
-                            overflow: TextOverflow.ellipsis)),
+                    const M360DropdownItem<String?>(
+                        value: null, label: 'تمام مدارس'),
                     for (final t in _tenants)
-                      DropdownMenuItem<String?>(
+                      M360DropdownItem<String?>(
                         value: t['id'] as String,
-                        child: Text(
-                          '${t['name']} (${t['tenant_code'] ?? ''})',
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                        label: '${t['name']} (${t['tenant_code'] ?? ''})',
                       ),
                   ],
                   onChanged: (v) {
@@ -273,22 +264,15 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
               const SizedBox(width: 8),
               Expanded(
                 flex: 2,
-                child: DropdownButtonFormField<String?>(
-                  initialValue: _actionFilter,
-                  isExpanded: true,
-                  decoration: const InputDecoration(
-                    labelText: 'عمل کی قسم',
-                    contentPadding:
-                        EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  ),
+                child: M360Dropdown<String?>(
+                  label: 'عمل کی قسم',
+                  value: _actionFilter,
                   items: [
-                    const DropdownMenuItem<String?>(
-                        value: null,
-                        child: Text('تمام اعمال',
-                            overflow: TextOverflow.ellipsis)),
+                    const M360DropdownItem<String?>(
+                        value: null, label: 'تمام اعمال'),
                     for (final a in _actions)
-                      DropdownMenuItem<String?>(
-                          value: a, child: Text(auditActionLabelUrdu(a))),
+                      M360DropdownItem<String?>(
+                          value: a, label: auditActionLabelUrdu(a)),
                   ],
                   onChanged: (v) {
                     setState(() => _actionFilter = v);
@@ -303,25 +287,15 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
             children: [
               Expanded(
                 flex: 3,
-                child: DropdownButtonFormField<String?>(
-                  initialValue: _actorFilter,
-                  isExpanded: true,
-                  decoration: const InputDecoration(
-                    labelText: 'صارف',
-                    contentPadding:
-                        EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  ),
+                child: M360Dropdown<String?>(
+                  label: 'صارف',
+                  value: _actorFilter,
                   items: [
-                    const DropdownMenuItem<String?>(
-                        value: null,
-                        child: Text('تمام صارفین',
-                            overflow: TextOverflow.ellipsis)),
+                    const M360DropdownItem<String?>(
+                        value: null, label: 'تمام صارفین'),
                     for (final id in _actorIds)
-                      DropdownMenuItem<String?>(
-                        value: id,
-                        child: Text(_actorLabel(id),
-                            overflow: TextOverflow.ellipsis),
-                      ),
+                      M360DropdownItem<String?>(
+                          value: id, label: _actorLabel(id)),
                   ],
                   onChanged: (v) {
                     setState(() => _actorFilter = v);
@@ -341,32 +315,24 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
                   runSpacing: 4,
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    OutlinedButton.icon(
+                    M360SecondaryButton(
                       onPressed: () => _pickDay(true),
-                      icon: const Icon(Icons.calendar_today, size: 16),
-                      label: Text(
-                        _fromDay == null
-                            ? 'از تاریخ'
-                            : formatAuditDayUrdu(_fromDay!),
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTypography.labelLarge,
-                      ),
+                      icon: Icons.calendar_today,
+                      label: _fromDay == null
+                          ? 'از تاریخ'
+                          : formatAuditDayUrdu(_fromDay!),
                     ),
-                    OutlinedButton.icon(
+                    M360SecondaryButton(
                       onPressed: () => _pickDay(false),
-                      icon: const Icon(Icons.calendar_today, size: 16),
-                      label: Text(
-                        _toDay == null
-                            ? 'تک تاریخ'
-                            : formatAuditDayUrdu(_toDay!),
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTypography.labelLarge,
-                      ),
+                      icon: Icons.calendar_today,
+                      label: _toDay == null
+                          ? 'تک تاریخ'
+                          : formatAuditDayUrdu(_toDay!),
                     ),
                     if (_fromDay != null || _toDay != null)
-                      IconButton(
+                      M360IconButton(
                         tooltip: 'تاریخ صاف کریں',
-                        icon: const Icon(Icons.clear, size: 18),
+                        icon: Icons.clear,
                         onPressed: () {
                           setState(() {
                             _fromDay = null;
@@ -449,8 +415,9 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
       newData: _asMap(l['new_data']),
       metadata: _asMap(l['metadata']),
     );
-    return Card(
+    return M360Card(
       margin: EdgeInsets.zero,
+      padding: EdgeInsets.zero,
       child: ExpansionTile(
         leading: Icon(_iconFor(action), color: AppColors.primary, size: 28),
         title: Text(

@@ -1,14 +1,19 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_typography.dart';
-import '../../../providers/auth_provider.dart';
-import 'login_screen.dart';
-
 /// رسائی نہیں ہے
 /// No Access — the signed-in account has no active tenant membership
 /// (and is not a platform admin). The only way forward is contacting the
 /// institution administrator, or signing out.
+///
+/// VISUAL ONLY: the m360 button language and [M360Email] for the account
+/// address. Sign-out flow and navigation are unchanged.
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_typography.dart';
+import '../../../core/design/m360.dart';
+import '../../../providers/auth_provider.dart';
+import 'login_screen.dart';
 
 class NoAccessScreen extends ConsumerWidget {
   const NoAccessScreen({super.key});
@@ -34,17 +39,19 @@ class NoAccessScreen extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Container(
-                width: 96,
-                height: 96,
-                decoration: BoxDecoration(
-                  color: AppColors.error.withValues(alpha: 0.12),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.no_accounts_outlined,
-                  size: 48,
-                  color: AppColors.error,
+              Center(
+                child: Container(
+                  width: 96,
+                  height: 96,
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.no_accounts_outlined,
+                    size: 48,
+                    color: AppColors.error,
+                  ),
                 ),
               ),
               const SizedBox(height: 24),
@@ -61,36 +68,20 @@ class NoAccessScreen extends ConsumerWidget {
               ),
               if (email != null && email.isNotEmpty) ...[
                 const SizedBox(height: 12),
-                Text(
+                M360Email(
                   email,
+                  textAlign: TextAlign.center,
                   style: AppTypography.bodyMedium.copyWith(
                     color: AppColors.textSecondary,
                   ),
-                  textAlign: TextAlign.center,
-                  textDirection: TextDirection.ltr,
                 ),
               ],
               const SizedBox(height: 40),
-              SizedBox(
-                height: 56,
-                child: ElevatedButton.icon(
-                  onPressed: () => _signOut(context, ref),
-                  icon: const Icon(Icons.logout),
-                  label: Text(
-                    'لاگ آؤٹ',
-                    style: AppTypography.titleMedium.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                ),
+              M360PrimaryButton(
+                label: 'لاگ آؤٹ',
+                icon: Icons.logout,
+                fullWidth: true,
+                onPressed: () => _signOut(context, ref),
               ),
             ],
           ),

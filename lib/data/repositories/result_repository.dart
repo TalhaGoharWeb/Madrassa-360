@@ -47,6 +47,11 @@ abstract class IResultRepository {
   /// Creates a new exam header row (used by the step-by-step exam wizard).
   /// Local-first: writes the envelope + sync_queue row in one transaction.
   Future<Exam> createExam(Exam exam, {required String tenantId});
+
+  /// Soft-deletes an exam header row (teacher results screen).
+  /// Local-first: sets `deleted_at` + sync_queue row in one transaction,
+  /// then triggers the sync engine. Mirrors [createExam]/[upsertResult].
+  Future<void> deleteExam(String examId, {required String tenantId});
 }
 
 // ─────────────────────────────────────────────
@@ -245,5 +250,40 @@ class LocalResultRepository implements IResultRepository {
     _engine?.notifyLocalChange();
     unawaited(_engine?.syncNow() ?? Future.value());
     return exam;
+  }
+
+  // ── Exam deletion (teacher results screen) ─────────────────────────
+
+  @override
+  Future<void> deleteExam(String examId, {required String tenantId}) async {
+    final nowIso = DateTime.now().toUtc().toIso8601String();
+    final baseRev =
+        await SyncQueue.currentRevision(_db, 'exams', tenantId, examId);
+
+    await _db.transaction(() async {
+      // Soft delete locally: sets deleted_at (epoch millis), refreshes
+      // updated_at and bumps revision. The envelope's data JSON needs no
+      // patch — Exam carries no is_active flag; deleted_at IS NULL is the
+      // only read filter (see getExams).
+      await SyncEngine.softDeleteLocalRow(
+        _db,
+        table: 'exams',
+        id: examId,
+        tenantId: tenantId,
+      );
+
+      await SyncQueue.enqueue(
+        _db,
+        tenantId: tenantId,
+        entity: 'exams',
+        entityId: examId,
+        operation: 'delete',
+        payload: {'id': examId, 'tenant_id': tenantId, 'updated_at': nowIso},
+        baseRevision: baseRev,
+      );
+    });
+
+    _engine?.notifyLocalChange();
+    unawaited(_engine?.syncNow() ?? Future.value());
   }
 }

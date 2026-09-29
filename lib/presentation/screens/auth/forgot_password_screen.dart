@@ -1,15 +1,20 @@
+/// پاس ورڈ بھول گئے؟
+/// Forgot Password — sends a Supabase password-reset email, then shows
+/// a success state. No account recovery beyond the reset link is offered here.
+///
+/// VISUAL ONLY: the m360 input/button language and [showM360SnackBar]
+/// feedback. The reset flow, error handling and logging are unchanged.
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../core/design/m360.dart';
 import '../../../core/utils/error_handler.dart';
 import '../../../core/utils/validators.dart';
 import '../../../core/widgets/loading_widget.dart';
 import '../../../providers/auth_provider.dart';
-
-/// پاس ورڈ بھول گئے؟
-/// Forgot Password — sends a Supabase password-reset email, then shows
-/// a success state. No account recovery beyond the reset link is offered here.
 
 class ForgotPasswordScreen extends ConsumerStatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -47,12 +52,12 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
     } on AppException catch (e) {
       if (!mounted) return;
       setState(() => _isLoading = false);
-      ErrorHandler.showErrorSnackBar(context, e.message);
+      showM360SnackBar(context, e.message, isError: true);
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoading = false);
       ErrorHandler.logError(e, null);
-      ErrorHandler.showErrorSnackBar(context, 'ری سیٹ لنک بھیجنے میں خرابی');
+      showM360SnackBar(context, 'ری سیٹ لنک بھیجنے میں خرابی', isError: true);
     }
   }
 
@@ -90,59 +95,30 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 32),
-          Text('ای میل', style: AppTypography.labelLarge),
-          const SizedBox(height: 8),
+          // m360 field language (Nastaleeq label + hint, teal focus ring)
+          // while keeping keyboard type, direction and validator identical.
           TextFormField(
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
             textAlign: TextAlign.right,
+            textDirection: TextDirection.rtl,
             autocorrect: false,
             style: AppTypography.bodyLarge,
-            decoration: InputDecoration(
-              hintText: 'اپنا ای میل درج کریں',
-              hintStyle: AppTypography.bodyMedium.copyWith(
-                color: AppColors.textSecondary.withValues(alpha: 0.5),
-              ),
+            decoration: m360FieldDecoration(
+              label: 'ای میل',
+              hint: 'اپنا ای میل درج کریں',
               prefixIcon:
                   const Icon(Icons.email_outlined, color: AppColors.primary),
-              filled: true,
-              fillColor: AppColors.background,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.divider),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide:
-                    const BorderSide(color: AppColors.primary, width: 2),
-              ),
             ),
             validator: Validators.email,
           ),
           const SizedBox(height: 32),
-          SizedBox(
-            height: 56,
-            child: ElevatedButton(
-              onPressed: _isLoading ? null : _sendResetLink,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-              ),
-              child: Text(
-                'ری سیٹ لنک بھیجیں',
-                style: AppTypography.titleMedium.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
+          M360PrimaryButton(
+            label: 'ری سیٹ لنک بھیجیں',
+            icon: Icons.mark_email_read_outlined,
+            fullWidth: true,
+            isLoading: _isLoading,
+            onPressed: _isLoading ? null : _sendResetLink,
           ),
         ],
       ),
@@ -151,17 +127,21 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
 
   Widget _buildSuccess() {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const SizedBox(height: 48),
         Container(
           width: 96,
           height: 96,
           decoration: BoxDecoration(
-            color: Colors.green.withValues(alpha: 0.12),
+            color: AppColors.success.withValues(alpha: 0.12),
             shape: BoxShape.circle,
           ),
-          child:
-              const Icon(Icons.mark_email_read, size: 48, color: Colors.green),
+          child: const Icon(
+            Icons.mark_email_read,
+            size: 48,
+            color: AppColors.success,
+          ),
         ),
         const SizedBox(height: 24),
         Text(
@@ -176,25 +156,11 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 32),
-        SizedBox(
-          width: double.infinity,
-          height: 56,
-          child: OutlinedButton(
-            onPressed: () => Navigator.of(context).pop(),
-            style: OutlinedButton.styleFrom(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              side: const BorderSide(color: AppColors.primary),
-            ),
-            child: Text(
-              'لاگ ان پر واپس جائیں',
-              style: AppTypography.titleMedium.copyWith(
-                color: AppColors.primary,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
+        M360SecondaryButton(
+          label: 'لاگ ان پر واپس جائیں',
+          icon: Icons.arrow_forward,
+          fullWidth: true,
+          onPressed: () => Navigator.of(context).pop(),
         ),
       ],
     );

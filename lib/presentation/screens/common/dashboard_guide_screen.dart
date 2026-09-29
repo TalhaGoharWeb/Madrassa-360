@@ -10,6 +10,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/design/m360.dart';
 import '../../shell/shell_page_body.dart';
 import '../../../core/constants/app_typography.dart';
 
@@ -533,6 +534,9 @@ const Map<String, DashboardGuide> dashboardGuides = {
 };
 
 /// Guide screen: step-by-step Urdu usage instructions for one dashboard.
+///
+/// Renders inside [AppShell] via [ShellPageBody] (no nested Scaffold);
+/// the app is globally RTL so no extra [Directionality] wrapper is needed.
 class DashboardGuideScreen extends StatelessWidget {
   final String roleKey;
 
@@ -541,27 +545,34 @@ class DashboardGuideScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final guide = dashboardGuides[roleKey] ?? dashboardGuides['generic']!;
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: ShellPageBody(
-        backgroundColor: AppColors.background,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            Text(guide.title, style: AppTypography.headingSmall),
-            const SizedBox(height: 8),
-            Text(guide.intro, style: AppTypography.bodyMedium),
-            const SizedBox(height: 16),
-            for (int i = 0; i < guide.sections.length; i++)
-              _SectionCard(index: i, section: guide.sections[i]),
-            const SizedBox(height: 8),
-            Text(
-              'مزید مدد کے لیے اپنی پروفائل سے لاگ آؤٹ کر کے دوبارہ لاگ اِن کریں یا منتظم سے رابطہ کریں۔',
-              style: AppTypography.bodySmall,
-              textAlign: TextAlign.center,
+    return ShellPageBody(
+      backgroundColor: AppColors.background,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            child: PageHeader(
+              title: guide.title,
+              description: guide.intro,
             ),
-          ],
-        ),
+          ),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+              children: [
+                for (int i = 0; i < guide.sections.length; i++)
+                  _SectionCard(index: i, section: guide.sections[i]),
+                const SizedBox(height: 8),
+                Text(
+                  'مزید مدد کے لیے اپنی پروفائل سے لاگ آؤٹ کر کے دوبارہ لاگ اِن کریں یا منتظم سے رابطہ کریں۔',
+                  style: AppTypography.bodySmall,
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -575,20 +586,8 @@ class _SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return M360Card(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -658,9 +657,10 @@ class DashboardGuideButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return IconButton(
-      icon: Icon(Icons.help_outline, color: color),
+    return M360IconButton(
+      icon: Icons.help_outline,
       tooltip: 'رہنمائی',
+      color: color ?? AppColors.primary,
       onPressed: () => Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => DashboardGuideScreen(roleKey: roleKey),

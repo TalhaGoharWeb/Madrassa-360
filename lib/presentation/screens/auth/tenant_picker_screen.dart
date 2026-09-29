@@ -1,15 +1,20 @@
+/// ادارے کا انتخاب
+/// Tenant Picker — shown when the signed-in user has >1 active membership.
+/// Tapping an institution selects it via [TenantContext] and enters the app.
+///
+/// VISUAL ONLY: m360 cards/states/buttons. The membership list, selection
+/// flow and sign-out are unchanged.
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../core/design/m360.dart';
 import '../../../core/services/tenant_context.dart';
 import '../../../providers/auth_provider.dart';
 import '../../shell/app_shell.dart';
 import 'login_screen.dart';
-
-/// ادارے کا انتخاب
-/// Tenant Picker — shown when the signed-in user has >1 active membership.
-/// Tapping an institution selects it via [TenantContext] and enters the app.
 
 /// Short Urdu labels for common membership roles.
 const _roleUrduLabels = <String, String>{
@@ -75,119 +80,94 @@ class _TenantPickerScreenState extends ConsumerState<TenantPickerScreen> {
         foregroundColor: Colors.white,
         automaticallyImplyLeading: false,
         actions: [
-          IconButton(
+          M360IconButton(
+            icon: Icons.logout,
             tooltip: 'لاگ آؤٹ',
-            icon: const Icon(Icons.logout),
+            color: Colors.white,
             onPressed: _signOut,
           ),
         ],
       ),
       body: memberships.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.error_outline,
-                    size: 56, color: AppColors.error),
-                const SizedBox(height: 16),
-                Text(
-                  'اداروں کی فہرست لوڈ نہیں ہو سکی',
-                  style: AppTypography.titleMedium,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
-                ElevatedButton.icon(
-                  onPressed: () => ref.invalidate(tenantMembershipsProvider),
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('دوبارہ کوشش کریں'),
-                ),
-              ],
-            ),
-          ),
+        loading: () => const M360LoadingState(),
+        error: (e, _) => M360ErrorState(
+          message: 'اداروں کی فہرست لوڈ نہیں ہو سکی',
+          onRetry: () => ref.invalidate(tenantMembershipsProvider),
         ),
         data: (items) {
           if (items.isEmpty) {
-            return Center(
-              child: Text(
-                'کوئی ادارہ دستیاب نہیں',
-                style: AppTypography.bodyLarge,
-              ),
+            return const M360EmptyState(
+              icon: Icons.business_outlined,
+              title: 'کوئی ادارہ دستیاب نہیں',
+              description:
+                  'آپ کے اکاؤنٹ سے کوئی ادارہ منسلک نہیں ہے۔ اپنے منتظم سے رابطہ کریں۔',
             );
           }
-          return ListView.separated(
+          return ListView.builder(
             padding: const EdgeInsets.all(16),
             itemCount: items.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
             itemBuilder: (context, i) {
               final m = items[i];
               final switching = _switchingId == m.tenantId;
-              return Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: ListTile(
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  leading: m.logoUrl != null && m.logoUrl!.isNotEmpty
-                      ? CircleAvatar(
-                          backgroundImage: NetworkImage(m.logoUrl!),
-                          backgroundColor:
-                              AppColors.primary.withValues(alpha: 0.1),
-                        )
-                      : CircleAvatar(
-                          backgroundColor:
-                              AppColors.primary.withValues(alpha: 0.1),
-                          // No uploaded logo → show the app icon itself as
-                          // the brand mark, never a generic glyph.
-                          child: ClipOval(
-                            child: Image.asset(
-                              'assets/images/app_logo.png',
-                              width: 40,
-                              height: 40,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  const Icon(Icons.mosque,
-                                      color: AppColors.primary),
+              return M360TappableCard(
+                margin: const EdgeInsets.only(bottom: 12),
+                onTap: switching ? null : () => _select(m.tenantId),
+                semanticLabel: m.tenantName,
+                child: Row(
+                  children: [
+                    m.logoUrl != null && m.logoUrl!.isNotEmpty
+                        ? CircleAvatar(
+                            radius: 24,
+                            backgroundImage: NetworkImage(m.logoUrl!),
+                            backgroundColor:
+                                AppColors.primary.withValues(alpha: 0.1),
+                          )
+                        : CircleAvatar(
+                            radius: 24,
+                            backgroundColor:
+                                AppColors.primary.withValues(alpha: 0.1),
+                            // No uploaded logo → show the app icon itself as
+                            // the brand mark, never a generic glyph.
+                            child: ClipOval(
+                              child: Image.asset(
+                                'assets/images/app_logo.png',
+                                width: 48,
+                                height: 48,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    const Icon(Icons.mosque,
+                                        color: AppColors.primary),
+                              ),
                             ),
                           ),
-                        ),
-                  title: Text(m.tenantName, style: AppTypography.titleMedium),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (m.tenantNameUrdu != null &&
-                          m.tenantNameUrdu!.isNotEmpty)
-                        Text(m.tenantNameUrdu!,
-                            style: AppTypography.bodyMedium),
-                      const SizedBox(height: 4),
-                      Chip(
-                        label: Text(
-                          _roleLabel(m.role),
-                          style: AppTypography.bodySmall.copyWith(
-                            color: Colors.white,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(m.tenantName, style: AppTypography.titleMedium),
+                          if (m.tenantNameUrdu != null &&
+                              m.tenantNameUrdu!.isNotEmpty)
+                            Text(m.tenantNameUrdu!,
+                                style: AppTypography.bodyMedium),
+                          const SizedBox(height: 6),
+                          M360Badge.custom(
+                            label: _roleLabel(m.role),
+                            color: AppColors.primary,
                           ),
-                        ),
-                        backgroundColor: AppColors.primary,
-                        visualDensity: VisualDensity.compact,
-                        padding: EdgeInsets.zero,
+                        ],
                       ),
-                    ],
-                  ),
-                  trailing: switching
-                      ? const SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.arrow_forward_ios,
-                          color: AppColors.primary),
-                  onTap: switching ? null : () => _select(m.tenantId),
+                    ),
+                    const SizedBox(width: 8),
+                    if (switching)
+                      const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    else
+                      const Icon(Icons.chevron_left, color: AppColors.primary),
+                  ],
                 ),
               );
             },

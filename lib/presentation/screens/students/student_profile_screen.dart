@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart' hide DateUtils;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:madrasa_360/core/design/m360.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/utils/date_utils.dart';
+import '../../../core/utils/money_format.dart';
 import '../../../data/models/attendance_record.dart';
 import '../../../data/models/attendance_status.dart';
 import '../../../data/models/fee.dart';
@@ -19,6 +21,10 @@ import 'student_dialogs.dart';
 import 'student_widgets.dart';
 
 /// طالب علم کا پروفائل — information hub
+///
+/// Phase 10 (m360): visual/UX layer only — same providers, same tabs,
+/// same flows. Deep-pushed detail screen (MaterialPageRoute), so it keeps
+/// its own Scaffold with [M360AppBar] — it is not a shell destination.
 ///
 /// Tabs included ONLY where an underlying provider exists in the repo:
 ///   جائزہ / ذاتی معلومات / حاضری / فیس / امتحانات
@@ -55,28 +61,19 @@ class _StudentProfileScreenState extends ConsumerState<StudentProfileScreen>
     final studentAsync = ref.watch(studentByIdProvider(widget.studentId));
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('طالب علم کا پروفائل', style: AppTypography.appBarTitle),
-      ),
+      appBar: const M360AppBar(title: 'طالب علم کا پروفائل'),
       body: studentAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.error_outline, size: 56, color: AppColors.error),
-              const SizedBox(height: 12),
-              Text('طالب علم کی معلومات لوڈ کرنے میں خطا',
-                  style: AppTypography.labelNastaliq),
-            ],
-          ),
+        loading: () => const M360LoadingState(),
+        error: (_, __) => M360ErrorState(
+          message: 'طالب علم کی معلومات لوڈ کرنے میں خطا',
+          onRetry: () => ref.invalidate(studentByIdProvider(widget.studentId)),
         ),
         data: (student) {
           if (student == null) {
-            return const EmptyState(
-              icon: Icons.person_off,
+            return const M360EmptyState(
+              icon: Icons.person_off_outlined,
               title: 'طالب علم نہیں ملا',
-              subtitle: 'یہ ریکارڈ دستیاب نہیں',
+              description: 'یہ ریکارڈ دستیاب نہیں',
             );
           }
           return Column(
@@ -289,7 +286,7 @@ class _QuickAction extends StatelessWidget {
           ),
           child: Column(
             children: [
-              Icon(icon, color: const Color(0xFFFFD97D), size: 22),
+              Icon(icon, color: AppColors.gold, size: 22),
               const SizedBox(height: 4),
               Text(
                 label,
@@ -319,7 +316,11 @@ class _OverviewTab extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        const SectionHeading(title: 'خلاصہ', icon: Icons.dashboard),
+        const M360SectionHeader(
+          title: 'خلاصہ',
+          padding: EdgeInsets.zero,
+        ),
+        const SizedBox(height: 8),
         Row(
           children: [
             Expanded(child: _AttendanceStatCard(student: student)),
@@ -330,8 +331,12 @@ class _OverviewTab extends ConsumerWidget {
         const SizedBox(height: 12),
         _ExamAverageCard(studentId: student.id),
         const SizedBox(height: 20),
-        const SectionHeading(title: 'اہم معلومات', icon: Icons.info_outline),
-        AppCard(
+        const M360SectionHeader(
+          title: 'اہم معلومات',
+          padding: EdgeInsets.zero,
+        ),
+        const SizedBox(height: 8),
+        M360Card(
           child: Column(
             children: [
               InfoTile(
@@ -364,51 +369,6 @@ class _OverviewTab extends ConsumerWidget {
   }
 }
 
-class _StatCard extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  final Color color;
-
-  const _StatCard({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return AppCard(
-      margin: EdgeInsets.zero,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(icon, color: color, size: 20),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(label,
-                    style: AppTypography.labelNastaliq.copyWith(fontSize: 15)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(value, style: AppTypography.titleLarge.copyWith(color: color)),
-        ],
-      ),
-    );
-  }
-}
-
 class _AttendanceStatCard extends ConsumerWidget {
   final Student student;
 
@@ -437,19 +397,19 @@ class _AttendanceStatCard extends ConsumerWidget {
       }
     }
     if (pending > 0) {
-      return const _StatCard(
+      return const M360StatCard(
         icon: Icons.fact_check,
         label: 'حاضری (۳۰ دن)',
         value: '…',
-        color: AppColors.textSecondary,
+        valueColor: AppColors.textSecondary,
       );
     }
     final pct = total > 0 ? (present / total * 100) : 0.0;
-    return _StatCard(
+    return M360StatCard(
       icon: Icons.fact_check,
       label: 'حاضری (۳۰ دن)',
       value: '${pct.toStringAsFixed(0)}٪',
-      color: pct >= 75
+      valueColor: pct >= 75
           ? AppColors.success
           : (pct >= 50 ? AppColors.warning : AppColors.error),
     );
@@ -467,11 +427,11 @@ class _FeeDueStatCard extends ConsumerWidget {
     final fees = feesAsync.valueOrNull ?? const <Fee>[];
     final due =
         fees.fold<double>(0, (sum, f) => sum + (f.amountDue - f.amountPaid));
-    return _StatCard(
+    return M360StatCard(
       icon: Icons.receipt_long,
       label: 'فیس بقایا',
-      value: 'ر ${due.toStringAsFixed(0)}',
-      color: due > 0 ? AppColors.error : AppColors.success,
+      value: 'ر ${formatPK(due)}',
+      valueColor: due > 0 ? AppColors.error : AppColors.success,
     );
   }
 }
@@ -488,20 +448,20 @@ class _ExamAverageCard extends ConsumerWidget {
         .where((r) => r.studentId == studentId)
         .toList();
     if (results.isEmpty) {
-      return _StatCard(
+      return const M360StatCard(
         icon: Icons.school,
         label: 'امتحانی اوسط',
         value: '—',
-        color: AppColors.textSecondary,
+        valueColor: AppColors.textSecondary,
       );
     }
     final avg =
         results.fold<double>(0, (s, r) => s + r.percentage) / results.length;
-    return _StatCard(
+    return M360StatCard(
       icon: Icons.school,
       label: 'امتحانی اوسط (${results.length} امتحان)',
       value: '${avg.toStringAsFixed(1)}٪',
-      color: avg >= 60 ? AppColors.success : AppColors.error,
+      valueColor: avg >= 60 ? AppColors.success : AppColors.error,
     );
   }
 }
@@ -520,17 +480,14 @@ class _PersonalInfoTab extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        SectionHeading(
+        M360SectionHeader(
           title: 'ذاتی معلومات',
-          icon: Icons.person_outline,
-          trailing: OutlinedButton.icon(
-            onPressed: () =>
-                StudentDialogs.showEditStudent(context, ref, student),
-            icon: const Icon(Icons.edit, size: 18),
-            label: Text('ترمیم', style: AppTypography.labelNastaliq),
-          ),
+          padding: EdgeInsets.zero,
+          actionLabel: 'ترمیم',
+          onAction: () => StudentDialogs.showEditStudent(context, ref, student),
         ),
-        AppCard(
+        const SizedBox(height: 8),
+        M360Card(
           child: Column(
             children: [
               InfoTile(
@@ -648,7 +605,11 @@ class _AttendanceTab extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        const SectionHeading(title: 'حاضری کا خلاصہ', icon: Icons.fact_check),
+        const M360SectionHeader(
+          title: 'حاضری کا خلاصہ',
+          padding: EdgeInsets.zero,
+        ),
+        const SizedBox(height: 8),
         Row(
           children: [
             Expanded(
@@ -669,22 +630,26 @@ class _AttendanceTab extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: 20),
-        const SectionHeading(title: 'پچھلے ۳۰ دن', icon: Icons.calendar_month),
+        const M360SectionHeader(
+          title: 'پچھلے ۳۰ دن',
+          padding: EdgeInsets.zero,
+        ),
+        const SizedBox(height: 8),
         if (pending > 0) const LinearProgressIndicator(),
         if (dayRecords.isEmpty && pending == 0)
-          const EmptyState(
-            icon: Icons.fact_check,
+          const M360EmptyState(
+            icon: Icons.fact_check_outlined,
             title: 'حاضری کا ریکارڈ نہیں ملا',
-            subtitle: 'پچھلے ۳۰ دنوں میں کوئی حاضری درج نہیں',
+            description: 'پچھلے ۳۰ دنوں میں کوئی حاضری درج نہیں',
           )
         else
-          ...dayRecords.map((d) => AppCard(
+          ...dayRecords.map((d) => M360Card(
                 margin: const EdgeInsets.only(bottom: 8),
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 child: Row(
                   children: [
-                    Icon(Icons.calendar_today,
+                    const Icon(Icons.calendar_today,
                         size: 18, color: AppColors.textSecondary),
                     const SizedBox(width: 10),
                     Expanded(
@@ -755,9 +720,10 @@ class _FeesTab extends ConsumerWidget {
     final feesAsync = ref.watch(feesByStudentProvider(student.id));
 
     return feesAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(
-        child: Text('فیس لوڈ کرنے میں خطا', style: AppTypography.labelNastaliq),
+      loading: () => const M360LoadingState(),
+      error: (_, __) => M360ErrorState(
+        message: 'فیس لوڈ کرنے میں خطا',
+        onRetry: () => ref.invalidate(feesByStudentProvider(student.id)),
       ),
       data: (fees) {
         final sorted = List<Fee>.from(fees)
@@ -769,57 +735,54 @@ class _FeesTab extends ConsumerWidget {
         return ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            SectionHeading(
+            M360SectionHeader(
               title: 'فیس کی صورتحال',
-              icon: Icons.receipt_long,
-              trailing: ElevatedButton.icon(
-                onPressed: () =>
-                    StudentDialogs.showFeeCollection(context, ref, student),
-                icon: const Icon(Icons.add, color: Colors.white, size: 18),
-                label: Text('فیس وصول کریں',
-                    style: AppTypography.buttonText.copyWith(fontSize: 15)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.success,
-                ),
-              ),
+              padding: EdgeInsets.zero,
+              actionLabel: 'فیس وصول کریں',
+              onAction: () =>
+                  StudentDialogs.showFeeCollection(context, ref, student),
             ),
+            const SizedBox(height: 8),
             Row(
               children: [
                 Expanded(
-                    child: _StatCard(
+                    child: M360StatCard(
                         icon: Icons.payments,
                         label: 'کل واجب',
-                        value: 'ر ${totalDue.toStringAsFixed(0)}',
-                        color: AppColors.info)),
+                        value: 'ر ${formatPK(totalDue)}',
+                        valueColor: AppColors.info)),
                 const SizedBox(width: 12),
                 Expanded(
-                    child: _StatCard(
+                    child: M360StatCard(
                         icon: Icons.check_circle,
                         label: 'کل ادا',
-                        value: 'ر ${totalPaid.toStringAsFixed(0)}',
-                        color: AppColors.success)),
+                        value: 'ر ${formatPK(totalPaid)}',
+                        valueColor: AppColors.success)),
                 const SizedBox(width: 12),
                 Expanded(
-                    child: _StatCard(
+                    child: M360StatCard(
                         icon: Icons.warning,
                         label: 'بقایا',
-                        value: 'ر ${balance.toStringAsFixed(0)}',
-                        color: balance > 0
+                        value: 'ر ${formatPK(balance)}',
+                        valueColor: balance > 0
                             ? AppColors.error
                             : AppColors.textSecondary)),
               ],
             ),
             const SizedBox(height: 20),
-            const SectionHeading(
-                title: 'ماہانہ ریکارڈ', icon: Icons.calendar_month),
+            const M360SectionHeader(
+              title: 'ماہانہ ریکارڈ',
+              padding: EdgeInsets.zero,
+            ),
+            const SizedBox(height: 8),
             if (sorted.isEmpty)
-              const EmptyState(
-                icon: Icons.receipt,
+              const M360EmptyState(
+                icon: Icons.receipt_outlined,
                 title: 'فیس کا کوئی ریکارڈ نہیں',
-                subtitle: 'ابھی تک کوئی فیس درج نہیں کی گئی',
+                description: 'ابھی تک کوئی فیس درج نہیں کی گئی',
               )
             else
-              ...sorted.map((f) => AppCard(
+              ...sorted.map((f) => M360Card(
                     margin: const EdgeInsets.only(bottom: 8),
                     padding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 12),
@@ -835,7 +798,7 @@ class _FeesTab extends ConsumerWidget {
                                     .copyWith(fontSize: 16),
                               ),
                               Text(
-                                'ر ${f.amountPaid.toStringAsFixed(0)} / ر ${f.amountDue.toStringAsFixed(0)}',
+                                'ر ${formatPK(f.amountPaid)} / ر ${formatPK(f.amountDue)}',
                                 style: AppTypography.bodySmall,
                               ),
                             ],
@@ -875,24 +838,28 @@ class _ExamsTab extends ConsumerWidget {
     final resultsAsync = ref.watch(allResultsProvider);
 
     return resultsAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(
-        child:
-            Text('نتائج لوڈ کرنے میں خطا', style: AppTypography.labelNastaliq),
+      loading: () => const M360LoadingState(),
+      error: (_, __) => M360ErrorState(
+        message: 'نتائج لوڈ کرنے میں خطا',
+        onRetry: () => ref.invalidate(allResultsProvider),
       ),
       data: (all) {
         final mine = all.where((r) => r.studentId == student.id).toList();
         if (mine.isEmpty) {
-          return const EmptyState(
-            icon: Icons.school,
+          return const M360EmptyState(
+            icon: Icons.school_outlined,
             title: 'کوئی امتحانی نتیجہ نہیں',
-            subtitle: 'اس طالب علم کا ابھی کوئی نتیجہ درج نہیں',
+            description: 'اس طالب علم کا ابھی کوئی نتیجہ درج نہیں',
           );
         }
         return ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            const SectionHeading(title: 'امتحانی نتائج', icon: Icons.school),
+            const M360SectionHeader(
+              title: 'امتحانی نتائج',
+              padding: EdgeInsets.zero,
+            ),
+            const SizedBox(height: 8),
             ...mine.map((r) => _ExamCard(result: r)),
           ],
         );
@@ -910,7 +877,8 @@ class _ExamCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final pct = result.percentage;
     final color = pct >= 60 ? AppColors.success : AppColors.error;
-    return AppCard(
+    return M360Card(
+      margin: const EdgeInsets.only(bottom: 12),
       child: ExpansionTile(
         tilePadding: EdgeInsets.zero,
         title: Text(result.examName,

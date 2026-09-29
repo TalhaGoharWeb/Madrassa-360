@@ -5,13 +5,20 @@
 /// Step 4: modules · Step 5: tenant admin account → provision-tenant Edge
 /// Function → progress → success (tenant_code + admin email; the password is
 /// NEVER shown back) / error state carrying the function's message.
+///
+/// Phase 10: pushed wizard flow — keeps its root Scaffold (a stepper needs
+/// its own scaffold scope), but the chrome moved to M360AppBar and the
+/// fields, dropdowns, buttons, and states use the m360 components. Step
+/// validation, the exact provision-tenant payload, password clearing, and
+/// success/error semantics are unchanged.
 
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'package:madrasa_360/core/design/m360.dart';
+
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
-import 'widgets/ma_widgets.dart';
 
 class CreateMadrasaWizard extends StatefulWidget {
   const CreateMadrasaWizard({super.key});
@@ -153,10 +160,10 @@ class _CreateMadrasaWizardState extends State<CreateMadrasaWizard> {
     if (_step == 2 && _planId == null) {
       // plan_id is a required UUID server-side — provisioning cannot proceed
       // without a plan.
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text(
-                'براہ کرم ایک پلان منتخب کریں — پلان کے بغیر مدرسہ نہیں بن سکتا')),
+      showM360SnackBar(
+        context,
+        'براہ کرم ایک پلان منتخب کریں — پلان کے بغیر مدرسہ نہیں بن سکتا',
+        isError: true,
       );
       return;
     }
@@ -242,10 +249,11 @@ class _CreateMadrasaWizardState extends State<CreateMadrasaWizard> {
   // ── Build ───────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
+    // Pushed wizard flow: keeps its root Scaffold — a stepper with its own
+    // nav bar needs its own scaffold scope. Only the chrome moved to the
+    // m360 deep-screen app bar.
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('نیا مدرسہ / New Madrasa'),
-      ),
+      appBar: const M360AppBar(title: 'نیا مدرسہ / New Madrasa'),
       body: _provisioning
           ? _buildProgress()
           : _provisionError != null
@@ -324,17 +332,17 @@ class _CreateMadrasaWizardState extends State<CreateMadrasaWizard> {
               children: [
                 if (_step > 0)
                   Expanded(
-                    child: OutlinedButton(
+                    child: M360SecondaryButton(
+                      label: 'واپس',
                       onPressed: () => setState(() => _step--),
-                      child: const Text('واپس'),
                     ),
                   ),
                 if (_step > 0) const SizedBox(width: 12),
                 Expanded(
                   flex: 2,
-                  child: ElevatedButton(
+                  child: M360PrimaryButton(
+                    label: _step == 4 ? 'مدرسہ بنائیں' : 'آگے',
                     onPressed: _next,
-                    child: Text(_step == 4 ? 'مدرسہ بنائیں' : 'آگے'),
                   ),
                 ),
               ],
@@ -368,15 +376,49 @@ class _CreateMadrasaWizardState extends State<CreateMadrasaWizard> {
       String? Function(String?)? validator}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
-      child: TextFormField(
+      child: M360TextField(
         controller: c,
+        label: label,
         keyboardType: keyboard,
-        decoration: InputDecoration(labelText: label),
         validator: validator ??
             (required
                 ? (v) =>
                     (v == null || v.trim().isEmpty) ? 'یہ خانہ ضروری ہے' : null
                 : null),
+      ),
+    );
+  }
+
+  /// Password field with a show/hide toggle. [M360TextField] has no suffix
+  /// widget slot, so this uses the shared [m360FieldDecoration] — the same
+  /// decoration every design-system field uses — instead of building its
+  /// own InputDecoration.
+  Widget _passwordField({
+    required TextEditingController controller,
+    required String label,
+    required bool obscure,
+    required VoidCallback onToggleVisibility,
+    required String? Function(String?) validator,
+    ValueChanged<String>? onChanged,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: TextFormField(
+        controller: controller,
+        obscureText: obscure,
+        onChanged: onChanged,
+        textDirection: TextDirection.rtl,
+        textAlign: TextAlign.right,
+        style: AppTypography.bodyLarge,
+        decoration: m360FieldDecoration(
+          label: label,
+          suffixIcon: IconButton(
+            tooltip: obscure ? 'پاس ورڈ دکھائیں' : 'پاس ورڈ چھپائیں',
+            icon: Icon(obscure ? Icons.visibility : Icons.visibility_off),
+            onPressed: onToggleVisibility,
+          ),
+        ),
+        validator: validator,
       ),
     );
   }
@@ -419,27 +461,27 @@ class _CreateMadrasaWizardState extends State<CreateMadrasaWizard> {
   Widget _defaultsStep() {
     return Column(
       children: [
-        DropdownButtonFormField<String>(
-          initialValue: _language,
-          decoration: const InputDecoration(labelText: 'زبان / Language'),
+        M360Dropdown<String>(
+          label: 'زبان / Language',
+          value: _language,
           items: const [
-            DropdownMenuItem(value: 'ur', child: Text('اردو (Urdu)')),
-            DropdownMenuItem(value: 'en', child: Text('English')),
-            DropdownMenuItem(value: 'ar', child: Text('العربية')),
+            M360DropdownItem(value: 'ur', label: 'اردو (Urdu)'),
+            M360DropdownItem(value: 'en', label: 'English'),
+            M360DropdownItem(value: 'ar', label: 'العربية'),
           ],
           onChanged: (v) => setState(() => _language = v ?? 'ur'),
         ),
         const SizedBox(height: 12),
         _field(_timezone, 'ٹائم زون / Timezone *', required: true),
         const SizedBox(height: 12),
-        DropdownButtonFormField<String>(
-          initialValue: _currency,
-          decoration: const InputDecoration(labelText: 'کرنسی / Currency'),
+        M360Dropdown<String>(
+          label: 'کرنسی / Currency',
+          value: _currency,
           items: const [
-            DropdownMenuItem(value: 'PKR', child: Text('PKR — روپیہ')),
-            DropdownMenuItem(value: 'USD', child: Text('USD — ڈالر')),
-            DropdownMenuItem(value: 'SAR', child: Text('SAR — ریال')),
-            DropdownMenuItem(value: 'AED', child: Text('AED — درہم')),
+            M360DropdownItem(value: 'PKR', label: 'PKR — روپیہ'),
+            M360DropdownItem(value: 'USD', label: 'USD — ڈالر'),
+            M360DropdownItem(value: 'SAR', label: 'SAR — ریال'),
+            M360DropdownItem(value: 'AED', label: 'AED — درہم'),
           ],
           onChanged: (v) => setState(() => _currency = v ?? 'PKR'),
         ),
@@ -451,16 +493,16 @@ class _CreateMadrasaWizardState extends State<CreateMadrasaWizard> {
     if (_plansLoading) {
       return const Padding(
         padding: EdgeInsets.all(32),
-        child: LoadingWidget(message: 'پلان لوڈ ہو رہے ہیں…'),
+        child: M360LoadingState(itemCount: 3),
       );
     }
     if (_plans.isEmpty) {
-      return const EmptyStateWidget(
+      return const M360EmptyState(
         icon: Icons.card_membership_outlined,
         title: 'کوئی پلان نہیں',
-        message: 'provision-tenant requires a plan_id, so a plan must exist '
-            'before provisioning. Create one first in the Plans section, '
-            'then return here.',
+        description: 'provision-tenant requires a plan_id, so a plan must '
+            'exist before provisioning. Create one first in the Plans '
+            'section, then return here.',
       );
     }
     return RadioGroup<String>(
@@ -469,8 +511,9 @@ class _CreateMadrasaWizardState extends State<CreateMadrasaWizard> {
       child: Column(
         children: [
           for (final p in _plans)
-            Card(
+            M360Card(
               margin: const EdgeInsets.only(bottom: 8),
+              padding: EdgeInsets.zero,
               child: RadioListTile<String>(
                 value: p['id'] as String,
                 title: Text((p['name'] as String?) ?? '—',
@@ -496,14 +539,14 @@ class _CreateMadrasaWizardState extends State<CreateMadrasaWizard> {
     if (_catalogLoading) {
       return const Padding(
         padding: EdgeInsets.all(32),
-        child: LoadingWidget(message: 'ماڈیولز لوڈ ہو رہے ہیں…'),
+        child: M360LoadingState(itemCount: 4),
       );
     }
     if (_catalog.isEmpty) {
-      return const EmptyStateWidget(
+      return const M360EmptyState(
         icon: Icons.extension_outlined,
         title: 'ماڈیول کیٹلاگ دستیاب نہیں',
-        message: 'modules_catalog could not be loaded. Continuing with '
+        description: 'modules_catalog could not be loaded. Continuing with '
             'the platform defaults.',
       );
     }
@@ -512,14 +555,14 @@ class _CreateMadrasaWizardState extends State<CreateMadrasaWizard> {
       children: [
         Row(
           children: [
-            TextButton(
+            M360TertiaryButton(
+              label: 'سب منتخب کریں',
               onPressed: () => setState(() =>
                   _modules.addAll(_catalog.map((m) => m['module'] as String))),
-              child: const Text('سب منتخب کریں'),
             ),
-            TextButton(
+            M360TertiaryButton(
+              label: 'سب ہٹائیں',
               onPressed: () => setState(() => _modules.clear()),
-              child: const Text('سب ہٹائیں'),
             ),
           ],
         ),
@@ -558,28 +601,20 @@ class _CreateMadrasaWizardState extends State<CreateMadrasaWizard> {
               ? null
               : 'درست ای میل لکھیں';
         }),
-        Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: TextFormField(
-            controller: _adminPassword,
-            obscureText: _obscure1,
-            onChanged: (_) => setState(() {}),
-            decoration: InputDecoration(
-              labelText: 'پاس ورڈ / Password *',
-              suffixIcon: IconButton(
-                icon: Icon(_obscure1 ? Icons.visibility : Icons.visibility_off),
-                onPressed: () => setState(() => _obscure1 = !_obscure1),
-              ),
-            ),
-            validator: (v) {
-              if (v == null || v.isEmpty) return 'یہ خانہ ضروری ہے';
-              if (v.length < 8) return 'کم از کم 8 حروف';
-              if (_passwordStrength(v) < 3) {
-                return 'مزید مضبوط پاس ورڈ رکھیں (بڑے/چھوٹے حروف، ہندسے)';
-              }
-              return null;
-            },
-          ),
+        _passwordField(
+          controller: _adminPassword,
+          label: 'پاس ورڈ / Password *',
+          obscure: _obscure1,
+          onToggleVisibility: () => setState(() => _obscure1 = !_obscure1),
+          onChanged: (_) => setState(() {}),
+          validator: (v) {
+            if (v == null || v.isEmpty) return 'یہ خانہ ضروری ہے';
+            if (v.length < 8) return 'کم از کم 8 حروف';
+            if (_passwordStrength(v) < 3) {
+              return 'مزید مضبوط پاس ورڈ رکھیں (بڑے/چھوٹے حروف، ہندسے)';
+            }
+            return null;
+          },
         ),
         if (_adminPassword.text.isNotEmpty)
           Padding(
@@ -604,21 +639,13 @@ class _CreateMadrasaWizardState extends State<CreateMadrasaWizard> {
               ],
             ),
           ),
-        Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: TextFormField(
-            controller: _adminPasswordConfirm,
-            obscureText: _obscure2,
-            decoration: InputDecoration(
-              labelText: 'پاس ورڈ کی تصدیق / Confirm *',
-              suffixIcon: IconButton(
-                icon: Icon(_obscure2 ? Icons.visibility : Icons.visibility_off),
-                onPressed: () => setState(() => _obscure2 = !_obscure2),
-              ),
-            ),
-            validator: (v) =>
-                v != _adminPassword.text ? 'پاس ورڈ مماثل نہیں' : null,
-          ),
+        _passwordField(
+          controller: _adminPasswordConfirm,
+          label: 'پاس ورڈ کی تصدیق / Confirm *',
+          obscure: _obscure2,
+          onToggleVisibility: () => setState(() => _obscure2 = !_obscure2),
+          validator: (v) =>
+              v != _adminPassword.text ? 'پاس ورڈ مماثل نہیں' : null,
         ),
         Container(
           padding: const EdgeInsets.all(12),
@@ -700,18 +727,15 @@ class _CreateMadrasaWizardState extends State<CreateMadrasaWizard> {
                 style: AppTypography.headingMedium
                     .copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  children: [
-                    _successRow('Tenant code', _provisionedCode ?? '—'),
-                    const Divider(),
-                    _successRow('Admin email', _provisionedEmail ?? '—'),
-                    const Divider(),
-                    _successRow('Status', 'trial'),
-                  ],
-                ),
+            M360Card(
+              child: Column(
+                children: [
+                  _successRow('Tenant code', _provisionedCode ?? '—'),
+                  const Divider(),
+                  _successRow('Admin email', _provisionedEmail ?? '—'),
+                  const Divider(),
+                  _successRow('Status', 'trial'),
+                ],
               ),
             ),
             const SizedBox(height: 16),
@@ -723,9 +747,9 @@ class _CreateMadrasaWizardState extends State<CreateMadrasaWizard> {
                   .copyWith(color: AppColors.textSecondary),
             ),
             const SizedBox(height: 24),
-            ElevatedButton(
+            M360PrimaryButton(
+              label: 'فہرست پر واپس جائیں',
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('فہرست پر واپس جائیں'),
             ),
           ],
         ),
@@ -779,14 +803,14 @@ class _CreateMadrasaWizardState extends State<CreateMadrasaWizard> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                OutlinedButton(
+                M360SecondaryButton(
+                  label: 'تفصیلات درست کریں',
                   onPressed: () => setState(() => _provisionError = null),
-                  child: const Text('تفصیلات درست کریں'),
                 ),
                 const SizedBox(width: 12),
-                ElevatedButton(
+                M360PrimaryButton(
+                  label: 'دوبارہ کوشش کریں',
                   onPressed: _provision,
-                  child: const Text('دوبارہ کوشش کریں'),
                 ),
               ],
             ),

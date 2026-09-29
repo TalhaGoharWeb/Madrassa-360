@@ -134,6 +134,18 @@ class ResultNotifier extends AsyncNotifier<void> {
     ref.invalidate(allExamsProvider);
     return created;
   }
+
+  /// Soft-deletes an exam header (local-first envelope delete). Refreshes
+  /// the exam list and every derived results view.
+  Future<void> deleteExam(String examId) async {
+    final tenantId = ref.read(currentTenantIdProvider);
+    if (tenantId == null) throw StateError('No active tenant');
+    final repo = ref.read(resultRepositoryProvider);
+    await repo.deleteExam(examId, tenantId: tenantId);
+    ref.invalidate(allExamsProvider);
+    ref.invalidate(allResultsProvider);
+    ref.invalidate(examResultsProvider(examId));
+  }
 }
 
 final resultNotifierProvider =

@@ -4,6 +4,8 @@
 
 import 'package:flutter/material.dart';
 
+import 'package:madrasa_360/core/design/m360.dart';
+
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/widgets/master_admin_guard.dart';
@@ -103,57 +105,32 @@ class _MasterAdminShellState extends State<MasterAdminShell> {
 
   @override
   Widget build(BuildContext context) {
+    // Root console shell: the single Scaffold for the '/master' route.
+    // Retained by design — the destinations inside use PageContainer /
+    // PageHeader and must not add their own Scaffolds.
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          _role == 'platform_owner'
-              ? 'Platform Owner Console'
-              : 'Platform Admin Console',
-        ),
+      appBar: M360AppBar(
+        title: _role == 'platform_owner'
+            ? 'Platform Owner Console'
+            : 'Platform Admin Console',
+        // The drawer owns navigation here; a back arrow would wrongly
+        // imply this console is a pushed deep screen.
+        showBack: false,
         actions: [
           const DashboardGuideButton(roleKey: 'master'),
           // Always-visible exit: the drawer also has "Back to app", but an
           // operator should never have to hunt for the way out.
-          TextButton.icon(
+          M360IconButton(
+            icon: Icons.home_outlined,
+            tooltip: 'Back to app',
             onPressed: _backToApp,
-            icon: const Icon(
-              Icons.home_outlined,
-              color: Colors.white,
-              size: 20,
-            ),
-            label: Text(
-              'Back to app',
-              style: AppTypography.labelSmall.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            style: TextButton.styleFrom(
-              backgroundColor: Colors.white.withValues(alpha: 0.15),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            ),
           ),
-          const SizedBox(width: 4),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Center(
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  _role ?? '…',
-                  style: AppTypography.labelSmall.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: M360Badge.custom(
+                label: _role ?? '…',
+                color: AppColors.primary,
               ),
             ),
           ),

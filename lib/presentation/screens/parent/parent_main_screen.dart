@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:madrasa_360/core/design/m360.dart';
+
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_typography.dart';
@@ -6,8 +8,12 @@ import 'parent_dashboard_screen.dart';
 import 'fee_history_screen.dart';
 import '../common/profile_screen.dart';
 
-/// والدین مین اسکرین
-/// Parent Main Screen with Bottom Navigation
+/// والدین مین اسکرین — standalone bottom-tab host.
+///
+/// Phase 10 (m360): visual/UX layer only. This legacy tab shell is not
+/// referenced by the current AppShell routing, but its file is in the
+/// phase scope, so it is restyled onto m360: design tokens, Nastaleeq
+/// labels, m360 spacing — same tabs, same IndexedStack behavior.
 class ParentMainScreen extends StatefulWidget {
   const ParentMainScreen({super.key});
 
@@ -18,13 +24,13 @@ class ParentMainScreen extends StatefulWidget {
 class _ParentMainScreenState extends State<ParentMainScreen> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = const [
+  static const List<Widget> _screens = [
     ParentDashboardScreen(),
     FeeHistoryScreen(),
     ProfileScreen(),
   ];
 
-  final List<_NavItem> _navItems = const [
+  static const List<_NavItem> _navItems = [
     _NavItem(
       icon: Icons.home_outlined,
       activeIcon: Icons.home,
@@ -54,15 +60,18 @@ class _ParentMainScreenState extends State<ParentMainScreen> {
           color: AppColors.surface,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
-              blurRadius: 10,
+              color: AppColors.textPrimary.withValues(alpha: 0.08),
+              blurRadius: 12,
               offset: const Offset(0, -2),
             ),
           ],
         ),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            padding: const EdgeInsets.symmetric(
+              horizontal: M360Spacing.sm,
+              vertical: M360Spacing.sm,
+            ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: List.generate(
@@ -81,20 +90,19 @@ class _ParentMainScreenState extends State<ParentMainScreen> {
     final isSelected = _currentIndex == index;
 
     return InkWell(
-      onTap: () {
-        setState(() {
-          _currentIndex = index;
-        });
-      },
-      borderRadius: BorderRadius.circular(16),
+      onTap: () => setState(() => _currentIndex = index),
+      borderRadius: BorderRadius.circular(M360Radius.md),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        padding: const EdgeInsets.symmetric(
+          horizontal: M360Spacing.sm,
+          vertical: M360Spacing.sm,
+        ),
         decoration: BoxDecoration(
           color: isSelected
               ? AppColors.primary.withValues(alpha: 0.1)
               : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(M360Radius.md),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -104,7 +112,7 @@ class _ParentMainScreenState extends State<ParentMainScreen> {
               color: isSelected ? AppColors.primary : AppColors.textSecondary,
               size: 24,
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: M360Spacing.xs),
             Text(
               item.label,
               style: AppTypography.navLabel.copyWith(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:madrasa_360/core/design/m360.dart';
 import 'package:printing/printing.dart';
 import 'package:uuid/uuid.dart';
 import '../../../core/constants/app_colors.dart';
@@ -9,16 +10,20 @@ import '../../../core/reports/report_branding.dart';
 import '../../../core/reports/urdu_pdf.dart';
 import '../../../core/services/tenant_context.dart';
 import '../../../core/sync/sync_providers.dart';
+import '../../../core/widgets/tenant_logo.dart';
 import '../../../data/models/result.dart';
 import '../../../data/models/student.dart';
 import '../../../providers/result_provider.dart';
-import '../../../core/widgets/tenant_logo.dart';
 import '../../../providers/teacher_portal_provider.dart';
 import '../../shell/shell_page_body.dart';
-import '../../widgets/common/app_widgets.dart';
 
 /// نتائج کی سکرین
-/// Results Screen with Grades and Result Cards
+/// Results Screen — نتائج دیکھیں اور نئے نتائج درج کریں.
+///
+/// Phase 10 (m360): visual/UX layer only — same providers, same queries,
+/// same save/delete flows. Shell destination: no Scaffold of its own;
+/// [ShellPageBody] hosts the tab bar (Phase 8 hostel pattern) and the
+/// [PageHeader] sits above the tab views.
 class ResultsScreen extends ConsumerStatefulWidget {
   const ResultsScreen({super.key});
 
@@ -37,14 +42,14 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen>
 
   /// Id of the teacher's assigned class used by the ENTRY tab ('' = none).
   /// Phase 6 (mock purge): entry cards render the real roster of this
-  /// class — never the old hard-coded name list.
+  /// class — never a hard-coded name list.
   String _entryClassId = '';
 
   /// Exam type picked in the ENTRY tab (null = not picked yet).
   String? _entryExamType;
 
-  /// Fixed subject set for the entry tab (each out of 100).
-  static const _entrySubjects = ['قرآن', 'حدیث', 'فقہ'];
+  /// Entry-tab save in progress (drives the primary button's spinner).
+  bool _savingEntry = false;
 
   /// Marks controllers keyed by '<studentId>::<subject>'.
   final Map<String, TextEditingController> _marksControllers = {};
@@ -69,6 +74,21 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen>
     super.dispose();
   }
 
+  /// Subjects for the ENTRY tab, derived from the teacher's REAL class
+  /// assignments ([TeacherClassAssignment.subject]) for the selected entry
+  /// class — distinct, non-empty, in assignment order. Never a hard-coded
+  /// list: when the teacher has no subject recorded, the entry tab shows
+  /// an honest empty state instead.
+  List<String> _entrySubjects(List<TeacherClassAssignment> assignments) {
+    final seen = <String>[];
+    for (final a in assignments) {
+      if (a.classId != _entryClassId) continue;
+      final subject = a.subject.trim();
+      if (subject.isNotEmpty && !seen.contains(subject)) seen.add(subject);
+    }
+    return seen;
+  }
+
   @override
   Widget build(BuildContext context) {
     return ShellPageBody(
@@ -83,15 +103,32 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen>
           Tab(text: 'نتیجہ درج کریں'),
         ],
       ),
-      child: TabBarView(
-        controller: _tabController,
+      child: Column(
         children: [
-          _buildResultsTab(),
-          _buildEntryTab(),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 12, 16, 4),
+            child: PageHeader(
+              title: 'نتائج',
+              description: 'امتحانی نتائج دیکھیں اور نئے نتائج درج کریں',
+            ),
+          ),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildResultsTab(),
+                _buildEntryTab(),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
+
+  // ─────────────────────────────────────────────────────────────
+  // Results tab — class-filtered result cards
+  // ─────────────────────────────────────────────────────────────
 
   Widget _buildResultsTab() {
     return Consumer(
@@ -100,12 +137,15 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen>
         final resultsAsync = ref.watch(allResultsProvider);
 
         if (classesAsync.isLoading || resultsAsync.isLoading) {
-          return const Center(child: CircularProgressIndicator());
+          return const M360LoadingState();
         }
         if (resultsAsync.hasError) {
-          return Center(
-            child:
-                Text('نتائج لوڈ کرنے میں خطا', style: AppTypography.bodyMedium),
+          return M360ErrorState(
+            message: 'نتائج لوڈ کرنے میں خطا',
+            onRetry: () {
+              ref.invalidate(allResultsProvider);
+              ref.invalidate(teacherAssignedClassesProvider);
+            },
           );
         }
 
@@ -125,28 +165,33 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen>
           }
         }
 
+        // A revoked class id must never silently filter everything out —
+        // fall back to "all assigned" when the selection is stale.
+        final effectiveSelected = classes.any((c) => c.id == _selectedClassId)
+            ? _selectedClassId
+            : '';
         final filtered = (resultsAsync.valueOrNull ?? const <StudentResult>[])
             .where((r) => allowedStudentIds.contains(r.studentId))
             .where((r) =>
-                _selectedClassId.isEmpty ||
-                studentClassIds[r.studentId] == _selectedClassId)
+                effectiveSelected.isEmpty ||
+                studentClassIds[r.studentId] == effectiveSelected)
             .toList();
 
         return Column(
           children: [
             // Class Filter (assigned classes only)
-            _buildClassFilter(classes),
+            _buildClassFilter(classes, effectiveSelected),
 
             // Results List
             Expanded(
               child: filtered.isEmpty
-                  ? const EmptyState(
-                      icon: Icons.assessment,
+                  ? const M360EmptyState(
+                      icon: Icons.assessment_outlined,
                       title: 'کوئی نتیجہ نہیں',
-                      subtitle: 'ابھی کوئی نتیجہ دستیاب نہیں',
+                      description: 'ابھی کوئی نتیجہ دستیاب نہیں',
                     )
                   : ListView.builder(
-                      padding: const EdgeInsets.only(bottom: 16),
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
                       itemCount: filtered.length,
                       itemBuilder: (context, index) {
                         return _buildResultCard(filtered[index]);
@@ -160,26 +205,28 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen>
   }
 
   /// Class filter chips — built from the teacher's assignments only.
-  Widget _buildClassFilter(List<AssignedClass> classes) {
-    return Container(
+  /// Tapping the active chip again resets to "all assigned".
+  Widget _buildClassFilter(List<AssignedClass> classes, String selected) {
+    return SizedBox(
       height: 50,
-      padding: const EdgeInsets.symmetric(vertical: 8),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         itemCount: classes.length + 1,
         itemBuilder: (context, index) {
           final isAll = index == 0;
           final classId = isAll ? '' : classes[index - 1].id;
           final className = isAll ? 'تمام جماعتیں' : classes[index - 1].name;
-          final isSelected = _selectedClassId == classId;
+          final isSelected = selected == classId;
           return Padding(
             padding: const EdgeInsets.only(left: 8),
             child: FilterChip(
               label: Text(className),
               selected: isSelected,
-              onSelected: (selected) {
-                setState(() => _selectedClassId = classId);
+              onSelected: (_) {
+                // Selection state → filtered query: the results list
+                // rebuilds from `studentClassIds` against the new id.
+                setState(() => _selectedClassId = isSelected ? '' : classId);
               },
               selectedColor: AppColors.primary.withValues(alpha: 0.2),
               checkmarkColor: AppColors.primary,
@@ -194,8 +241,8 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen>
   }
 
   Widget _buildResultCard(StudentResult result) {
-    return AppCard(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+    return M360TappableCard(
+      margin: const EdgeInsets.only(bottom: 12),
       onTap: () => _showResultDetails(result),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -212,7 +259,9 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen>
                 ),
                 child: Center(
                   child: Text(
-                    result.studentName.substring(0, 1),
+                    result.studentName.isNotEmpty
+                        ? result.studentName.substring(0, 1)
+                        : '؟',
                     style: AppTypography.titleLarge.copyWith(
                       color: AppColors.primary,
                     ),
@@ -287,13 +336,9 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen>
         ),
         const SizedBox(width: 8),
         SizedBox(
-          width: 50,
-          child: Text(
+          width: 64,
+          child: M360LatinText(
             '${subject.marksObtained.toInt()}/${subject.totalMarks.toInt()}',
-            style: AppTypography.labelMedium.copyWith(
-              color: _getGradeColor(subject.grade),
-            ),
-            textAlign: TextAlign.left,
           ),
         ),
       ],
@@ -328,8 +373,13 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen>
     );
   }
 
+  /// Grade → semantic color. Complete mapping for all six grades the
+  /// result model produces: distinction grades (الف+، الف) → success,
+  /// pass grades (ب → primary, ج → warning), fail grades (د، فیل) →
+  /// error. Unknown labels fall back to muted text (never invented).
   Color _getGradeColor(String grade) {
     switch (grade) {
+      case 'الف+':
       case 'الف':
         return AppColors.success;
       case 'ب':
@@ -337,11 +387,16 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen>
       case 'ج':
         return AppColors.warning;
       case 'د':
+      case 'فیل':
         return AppColors.error;
       default:
         return AppColors.textSecondary;
     }
   }
+
+  // ─────────────────────────────────────────────────────────────
+  // Result details sheet — view, print, share, delete
+  // ─────────────────────────────────────────────────────────────
 
   void _showResultDetails(StudentResult result) {
     showModalBottomSheet(
@@ -350,9 +405,9 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen>
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) {
+      builder: (sheetContext) {
         return DraggableScrollableSheet(
-          initialChildSize: 0.8,
+          initialChildSize: 0.85,
           minChildSize: 0.5,
           maxChildSize: 0.95,
           expand: false,
@@ -413,47 +468,44 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen>
                   const SizedBox(height: 20),
 
                   // Student Info
-                  AppCard(
-                    margin: EdgeInsets.zero,
-                    child: Column(
+                  M360Card(
+                    child: Row(
                       children: [
-                        Row(
-                          children: [
-                            Container(
-                              width: 60,
-                              height: 60,
-                              decoration: BoxDecoration(
-                                color: AppColors.primary.withValues(alpha: 0.1),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Center(
-                                child: Text(
-                                  result.studentName.substring(0, 1),
-                                  style: AppTypography.headingSmall.copyWith(
-                                    color: AppColors.primary,
-                                  ),
-                                ),
+                        Container(
+                          width: 60,
+                          height: 60,
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withValues(alpha: 0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Center(
+                            child: Text(
+                              result.studentName.isNotEmpty
+                                  ? result.studentName.substring(0, 1)
+                                  : '؟',
+                              style: AppTypography.headingSmall.copyWith(
+                                color: AppColors.primary,
                               ),
                             ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    result.studentName,
-                                    style: AppTypography.titleLarge,
-                                  ),
-                                  Text(
-                                    result.className,
-                                    style: AppTypography.bodyMedium,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            _buildGradeBadge(result.grade, result.percentage),
-                          ],
+                          ),
                         ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                result.studentName,
+                                style: AppTypography.titleLarge,
+                              ),
+                              Text(
+                                result.className,
+                                style: AppTypography.bodyMedium,
+                              ),
+                            ],
+                          ),
+                        ),
+                        _buildGradeBadge(result.grade, result.percentage),
                       ],
                     ),
                   ),
@@ -461,10 +513,7 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen>
                   const SizedBox(height: 20),
 
                   // Subject Results
-                  Text(
-                    'مضامین کی تفصیل',
-                    style: AppTypography.titleMedium,
-                  ),
+                  const M360SectionHeader(title: 'مضامین کی تفصیل'),
                   const SizedBox(height: 12),
 
                   // Subject Table Header
@@ -543,10 +592,8 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen>
                                 ),
                               ),
                               Expanded(
-                                child: Text(
+                                child: M360LatinText(
                                   '${subject.marksObtained.toInt()}/${subject.totalMarks.toInt()}',
-                                  style: AppTypography.bodyMedium,
-                                  textAlign: TextAlign.center,
                                 ),
                               ),
                               Expanded(
@@ -579,25 +626,25 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen>
                   const SizedBox(height: 24),
 
                   // Print Button
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () => _showPrintDialog(context),
-                      icon: const Icon(Icons.print),
-                      label: const Text('نتیجہ پرنٹ کریں'),
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                      ),
-                    ),
+                  M360SecondaryButton(
+                    label: 'نتیجہ پرنٹ کریں',
+                    icon: Icons.print,
+                    fullWidth: true,
+                    onPressed: () => _showPrintDialog(sheetContext),
                   ),
                   const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: () => _shareResult(result),
-                      icon: const Icon(Icons.share),
-                      label: const Text('شیئر کریں'),
-                    ),
+                  M360SecondaryButton(
+                    label: 'شیئر کریں',
+                    icon: Icons.share,
+                    fullWidth: true,
+                    onPressed: () => _shareResult(result),
+                  ),
+                  const SizedBox(height: 12),
+                  M360DangerButton(
+                    label: 'امتحان حذف کریں',
+                    icon: Icons.delete_outline,
+                    fullWidth: true,
+                    onPressed: () => _deleteExam(sheetContext, result),
                   ),
                 ],
               ),
@@ -608,174 +655,175 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen>
     );
   }
 
+  /// Deletes the exam behind [result] after an explicit confirmation.
+  /// Local-first soft delete via [ResultNotifier.deleteExam]; the sheet
+  /// closes, a snackbar confirms, and provider invalidation refreshes
+  /// the results list.
+  Future<void> _deleteExam(
+      BuildContext sheetContext, StudentResult result) async {
+    final confirmed = await showM360ConfirmDialog(
+      sheetContext,
+      title: 'امتحان حذف کریں',
+      message:
+          '«${result.examName}» حذف کر دیا جائے گا — اس امتحان کے تمام طلبہ کے نتائج بھی ہٹ جائیں گے۔ یہ عمل واپس نہیں ہو سکتا۔',
+      confirmLabel: 'حذف کریں',
+      danger: true,
+    );
+    if (!confirmed) return;
+    try {
+      await ref.read(resultNotifierProvider.notifier).deleteExam(result.examId);
+      if (!mounted) return;
+      Navigator.of(sheetContext).pop(); // close the details sheet
+      showM360SnackBar(context, 'امتحان حذف کر دیا گیا');
+    } catch (_) {
+      if (!mounted) return;
+      showM360SnackBar(context, 'امتحان حذف کرنے میں خطا', isError: true);
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // Entry tab — class + exam type + per-student subject marks
+  // ─────────────────────────────────────────────────────────────
+
   Widget _buildEntryTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Class Selection
-          AppCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'جماعت منتخب کریں',
-                  style: AppTypography.titleMedium,
+    return Consumer(
+      builder: (context, ref, _) {
+        final classesAsync = ref.watch(teacherAssignedClassesProvider);
+        final assignmentsAsync = ref.watch(teacherAssignmentsProvider);
+
+        if (classesAsync.isLoading || assignmentsAsync.isLoading) {
+          return const M360LoadingState();
+        }
+        if (classesAsync.hasError || assignmentsAsync.hasError) {
+          return M360ErrorState(
+            message: 'جماعتیں لوڈ کرنے میں خطا',
+            onRetry: () {
+              ref.invalidate(teacherAssignedClassesProvider);
+              ref.invalidate(teacherAssignmentsProvider);
+            },
+          );
+        }
+
+        final classes = classesAsync.valueOrNull ?? const <AssignedClass>[];
+        final assignments =
+            assignmentsAsync.valueOrNull ?? const <TeacherClassAssignment>[];
+        // Phase 4: only the teacher's assigned classes are offered.
+        final validEntryValue =
+            classes.any((c) => c.id == _entryClassId) ? _entryClassId : null;
+        final subjects = _entrySubjects(assignments);
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Class + exam type selection
+              M360Card(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const M360SectionHeader(title: 'جماعت اور امتحان'),
+                    const SizedBox(height: 12),
+                    M360Dropdown<String>(
+                      label: 'جماعت منتخب کریں',
+                      items: [
+                        for (final c in classes)
+                          M360DropdownItem(value: c.id, label: c.name),
+                      ],
+                      value: validEntryValue,
+                      onChanged: (v) => setState(() => _entryClassId = v ?? ''),
+                    ),
+                    const SizedBox(height: 12),
+                    M360Dropdown<String>(
+                      label: 'امتحان کی قسم',
+                      items: const [
+                        M360DropdownItem(
+                            value: 'ماہانہ امتحان', label: 'ماہانہ امتحان'),
+                        M360DropdownItem(
+                            value: 'ہفتہ وار ٹیسٹ', label: 'ہفتہ وار ٹیسٹ'),
+                        M360DropdownItem(
+                            value: 'سالانہ امتحان', label: 'سالانہ امتحان'),
+                      ],
+                      value: _entryExamType,
+                      onChanged: (v) => setState(() => _entryExamType = v),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 12),
-                // Phase 4: only the teacher's assigned classes are offered.
-                // Phase 6: the selection actually drives the roster below.
+              ),
+
+              const SizedBox(height: 16),
+
+              // Student Entry Cards — real roster of the selected class,
+              // subjects from the teacher's assignments (never hard-coded).
+              const M360SectionHeader(title: 'طلباء کے نمبرات'),
+              const SizedBox(height: 12),
+
+              if (_entryClassId.isEmpty)
+                const M360EmptyState(
+                  icon: Icons.class_outlined,
+                  title: 'جماعت منتخب کریں',
+                  description: 'نمبرات درج کرنے کے لیے پہلے جماعت منتخب کریں',
+                )
+              else if (subjects.isEmpty)
+                const M360EmptyState(
+                  icon: Icons.subject_outlined,
+                  title: 'کوئی مضمون درج نہیں',
+                  description:
+                      'اس جماعت کے لیے آپ کی اسائنمنٹ میں کوئی مضمون درج نہیں — منتظم سے رابطہ کریں',
+                )
+              else
                 Consumer(
                   builder: (context, ref, _) {
-                    final classes =
-                        ref.watch(teacherAssignedClassesProvider).valueOrNull ??
-                            const <AssignedClass>[];
-                    final nameToId = <String, String>{
-                      for (final c in classes) c.name: c.id
-                    };
-                    String? selectedName;
-                    for (final c in classes) {
-                      if (c.id == _entryClassId) selectedName = c.name;
-                    }
-                    return _buildDropdownField(
-                      hint: 'جماعت',
-                      items: classes.map((c) => c.name).toList(),
-                      value: selectedName,
-                      onChanged: (name) => setState(() => _entryClassId =
-                          name == null ? '' : (nameToId[name] ?? '')),
+                    final studentsAsync =
+                        ref.watch(teacherClassStudentsProvider(_entryClassId));
+                    return studentsAsync.when(
+                      loading: () => const M360LoadingState(),
+                      error: (_, __) => M360ErrorState(
+                        message: 'طلباء لوڈ کرنے میں خطا',
+                        onRetry: () => ref.invalidate(
+                            teacherClassStudentsProvider(_entryClassId)),
+                      ),
+                      data: (students) => students.isEmpty
+                          ? const M360EmptyState(
+                              icon: Icons.people_outline,
+                              title: 'کوئی طالب علم نہیں',
+                              description:
+                                  'اس جماعت میں کوئی طالب علم درج نہیں',
+                            )
+                          : Column(
+                              children: [
+                                for (final s in students)
+                                  _buildStudentEntryCard(s, subjects),
+                              ],
+                            ),
                     );
                   },
                 ),
-                const SizedBox(height: 12),
-                _buildDropdownField(
-                  hint: 'امتحان کی قسم',
-                  items: const [
-                    'ماہانہ امتحان',
-                    'ہفتہ وار ٹیسٹ',
-                    'سالانہ امتحان'
-                  ],
-                  value: _entryExamType,
-                  onChanged: (v) => setState(() => _entryExamType = v),
-                ),
-              ],
-            ),
-          ),
 
-          const SizedBox(height: 16),
+              const SizedBox(height: 24),
 
-          // Student Entry Cards — real roster of the selected class.
-          Text(
-            'طلباء کے نمبرات',
-            style: AppTypography.titleMedium,
-          ),
-          const SizedBox(height: 12),
-
-          if (_entryClassId.isEmpty)
-            _buildEmptyState(
-                'براہ کرم پہلے جماعت منتخب کریں', Icons.class_outlined)
-          else
-            Consumer(
-              builder: (context, ref, _) {
-                final studentsAsync =
-                    ref.watch(teacherClassStudentsProvider(_entryClassId));
-                return studentsAsync.when(
-                  loading: () => const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(24),
-                      child: CircularProgressIndicator(),
-                    ),
-                  ),
-                  error: (_, __) => _buildEmptyState(
-                      'طلباء لوڈ کرنے میں خطا', Icons.error_outline),
-                  data: (students) => students.isEmpty
-                      ? _buildEmptyState('اس جماعت میں کوئی طالب علم نہیں',
-                          Icons.people_outline)
-                      : Column(
-                          children: [
-                            for (final s in students) _buildStudentEntryCard(s),
-                          ],
-                        ),
-                );
-              },
-            ),
-
-          const SizedBox(height: 24),
-
-          // Save Button — persists through ResultNotifier (exam header +
-          // one SubjectResult row per student × subject).
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: _saveEntryResults,
-              icon: const Icon(Icons.save),
-              label: const Text('نتائج محفوظ کریں'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
+              // Save — the single primary CTA of this screen (orange).
+              M360PrimaryButton(
+                label: 'نتائج محفوظ کریں',
+                icon: Icons.save,
+                fullWidth: true,
+                isLoading: _savingEntry,
+                onPressed:
+                    (_entryClassId.isEmpty || subjects.isEmpty || _savingEntry)
+                        ? null
+                        : _saveEntryResults,
               ),
-            ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  /// Explicit empty state — never invented rows.
-  Widget _buildEmptyState(String message, IconData icon) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
-        child: Column(
-          children: [
-            Icon(icon,
-                size: 48,
-                color: AppColors.textSecondary.withValues(alpha: 0.5)),
-            const SizedBox(height: 12),
-            Text(
-              message,
-              style: AppTypography.bodyMedium
-                  .copyWith(color: AppColors.textSecondary),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDropdownField({
-    required String hint,
-    required List<String> items,
-    String? value,
-    ValueChanged<String?>? onChanged,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.divider),
-      ),
-      child: DropdownButton<String>(
-        isExpanded: true,
-        hint: Text(hint, style: AppTypography.bodyMedium),
-        value: value,
-        underline: const SizedBox(),
-        items: items.map((item) {
-          return DropdownMenuItem(
-            value: item,
-            child: Text(item, style: AppTypography.bodyMedium),
-          );
-        }).toList(),
-        onChanged: onChanged ?? (value) {},
-      ),
-    );
-  }
-
-  Widget _buildStudentEntryCard(Student student) {
+  Widget _buildStudentEntryCard(Student student, List<String> subjects) {
     final name = student.name;
     final rollNo = student.rollNo;
-    return AppCard(
+    return M360Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -791,7 +839,7 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen>
                 ),
                 child: Center(
                   child: Text(
-                    name.substring(0, 1),
+                    name.isNotEmpty ? name.substring(0, 1) : '؟',
                     style: AppTypography.titleMedium.copyWith(
                       color: AppColors.primary,
                     ),
@@ -815,21 +863,17 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen>
           ),
           const Divider(height: 24),
 
-          // Subject Input Fields — controllers captured per student so
-          // the save button can persist real marks.
-          Row(
+          // Subject Input Fields — one per assigned subject; controllers
+          // captured per student so the save button can persist real marks.
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
             children: [
-              Expanded(
-                child: _buildMarksInput(student.id, _entrySubjects[0]),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildMarksInput(student.id, _entrySubjects[1]),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildMarksInput(student.id, _entrySubjects[2]),
-              ),
+              for (final subject in subjects)
+                SizedBox(
+                  width: 104,
+                  child: _buildMarksInput(student.id, subject),
+                ),
             ],
           ),
         ],
@@ -838,161 +882,11 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen>
   }
 
   Widget _buildMarksInput(String studentId, String subject) {
-    return Column(
-      children: [
-        Text(
-          subject,
-          style: AppTypography.labelSmall,
-        ),
-        const SizedBox(height: 4),
-        SizedBox(
-          height: 40,
-          child: TextField(
-            controller: _marksController(studentId, subject),
-            keyboardType: TextInputType.number,
-            textAlign: TextAlign.center,
-            style: AppTypography.bodyMedium,
-            decoration: InputDecoration(
-              hintText: '0',
-              contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: AppColors.divider),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: AppColors.divider),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  void _showPrintDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Header
-              Text(
-                'نتیجہ پرنٹ کریں',
-                style: AppTypography.headingMedium,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-
-              // Print Options
-              Text(
-                'براہ کرم پرنٹ کی قسم منتخب کریں:',
-                style: AppTypography.bodyLarge,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 24),
-
-              // Print Options
-              _buildPrintOption(
-                icon: Icons.person,
-                title: 'کل طلباء کے نتائج',
-                subtitle: 'تمام طلباء کے نتائج پرنٹ کریں',
-                onTap: () {
-                  _printResults('all');
-                  Navigator.pop(context);
-                },
-              ),
-              const SizedBox(height: 12),
-              _buildPrintOption(
-                icon: Icons.star,
-                title: 'ممتاز طلباء',
-                subtitle: '90% سے زیادہ نمبر والے طلباء',
-                onTap: () {
-                  _printResults('excellent');
-                  Navigator.pop(context);
-                },
-              ),
-              const SizedBox(height: 12),
-              _buildPrintOption(
-                icon: Icons.warning,
-                iconColor: AppColors.warning,
-                title: 'ناکام طلباء',
-                subtitle: '50% سے کم نمبر والے طلباء',
-                onTap: () {
-                  _printResults('failed');
-                  Navigator.pop(context);
-                },
-              ),
-
-              const SizedBox(height: 24),
-
-              // Cancel Button
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('منسوخ کریں'),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPrintOption({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-    Color? iconColor,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          border: Border.all(color: AppColors.divider),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              color: iconColor ?? AppColors.primary,
-              size: 24,
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: AppTypography.bodyLarge
-                        .copyWith(fontWeight: FontWeight.w500),
-                  ),
-                  Text(
-                    subtitle,
-                    style: AppTypography.bodySmall
-                        .copyWith(color: AppColors.textSecondary),
-                  ),
-                ],
-              ),
-            ),
-            Icon(
-              Icons.chevron_right,
-              color: AppColors.textSecondary,
-            ),
-          ],
-        ),
-      ),
+    return M360TextField(
+      label: subject,
+      hint: '0',
+      controller: _marksController(studentId, subject),
+      keyboardType: TextInputType.number,
     );
   }
 
@@ -1003,18 +897,27 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen>
     final classId = _entryClassId;
     final examType = _entryExamType;
     if (classId.isEmpty || examType == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('براہ کرم جماعت اور امتحان کی قسم منتخب کریں'),
-        ),
+      showM360SnackBar(
+        context,
+        'براہ کرم جماعت اور امتحان کی قسم منتخب کریں',
+        isError: true,
+      );
+      return;
+    }
+    final subjects = _entrySubjects(
+        ref.read(teacherAssignmentsProvider).valueOrNull ??
+            const <TeacherClassAssignment>[]);
+    if (subjects.isEmpty) {
+      showM360SnackBar(
+        context,
+        'اس جماعت کے لیے کوئی مضمون درج نہیں',
+        isError: true,
       );
       return;
     }
     final tenantId = ref.read(currentTenantIdProvider);
     if (tenantId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('کوئی فعال ادارہ نہیں')),
-      );
+      showM360SnackBar(context, 'کوئی فعال ادارہ نہیں', isError: true);
       return;
     }
     final classes = ref.read(teacherAssignedClassesProvider).valueOrNull ??
@@ -1029,7 +932,7 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen>
 
     final marks = <({String studentId, String subject, double value})>[];
     for (final s in students) {
-      for (final subject in _entrySubjects) {
+      for (final subject in subjects) {
         final text = _marksControllers['${s.id}::$subject']?.text.trim() ?? '';
         if (text.isEmpty) continue;
         final value = double.tryParse(text);
@@ -1038,12 +941,11 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen>
       }
     }
     if (marks.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('کوئی نمبر درج نہیں کیے گئے')),
-      );
+      showM360SnackBar(context, 'کوئی نمبر درج نہیں کیے گئے', isError: true);
       return;
     }
 
+    setState(() => _savingEntry = true);
     try {
       final notifier = ref.read(resultNotifierProvider.notifier);
       final now = DateTime.now();
@@ -1063,10 +965,10 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen>
         classId: classId,
         examDate:
             '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}',
-        totalMarks: _entrySubjects.length * 100,
+        totalMarks: subjects.length * 100,
       );
-      // Reuse existing result row ids (wizard's `_resultIds` pattern) so
-      // re-saving updates the same rows instead of duplicating them.
+      // Reuse existing result row ids so re-saving updates the same rows
+      // instead of duplicating them.
       final resultIds = <String, Map<String, String>>{};
       try {
         final existing = await ref.read(examResultsProvider(exam.id).future);
@@ -1094,15 +996,117 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen>
         c.clear();
       }
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${marks.length} نتائج محفوظ ہو گئے')),
-      );
-    } catch (e) {
+      showM360SnackBar(context, '${marks.length} نتائج محفوظ ہو گئے');
+    } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('محفوظ کرنے میں خرابی: $e')),
-      );
+      showM360SnackBar(context, 'نتائج محفوظ کرنے میں خطا', isError: true);
+    } finally {
+      if (mounted) setState(() => _savingEntry = false);
     }
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // Print / share (report pipeline unchanged)
+  // ─────────────────────────────────────────────────────────────
+
+  void _showPrintDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => M360Dialog(
+        title: 'نتیجہ پرنٹ کریں',
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'براہ کرم پرنٹ کی قسم منتخب کریں:',
+              style: AppTypography.bodyLarge,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            _buildPrintOption(
+              icon: Icons.person,
+              title: 'کل طلباء کے نتائج',
+              subtitle: 'تمام طلباء کے نتائج پرنٹ کریں',
+              onTap: () {
+                _printResults('all');
+                Navigator.pop(dialogContext);
+              },
+            ),
+            const SizedBox(height: 12),
+            _buildPrintOption(
+              icon: Icons.star,
+              title: 'ممتاز طلباء',
+              subtitle: '90% سے زیادہ نمبر والے طلباء',
+              onTap: () {
+                _printResults('excellent');
+                Navigator.pop(dialogContext);
+              },
+            ),
+            const SizedBox(height: 12),
+            _buildPrintOption(
+              icon: Icons.warning,
+              iconColor: AppColors.warning,
+              title: 'ناکام طلباء',
+              subtitle: '50% سے کم نمبر والے طلباء',
+              onTap: () {
+                _printResults('failed');
+                Navigator.pop(dialogContext);
+              },
+            ),
+          ],
+        ),
+        actions: [
+          M360TertiaryButton(
+            label: 'منسوخ کریں',
+            onPressed: () => Navigator.pop(dialogContext),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPrintOption({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+    Color? iconColor,
+  }) {
+    return M360TappableCard(
+      onTap: onTap,
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            color: iconColor ?? AppColors.primary,
+            size: 24,
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: AppTypography.bodyLarge
+                      .copyWith(fontWeight: FontWeight.w500),
+                ),
+                Text(
+                  subtitle,
+                  style: AppTypography.bodySmall
+                      .copyWith(color: AppColors.textSecondary),
+                ),
+              ],
+            ),
+          ),
+          const Icon(
+            Icons.chevron_left,
+            color: AppColors.textSecondary,
+          ),
+        ],
+      ),
+    );
   }
 
   /// Shares one student's result card as a PDF through the system
@@ -1121,11 +1125,9 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen>
         bytes: bytes,
         filename: 'result_${result.studentId}.pdf',
       );
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('شیئر کرنے میں خرابی: $e')),
-      );
+      showM360SnackBar(context, 'شیئر کرنے میں خرابی', isError: true);
     }
   }
 
@@ -1173,11 +1175,9 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen>
         results: list,
       );
       await Printing.layoutPdf(onLayout: (_) async => bytes);
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('پرنٹ میں خرابی: $e')),
-      );
+      showM360SnackBar(context, 'پرنٹ میں خرابی', isError: true);
     }
   }
 }

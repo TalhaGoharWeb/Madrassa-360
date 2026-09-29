@@ -1,7 +1,16 @@
 /// ماسٹر ایڈمن مشترکہ وجیٹس
 /// Shared building blocks for the Master Admin (platform operator) section.
+///
+/// Phase 10: every widget below is a thin compatibility wrapper over the
+/// canonical m360 component language
+/// (`package:madrasa_360/core/design/m360.dart`). Public classes,
+/// constructors, and call semantics are unchanged — only the visuals
+/// moved. In particular [MaStatusChip.colorFor] keeps its exact
+/// status→color mapping (pinned by `test/unit/license_status_test.dart`).
 
 import 'package:flutter/material.dart';
+
+import 'package:madrasa_360/core/design/m360.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_typography.dart';
@@ -30,50 +39,18 @@ class MaStatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final card = Card(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-        child: Row(
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, color: color, size: 24),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    value,
-                    style: AppTypography.headingMedium.copyWith(
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    label,
-                    style: AppTypography.bodySmall.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+    final card = M360StatCard(
+      value: value,
+      label: label,
+      icon: icon,
+      iconBackground: color.withValues(alpha: 0.12),
     );
     if (onTap == null) return card;
     return InkWell(
-        onTap: onTap, borderRadius: BorderRadius.circular(12), child: card);
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(M360Radius.lg),
+      child: card,
+    );
   }
 }
 
@@ -94,40 +71,23 @@ class MaSectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(title,
-                          style: AppTypography.titleMedium.copyWith(
-                            fontWeight: FontWeight.bold,
-                          )),
-                      if (subtitle != null) ...[
-                        const SizedBox(height: 4),
-                        Text(subtitle!,
-                            style: AppTypography.bodySmall.copyWith(
-                              color: AppColors.textSecondary,
-                            )),
-                      ],
-                    ],
-                  ),
-                ),
-                if (actions != null) ...actions!,
-              ],
-            ),
-            const Divider(height: 24),
-            child,
+    return M360Card(
+      margin: const EdgeInsets.only(bottom: M360Spacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          M360SectionHeader(
+            title: title,
+            subtitle: subtitle,
+            padding: EdgeInsets.zero,
+          ),
+          if (actions != null) ...[
+            const SizedBox(height: M360Spacing.sm),
+            Wrap(spacing: M360Spacing.sm, children: actions!),
           ],
-        ),
+          const Divider(height: 24),
+          child,
+        ],
       ),
     );
   }
@@ -196,20 +156,7 @@ class MaHealthTile extends StatelessWidget {
               ],
             ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              statusLabel,
-              style: AppTypography.labelSmall.copyWith(
-                color: color,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
+          M360Badge.custom(label: statusLabel, color: color),
         ],
       ),
     );
@@ -217,6 +164,9 @@ class MaHealthTile extends StatelessWidget {
 }
 
 /// Small colored status chip for tenant status values.
+///
+/// Visuals come from [M360Badge]; the [colorFor] mapping is unchanged and
+/// pinned by `test/unit/license_status_test.dart`.
 class MaStatusChip extends StatelessWidget {
   final String status;
 
@@ -242,21 +192,9 @@ class MaStatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = colorFor(status);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withValues(alpha: 0.4)),
-      ),
-      child: Text(
-        status.toUpperCase(),
-        style: AppTypography.labelSmall.copyWith(
-          color: color,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
+    return M360Badge.custom(
+      label: status.toUpperCase(),
+      color: colorFor(status),
     );
   }
 }
@@ -264,6 +202,9 @@ class MaStatusChip extends StatelessWidget {
 /// Re-export conveniences so screens import one file.
 
 /// Loading scaffold used by master admin screens.
+///
+/// Kept as a root [Scaffold] (pushed console route): only the chrome moved
+/// to the m360 app bar and skeleton state.
 class MaLoadingScaffold extends StatelessWidget {
   final String message;
   const MaLoadingScaffold({super.key, this.message = 'لوڈ ہو رہا ہے…'});
@@ -271,13 +212,16 @@ class MaLoadingScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('پلیٹ فارم منتظم')),
-      body: LoadingWidget(message: message),
+      appBar: const M360AppBar(title: 'پلیٹ فارم منتظم'),
+      body: const M360LoadingState(),
     );
   }
 }
 
 /// Error scaffold with retry.
+///
+/// Kept as a root [Scaffold] (pushed console route): only the chrome moved
+/// to the m360 app bar and error state.
 class MaErrorScaffold extends StatelessWidget {
   final String message;
   final VoidCallback onRetry;
@@ -291,14 +235,8 @@ class MaErrorScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('پلیٹ فارم منتظم')),
-      body: EmptyStateWidget(
-        icon: Icons.error_outline,
-        title: 'خرابی',
-        message: message,
-        actionLabel: 'دوبارہ کوشش کریں',
-        onAction: onRetry,
-      ),
+      appBar: const M360AppBar(title: 'پلیٹ فارم منتظم'),
+      body: M360ErrorState(message: message, onRetry: onRetry),
     );
   }
 }

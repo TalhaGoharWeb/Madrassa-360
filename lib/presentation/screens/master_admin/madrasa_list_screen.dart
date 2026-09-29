@@ -4,6 +4,8 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'package:madrasa_360/core/design/m360.dart';
+
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import 'create_madrasa_wizard.dart';
@@ -135,64 +137,74 @@ class _MadrasaListScreenState extends State<MadrasaListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-          child: TextField(
-            controller: _searchCtrl,
-            decoration: const InputDecoration(
-              hintText: 'نام، کوڈ یا شہر سے تلاش کریں…',
-              prefixIcon: Icon(Icons.search),
+    // Shell-hosted destination: no Scaffold of its own. The list manages
+    // its own scroll, so the container is non-scrollable.
+    return PageContainer(
+      scrollable: false,
+      header: PageHeader(
+        title: 'مدارس',
+        description: 'تمام ٹیننٹس — تلاش کریں، فلٹر لگائیں، تفصیل کھولیں',
+        actions: [
+          M360PrimaryButton(
+            label: 'نیا مدرسہ',
+            icon: Icons.add,
+            onPressed: _openWizard,
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+            child: M360SearchField(
+              controller: _searchCtrl,
+              hint: 'نام، کوڈ یا شہر سے تلاش کریں…',
             ),
           ),
-        ),
-        SizedBox(
-          height: 44,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: _statusFilters.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 8),
-            itemBuilder: (context, i) {
-              final s = _statusFilters[i];
-              final selected = s == _status;
-              return ChoiceChip(
-                label: Text(s == 'all' ? 'All' : s),
-                selected: selected,
-                selectedColor: AppColors.primary.withValues(alpha: 0.15),
-                onSelected: (_) {
-                  setState(() => _status = s);
-                  _refresh();
-                },
-              );
-            },
+          SizedBox(
+            height: 44,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: _statusFilters.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              itemBuilder: (context, i) {
+                final s = _statusFilters[i];
+                final selected = s == _status;
+                return ChoiceChip(
+                  label: Text(s == 'all' ? 'All' : s),
+                  selected: selected,
+                  selectedColor: AppColors.primary.withValues(alpha: 0.15),
+                  onSelected: (_) {
+                    setState(() => _status = s);
+                    _refresh();
+                  },
+                );
+              },
+            ),
           ),
-        ),
-        const SizedBox(height: 8),
-        Expanded(child: _buildBody()),
-      ],
+          const SizedBox(height: 8),
+          Expanded(child: _buildBody()),
+        ],
+      ),
     );
   }
 
   Widget _buildBody() {
     if (_loading) {
-      return const LoadingWidget(message: 'مدارس لوڈ ہو رہے ہیں…');
+      return const M360LoadingState();
     }
     if (_error != null) {
-      return EmptyStateWidget(
-        icon: Icons.error_outline,
-        title: 'خرابی / Error',
-        message: _error,
-        actionLabel: 'دوبارہ کوشش کریں',
-        onAction: _refresh,
+      return M360ErrorState(
+        message: _error!,
+        onRetry: _refresh,
       );
     }
     if (_tenants.isEmpty) {
-      return EmptyStateWidget(
+      return M360EmptyState(
         icon: Icons.account_balance_outlined,
         title: 'کوئی مدرسہ نہیں ملا',
-        message: 'No madrasas match the current search and filters.',
+        description: 'No madrasas match the current search and filters.',
         actionLabel: 'نیا مدرسہ بنائیں',
         onAction: _openWizard,
       );
@@ -213,8 +225,9 @@ class _MadrasaListScreenState extends State<MadrasaListScreen> {
         final t = _tenants[i];
         final status = (t['status'] as String?) ?? 'unknown';
         final nameUrdu = (t['name_urdu'] as String?) ?? '';
-        return Card(
+        return M360Card(
           margin: EdgeInsets.zero,
+          padding: const EdgeInsets.all(8),
           child: ListTile(
             leading: Container(
               width: 48,

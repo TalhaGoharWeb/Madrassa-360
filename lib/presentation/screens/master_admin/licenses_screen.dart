@@ -6,6 +6,8 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'package:madrasa_360/core/design/m360.dart';
+
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import 'widgets/ma_widgets.dart';
@@ -118,8 +120,9 @@ class _LicensesScreenState extends State<LicensesScreen> {
           final plan = r['license_plans'] as Map<String, dynamic>?;
           final status = (r['status'] as String?) ?? 'unknown';
           final modules = (r['enabled_modules'] as List?)?.join(', ') ?? '—';
-          return Card(
+          return M360Card(
             margin: EdgeInsets.zero,
+            padding: EdgeInsets.zero,
             child: ExpansionTile(
               leading: const Icon(Icons.verified,
                   color: AppColors.primary, size: 32),

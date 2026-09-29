@@ -2,13 +2,20 @@
 /// Master Admin — full CRUD on license_plans. Master Admins can create,
 /// edit, activate/deactivate and delete plans (deletion blocked by FK when
 /// subscriptions/licenses reference the plan — the DB error is surfaced).
+///
+/// Phase 10: shell-hosted destination — the nested Scaffold/AppBar/FAB
+/// became PageContainer + PageHeader; dialogs, fields, and snackbars use
+/// the m360 components. CRUD semantics and the FK-blocked delete behavior
+/// are unchanged.
 
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'package:madrasa_360/core/design/m360.dart';
+
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
-import 'widgets/ma_widgets.dart';
+import '../../../core/utils/money_format.dart';
 
 class PlansScreen extends StatefulWidget {
   const PlansScreen({super.key});
@@ -62,70 +69,68 @@ class _PlansScreenState extends State<PlansScreen> {
       _load();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Update failed: $e')));
+        showM360SnackBar(context, 'Update failed: $e', isError: true);
       }
     }
   }
 
   Future<void> _delete(Map<String, dynamic> plan) async {
     final name = (plan['name'] as String?) ?? '';
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('پلان حذف کریں؟'),
-        content:
-            Text('Delete plan "$name"? This is blocked if any subscription or '
-                'license references it.'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.of(ctx).pop(false),
-              child: const Text('منسوخ')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('حذف کریں'),
-          ),
-        ],
-      ),
+    final confirm = await showM360ConfirmDialog(
+      context,
+      title: 'پلان حذف کریں؟',
+      message: 'Delete plan "$name"? This is blocked if any subscription or '
+          'license references it.',
+      confirmLabel: 'حذف کریں',
+      cancelLabel: 'منسوخ',
+      danger: true,
     );
-    if (confirm != true) return;
+    if (!confirm) return;
     try {
       await _client.from('license_plans').delete().eq('id', plan['id']);
       _load();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Delete failed: $e')));
+        showM360SnackBar(context, 'Delete failed: $e', isError: true);
       }
     }
   }
 
+  /// Money display for the plan card — Pakistani grouping via [formatPK].
+  String _priceLabel(dynamic value) {
+    if (value == null) return '—';
+    final num? n = value is num ? value : num.tryParse(value.toString());
+    if (n == null) return value.toString();
+    return formatPK(n);
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Shell-hosted destination: no Scaffold of its own.
     if (_loading) {
-      return const LoadingWidget(message: 'پلان لوڈ ہو رہے ہیں…');
+      return const M360LoadingState();
     }
     if (_error != null) {
-      return EmptyStateWidget(
-        icon: Icons.error_outline,
-        title: 'license_plans دستیاب نہیں',
-        message: _error,
-        actionLabel: 'دوبارہ کوشش کریں',
-        onAction: _load,
-      );
+      return M360ErrorState(message: _error!, onRetry: _load);
     }
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('لائسنس پلانز', style: AppTypography.appBarTitle),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
+    return PageContainer(
+      scrollable: false,
+      header: PageHeader(
+        title: 'لائسنس پلانز',
+        description: 'سبسکرپشن پلان بنائیں، ترمیم کریں، فعال/غیر فعال کریں',
+        actions: [
+          M360PrimaryButton(
+            label: 'نیا پلان',
+            icon: Icons.add,
+            onPressed: () => _openEditor(),
+          ),
+        ],
       ),
-      body: _plans.isEmpty
-          ? EmptyStateWidget(
+      child: _plans.isEmpty
+          ? M360EmptyState(
               icon: Icons.card_membership_outlined,
               title: 'کوئی پلان نہیں',
-              message: 'Create the first license plan.',
+              description: 'Create the first license plan.',
               actionLabel: 'نیا پلان',
               onAction: () => _openEditor(),
             )
@@ -140,8 +145,9 @@ class _PlansScreenState extends State<PlansScreen> {
                   final active = p['is_active'] as bool? ?? true;
                   final modules =
                       (p['enabled_modules'] as List?)?.join(', ') ?? '—';
-                  return Card(
+                  return M360Card(
                     margin: EdgeInsets.zero,
+                    padding: const EdgeInsets.all(8),
                     child: ListTile(
                       leading: Container(
                         width: 48,
@@ -169,7 +175,7 @@ class _PlansScreenState extends State<PlansScreen> {
                         'اساتذہ: ${p['max_teachers'] ?? '—'} • '
                         'صارفین: ${p['max_users'] ?? '—'}\n'
                         'ماڈیولز: $modules\n'
-                        'قیمت: ${p['price_monthly'] ?? '—'}/ماہ',
+                        'قیمت: ${_priceLabel(p['price_monthly'])}/ماہ',
                         style: AppTypography.bodySmall
                             .copyWith(color: AppColors.textSecondary),
                       ),
@@ -197,11 +203,6 @@ class _PlansScreenState extends State<PlansScreen> {
                 },
               ),
             ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _openEditor(),
-        icon: const Icon(Icons.add),
-        label: const Text('نیا پلان'),
-      ),
     );
   }
 }
@@ -296,8 +297,7 @@ class _PlanEditorDialogState extends State<_PlanEditorDialog> {
       if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Save failed: $e')));
+        showM360SnackBar(context, 'Save failed: $e', isError: true);
       }
       setState(() => _saving = false);
     }
@@ -305,102 +305,85 @@ class _PlanEditorDialogState extends State<_PlanEditorDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(widget.plan == null ? 'نیا پلان' : 'پلان میں ترمیم'),
-      content: SizedBox(
-        width: 420,
-        child: SingleChildScrollView(
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
+    return M360Dialog(
+      title: widget.plan == null ? 'نیا پلان' : 'پلان میں ترمیم',
+      content: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            M360TextField(
+              controller: _name,
+              label: 'نام / Name *',
+              validator: (v) =>
+                  (v == null || v.trim().isEmpty) ? 'یہ خانہ ضروری ہے' : null,
+            ),
+            const SizedBox(height: 10),
+            M360TextField(
+              controller: _description,
+              label: 'تفصیل / Description',
+              maxLines: 2,
+            ),
+            const SizedBox(height: 10),
+            Row(
               children: [
-                TextFormField(
-                  controller: _name,
-                  decoration: const InputDecoration(labelText: 'نام / Name *'),
-                  validator: (v) => (v == null || v.trim().isEmpty)
-                      ? 'یہ خانہ ضروری ہے'
-                      : null,
-                ),
-                const SizedBox(height: 10),
-                TextFormField(
-                  controller: _description,
-                  decoration:
-                      const InputDecoration(labelText: 'تفصیل / Description'),
-                  maxLines: 2,
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _maxStudents,
-                        keyboardType: TextInputType.number,
-                        decoration:
-                            const InputDecoration(labelText: 'Max students'),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _maxTeachers,
-                        keyboardType: TextInputType.number,
-                        decoration:
-                            const InputDecoration(labelText: 'Max teachers'),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _maxUsers,
-                        keyboardType: TextInputType.number,
-                        decoration:
-                            const InputDecoration(labelText: 'Max users'),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                TextFormField(
-                  controller: _price,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  decoration: const InputDecoration(
-                      labelText: 'قیمت/ماہ / Price monthly'),
-                ),
-                const SizedBox(height: 10),
-                TextFormField(
-                  controller: _modules,
-                  decoration: const InputDecoration(
-                    labelText: 'ماڈیولز / Enabled modules',
-                    hintText: 'students, teachers, fees, … (comma separated)',
+                Expanded(
+                  child: M360TextField(
+                    controller: _maxStudents,
+                    label: 'Max students',
+                    keyboardType: TextInputType.number,
                   ),
                 ),
-                const SizedBox(height: 10),
-                SwitchListTile(
-                  value: _isActive,
-                  onChanged: (v) => setState(() => _isActive = v),
-                  title: const Text('فعال / Active'),
-                  dense: true,
+                const SizedBox(width: 8),
+                Expanded(
+                  child: M360TextField(
+                    controller: _maxTeachers,
+                    label: 'Max teachers',
+                    keyboardType: TextInputType.number,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: M360TextField(
+                    controller: _maxUsers,
+                    label: 'Max users',
+                    keyboardType: TextInputType.number,
+                  ),
                 ),
               ],
             ),
-          ),
+            const SizedBox(height: 10),
+            M360TextField(
+              controller: _price,
+              label: 'قیمت/ماہ / Price monthly',
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+            ),
+            const SizedBox(height: 10),
+            M360TextField(
+              controller: _modules,
+              label: 'ماڈیولز / Enabled modules',
+              hint: 'students, teachers, fees, … (comma separated)',
+            ),
+            const SizedBox(height: 10),
+            SwitchListTile(
+              value: _isActive,
+              onChanged: (v) => setState(() => _isActive = v),
+              title: const Text('فعال / Active'),
+              dense: true,
+            ),
+          ],
         ),
       ),
       actions: [
-        TextButton(
+        M360TertiaryButton(
+          label: 'منسوخ',
           onPressed: _saving ? null : () => Navigator.of(context).pop(false),
-          child: const Text('منسوخ'),
         ),
-        ElevatedButton(
+        M360PrimaryButton(
+          label: 'محفوظ کریں',
+          isLoading: _saving,
           onPressed: _saving ? null : _save,
-          child: _saving
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2))
-              : const Text('محفوظ کریں'),
         ),
       ],
     );

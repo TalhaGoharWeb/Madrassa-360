@@ -8,8 +8,9 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'package:madrasa_360/core/design/m360.dart';
+
 import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_typography.dart';
 import '../../../core/observability/health_metrics.dart';
 import 'madrasa_detail_screen.dart';
 import 'madrasa_list_screen.dart';
@@ -194,10 +195,12 @@ class _MasterDashboardScreenState extends State<MasterDashboardScreen> {
   String _stat(String? v) => v ?? '—';
 
   void _goToMadrasas() {
+    // Pushed deep page: a self-chromed root Scaffold (deep-screen app bar),
+    // not a nested shell scaffold. Navigation logic is unchanged.
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => Scaffold(
-          appBar: AppBar(title: const Text('Madrasas')),
+          appBar: const M360AppBar(title: 'Madrasas'),
           body: MadrasaListScreen(
             onOpenDetail: (tenantId) {
               Navigator.of(context).push(
@@ -214,34 +217,26 @@ class _MasterDashboardScreenState extends State<MasterDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Shell-hosted destination: no Scaffold of its own — the master
+    // console shell owns the chrome.
     if (_loading) {
-      return const LoadingWidget(message: 'ڈیش بورڈ لوڈ ہو رہا ہے…');
+      return const M360LoadingState();
     }
     if (_error != null) {
-      return EmptyStateWidget(
-        icon: Icons.error_outline,
-        title: 'خرابی / Error',
-        message: _error,
-        actionLabel: 'دوبارہ کوشش کریں',
-        onAction: _load,
-      );
+      return M360ErrorState(message: _error!, onRetry: _load);
     }
 
     final t = _tenants;
     return RefreshIndicator(
       onRefresh: _load,
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(16),
+      child: PageContainer(
+        header: const PageHeader(
+          title: 'پلیٹ فارم جائزہ',
+          description: 'تمام ٹیننٹس کے اہم اعداد و شمار اور سسٹم کی صحت',
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('پلیٹ فارم جائزہ',
-                style: AppTypography.headingSmall.copyWith(
-                  fontWeight: FontWeight.bold,
-                )),
-            const SizedBox(height: 12),
-
             // ── Madrasa stats ──
             Wrap(
               spacing: 8,
@@ -364,10 +359,10 @@ class _MasterDashboardScreenState extends State<MasterDashboardScreen> {
               title: 'System health',
               subtitle: 'Live checks — statuses are never faked',
               actions: [
-                IconButton(
-                  icon:
-                      const Icon(Icons.refresh, color: AppColors.textSecondary),
+                M360IconButton(
+                  icon: Icons.refresh,
                   tooltip: 'Re-run checks',
+                  color: AppColors.textSecondary,
                   onPressed: () async {
                     await _runHealthChecks();
                     if (mounted) setState(() {});

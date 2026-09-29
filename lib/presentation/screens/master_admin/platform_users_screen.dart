@@ -7,13 +7,19 @@
 /// - Removing a platform_support: single confirm dialog.
 /// - Removing a platform_owner: TYPED confirmation (mission §49/§50) AND
 ///   the last remaining platform_owner cannot be removed (fail-safe).
+///
+/// Phase 10: shell-hosted destination — the nested Scaffold/AppBar/FAB
+/// became PageContainer + PageHeader; dialogs and snackbars use the m360
+/// components. Query, guard, and typed-confirmation semantics are
+/// unchanged.
 
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'package:madrasa_360/core/design/m360.dart';
+
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
-import 'widgets/ma_widgets.dart';
 
 class PlatformUsersScreen extends StatefulWidget {
   const PlatformUsersScreen({super.key});
@@ -80,62 +86,54 @@ class _PlatformUsersScreenState extends State<PlatformUsersScreen> {
   Future<void> _addSupport() async {
     final idCtrl = TextEditingController();
     final emailCtrl = TextEditingController();
-    final ok = await showDialog<bool>(
+    final ok = await showM360Dialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Add platform_support'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TextField(
-                controller: emailCtrl,
-                keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(
-                  labelText: 'ای میل / Email (for your reference)',
-                ),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: idCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Auth user UUID *',
-                  hintText: 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx',
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Supabase Dashboard → Authentication → Users سے UUID کاپی '
-                'کریں۔ صارف کو کم از کم ایک بار سائن اِن ہونا چاہیے۔',
-                style: AppTypography.bodySmall
-                    .copyWith(color: AppColors.textSecondary),
-              ),
-            ],
+      title: 'Add platform_support',
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          M360TextField(
+            controller: emailCtrl,
+            label: 'ای میل / Email (for your reference)',
+            keyboardType: TextInputType.emailAddress,
           ),
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.of(ctx).pop(false),
-              child: const Text('منسوخ')),
-          ElevatedButton(
-            onPressed: () {
-              final id = idCtrl.text.trim();
-              final uuidOk =
-                  RegExp(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-'
-                          r'[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$')
-                      .hasMatch(id);
-              if (!uuidOk) {
-                ScaffoldMessenger.of(ctx).showSnackBar(
-                    const SnackBar(content: Text('درست UUID لکھیں')));
-                return;
-              }
-              Navigator.of(ctx).pop(true);
-            },
-            child: const Text('platform_support بنائیں'),
+          const SizedBox(height: 10),
+          M360TextField(
+            controller: idCtrl,
+            label: 'Auth user UUID *',
+            hint: 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx',
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Supabase Dashboard → Authentication → Users سے UUID کاپی '
+            'کریں۔ صارف کو کم از کم ایک بار سائن اِن ہونا چاہیے۔',
+            style: AppTypography.bodySmall
+                .copyWith(color: AppColors.textSecondary),
           ),
         ],
       ),
+      actions: [
+        M360TertiaryButton(
+          label: 'منسوخ',
+          onPressed: () => Navigator.of(context).pop(false),
+        ),
+        M360PrimaryButton(
+          label: 'platform_support بنائیں',
+          onPressed: () {
+            final id = idCtrl.text.trim();
+            final uuidOk =
+                RegExp(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-'
+                        r'[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$')
+                    .hasMatch(id);
+            if (!uuidOk) {
+              showM360SnackBar(context, 'درست UUID لکھیں', isError: true);
+              return;
+            }
+            Navigator.of(context).pop(true);
+          },
+        ),
+      ],
     );
     final uid = idCtrl.text.trim();
     idCtrl.dispose();
@@ -148,14 +146,12 @@ class _PlatformUsersScreenState extends State<PlatformUsersScreen> {
         'role': 'platform_support',
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('platform_support شامل ہو گیا')));
+        showM360SnackBar(context, 'platform_support شامل ہو گیا');
       }
       _load();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Insert failed: $e')));
+        showM360SnackBar(context, 'Insert failed: $e', isError: true);
       }
     }
   }
@@ -171,8 +167,8 @@ class _PlatformUsersScreenState extends State<PlatformUsersScreen> {
 
     if (uid == _myUid) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('آپ اپنا اکاؤنٹ خود نہیں ہٹا سکتے')));
+        showM360SnackBar(context, 'آپ اپنا اکاؤنٹ خود نہیں ہٹا سکتے',
+            isError: true);
       }
       return;
     }
@@ -180,118 +176,80 @@ class _PlatformUsersScreenState extends State<PlatformUsersScreen> {
     if (role == 'platform_owner') {
       if (_ownerCount <= 1) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-              content:
-                  Text('آخری platform_owner کو ہٹایا نہیں جا سکتا — پہلے کسی '
-                      'اور کو owner بنائیں')));
+          showM360SnackBar(
+              context,
+              'آخری platform_owner کو ہٹایا نہیں جا سکتا — پہلے کسی '
+              'اور کو owner بنائیں',
+              isError: true);
         }
         return;
       }
       // TYPED confirmation for platform_owner removal (§49/§50).
-      final typed = await showDialog<String>(
-        context: context,
-        builder: (ctx) {
-          final ctrl = TextEditingController();
-          return StatefulBuilder(
-            builder: (ctx, setS) => AlertDialog(
-              title: const Text('platform_owner ہٹائیں — تصدیق'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'آپ "$label" کو platform_owner سے ہٹا رہے ہیں۔ تصدیق '
-                    'کے لیے بالکل یہی لکھیں:\nREMOVE OWNER',
-                    style: AppTypography.bodyMedium,
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: ctrl,
-                    onChanged: (_) => setS(() {}),
-                    decoration:
-                        const InputDecoration(labelText: 'REMOVE OWNER لکھیں'),
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                    onPressed: () => Navigator.of(ctx).pop(),
-                    child: const Text('منسوخ')),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.error),
-                  onPressed: ctrl.text.trim() == 'REMOVE OWNER'
-                      ? () => Navigator.of(ctx).pop(ctrl.text.trim())
-                      : null,
-                  child: const Text('ہٹائیں'),
-                ),
-              ],
-            ),
-          );
-        },
+      final typed = await showM360ConfirmDialog(
+        context,
+        title: 'platform_owner ہٹائیں — تصدیق',
+        message: 'آپ "$label" کو platform_owner سے ہٹا رہے ہیں۔ تصدیق '
+            'کے لیے بالکل یہی لکھیں:\nREMOVE OWNER',
+        confirmLabel: 'ہٹائیں',
+        cancelLabel: 'منسوخ',
+        danger: true,
+        requireTypedConfirmation: true,
+        expectedText: 'REMOVE OWNER',
+        typedHint: 'REMOVE OWNER لکھیں',
       );
-      if (typed == null) return;
+      if (!typed) return;
     } else {
-      final confirm = await showDialog<bool>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('platform_support ہٹائیں؟'),
-          content: Text('Remove platform_support access for "$label"?'),
-          actions: [
-            TextButton(
-                onPressed: () => Navigator.of(ctx).pop(false),
-                child: const Text('منسوخ')),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
-              onPressed: () => Navigator.of(ctx).pop(true),
-              child: const Text('ہٹائیں'),
-            ),
-          ],
-        ),
+      final confirm = await showM360ConfirmDialog(
+        context,
+        title: 'platform_support ہٹائیں؟',
+        message: 'Remove platform_support access for "$label"?',
+        confirmLabel: 'ہٹائیں',
+        cancelLabel: 'منسوخ',
+        danger: true,
       );
-      if (confirm != true) return;
+      if (!confirm) return;
     }
 
     try {
       await _client.from('platform_admins').delete().eq('user_id', uid);
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('ہٹا دیا گیا')));
+        showM360SnackBar(context, 'ہٹا دیا گیا');
       }
       _load();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Remove failed: $e')));
+        showM360SnackBar(context, 'Remove failed: $e', isError: true);
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    // Shell-hosted destination: no Scaffold of its own.
     if (_loading) {
-      return const LoadingWidget(message: 'صارفین لوڈ ہو رہے ہیں…');
+      return const M360LoadingState();
     }
     if (_error != null) {
-      return EmptyStateWidget(
-        icon: Icons.error_outline,
-        title: 'خرابی / Error',
-        message: _error,
-        actionLabel: 'دوبارہ کوشش کریں',
-        onAction: _load,
-      );
+      return M360ErrorState(message: _error!, onRetry: _load);
     }
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('پلیٹ فارم صارفین', style: AppTypography.appBarTitle),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
+    return PageContainer(
+      scrollable: false,
+      header: PageHeader(
+        title: 'پلیٹ فارم صارفین',
+        description: 'پلیٹ فارم آپریٹرز — کردار دیکھیں، سپورٹ شامل/ہٹائیں',
+        actions: [
+          M360PrimaryButton(
+            label: 'Add support',
+            icon: Icons.person_add,
+            onPressed: _addSupport,
+          ),
+        ],
       ),
-      body: _admins.isEmpty
-          ? const EmptyStateWidget(
+      child: _admins.isEmpty
+          ? const M360EmptyState(
               icon: Icons.admin_panel_settings_outlined,
               title: 'کوئی پلیٹ فارم ایڈمن نہیں',
-              message: 'platform_admins is empty. Add the first '
+              description: 'platform_admins is empty. Add the first '
                   'platform_support (bootstrapping the first owner '
                   'requires a DB superuser — see migration 004 notes).',
             )
@@ -310,8 +268,9 @@ class _PlatformUsersScreenState extends State<PlatformUsersScreen> {
                   final name = (profile?['name'] as String?)?.isNotEmpty == true
                       ? profile!['name'] as String
                       : '—';
-                  return Card(
+                  return M360Card(
                     margin: EdgeInsets.zero,
+                    padding: const EdgeInsets.all(8),
                     child: ListTile(
                       leading: CircleAvatar(
                         backgroundColor:
@@ -328,7 +287,7 @@ class _PlatformUsersScreenState extends State<PlatformUsersScreen> {
                       title: Text(name,
                           style: AppTypography.titleMedium
                               .copyWith(fontWeight: FontWeight.w600)),
-                      subtitle: Text(
+                      subtitle: M360LatinText(
                         '${a['user_id']}',
                         style: AppTypography.bodySmall.copyWith(
                           color: AppColors.textSecondary,
@@ -338,24 +297,9 @@ class _PlatformUsersScreenState extends State<PlatformUsersScreen> {
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color:
-                                  (isOwner ? AppColors.warning : AppColors.info)
-                                      .withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              role,
-                              style: AppTypography.labelSmall.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: isOwner
-                                    ? AppColors.warning
-                                    : AppColors.info,
-                              ),
-                            ),
+                          M360Badge.custom(
+                            label: role,
+                            color: isOwner ? AppColors.warning : AppColors.info,
                           ),
                           if (isSelf)
                             Padding(
@@ -368,10 +312,10 @@ class _PlatformUsersScreenState extends State<PlatformUsersScreen> {
                               ),
                             ),
                           if (!isSelf)
-                            IconButton(
-                              icon: const Icon(Icons.person_remove_outlined,
-                                  color: AppColors.error),
+                            M360IconButton(
+                              icon: Icons.person_remove_outlined,
                               tooltip: 'Remove',
+                              color: AppColors.error,
                               onPressed: () => _remove(a),
                             ),
                         ],
@@ -381,11 +325,6 @@ class _PlatformUsersScreenState extends State<PlatformUsersScreen> {
                 },
               ),
             ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _addSupport,
-        icon: const Icon(Icons.person_add),
-        label: const Text('Add support'),
-      ),
     );
   }
 }

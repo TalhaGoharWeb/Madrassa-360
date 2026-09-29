@@ -9,6 +9,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:madrasa_360/core/design/m360.dart';
+
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/services/role_service.dart';
@@ -51,12 +53,10 @@ class _UserDetailScreenState extends ConsumerState<UserDetailScreen> {
     }
     final roleUrdu = role?.displayUrdu ?? _user.roleKey;
 
+    // Pushed detail route: keeps its root Scaffold with the m360
+    // deep-screen app bar.
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('صارف کی تفصیل'),
-        centerTitle: true,
-      ),
+      appBar: const M360AppBar(title: 'صارف کی تفصیل'),
       body: RefreshIndicator(
         onRefresh: () async {
           ref.invalidate(tenantUsersProvider);
@@ -148,9 +148,10 @@ class _UserDetailScreenState extends ConsumerState<UserDetailScreen> {
                     runSpacing: 8,
                     children: [
                       for (final c in classes)
-                        Chip(
-                          label: Text(c.name),
-                          avatar: const Icon(Icons.class_, size: 16),
+                        M360Badge.custom(
+                          label: c.name,
+                          color: AppColors.primary,
+                          icon: Icons.class_,
                         ),
                     ],
                   ),
@@ -255,9 +256,9 @@ class _UserDetailScreenState extends ConsumerState<UserDetailScreen> {
         children: [
           const UxSectionTitle('انتظام', icon: Icons.settings_outlined),
           const SizedBox(height: 12),
-          OutlinedButton.icon(
-            icon: const Icon(Icons.edit_note_outlined),
-            label: const Text('ذمہ داریاں تبدیل کریں'),
+          M360SecondaryButton(
+            icon: Icons.edit_note_outlined,
+            label: 'ذمہ داریاں تبدیل کریں',
             onPressed: () async {
               final updated = await Navigator.push(
                 context,
@@ -275,9 +276,9 @@ class _UserDetailScreenState extends ConsumerState<UserDetailScreen> {
             builder: (context) {
               final canManage = ref.watch(roleServiceProvider).canManageRoles();
               if (!canManage) return const SizedBox.shrink();
-              return OutlinedButton.icon(
-                icon: const Icon(Icons.data_object_outlined),
-                label: const Text('ڈیٹا حدود کا انتظام'),
+              return M360SecondaryButton(
+                icon: Icons.data_object_outlined,
+                label: 'ڈیٹا حدود کا انتظام',
                 onPressed: () async {
                   final saved = await Navigator.push(
                     context,
@@ -297,25 +298,25 @@ class _UserDetailScreenState extends ConsumerState<UserDetailScreen> {
             builder: (context) {
               final canManage = ref.watch(roleServiceProvider).canManageUsers();
               if (!canManage) return const SizedBox.shrink();
-              return OutlinedButton.icon(
-                icon: Icon(_user.isActive
-                    ? Icons.person_off_outlined
-                    : Icons.person_add_alt_outlined),
-                label: Text(
-                    _user.isActive ? 'صارف غیر فعال کریں' : 'صارف فعال کریں'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor:
-                      _user.isActive ? AppColors.error : AppColors.success,
-                ),
+              // Deactivating is destructive -> the danger button; activating
+              // is restorative -> the secondary button.
+              if (_user.isActive) {
+                return M360DangerButton(
+                  icon: Icons.person_off_outlined,
+                  label: 'صارف غیر فعال کریں',
+                  onPressed: () => _toggleActive(),
+                );
+              }
+              return M360SecondaryButton(
+                icon: Icons.person_add_alt_outlined,
+                label: 'صارف فعال کریں',
                 onPressed: () => _toggleActive(),
               );
             },
           ),
           const SizedBox(height: 8),
-          TextButton.icon(
-            icon: Icon(
-                _showActivity ? Icons.expand_less : Icons.history_outlined),
-            label: Text(_showActivity ? 'سرگرمی چھپائیں' : 'سرگرمی دیکھیں'),
+          M360TertiaryButton(
+            label: _showActivity ? 'سرگرمی چھپائیں' : 'سرگرمی دیکھیں',
             onPressed: () => setState(() => _showActivity = !_showActivity),
           ),
         ],
@@ -334,8 +335,7 @@ class _UserDetailScreenState extends ConsumerState<UserDetailScreen> {
               .userActivity(tenantId: tenantId, userId: _user.id),
           builder: (context, snap) {
             if (snap.connectionState == ConnectionState.waiting) {
-              return const UxCard(
-                  child: Center(child: CircularProgressIndicator()));
+              return const UxCard(child: M360LoadingState(itemCount: 2));
             }
             final rows = snap.data ?? const [];
             if (rows.isEmpty) {
@@ -343,7 +343,7 @@ class _UserDetailScreenState extends ConsumerState<UserDetailScreen> {
                 child: UxEmptyState(
                   icon: Icons.history_outlined,
                   title: 'ابھی کوئی سرگرمی ریکارڈ نہیں',
-                  hint:
+                  description:
                       'اس صارف کی سرگرمی یہاں نظر آئے گی جب وہ کام شروع کرے گا۔',
                 ),
               );

@@ -5,6 +5,8 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'package:madrasa_360/core/design/m360.dart';
+
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import 'widgets/ma_widgets.dart';
@@ -128,8 +130,9 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
           final status = (r['status'] as String?) ?? 'unknown';
           final expiresAt = r['expires_at'] as String?;
           final color = _expiryColor(expiresAt, status);
-          return Card(
+          return M360Card(
             margin: EdgeInsets.zero,
+            padding: EdgeInsets.zero,
             child: ListTile(
               leading: Icon(Icons.autorenew, color: color, size: 32),
               title: Text(

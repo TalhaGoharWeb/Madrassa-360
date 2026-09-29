@@ -3,9 +3,16 @@
 /// lifecycle actions (suspend / reactivate / archive) via the manage-tenant
 /// Edge Function. Destructive actions require TYPED confirmation
 /// (mission §49/§50): the operator must type the tenant name exactly.
+///
+/// Phase 10: pushed deep route — keeps its root Scaffold, but the chrome
+/// moved to M360AppBar and the dialogs/fields/buttons/snackbars use the
+/// m360 components. Tenant updates, module upsert/revert, typed-confirmation
+/// semantics, and the manage-tenant invocation are unchanged.
 
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+import 'package:madrasa_360/core/design/m360.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -172,15 +179,11 @@ class _MadrasaDetailScreenState extends State<MadrasaDetailScreen> {
           .single();
       _tenant = Map<String, dynamic>.from(updated);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('محفوظ ہو گیا / Saved')),
-        );
+        showM360SnackBar(context, 'محفوظ ہو گیا / Saved');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Save failed: $e')),
-        );
+        showM360SnackBar(context, 'Save failed: $e', isError: true);
       }
     }
     if (mounted) setState(() => _saving = false);
@@ -205,9 +208,7 @@ class _MadrasaDetailScreenState extends State<MadrasaDetailScreen> {
       // revert on failure
       setState(() => _moduleState[module] = !enabled);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Module update failed: $e')),
-        );
+        showM360SnackBar(context, 'Module update failed: $e', isError: true);
       }
     }
     if (mounted) setState(() => _modulesSaving = false);
@@ -217,51 +218,19 @@ class _MadrasaDetailScreenState extends State<MadrasaDetailScreen> {
   Future<void> _confirmAndRunLifecycle(
       String action, String actionLabelUrdu) async {
     final tenantName = (_tenant?['name'] as String?) ?? '';
-    final typed = await showDialog<String>(
-      context: context,
-      builder: (ctx) {
-        final ctrl = TextEditingController();
-        return StatefulBuilder(
-          builder: (ctx, setState) => AlertDialog(
-            title: Text('$actionLabelUrdu — تصدیق'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'آگے بڑھنے کے لیے مدرسے کا نام بالکل ویسے ہی لکھیں:\n"$tenantName"',
-                  style: AppTypography.bodyMedium,
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: ctrl,
-                  onChanged: (_) => setState(() {}),
-                  decoration: const InputDecoration(
-                    labelText: 'مدرسے کا نام لکھیں',
-                  ),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(ctx).pop(),
-                child: const Text('منسوخ'),
-              ),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.error,
-                ),
-                onPressed: ctrl.text.trim() == tenantName
-                    ? () => Navigator.of(ctx).pop(ctrl.text.trim())
-                    : null,
-                child: Text(actionLabelUrdu),
-              ),
-            ],
-          ),
-        );
-      },
+    final confirmed = await showM360ConfirmDialog(
+      context,
+      title: '$actionLabelUrdu — تصدیق',
+      message: 'آگے بڑھنے کے لیے مدرسے کا نام بالکل ویسے ہی لکھیں:\n'
+          '"$tenantName"',
+      confirmLabel: actionLabelUrdu,
+      cancelLabel: 'منسوخ',
+      danger: true,
+      requireTypedConfirmation: true,
+      expectedText: tenantName,
+      typedHint: 'مدرسے کا نام لکھیں',
     );
-    if (typed == null) return; // cancelled
+    if (!confirmed) return; // cancelled
 
     setState(() => _saving = true);
     try {
@@ -271,23 +240,17 @@ class _MadrasaDetailScreenState extends State<MadrasaDetailScreen> {
       });
       await _load(); // refresh status
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$actionLabelUrdu — مکمل')),
-        );
+        showM360SnackBar(context, '$actionLabelUrdu — مکمل');
       }
     } on FunctionException catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content:
-                  Text('Action failed: ${e.reasonPhrase ?? e.toString()}')),
-        );
+        showM360SnackBar(
+            context, 'Action failed: ${e.reasonPhrase ?? e.toString()}',
+            isError: true);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Action failed: $e')),
-        );
+        showM360SnackBar(context, 'Action failed: $e', isError: true);
       }
     }
     if (mounted) setState(() => _saving = false);
@@ -306,12 +269,11 @@ class _MadrasaDetailScreenState extends State<MadrasaDetailScreen> {
     final t = _tenant!;
     final status = (t['status'] as String?) ?? 'unknown';
 
+    // Pushed deep route: keeps its root Scaffold; only the chrome moved
+    // to the m360 deep-screen app bar.
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          (t['name'] as String?) ?? 'Madrasa',
-          overflow: TextOverflow.ellipsis,
-        ),
+      appBar: M360AppBar(
+        title: (t['name'] as String?) ?? 'Madrasa',
         actions: [MaStatusChip(status: status)],
       ),
       body: SingleChildScrollView(
@@ -379,13 +341,11 @@ class _MadrasaDetailScreenState extends State<MadrasaDetailScreen> {
       title: 'ادارے کی معلومات / Institution info',
       subtitle: 'Direct update under platform-admin RLS',
       actions: [
-        _saving
-            ? const SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(strokeWidth: 2))
-            : ElevatedButton(
-                onPressed: _saveInfo, child: const Text('محفوظ کریں')),
+        M360PrimaryButton(
+          label: 'محفوظ کریں',
+          isLoading: _saving,
+          onPressed: _saving ? null : _saveInfo,
+        ),
       ],
       child: Form(
         key: _formKey,
@@ -427,9 +387,9 @@ class _MadrasaDetailScreenState extends State<MadrasaDetailScreen> {
       {bool required = false}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
-      child: TextFormField(
+      child: M360TextField(
         controller: c,
-        decoration: InputDecoration(labelText: label),
+        label: label,
         validator: required
             ? (v) => (v == null || v.trim().isEmpty) ? 'یہ خانہ ضروری ہے' : null
             : null,
@@ -503,29 +463,24 @@ class _MadrasaDetailScreenState extends State<MadrasaDetailScreen> {
         runSpacing: 12,
         children: [
           if (status == 'suspended')
-            ElevatedButton.icon(
-              icon: const Icon(Icons.play_arrow),
-              label: const Text('Reactivate'),
-              style:
-                  ElevatedButton.styleFrom(backgroundColor: AppColors.success),
+            M360SecondaryButton(
+              label: 'Reactivate',
+              icon: Icons.play_arrow,
               onPressed: _saving
                   ? null
                   : () => _confirmAndRunLifecycle('reactivate', 'بحال کریں'),
             )
           else
-            ElevatedButton.icon(
-              icon: const Icon(Icons.pause),
-              label: const Text('Suspend'),
-              style:
-                  ElevatedButton.styleFrom(backgroundColor: AppColors.warning),
+            M360SecondaryButton(
+              label: 'Suspend',
+              icon: Icons.pause,
               onPressed: _saving
                   ? null
                   : () => _confirmAndRunLifecycle('suspend', 'معطل کریں'),
             ),
-          ElevatedButton.icon(
-            icon: const Icon(Icons.archive_outlined),
-            label: const Text('Archive'),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
+          M360DangerButton(
+            label: 'Archive',
+            icon: Icons.archive_outlined,
             onPressed: _saving
                 ? null
                 : () => _confirmAndRunLifecycle('archive', 'آرکائیو کریں'),

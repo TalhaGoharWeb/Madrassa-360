@@ -1,4 +1,4 @@
-/// طلبہ کی فیس — m360 redesign (Phase 9)
+/// طلبہ کی فیس — m360 redesign (Phase 10)
 /// Student fee management — the `fees` table register.
 ///
 /// Presentation layer only. Business logic is reused unchanged:
@@ -6,13 +6,12 @@
 /// [allStudentsProvider], the tenant-scoped repository, and the guided
 /// collection flow ([CollectFeeScreen]) with the real PDF receipt.
 ///
-/// What changed in Phase 9 (presentation only):
-/// * Full m360 component language: [PageHeader], [M360StatCard],
-///   [M360SearchField], [M360Card] rows, [financeChip] status chips,
-///   [M360Dialog] voucher form, [showM360SnackBar] feedback.
-/// * The old inner tabs (فیس کی تفصیل / وصولی) are gone — collection
-///   stats live on the finance dashboard hub tab; this screen is the
-///   register: list / search / filter → view → collect → voucher.
+/// What changed in Phase 10 (presentation only):
+/// * Converted to the admin destination standard — [PageContainer] +
+///   [PageHeader] instead of [ShellPageBody] (AppShell owns the only
+///   scaffold; destination screens never nest one).
+/// * The floating "نیا واؤچر" button moved into the [PageHeader] actions
+///   as the screen's single primary CTA.
 /// * Voucher deletion (unpaid vouchers only) with destructive
 ///   confirmation. Paid rows are immutable history — a wrong amount on an
 ///   unpaid voucher is corrected by deleting and re-issuing.
@@ -23,6 +22,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_permissions.dart';
+import '../../../core/constants/app_typography.dart';
 import '../../../core/design/m360.dart';
 import '../../../core/services/tenant_context.dart';
 import '../../../core/utils/money_format.dart';
@@ -30,7 +30,6 @@ import '../../../data/models/fee.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/fee_provider.dart';
 import '../../../providers/student_provider.dart';
-import '../../shell/shell_page_body.dart';
 import '../../viewmodels/finance/financial_views.dart';
 import '../finance/collect_fee_screen.dart';
 import '../finance/finance_ui.dart';
@@ -63,6 +62,21 @@ class _FeeManagementScreenState extends ConsumerState<FeeManagementScreen> {
     );
   }
 
+  /// Back affordance for deep-pushed routes. Shell destinations get the
+  /// shell's own back chevron, so this renders nothing for them.
+  List<Widget> _withBack(BuildContext context, List<Widget> actions) {
+    final canPop = ModalRoute.of(context)?.canPop ?? false;
+    return [
+      if (canPop)
+        M360IconButton(
+          icon: Icons.arrow_back,
+          tooltip: 'واپس',
+          onPressed: () => Navigator.of(context).maybePop(),
+        ),
+      ...actions,
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     final canCreate =
@@ -70,17 +84,21 @@ class _FeeManagementScreenState extends ConsumerState<FeeManagementScreen> {
     final canCollect =
         ref.watch(hasPermissionProvider(AppPermissions.collectFees));
 
-    return ShellPageBody(
-      floatingActionButton: canCreate
-          ? FloatingActionButton.extended(
-              heroTag: 'fee_voucher_fab',
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              icon: const Icon(Icons.add),
-              label: const Text('نیا واؤچر'),
+    return PageContainer(
+      scrollable: false,
+      header: PageHeader(
+        title: 'طلبہ کی فیس',
+        breadcrumb: 'مالی',
+        description: 'ماہانہ فیس کے واؤچر، وصولی اور بقایا جات کا رجسٹر',
+        actions: _withBack(context, [
+          if (canCreate)
+            M360PrimaryButton(
+              label: 'نیا واؤچر',
+              icon: Icons.add,
               onPressed: _showVoucherDialog,
-            )
-          : null,
+            ),
+        ]),
+      ),
       child: Consumer(
         builder: (context, ref, _) {
           final feeAsync = ref.watch(allFeesProvider);
@@ -102,11 +120,6 @@ class _FeeManagementScreenState extends ConsumerState<FeeManagementScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const PageHeader(
-          title: 'طلبہ کی فیس',
-          breadcrumb: 'مالی',
-          description: 'ماہانہ فیس کے واؤچر، وصولی اور بقایا جات کا رجسٹر',
-        ),
         _summaryCards(records),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
@@ -133,7 +146,7 @@ class _FeeManagementScreenState extends ConsumerState<FeeManagementScreen> {
                       records.isEmpty && canCreate ? _showVoucherDialog : null,
                 )
               : ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 96),
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
                   itemCount: filtered.length,
                   itemBuilder: (context, i) =>
                       _feeTile(filtered[i], canCollect, canCreate),
@@ -272,7 +285,7 @@ class _FeeManagementScreenState extends ConsumerState<FeeManagementScreen> {
                         Expanded(
                           child: Text(
                             record.studentName,
-                            style: Theme.of(context).textTheme.titleSmall,
+                            style: AppTypography.titleSmall,
                           ),
                         ),
                         financeChip(view.chipKind),
@@ -280,9 +293,9 @@ class _FeeManagementScreenState extends ConsumerState<FeeManagementScreen> {
                     ),
                     Text(
                       '${record.studentClass} - ${view.monthLabel}',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
+                      style: AppTypography.bodySmall?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                     const SizedBox(height: 6),
                     ClipRRect(
@@ -301,21 +314,16 @@ class _FeeManagementScreenState extends ConsumerState<FeeManagementScreen> {
                       children: [
                         Text(
                           'ادا شدہ: ${view.amountPaidLabel}',
-                          style: Theme.of(context)
-                              .textTheme
-                              .labelSmall
+                          style: AppTypography.labelSmall
                               ?.copyWith(color: AppColors.success),
                         ),
                         if (record.remaining > 0)
                           Text(
                             'بقایا: ${view.remainingLabel} روپے',
-                            style: Theme.of(context)
-                                .textTheme
-                                .labelSmall
-                                ?.copyWith(
-                                  color: AppColors.error,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                            style: AppTypography.labelSmall?.copyWith(
+                              color: AppColors.error,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                       ],
                     ),

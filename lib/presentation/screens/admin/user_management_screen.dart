@@ -1,8 +1,16 @@
-/// صارف انتظام اسکرین
-/// User Management Screen — admin CRUD for user accounts and roles/permissions
+/// صارف انتظام اسکرین — m360 redesign (Phase 10)
+/// User Management Screen — admin CRUD for user accounts and roles/permissions.
+///
+/// Same provider flows ([userManagementProvider]): load, create/update/
+/// delete/toggle accounts, create/update/delete roles. Destructive
+/// actions go through destructive [showM360ConfirmDialog]. Rendered as
+/// an [AppShell] destination: no Scaffold, no AppBar — [PageContainer]/
+/// [PageHeader] only.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'package:madrasa_360/core/design/m360.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../data/models/app_role.dart';
@@ -32,10 +40,25 @@ class _UserManagementScreenState extends State<UserManagementScreen>
     super.dispose();
   }
 
+  /// Back affordance for deep-pushed routes. Shell destinations get the
+  /// shell's own back chevron, so this renders nothing for them.
+  List<Widget> _withBack(BuildContext context, List<Widget> actions) {
+    final canPop = ModalRoute.of(context)?.canPop ?? false;
+    return [
+      if (canPop)
+        M360IconButton(
+          icon: Icons.arrow_back,
+          tooltip: 'واپس',
+          onPressed: () => Navigator.of(context).maybePop(),
+        ),
+      ...actions,
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer(builder: (context, ref, _) {
-      // Load data once on first build
+      // Load data once on first build.
       WidgetsBinding.instance.addPostFrameCallback((_) {
         final state = ref.read(userManagementProvider);
         if (!state.isLoading && state.accounts.isEmpty) {
@@ -43,24 +66,40 @@ class _UserManagementScreenState extends State<UserManagementScreen>
         }
       });
 
-      return Scaffold(
-        appBar: AppBar(
-          title: const Text('صارف انتظام'),
-          bottom: TabBar(
-            controller: _tabController,
-            tabs: const [
-              Tab(text: 'صارفین', icon: Icon(Icons.manage_accounts, size: 18)),
-              Tab(
-                  text: 'کردار و اجازتیں',
-                  icon: Icon(Icons.security, size: 18)),
-            ],
-          ),
+      return PageContainer(
+        scrollable: false,
+        header: PageHeader(
+          title: 'صارف انتظام',
+          breadcrumb: 'منتظم',
+          description: 'صارفین بنائیں، کردار ترتیب دیں، اجازتیں دیں',
+          actions: _withBack(context, []),
         ),
-        body: TabBarView(
-          controller: _tabController,
-          children: const [
-            _UserAccountsTab(),
-            _RolesTab(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TabBar(
+              controller: _tabController,
+              labelColor: AppColors.primaryDark,
+              unselectedLabelColor: AppColors.textSecondary,
+              indicatorColor: AppColors.primary,
+              tabs: const [
+                Tab(
+                    text: 'صارفین',
+                    icon: Icon(Icons.manage_accounts, size: 18)),
+                Tab(
+                    text: 'کردار و اجازتیں',
+                    icon: Icon(Icons.security, size: 18)),
+              ],
+            ),
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: const [
+                  _UserAccountsTab(),
+                  _RolesTab(),
+                ],
+              ),
+            ),
           ],
         ),
       );
@@ -72,390 +111,354 @@ class _UserManagementScreenState extends State<UserManagementScreen>
 // Tab 1 — User Accounts
 // ═══════════════════════════════════════════════════════════════
 
-class _UserAccountsTab extends StatefulWidget {
+class _UserAccountsTab extends ConsumerStatefulWidget {
   const _UserAccountsTab();
 
   @override
-  State<_UserAccountsTab> createState() => _UserAccountsTabState();
+  ConsumerState<_UserAccountsTab> createState() => _UserAccountsTabState();
 }
 
-class _UserAccountsTabState extends State<_UserAccountsTab> {
-  WidgetRef? _ref;
+class _UserAccountsTabState extends ConsumerState<_UserAccountsTab> {
   String _searchQuery = '';
 
   @override
   Widget build(BuildContext context) {
-    return Consumer(builder: (context, ref, _) {
-      _ref = ref;
-      final state = ref.watch(userManagementProvider);
-      final accounts = state.accounts
-          .where((a) =>
-              _searchQuery.isEmpty ||
-              a.name.contains(_searchQuery) ||
-              a.email.contains(_searchQuery) ||
-              a.roleNameUrdu.contains(_searchQuery))
-          .toList();
+    final state = ref.watch(userManagementProvider);
+    final accounts = state.accounts
+        .where((a) =>
+            _searchQuery.isEmpty ||
+            a.name.contains(_searchQuery) ||
+            a.email.contains(_searchQuery) ||
+            a.roleNameUrdu.contains(_searchQuery))
+        .toList();
 
-      return Scaffold(
-        body: Column(
-          children: [
-            // Search bar
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: TextField(
-                onChanged: (v) => setState(() => _searchQuery = v),
-                decoration: InputDecoration(
-                  hintText: 'نام یا ای میل تلاش کریں',
-                  prefixIcon:
-                      const Icon(Icons.search, color: AppColors.primary),
-                  filled: true,
-                  fillColor: AppColors.background,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.divider),
-                  ),
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                ),
-              ),
-            ),
-
-            // Count chip
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: [
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      'کل: ${accounts.length}',
-                      style: AppTypography.labelMedium
-                          .copyWith(color: AppColors.primary),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 8),
-
-            // List
-            Expanded(
-              child: state.isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : accounts.isEmpty
-                      ? _buildEmpty()
-                      : ListView.separated(
-                          padding: const EdgeInsets.all(16),
-                          itemCount: accounts.length,
-                          separatorBuilder: (_, __) =>
-                              const SizedBox(height: 10),
-                          itemBuilder: (_, i) => _AccountCard(
-                            account: accounts[i],
-                            onEdit: () =>
-                                _showUpsertDialog(existing: accounts[i]),
-                            onDelete: () => _confirmDelete(accounts[i]),
-                            onToggle: () => ref
-                                .read(userManagementProvider.notifier)
-                                .toggleAccountStatus(accounts[i]),
-                          ),
-                        ),
-            ),
-          ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+          child: M360SearchField(
+            hint: 'نام یا ای میل تلاش کریں…',
+            onChanged: (v) => setState(() => _searchQuery = v),
+          ),
         ),
-        floatingActionButton: FloatingActionButton.extended(
-          onPressed: () => _showUpsertDialog(),
-          icon: const Icon(Icons.person_add),
-          label: const Text('نیا صارف'),
-          backgroundColor: AppColors.primary,
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: _PermBadge(
+              label: 'کل: ${accounts.length}',
+              color: AppColors.primary,
+            ),
+          ),
         ),
-      );
-    });
-  }
-
-  Widget _buildEmpty() {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.people_outline,
-              size: 64, color: AppColors.primary.withValues(alpha: 0.3)),
-          const SizedBox(height: 16),
-          Text('کوئی صارف نہیں',
-              style: AppTypography.titleMedium
-                  .copyWith(color: AppColors.textSecondary)),
-          const SizedBox(height: 8),
-          Text('نیا صارف شامل کریں', style: AppTypography.bodySmall),
-        ],
-      ),
+        Expanded(
+          child: state.isLoading
+              ? const M360LoadingState()
+              : accounts.isEmpty
+                  ? M360EmptyState(
+                      icon: Icons.people_outline,
+                      title: 'کوئی صارف نہیں',
+                      description: _searchQuery.isEmpty
+                          ? 'نیا صارف شامل کر کے شروع کریں۔'
+                          : 'تلاش تبدیل کر کے دوبارہ کوشش کریں۔',
+                      actionLabel:
+                          _searchQuery.isEmpty ? 'نیا صارف شامل کریں' : null,
+                      onAction: _searchQuery.isEmpty
+                          ? () => _showUpsertDialog()
+                          : null,
+                    )
+                  : ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                      itemCount: accounts.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 10),
+                      itemBuilder: (_, i) => _AccountCard(
+                        account: accounts[i],
+                        onEdit: () => _showUpsertDialog(existing: accounts[i]),
+                        onDelete: () => _confirmDelete(accounts[i]),
+                        onToggle: () => _toggleStatus(accounts[i]),
+                      ),
+                    ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          child: M360PrimaryButton(
+            label: 'نیا صارف',
+            icon: Icons.person_add,
+            fullWidth: true,
+            onPressed: () => _showUpsertDialog(),
+          ),
+        ),
+      ],
     );
   }
 
-  void _showUpsertDialog({UserAccount? existing}) {
-    final roles = (_ref?.read(appRolesProvider) ?? []).isNotEmpty
-        ? _ref!.read(appRolesProvider)
-        : AppRole.allSystemRoles;
+  Future<void> _toggleStatus(UserAccount account) async {
+    try {
+      await ref
+          .read(userManagementProvider.notifier)
+          .toggleAccountStatus(account);
+      if (!mounted) return;
+      showM360SnackBar(
+        context,
+        account.isActive ? 'صارف غیر فعال کر دیا گیا' : 'صارف فعال کر دیا گیا',
+      );
+    } catch (_) {
+      if (!mounted) return;
+      showM360SnackBar(context, 'حالت تبدیل کرنے میں خطا ہوئی', isError: true);
+    }
+  }
 
-    final nameCtrl = TextEditingController(text: existing?.name);
-    final emailCtrl = TextEditingController(text: existing?.email);
-    final passwordCtrl = TextEditingController();
-    bool showPassword = false;
-    AppRole selectedRole = existing != null
+  Future<void> _showUpsertDialog({UserAccount? existing}) async {
+    final savedName = await showM360Dialog<String>(
+      context,
+      title: existing == null ? 'نیا صارف شامل کریں' : 'صارف کی ترمیم',
+      icon: existing == null ? Icons.person_add : Icons.edit,
+      content: _AccountForm(existing: existing),
+    );
+    if (savedName != null && mounted) {
+      showM360SnackBar(
+        context,
+        existing == null
+            ? '$savedName شامل ہو گیا'
+            : '$savedName کی تبدیلیاں محفوظ ہو گئیں',
+      );
+    }
+  }
+
+  Future<void> _confirmDelete(UserAccount account) async {
+    final confirmed = await showM360ConfirmDialog(
+      context,
+      title: 'صارف حذف کریں؟',
+      message:
+          '"${account.name}" کو مستقل طور پر حذف کر دیا جائے گا۔ یہ عمل واپس نہیں ہو سکتا۔',
+      confirmLabel: 'حذف کریں',
+      danger: true,
+    );
+    if (!confirmed) return;
+    try {
+      await ref
+          .read(userManagementProvider.notifier)
+          .deleteAccount(account.id!);
+      if (!mounted) return;
+      showM360SnackBar(context, 'صارف حذف ہو گیا');
+    } catch (_) {
+      if (!mounted) return;
+      showM360SnackBar(context, 'حذف کرنے میں خطا ہوئی', isError: true);
+    }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Account create/edit form. Pops the saved name on success.
+// ─────────────────────────────────────────────────────────────
+
+class _AccountForm extends ConsumerStatefulWidget {
+  final UserAccount? existing;
+
+  const _AccountForm({this.existing});
+
+  @override
+  ConsumerState<_AccountForm> createState() => _AccountFormState();
+}
+
+class _AccountFormState extends ConsumerState<_AccountForm> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _nameCtrl;
+  late final TextEditingController _emailCtrl;
+  final _passwordCtrl = TextEditingController();
+  bool _showPassword = false;
+  late AppRole _selectedRole;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final existing = widget.existing;
+    _nameCtrl = TextEditingController(text: existing?.name);
+    _emailCtrl = TextEditingController(text: existing?.email);
+    final roles = _roles();
+    _selectedRole = existing != null
         ? roles.firstWhere(
             (r) => r.name == existing.roleName,
             orElse: () => AppRole.teacher,
           )
         : AppRole.teacher;
-    final formKey = GlobalKey<FormState>();
-
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setLocal) => AlertDialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: Row(
-            children: [
-              Icon(existing == null ? Icons.person_add : Icons.edit,
-                  color: AppColors.primary, size: 20),
-              const SizedBox(width: 8),
-              Text(existing == null ? 'نیا صارف شامل کریں' : 'صارف کی ترمیم',
-                  style: AppTypography.titleMedium),
-            ],
-          ),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: Form(
-              key: formKey,
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Name
-                    _DialogLabel('مکمل نام'),
-                    const SizedBox(height: 6),
-                    _DialogField(
-                      controller: nameCtrl,
-                      hint: 'جیسے: محمد یوسف',
-                      icon: Icons.person,
-                      validator: (v) => (v == null || v.trim().isEmpty)
-                          ? 'نام درج کریں'
-                          : null,
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Email
-                    _DialogLabel('ای میل'),
-                    const SizedBox(height: 6),
-                    _DialogField(
-                      controller: emailCtrl,
-                      hint: 'user@madrasa.com',
-                      icon: Icons.email,
-                      keyboardType: TextInputType.emailAddress,
-                      validator: (v) {
-                        if (v == null || v.trim().isEmpty) {
-                          return 'ای میل درج کریں';
-                        }
-                        if (!v.contains('@')) return 'درست ای میل درج کریں';
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Password — only for new accounts
-                    if (existing == null) ...[
-                      _DialogLabel('پاس ورڈ'),
-                      const SizedBox(height: 6),
-                      TextFormField(
-                        controller: passwordCtrl,
-                        obscureText: !showPassword,
-                        textDirection: TextDirection.ltr,
-                        decoration: InputDecoration(
-                          hintText: 'کم از کم 6 حروف',
-                          prefixIcon: const Icon(Icons.lock_outline,
-                              color: AppColors.primary),
-                          suffixIcon: IconButton(
-                            icon: Icon(showPassword
-                                ? Icons.visibility_off
-                                : Icons.visibility),
-                            onPressed: () =>
-                                setLocal(() => showPassword = !showPassword),
-                          ),
-                          filled: true,
-                          fillColor: AppColors.background,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none,
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 14),
-                        ),
-                        validator: (v) {
-                          if (v == null || v.isEmpty) return 'پاس ورڈ درج کریں';
-                          if (v.length < 6) return 'کم از کم 6 حروف';
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                    ],
-
-                    // Role
-                    _DialogLabel('کردار'),
-                    const SizedBox(height: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      decoration: BoxDecoration(
-                        color: AppColors.background,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.divider),
-                      ),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<AppRole>(
-                          value: selectedRole,
-                          isExpanded: true,
-                          items: roles
-                              .map((r) => DropdownMenuItem(
-                                    value: r,
-                                    child: Text(r.nameUrdu,
-                                        style: AppTypography.bodyMedium),
-                                  ))
-                              .toList(),
-                          onChanged: (r) {
-                            if (r != null) setLocal(() => selectedRole = r);
-                          },
-                        ),
-                      ),
-                    ),
-
-                    // Permission preview
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.05),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: AppColors.primary.withValues(alpha: 0.2),
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('اجازتیں (${selectedRole.permissions.length})',
-                              style: AppTypography.labelMedium
-                                  .copyWith(color: AppColors.primary)),
-                          const SizedBox(height: 8),
-                          Wrap(
-                            spacing: 6,
-                            runSpacing: 4,
-                            children: selectedRole.permissions
-                                .map((p) => _PermChip(label: p.urduLabel))
-                                .toList(),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('منسوخ'),
-            ),
-            ElevatedButton.icon(
-              icon: const Icon(Icons.save, size: 18),
-              label: Text(existing == null ? 'شامل کریں' : 'محفوظ کریں'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-              ),
-              onPressed: () async {
-                if (!formKey.currentState!.validate()) return;
-                Navigator.pop(ctx);
-
-                final notifier = _ref?.read(userManagementProvider.notifier);
-                if (notifier == null) return;
-
-                final account = UserAccount(
-                  id: existing?.id,
-                  name: nameCtrl.text.trim(),
-                  email: emailCtrl.text.trim(),
-                  roleName: selectedRole.name,
-                  roleNameUrdu: selectedRole.nameUrdu,
-                  password: existing == null ? passwordCtrl.text : null,
-                );
-
-                final err = existing == null
-                    ? await notifier.createAccount(account)
-                    : await notifier.updateAccount(account);
-
-                if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                  content: Text(err == null
-                      ? (existing == null
-                          ? 'صارف شامل ہو گیا'
-                          : 'تبدیلیاں محفوظ ہو گئیں')
-                      : 'خرابی: $err'),
-                  backgroundColor:
-                      err == null ? AppColors.success : AppColors.error,
-                ));
-              },
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
-  void _confirmDelete(UserAccount account) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('صارف حذف کریں؟'),
-        content: Text(
-          '"${account.name}" کو مستقل طور پر حذف کر دیا جائے گا۔',
-          style: AppTypography.bodyMedium,
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('منسوخ')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
-            onPressed: () async {
-              Navigator.pop(context);
-              await _ref
-                  ?.read(userManagementProvider.notifier)
-                  .deleteAccount(account.id!);
-              if (!mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('صارف حذف ہو گیا'),
-                  backgroundColor: AppColors.error,
-                ),
-              );
+  List<AppRole> _roles() {
+    final loaded = ref.read(appRolesProvider);
+    return loaded.isNotEmpty ? loaded : AppRole.allSystemRoles;
+  }
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _emailCtrl.dispose();
+    _passwordCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _saving = true);
+    try {
+      final existing = widget.existing;
+      final notifier = ref.read(userManagementProvider.notifier);
+      final account = UserAccount(
+        id: existing?.id,
+        name: _nameCtrl.text.trim(),
+        email: _emailCtrl.text.trim(),
+        roleName: _selectedRole.name,
+        roleNameUrdu: _selectedRole.nameUrdu,
+        password: existing == null ? _passwordCtrl.text : null,
+      );
+      final err = existing == null
+          ? await notifier.createAccount(account)
+          : await notifier.updateAccount(account);
+      if (!mounted) return;
+      if (err != null) {
+        setState(() => _saving = false);
+        showM360SnackBar(context, 'خرابی: $err', isError: true);
+        return;
+      }
+      Navigator.of(context).pop(_nameCtrl.text.trim());
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _saving = false);
+      showM360SnackBar(context, 'محفوظ کرنے میں خطا ہوئی', isError: true);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final existing = widget.existing;
+    final roles = _roles();
+    return Form(
+      key: _formKey,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          M360TextField(
+            label: 'مکمل نام',
+            hint: 'جیسے: محمد یوسف',
+            controller: _nameCtrl,
+            prefixIcon: Icons.person,
+            validator: (v) =>
+                (v == null || v.trim().isEmpty) ? 'نام درج کریں' : null,
+          ),
+          const SizedBox(height: 12),
+          M360TextField(
+            label: 'ای میل',
+            hint: 'user@madrasa.com',
+            controller: _emailCtrl,
+            keyboardType: TextInputType.emailAddress,
+            prefixIcon: Icons.email,
+            validator: (v) {
+              if (v == null || v.trim().isEmpty) return 'ای میل درج کریں';
+              if (!v.contains('@')) return 'درست ای میل درج کریں';
+              return null;
             },
-            child: Text(
-              'حذف کریں',
-              style: AppTypography.bodyMedium.copyWith(
-                color: Colors.white,
+          ),
+          if (existing == null) ...[
+            const SizedBox(height: 12),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: M360TextField(
+                    label: 'پاس ورڈ',
+                    hint: 'کم از کم 6 حروف',
+                    controller: _passwordCtrl,
+                    obscureText: !_showPassword,
+                    prefixIcon: Icons.lock_outline,
+                    validator: (v) {
+                      if (v == null || v.isEmpty) return 'پاس ورڈ درج کریں';
+                      if (v.length < 6) return 'کم از کم 6 حروف';
+                      return null;
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: M360IconButton(
+                    icon:
+                        _showPassword ? Icons.visibility_off : Icons.visibility,
+                    tooltip: _showPassword ? 'چھپائیں' : 'دکھائیں',
+                    onPressed: () =>
+                        setState(() => _showPassword = !_showPassword),
+                  ),
+                ),
+              ],
+            ),
+          ],
+          const SizedBox(height: 12),
+          M360Dropdown<AppRole>(
+            label: 'کردار',
+            value: _selectedRole,
+            prefixIcon: Icons.badge_outlined,
+            items: [
+              for (final r in roles)
+                M360DropdownItem(value: r, label: r.nameUrdu),
+            ],
+            onChanged: (r) {
+              if (r != null) setState(() => _selectedRole = r);
+            },
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppColors.primary.withValues(alpha: 0.2),
               ),
             ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'اجازتیں (${_selectedRole.permissions.length})',
+                  textDirection: TextDirection.rtl,
+                  style: AppTypography.labelMedium
+                      .copyWith(color: AppColors.primary),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: _selectedRole.permissions
+                      .map((p) => _PermBadge(
+                            label: p.urduLabel,
+                            color: AppColors.primary,
+                          ))
+                      .toList(),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: M360TertiaryButton(
+                  label: 'منسوخ کریں',
+                  onPressed: _saving ? null : () => Navigator.of(context).pop(),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: M360PrimaryButton(
+                  label: existing == null ? 'شامل کریں' : 'محفوظ کریں',
+                  icon: Icons.save,
+                  isLoading: _saving,
+                  onPressed: _saving ? null : _save,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -467,52 +470,59 @@ class _UserAccountsTabState extends State<_UserAccountsTab> {
 // Tab 2 — Roles & Permissions
 // ═══════════════════════════════════════════════════════════════
 
-class _RolesTab extends StatefulWidget {
+class _RolesTab extends ConsumerStatefulWidget {
   const _RolesTab();
 
   @override
-  State<_RolesTab> createState() => _RolesTabState();
+  ConsumerState<_RolesTab> createState() => _RolesTabState();
 }
 
-class _RolesTabState extends State<_RolesTab> {
-  WidgetRef? _ref;
-
+class _RolesTabState extends ConsumerState<_RolesTab> {
   @override
   Widget build(BuildContext context) {
-    return Consumer(builder: (context, ref, _) {
-      _ref = ref;
-      final state = ref.watch(userManagementProvider);
-      final roles = state.roles;
+    final state = ref.watch(userManagementProvider);
+    final roles = state.roles;
 
-      return Scaffold(
-        body: state.isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : roles.isEmpty
-                ? const Center(child: Text('کوئی کردار نہیں'))
-                : ListView.separated(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: roles.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 12),
-                    itemBuilder: (_, i) => _RoleCard(
-                      role: roles[i],
-                      onEdit: () => _showPermissionsSheet(roles[i]),
-                      onDelete: roles[i].isSystem
-                          ? null
-                          : () => _confirmDeleteRole(roles[i]),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(
+          child: state.isLoading
+              ? const M360LoadingState()
+              : roles.isEmpty
+                  ? const M360EmptyState(
+                      icon: Icons.security_outlined,
+                      title: 'کوئی کردار نہیں',
+                      description: 'نیا کردار بنا کر اجازتیں ترتیب دیں۔',
+                    )
+                  : ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                      itemCount: roles.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      itemBuilder: (_, i) => _RoleCard(
+                        role: roles[i],
+                        onEdit: () => _showPermissionsSheet(roles[i]),
+                        onDelete: roles[i].isSystem
+                            ? null
+                            : () => _confirmDeleteRole(roles[i]),
+                      ),
                     ),
-                  ),
-        floatingActionButton: FloatingActionButton.extended(
-          onPressed: _showNewRoleDialog,
-          icon: const Icon(Icons.add),
-          label: const Text('نیا کردار'),
-          backgroundColor: AppColors.primary,
         ),
-      );
-    });
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          child: M360PrimaryButton(
+            label: 'نیا کردار',
+            icon: Icons.add,
+            fullWidth: true,
+            onPressed: _showNewRoleDialog,
+          ),
+        ),
+      ],
+    );
   }
 
   void _showPermissionsSheet(AppRole role) {
-    // Make a mutable copy of current permissions
+    // Make a mutable copy of current permissions.
     var permissions = Set<Permission>.from(role.permissions);
 
     showModalBottomSheet(
@@ -532,7 +542,6 @@ class _RolesTabState extends State<_RolesTab> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Handle
                 Center(
                   child: Container(
                     width: 40,
@@ -544,7 +553,6 @@ class _RolesTabState extends State<_RolesTab> {
                   ),
                 ),
                 const SizedBox(height: 16),
-
                 Row(
                   children: [
                     Container(
@@ -573,7 +581,6 @@ class _RolesTabState extends State<_RolesTab> {
                   ],
                 ),
                 const SizedBox(height: 20),
-
                 Expanded(
                   child: ListView(
                     controller: scrollCtrl,
@@ -592,36 +599,27 @@ class _RolesTabState extends State<_RolesTab> {
                     ),
                   ),
                 ),
-
                 if (!role.isSystem) ...[
                   const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      icon: const Icon(Icons.save),
-                      label: const Text('اجازتیں محفوظ کریں'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14)),
-                      ),
-                      onPressed: () async {
-                        Navigator.pop(ctx);
-                        await _ref
-                            ?.read(userManagementProvider.notifier)
+                  M360PrimaryButton(
+                    label: 'اجازتیں محفوظ کریں',
+                    icon: Icons.save,
+                    fullWidth: true,
+                    onPressed: () async {
+                      Navigator.pop(ctx);
+                      try {
+                        await ref
+                            .read(userManagementProvider.notifier)
                             .updateRole(
                                 role.copyWith(permissions: permissions));
                         if (!mounted) return;
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('اجازتیں محفوظ ہو گئیں'),
-                            backgroundColor: AppColors.success,
-                          ),
-                        );
-                      },
-                    ),
+                        showM360SnackBar(context, 'اجازتیں محفوظ ہو گئیں');
+                      } catch (_) {
+                        if (!mounted) return;
+                        showM360SnackBar(context, 'محفوظ کرنے میں خطا ہوئی',
+                            isError: true);
+                      }
+                    },
                   ),
                 ],
               ],
@@ -637,7 +635,7 @@ class _RolesTabState extends State<_RolesTab> {
     bool readOnly = false,
     void Function(Permission, bool)? onToggle,
   }) {
-    // Group permissions into categories
+    // Group permissions into categories.
     const groups = <String, List<Permission>>{
       'طلباء': [Permission.viewStudents, Permission.editStudents],
       'عملہ': [Permission.viewStaff, Permission.editStaff],
@@ -691,135 +689,135 @@ class _RolesTabState extends State<_RolesTab> {
     }).toList();
   }
 
-  void _showNewRoleDialog() {
-    final nameCtrl = TextEditingController();
-    final nameUrduCtrl = TextEditingController();
-    final descCtrl = TextEditingController();
-    final formKey = GlobalKey<FormState>();
-
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: [
-            const Icon(Icons.add_moderator, color: AppColors.primary, size: 20),
-            const SizedBox(width: 8),
-            Text('نیا کردار بنائیں', style: AppTypography.titleMedium),
-          ],
-        ),
-        content: Form(
-          key: formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _DialogLabel('کردار کا نام (انگریزی)'),
-              const SizedBox(height: 6),
-              _DialogField(
-                controller: nameCtrl,
-                hint: 'e.g. librarian',
-                icon: Icons.label,
-                validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? 'نام درج کریں' : null,
-              ),
-              const SizedBox(height: 12),
-              _DialogLabel('کردار کا نام (اردو)'),
-              const SizedBox(height: 6),
-              _DialogField(
-                controller: nameUrduCtrl,
-                hint: 'جیسے: لائبریرین',
-                icon: Icons.label_outline,
-                validator: (v) => (v == null || v.trim().isEmpty)
-                    ? 'اردو نام درج کریں'
-                    : null,
-              ),
-              const SizedBox(height: 12),
-              _DialogLabel('تفصیل (اختیاری)'),
-              const SizedBox(height: 6),
-              _DialogField(
-                controller: descCtrl,
-                hint: 'مختصر تفصیل',
-                icon: Icons.info_outline,
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('منسوخ')),
-          ElevatedButton.icon(
-            icon: const Icon(Icons.add, size: 18),
-            label: const Text('بنائیں'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-            ),
-            onPressed: () async {
-              if (!formKey.currentState!.validate()) return;
-              Navigator.pop(context);
-
-              final newRole = AppRole(
-                name: nameCtrl.text.trim().toLowerCase().replaceAll(' ', '_'),
-                nameUrdu: nameUrduCtrl.text.trim(),
-                description:
-                    descCtrl.text.trim().isEmpty ? null : descCtrl.text.trim(),
-              );
-              await _ref
-                  ?.read(userManagementProvider.notifier)
-                  .createRole(newRole);
-
-              if (!mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('نیا کردار بن گیا — اجازتیں ترتیب دیں'),
-                  backgroundColor: AppColors.success,
-                ),
-              );
-            },
-          ),
-        ],
-      ),
+  Future<void> _showNewRoleDialog() async {
+    final nameUrdu = await showM360Dialog<String>(
+      context,
+      title: 'نیا کردار بنائیں',
+      icon: Icons.add_moderator,
+      content: const _RoleForm(),
     );
+    if (nameUrdu != null && mounted) {
+      showM360SnackBar(context, 'نیا کردار بن گیا — اجازتیں ترتیب دیں');
+    }
   }
 
-  void _confirmDeleteRole(AppRole role) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('کردار حذف کریں؟'),
-        content: Text(
-          '"${role.nameUrdu}" کو مستقل طور پر حذف کر دیا جائے گا۔',
-          style: AppTypography.bodyMedium,
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('منسوخ')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
-            onPressed: () async {
-              Navigator.pop(context);
-              final err = await _ref
-                  ?.read(userManagementProvider.notifier)
-                  .deleteRole(role);
-              if (!mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                content: Text(err ?? 'کردار حذف ہو گیا'),
-                backgroundColor:
-                    err == null ? AppColors.error : AppColors.warning,
-              ));
-            },
-            child: Text(
-              'حذف کریں',
-              style: AppTypography.bodyMedium.copyWith(
-                color: Colors.white,
+  Future<void> _confirmDeleteRole(AppRole role) async {
+    final confirmed = await showM360ConfirmDialog(
+      context,
+      title: 'کردار حذف کریں؟',
+      message:
+          '"${role.nameUrdu}" کو مستقل طور پر حذف کر دیا جائے گا۔ یہ عمل واپس نہیں ہو سکتا۔',
+      confirmLabel: 'حذف کریں',
+      danger: true,
+    );
+    if (!confirmed) return;
+    final err =
+        await ref.read(userManagementProvider.notifier).deleteRole(role);
+    if (!mounted) return;
+    if (err == null) {
+      showM360SnackBar(context, 'کردار حذف ہو گیا');
+    } else {
+      showM360SnackBar(context, 'خرابی: $err', isError: true);
+    }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// New-role form. Pops the Urdu name on success.
+// ─────────────────────────────────────────────────────────────
+
+class _RoleForm extends ConsumerStatefulWidget {
+  const _RoleForm();
+
+  @override
+  ConsumerState<_RoleForm> createState() => _RoleFormState();
+}
+
+class _RoleFormState extends ConsumerState<_RoleForm> {
+  final _formKey = GlobalKey<FormState>();
+  final _nameCtrl = TextEditingController();
+  final _nameUrduCtrl = TextEditingController();
+  final _descCtrl = TextEditingController();
+  bool _saving = false;
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _nameUrduCtrl.dispose();
+    _descCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _saving = true);
+    try {
+      final newRole = AppRole(
+        name: _nameCtrl.text.trim().toLowerCase().replaceAll(' ', '_'),
+        nameUrdu: _nameUrduCtrl.text.trim(),
+        description:
+            _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
+      );
+      await ref.read(userManagementProvider.notifier).createRole(newRole);
+      if (!mounted) return;
+      Navigator.of(context).pop(newRole.nameUrdu);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _saving = false);
+      showM360SnackBar(context, 'کردار بنانے میں خطا ہوئی', isError: true);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Form(
+      key: _formKey,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          M360TextField(
+            label: 'کردار کا نام (انگریزی)',
+            hint: 'e.g. librarian',
+            controller: _nameCtrl,
+            prefixIcon: Icons.label,
+            validator: (v) =>
+                (v == null || v.trim().isEmpty) ? 'نام درج کریں' : null,
+          ),
+          const SizedBox(height: 12),
+          M360TextField(
+            label: 'کردار کا نام (اردو)',
+            hint: 'جیسے: لائبریرین',
+            controller: _nameUrduCtrl,
+            prefixIcon: Icons.label_outline,
+            validator: (v) =>
+                (v == null || v.trim().isEmpty) ? 'اردو نام درج کریں' : null,
+          ),
+          const SizedBox(height: 12),
+          M360TextField(
+            label: 'تفصیل (اختیاری)',
+            hint: 'مختصر تفصیل',
+            controller: _descCtrl,
+            prefixIcon: Icons.info_outline,
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: M360TertiaryButton(
+                  label: 'منسوخ کریں',
+                  onPressed: _saving ? null : () => Navigator.of(context).pop(),
+                ),
               ),
-            ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: M360PrimaryButton(
+                  label: 'بنائیں',
+                  icon: Icons.add,
+                  isLoading: _saving,
+                  onPressed: _saving ? null : _save,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -828,7 +826,7 @@ class _RolesTabState extends State<_RolesTab> {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// Reusable Card widgets
+// Cards
 // ═══════════════════════════════════════════════════════════════
 
 class _AccountCard extends StatelessWidget {
@@ -847,27 +845,10 @@ class _AccountCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final active = account.isActive;
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: active
-              ? AppColors.divider
-              : AppColors.error.withValues(alpha: 0.3),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+    return M360Card(
+      borderColor: active ? null : AppColors.error.withValues(alpha: 0.3),
       child: Row(
         children: [
-          // Avatar
           CircleAvatar(
             radius: 24,
             backgroundColor: active
@@ -882,8 +863,6 @@ class _AccountCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-
-          // Info
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -896,28 +875,26 @@ class _AccountCard extends StatelessWidget {
                           overflow: TextOverflow.ellipsis),
                     ),
                     const SizedBox(width: 6),
-                    _RoleBadge(label: account.roleNameUrdu),
+                    _PermBadge(
+                      label: account.roleNameUrdu,
+                      color: AppColors.success,
+                    ),
                   ],
                 ),
                 const SizedBox(height: 2),
-                Text(
+                M360Email(
                   account.email,
                   style: AppTypography.bodySmall
                       .copyWith(color: AppColors.textSecondary),
-                  overflow: TextOverflow.ellipsis,
                 ),
                 if (!active)
                   Padding(
-                    padding: const EdgeInsets.only(top: 2),
-                    child: Text('غیر فعال',
-                        style: AppTypography.labelSmall
-                            .copyWith(color: AppColors.error)),
+                    padding: const EdgeInsets.only(top: 4),
+                    child: M360StatusChip(status: M360Status.inactive),
                   ),
               ],
             ),
           ),
-
-          // Actions menu
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert, color: AppColors.textSecondary),
             shape:
@@ -929,31 +906,37 @@ class _AccountCard extends StatelessWidget {
             },
             itemBuilder: (_) => [
               const PopupMenuItem(
-                  value: 'edit',
-                  child: ListTile(
-                      dense: true,
-                      leading: Icon(Icons.edit_outlined, size: 18),
-                      title: Text('ترمیم'))),
+                value: 'edit',
+                child: ListTile(
+                  dense: true,
+                  leading: Icon(Icons.edit_outlined, size: 18),
+                  title: Text('ترمیم'),
+                ),
+              ),
               PopupMenuItem(
-                  value: 'toggle',
-                  child: ListTile(
-                      dense: true,
-                      leading: Icon(
-                          active ? Icons.block : Icons.check_circle_outline,
-                          size: 18,
-                          color:
-                              active ? AppColors.warning : AppColors.success),
-                      title: Text(active ? 'غیر فعال کریں' : 'فعال کریں'))),
+                value: 'toggle',
+                child: ListTile(
+                  dense: true,
+                  leading: Icon(
+                    active ? Icons.block : Icons.check_circle_outline,
+                    size: 18,
+                    color: active ? AppColors.warning : AppColors.success,
+                  ),
+                  title: Text(active ? 'غیر فعال کریں' : 'فعال کریں'),
+                ),
+              ),
               PopupMenuItem(
-                  value: 'delete',
-                  child: ListTile(
-                      dense: true,
-                      leading: Icon(Icons.delete_outline,
-                          color: AppColors.error, size: 18),
-                      title: Text('حذف کریں',
-                          style: AppTypography.bodyMedium.copyWith(
-                            color: AppColors.error,
-                          )))),
+                value: 'delete',
+                child: ListTile(
+                  dense: true,
+                  leading: const Icon(Icons.delete_outline,
+                      color: AppColors.error, size: 18),
+                  title: Text('حذف کریں',
+                      style: AppTypography.bodyMedium.copyWith(
+                        color: AppColors.error,
+                      )),
+                ),
+              ),
             ],
           ),
         ],
@@ -975,20 +958,7 @@ class _RoleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.divider),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+    return M360Card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1000,7 +970,7 @@ class _RoleCard extends StatelessWidget {
                   color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(Icons.shield_outlined,
+                child: const Icon(Icons.shield_outlined,
                     color: AppColors.primary, size: 22),
               ),
               const SizedBox(width: 12),
@@ -1010,19 +980,16 @@ class _RoleCard extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Text(role.nameUrdu, style: AppTypography.titleMedium),
+                        Flexible(
+                          child: Text(role.nameUrdu,
+                              style: AppTypography.titleMedium,
+                              overflow: TextOverflow.ellipsis),
+                        ),
                         if (role.isSystem) ...[
                           const SizedBox(width: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: AppColors.info.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text('بنیادی',
-                                style: AppTypography.labelSmall
-                                    .copyWith(color: AppColors.info)),
+                          _PermBadge(
+                            label: 'بنیادی',
+                            color: AppColors.info,
                           ),
                         ],
                       ],
@@ -1034,32 +1001,29 @@ class _RoleCard extends StatelessWidget {
                   ],
                 ),
               ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.tune, size: 20),
-                    color: AppColors.primary,
-                    tooltip: 'اجازتیں',
-                    onPressed: onEdit,
-                  ),
-                  if (onDelete != null)
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline, size: 20),
-                      color: AppColors.error,
-                      tooltip: 'حذف',
-                      onPressed: onDelete,
-                    ),
-                ],
+              M360IconButton(
+                icon: Icons.tune,
+                tooltip: 'اجازتیں',
+                onPressed: onEdit,
               ),
+              if (onDelete != null)
+                M360IconButton(
+                  icon: Icons.delete_outline,
+                  tooltip: 'حذف کریں',
+                  color: AppColors.error,
+                  onPressed: onDelete,
+                ),
             ],
           ),
           const SizedBox(height: 12),
           Wrap(
             spacing: 6,
-            runSpacing: 4,
+            runSpacing: 6,
             children: role.permissions
-                .map((p) => _PermChip(label: p.urduLabel))
+                .map((p) => _PermBadge(
+                      label: p.urduLabel,
+                      color: AppColors.primary,
+                    ))
                 .toList(),
           ),
         ],
@@ -1068,101 +1032,26 @@ class _RoleCard extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// Small shared widgets
-// ═══════════════════════════════════════════════════════════════
-
-class _PermChip extends StatelessWidget {
+/// RTL-aware colored pill badge for roles and permission labels.
+class _PermBadge extends StatelessWidget {
   final String label;
-  const _PermChip({required this.label});
+  final Color color;
+
+  const _PermBadge({required this.label, required this.color});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.1),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Text(label,
-          style: AppTypography.labelSmall.copyWith(color: AppColors.primary)),
-    );
-  }
-}
-
-class _RoleBadge extends StatelessWidget {
-  final String label;
-  const _RoleBadge({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: AppColors.success.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(label,
-          style: AppTypography.labelSmall.copyWith(color: AppColors.success)),
-    );
-  }
-}
-
-class _DialogLabel extends StatelessWidget {
-  final String text;
-  const _DialogLabel(this.text);
-
-  @override
-  Widget build(BuildContext context) =>
-      Text(text, style: AppTypography.labelLarge);
-}
-
-class _DialogField extends StatelessWidget {
-  final TextEditingController controller;
-  final String hint;
-  final IconData icon;
-  final TextInputType? keyboardType;
-  final String? Function(String?)? validator;
-
-  const _DialogField({
-    required this.controller,
-    required this.hint,
-    required this.icon,
-    this.keyboardType,
-    this.validator,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return TextFormField(
-      controller: controller,
-      keyboardType: keyboardType,
-      textAlign: TextAlign.right,
-      validator: validator,
-      style: AppTypography.bodyMedium,
-      decoration: InputDecoration(
-        hintText: hint,
-        prefixIcon: Icon(icon, color: AppColors.primary, size: 20),
-        filled: true,
-        fillColor: AppColors.background,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.divider),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.primary, width: 2),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.error),
-        ),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Text(
+        label,
+        textDirection: TextDirection.rtl,
+        style: AppTypography.labelSmall
+            .copyWith(color: color, fontWeight: FontWeight.w600),
       ),
     );
   }

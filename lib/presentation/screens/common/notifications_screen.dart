@@ -1,7 +1,16 @@
+/// اطلاعات — In-app notifications inbox.
+///
+/// Local-first: reads the on-device `notifications` table through
+/// [inboxNotificationsProvider]. Works fully offline. Tapping a row marks
+/// it read; the toolbar action marks everything read. Urdu-first with an
+/// English toggle. Renders inside [AppShell] via [ShellPageBody].
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../core/design/m360.dart';
 import '../../../core/notifications/in_app_channel.dart';
 import '../../../core/notifications/notification_models.dart';
 import '../../../core/notifications/notification_providers.dart';
@@ -11,12 +20,6 @@ import '../../../data/local/app_database.dart';
 import '../../../data/local/database_provider.dart';
 import '../../shell/shell_page_body.dart';
 
-/// اطلاعات — In-app notifications inbox (Phase 6).
-///
-/// Local-first: reads the on-device `notifications` table through
-/// [inboxNotificationsProvider]. Works fully offline. Tapping a row marks
-/// it read; the header action marks everything read. Urdu-first with an
-/// English toggle, following the app-wide pattern.
 class NotificationsScreen extends ConsumerStatefulWidget {
   const NotificationsScreen({super.key});
 
@@ -78,22 +81,17 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     try {
       await InAppChannel(db).markAllRead(tenantId, userId);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(_isUrdu
-                ? 'سب پڑھی ہوئی قرار دے دی گئیں'
-                : 'All marked as read'),
-          ),
+        showM360SnackBar(
+          context,
+          _isUrdu ? 'سب پڑھی ہوئی قرار دے دی گئیں' : 'All marked as read',
         );
       }
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(_isUrdu
-                ? 'ناکام ہوا، دوبارہ کوشش کریں'
-                : 'Failed, please retry'),
-          ),
+        showM360SnackBar(
+          context,
+          _isUrdu ? 'ناکام ہوا، دوبارہ کوشش کریں' : 'Failed, please retry',
+          isError: true,
         );
       }
     }
@@ -106,137 +104,166 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
 
     return ShellPageBody(
       actions: [
-        TextButton(
+        M360TertiaryButton(
+          label: _isUrdu ? 'EN' : 'اردو',
           onPressed: () => setState(() => _isUrdu = !_isUrdu),
-          child: Text(_isUrdu ? 'EN' : 'اردو'),
         ),
         if (unread > 0)
-          IconButton(
+          M360IconButton(
+            icon: Icons.done_all_outlined,
             tooltip: _isUrdu ? 'سب پڑھی ہوئی' : 'Mark all read',
-            icon: const Icon(Icons.done_all_outlined),
             onPressed: _markAllRead,
           ),
       ],
-      child: inbox.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(
-          child: Text(
-            _isUrdu
-                ? 'اطلاعات لوڈ نہیں ہو سکیں'
-                : 'Could not load notifications',
-            style: _isUrdu
-                ? AppTypography.labelNastaliq
-                : AppTypography.bodyMedium,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            child: PageHeader(
+              title: _isUrdu ? 'اطلاعات' : 'Notifications',
+              description: unread > 0
+                  ? (_isUrdu
+                      ? '$unread نئی اطلاعات'
+                      : '$unread unread notifications')
+                  : (_isUrdu
+                      ? 'فیس، نتائج اور اعلانات کی تازہ اطلاعات'
+                      : 'Latest fee, result and announcement updates'),
+            ),
           ),
-        ),
-        data: (rows) {
-          if (rows.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.notifications_none_outlined,
-                      size: 56, color: Colors.grey.shade400),
-                  const SizedBox(height: 12),
-                  Text(
-                    _isUrdu ? 'کوئی اطلاع نہیں' : 'No notifications',
-                    style: AppTypography.titleMedium,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    _isUrdu
+          Expanded(
+            child: inbox.when(
+              loading: () => const M360LoadingState(),
+              error: (e, _) => M360ErrorState(
+                message: _isUrdu
+                    ? 'اطلاعات لوڈ نہیں ہو سکیں'
+                    : 'Could not load notifications',
+                onRetry: () => ref.invalidate(inboxNotificationsProvider),
+              ),
+              data: (rows) {
+                if (rows.isEmpty) {
+                  return M360EmptyState(
+                    icon: Icons.notifications_none_outlined,
+                    title: _isUrdu ? 'کوئی اطلاع نہیں' : 'No notifications',
+                    description: _isUrdu
                         ? 'فیس، نتائج اور اعلانات کی اطلاعات یہاں نظر آئیں گی'
                         : 'Fee, result and announcement updates will appear here',
-                    style: _isUrdu
-                        ? AppTypography.labelNastaliq.copyWith(fontSize: 15)
-                        : AppTypography.bodySmall,
-                    textAlign: TextAlign.center,
+                  );
+                }
+                return ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+                  itemCount: rows.length,
+                  itemBuilder: (context, i) => _NotificationCard(
+                    notification: rows[i],
+                    isUrdu: _isUrdu,
+                    timeAgo: _timeAgo(rows[i].createdAtDate, _isUrdu),
+                    icon: _iconFor(rows[i].type),
+                    onTap: () => _markRead(rows[i]),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────
+class _NotificationCard extends StatelessWidget {
+  const _NotificationCard({
+    required this.notification,
+    required this.isUrdu,
+    required this.timeAgo,
+    required this.icon,
+    required this.onTap,
+  });
+
+  final LocalNotificationRow notification;
+  final bool isUrdu;
+  final String timeAgo;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final n = notification;
+    final read = n.isRead;
+    final titleStyle = (isUrdu
+            ? AppTypography.labelNastaliq.copyWith(fontSize: 16)
+            : AppTypography.bodyMedium)
+        .copyWith(
+      fontWeight: read ? FontWeight.normal : FontWeight.bold,
+      color: read ? AppColors.textSecondary : AppColors.textPrimary,
+    );
+
+    return M360TappableCard(
+      margin: const EdgeInsets.only(bottom: 10),
+      onTap: onTap,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Stack(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: read
+                      ? AppColors.divider.withValues(alpha: 0.4)
+                      : AppColors.primary.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  icon,
+                  size: 22,
+                  color: read ? AppColors.textSecondary : AppColors.primary,
+                ),
+              ),
+              if (!read)
+                Positioned(
+                  right: 0,
+                  top: 0,
+                  child: Container(
+                    width: 12,
+                    height: 12,
+                    decoration: const BoxDecoration(
+                      color: AppColors.accent,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(n.titleFor(urdu: isUrdu), style: titleStyle),
+                if (n.bodyFor(urdu: isUrdu).isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    n.bodyFor(urdu: isUrdu),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.bodySmall.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ],
-              ),
-            );
-          }
-          return ListView.separated(
-            itemCount: rows.length,
-            separatorBuilder: (_, __) => const Divider(height: 1),
-            itemBuilder: (context, i) {
-              final n = rows[i];
-              final read = n.isRead;
-              return ListTile(
-                leading: Stack(
-                  children: [
-                    CircleAvatar(
-                      backgroundColor: read
-                          ? Colors.grey.shade200
-                          : Theme.of(context).colorScheme.primaryContainer,
-                      child: Icon(
-                        _iconFor(n.type),
-                        color: read
-                            ? Colors.grey.shade600
-                            : Theme.of(context).colorScheme.primary,
-                      ),
-                    ),
-                    if (!read)
-                      Positioned(
-                        right: 0,
-                        top: 0,
-                        child: Container(
-                          width: 10,
-                          height: 10,
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.primary,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-                title: Text(
-                  n.titleFor(urdu: _isUrdu),
-                  style: (read
-                          ? (_isUrdu
-                              ? AppTypography.labelNastaliq
-                              : AppTypography.bodyMedium)
-                          : (_isUrdu
-                              ? AppTypography.labelNastaliq
-                                  .copyWith(fontWeight: FontWeight.bold)
-                              : AppTypography.bodyMedium
-                                  .copyWith(fontWeight: FontWeight.bold)))
-                      .copyWith(
-                    fontFamily: _isUrdu ? 'JameelNooriNastaleeq' : null,
+                const SizedBox(height: 4),
+                Text(
+                  timeAgo,
+                  style: AppTypography.labelSmall.copyWith(
+                    color: AppColors.textSecondary,
                   ),
                 ),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (n.bodyFor(urdu: _isUrdu).isNotEmpty)
-                      Text(
-                        n.bodyFor(urdu: _isUrdu),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTypography.bodySmall.copyWith(
-                          fontFamily: _isUrdu ? 'JameelNooriNastaleeq' : null,
-                        ),
-                      ),
-                    const SizedBox(height: 2),
-                    Text(
-                      _timeAgo(n.createdAtDate, _isUrdu),
-                      style: (_isUrdu
-                              ? AppTypography.labelNastaliq
-                                  .copyWith(fontSize: 15)
-                              : AppTypography.bodySmall)
-                          .copyWith(
-                        color: Colors.grey.shade600,
-                        fontFamily: null,
-                      ),
-                    ),
-                  ],
-                ),
-                onTap: () => _markRead(n),
-              );
-            },
-          );
-        },
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -18,6 +18,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:madrasa_360/core/design/m360.dart';
+
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/services/role_service.dart';
@@ -42,22 +44,20 @@ class ScopeManagerScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final canManage = ref.watch(roleServiceProvider).canManageRoles();
     if (!canManage) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('ڈیٹا حدود')),
-        body: const UxEmptyState(
+      // Pushed route: keeps its root Scaffold with the m360 deep-screen
+      // app bar.
+      return const Scaffold(
+        appBar: M360AppBar(title: 'ڈیٹا حدود'),
+        body: UxEmptyState(
           icon: Icons.lock_outline,
           title: 'آپ کو یہ صفحہ دیکھنے کی اجازت نہیں ہے',
-          hint:
+          description:
               'ڈیٹا حدود کے انتظام کے لیے آپ کے پاس متعلقہ اجازت ہونی ضروری ہے۔',
         ),
       );
     }
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('ڈیٹا حدود'),
-        centerTitle: true,
-      ),
+      appBar: const M360AppBar(title: 'ڈیٹا حدود'),
       body: const _ScopeDirectory(),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
@@ -95,11 +95,11 @@ class _ScopeDirectoryState extends ConsumerState<_ScopeDirectory> {
         await ref.read(scopeAssignmentsProvider.future);
       },
       child: listAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const M360LoadingState(itemCount: 4),
         error: (e, _) => UxEmptyState(
           icon: Icons.error_outline,
           title: roleUxErrorMessage(e),
-          hint: 'تازہ کریں — سوائپ کریں یا واپس آ کر دوبارہ دیکھیں۔',
+          description: 'تازہ کریں — سوائپ کریں یا واپس آ کر دوبارہ دیکھیں۔',
         ),
         data: (result) => _body(result),
       ),
@@ -127,12 +127,8 @@ class _ScopeDirectoryState extends ConsumerState<_ScopeDirectory> {
       padding: const EdgeInsets.all(16),
       children: [
         if (result.fromCache) _staleBanner(result.fetchedAt),
-        TextField(
-          decoration: const InputDecoration(
-            hintText: 'نام سے تلاش کریں',
-            prefixIcon: Icon(Icons.search),
-            border: OutlineInputBorder(),
-          ),
+        M360SearchField(
+          hint: 'نام سے تلاش کریں',
           onChanged: (v) => setState(() => _search = v),
         ),
         const SizedBox(height: 12),
@@ -140,7 +136,7 @@ class _ScopeDirectoryState extends ConsumerState<_ScopeDirectory> {
           const UxEmptyState(
             icon: Icons.data_object_outlined,
             title: 'ابھی کوئی محدود دائرہ کار مقرر نہیں',
-            hint:
+            description:
                 'تمام صارفین فی الحال پورے مدرسے کے دائرے میں کام کر رہے ہیں۔ '
                 'نیا دائرہ نیچے بٹن سے مقرر کریں۔',
           )
@@ -266,9 +262,9 @@ class _ScopeDirectoryState extends ConsumerState<_ScopeDirectory> {
               ],
             ),
           ),
-          IconButton(
+          M360IconButton(
             tooltip: 'تبدیل کریں',
-            icon: const Icon(Icons.edit_outlined),
+            icon: Icons.edit_outlined,
             onPressed: () async {
               final saved = await Navigator.push(
                 context,
@@ -297,9 +293,10 @@ class _ScopeDirectoryState extends ConsumerState<_ScopeDirectory> {
               }
             },
           ),
-          IconButton(
+          M360IconButton(
             tooltip: 'ہٹائیں',
-            icon: Icon(Icons.delete_outline, color: AppColors.error),
+            icon: Icons.delete_outline,
+            color: AppColors.error,
             onPressed: () => _removeScope(a),
           ),
         ],
@@ -385,17 +382,15 @@ class _ScopeEditorScreenState extends ConsumerState<ScopeEditorScreen> {
   Widget build(BuildContext context) {
     final tenantId = ref.watch(currentTenantIdProvider);
     final saving = ref.watch(scopeManagerControllerProvider).isLoading;
+    // Pushed create/edit flow: keeps its root Scaffold with the m360
+    // deep-screen app bar.
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('دائرہ کار مقرر کریں'),
-        centerTitle: true,
-      ),
+      appBar: const M360AppBar(title: 'دائرہ کار مقرر کریں'),
       body: tenantId == null
           ? const UxEmptyState(
               icon: Icons.error_outline,
               title: 'مدرسہ منتخب نہیں ہے',
-              hint: 'پہلے کوئی مدرسہ منتخب کریں۔',
+              description: 'پہلے کوئی مدرسہ منتخب کریں۔',
             )
           : ListView(
               padding: const EdgeInsets.all(16),
@@ -408,15 +403,11 @@ class _ScopeEditorScreenState extends ConsumerState<ScopeEditorScreen> {
                 const SizedBox(height: 12),
                 _scopeCard(tenantId),
                 const SizedBox(height: 20),
-                FilledButton.icon(
-                  icon: saving
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Colors.white))
-                      : const Icon(Icons.save_outlined),
-                  label: const Text('محفوظ کریں'),
+                M360PrimaryButton(
+                  label: 'محفوظ کریں',
+                  icon: saving ? null : Icons.save_outlined,
+                  isLoading: saving,
+                  fullWidth: true,
                   onPressed: saving ? null : () => _save(),
                 ),
               ],
@@ -507,9 +498,9 @@ class _ScopeEditorScreenState extends ConsumerState<ScopeEditorScreen> {
               ),
             ),
             if (widget.initialUser == null)
-              TextButton(
+              M360TertiaryButton(
+                label: 'تبدیل کریں',
                 onPressed: () => setState(() => _user = null),
-                child: const Text('تبدیل کریں'),
               ),
           ],
         ),
@@ -523,22 +514,14 @@ class _ScopeEditorScreenState extends ConsumerState<ScopeEditorScreen> {
         children: [
           const UxSectionTitle('صارف منتخب کریں', icon: Icons.person_outline),
           const SizedBox(height: 8),
-          TextField(
+          M360SearchField(
             controller: _userSearch,
-            decoration: InputDecoration(
-              hintText: 'نام لکھ کر تلاش کریں',
-              suffixIcon: IconButton(
-                icon: const Icon(Icons.search),
-                onPressed: () =>
-                    setState(() => _userQuery = _userSearch.text.trim()),
-              ),
-              border: const OutlineInputBorder(),
-            ),
+            hint: 'نام لکھ کر تلاش کریں',
             onSubmitted: (v) => setState(() => _userQuery = v.trim()),
           ),
           const SizedBox(height: 8),
           usersAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () => const M360LoadingState(itemCount: 2),
             error: (e, _) => Text(roleUxErrorMessage(e),
                 style:
                     AppTypography.bodyMedium.copyWith(color: AppColors.error)),
@@ -591,7 +574,7 @@ class _ScopeEditorScreenState extends ConsumerState<ScopeEditorScreen> {
                   .copyWith(color: AppColors.textSecondary)),
           const SizedBox(height: 8),
           catalogAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () => const M360LoadingState(itemCount: 2),
             error: (e, _) => Text(roleUxErrorMessage(e),
                 style:
                     AppTypography.bodyMedium.copyWith(color: AppColors.error)),
@@ -703,7 +686,7 @@ class _ScopeEditorScreenState extends ConsumerState<ScopeEditorScreen> {
       builder: (context, snap) {
         final classes = snap.data ?? const [];
         if (snap.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const M360LoadingState(itemCount: 2);
         }
         if (classes.isEmpty) {
           return Text('اس مدرسے میں ابھی کوئی جماعت درج نہیں۔',
@@ -736,25 +719,14 @@ class _ScopeEditorScreenState extends ConsumerState<ScopeEditorScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        TextField(
+        M360SearchField(
           controller: _studentSearch,
-          decoration: InputDecoration(
-            hintText: 'نام لکھ کر تلاش کریں',
-            suffixIcon: _studentSearching
-                ? const Padding(
-                    padding: EdgeInsets.all(12),
-                    child: SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2)),
-                  )
-                : IconButton(
-                    icon: const Icon(Icons.search),
-                    onPressed: () => _searchStudents(tenantId),
-                  ),
-            border: const OutlineInputBorder(),
-          ),
+          hint: 'نام لکھ کر تلاش کریں',
           onSubmitted: (_) => _searchStudents(tenantId),
+          // Disabled while a search is in flight — the busy state is
+          // communicated through the disabled field instead of a raw
+          // spinner in the suffix slot.
+          enabled: !_studentSearching,
         ),
         const SizedBox(height: 8),
         Wrap(

@@ -13,6 +13,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import 'package:madrasa_360/core/design/m360.dart';
+
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/services/scope_service.dart';
@@ -44,14 +46,12 @@ class _DelegationCreateScreenState
     final myCodes = ref.watch(myDelegatableCodesProvider);
     final busy = ref.watch(delegationControllerProvider).isLoading;
 
+    // Pushed create flow: keeps its root Scaffold with the m360
+    // deep-screen app bar.
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('نیا اختیار سونپیں'),
-        centerTitle: true,
-      ),
+      appBar: const M360AppBar(title: 'نیا اختیار سونپیں'),
       body: catalogAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const M360LoadingState(itemCount: 5),
         error: (e, _) => UxEmptyState(
           icon: Icons.error_outline,
           title: delegationErrorMessage(e),
@@ -63,8 +63,8 @@ class _DelegationCreateScreenState
             return const UxEmptyState(
               icon: Icons.key_off_outlined,
               title: 'سونپنے کے لیے کوئی اختیار نہیں',
-              hint: 'آپ کے پاس خود کوئی ایسا اختیار نہیں جو آپ کسی اور '
-                  'کو سونپ سکیں۔',
+              description: 'آپ کے پاس خود کوئی ایسا اختیار نہیں جو آپ کسی '
+                  'اور کو سونپ سکیں۔',
             );
           }
           return _form(context, delegatable, busy);
@@ -238,16 +238,9 @@ class _DelegationCreateScreenState
               children: [
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                  child: TextField(
+                  child: M360SearchField(
+                    hint: 'نام سے تلاش کریں',
                     onChanged: (v) => setSheet(() => query = v),
-                    decoration: InputDecoration(
-                      hintText: 'نام سے تلاش کریں',
-                      prefixIcon: const Icon(Icons.search),
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14)),
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 10),
-                    ),
                   ),
                 ),
                 Expanded(
@@ -318,14 +311,14 @@ class _DelegationCreateScreenState
           Expanded(
             child: Text(text, style: AppTypography.bodyMedium),
           ),
-          TextButton(
+          M360TertiaryButton(
+            label: 'تبدیل کریں',
             onPressed: busy ? null : _chooseDate,
-            child: const Text('تبدیل کریں'),
           ),
           if (_expiresAt != null)
-            IconButton(
+            M360IconButton(
               tooltip: 'میعاد ختم کریں',
-              icon: const Icon(Icons.clear, size: 18),
+              icon: Icons.clear,
               onPressed: busy ? null : () => setState(() => _expiresAt = null),
             ),
         ],
@@ -357,27 +350,12 @@ class _DelegationCreateScreenState
       ),
       child: SafeArea(
         top: false,
-        child: SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            icon: busy
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(
-                        strokeWidth: 2, color: Colors.white),
-                  )
-                : const Icon(Icons.handshake_outlined),
-            label: Text(busy ? 'سونپا جا رہا ہے…' : 'اختیار سونپیں'),
-            onPressed: !ready || busy ? null : () => _confirm(context),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14)),
-            ),
-          ),
+        child: M360PrimaryButton(
+          label: busy ? 'سونپا جا رہا ہے…' : 'اختیار سونپیں',
+          icon: busy ? null : Icons.handshake_outlined,
+          isLoading: busy,
+          fullWidth: true,
+          onPressed: !ready || busy ? null : () => _confirm(context),
         ),
       ),
     );

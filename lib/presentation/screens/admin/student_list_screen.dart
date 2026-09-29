@@ -1,22 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:madrasa_360/core/design/m360.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../data/models/attendance_status.dart';
 import '../../../data/models/fee.dart';
 import '../../../data/models/student.dart';
 import '../../../providers/fee_provider.dart';
 import '../../../providers/student_provider.dart';
-import '../../shell/shell_page_body.dart';
-import '../../widgets/common/app_widgets.dart';
 import '../students/student_dialogs.dart';
 import '../students/student_profile_screen.dart';
 import '../students/student_widgets.dart';
 
-/// طلبہ کی فہرست — redesigned (presentation layer only)
+/// طلبہ کی فہرست — m360 redesign (Phase 10)
 ///
-/// Same providers, same filters dimensions, same create/edit/fee dialogs.
-/// Row tap opens the student profile hub.
+/// Same providers, same filter dimensions, same create/edit/fee dialogs.
+/// Row actions open the student profile hub, the edit dialog, or the fee
+/// collection flow. Rendered as an [AppShell] destination: no Scaffold,
+/// no AppBar — [PageContainer]/[PageHeader] only.
 class StudentListScreen extends ConsumerStatefulWidget {
   const StudentListScreen({super.key});
 
@@ -35,48 +37,63 @@ class _StudentListScreenState extends ConsumerState<StudentListScreen> {
     super.dispose();
   }
 
+  /// Back affordance for deep-pushed routes. Shell destinations get the
+  /// shell's own back chevron, so this renders nothing for them.
+  List<Widget> _withBack(BuildContext context, List<Widget> actions) {
+    final canPop = ModalRoute.of(context)?.canPop ?? false;
+    return [
+      if (canPop)
+        M360IconButton(
+          icon: Icons.arrow_back,
+          tooltip: 'واپس',
+          onPressed: () => Navigator.of(context).maybePop(),
+        ),
+      ...actions,
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     final studentsAsync = ref.watch(allStudentsProvider);
+    final total = studentsAsync.valueOrNull?.length;
 
-    return ShellPageBody(
-      actions: [
-        IconButton(
-          tooltip: 'تازہ کریں',
-          icon: const Icon(Icons.refresh),
-          onPressed: () => ref.invalidate(allStudentsProvider),
-        ),
-      ],
-      child: studentsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.error_outline, size: 56, color: AppColors.error),
-              const SizedBox(height: 12),
-              Text('طلباء لوڈ کرنے میں خطا',
-                  style: AppTypography.labelNastaliq),
-              const SizedBox(height: 8),
-              TextButton.icon(
-                onPressed: () => ref.invalidate(allStudentsProvider),
-                icon: const Icon(Icons.refresh),
-                label: Text('دوبارہ کوشش کریں',
-                    style: AppTypography.labelNastaliq),
-              ),
-            ],
+    return PageContainer(
+      scrollable: false,
+      header: PageHeader(
+        title: 'طلبہ',
+        breadcrumb: 'منتظم',
+        description: total == null
+            ? 'طلبہ کی فہرست، تلاش اور فلٹر'
+            : 'کل $total طالب علم — فہرست، تلاش اور فلٹر',
+        actions: _withBack(context, [
+          M360IconButton(
+            icon: Icons.refresh,
+            tooltip: 'تازہ کریں',
+            onPressed: () => ref.invalidate(allStudentsProvider),
           ),
+          M360PrimaryButton(
+            label: 'نیا طالب علم',
+            icon: Icons.person_add,
+            onPressed: () => StudentDialogs.showNewAdmission(context, ref),
+          ),
+        ]),
+      ),
+      child: studentsAsync.when(
+        loading: () => const M360LoadingState(),
+        error: (e, _) => M360ErrorState(
+          message: 'طلبہ لوڈ کرنے میں خطا ہوئی',
+          onRetry: () => ref.invalidate(allStudentsProvider),
         ),
         data: (students) => Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _HeaderRow(
-              total: students.length,
-              onAdd: () => StudentDialogs.showNewAdmission(context, ref),
-            ),
-            SearchField(
-              controller: _searchController,
-              hintText: 'نام، والد کا نام یا رول نمبر تلاش کریں…',
-              onChanged: (_) => setState(() {}),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: M360SearchField(
+                controller: _searchController,
+                hint: 'نام، والد کا نام یا رول نمبر تلاش کریں…',
+                onChanged: (_) => setState(() {}),
+              ),
             ),
             _FilterChips(
               selectedClass: _selectedClass,
@@ -124,78 +141,123 @@ class _StudentListScreenState extends ConsumerState<StudentListScreen> {
       final searching = _searchController.text.trim().isNotEmpty ||
           _selectedClass != 'all' ||
           _selectedStatus != 'all';
-      return EmptyState(
+      return M360EmptyState(
         icon: Icons.person_off,
         title: 'کوئی طالب علم نہیں ملا',
-        subtitle:
-            searching ? 'تلاش یا فلٹر تبدیل کریں' : 'پہلا طالب علم شامل کریں',
-        buttonText: searching ? null : 'نیا طالب علم',
-        onButtonPressed: searching
+        description: searching
+            ? 'تلاش یا فلٹر تبدیل کر کے دوبارہ کوشش کریں۔'
+            : 'پہلا طالب علم شامل کر کے شروع کریں۔',
+        actionLabel: searching ? null : 'نیا طالب علم',
+        onAction: searching
             ? null
             : () => StudentDialogs.showNewAdmission(context, ref),
       );
     }
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        if (constraints.maxWidth >= 900) {
-          return _DesktopStudentTable(
-            students: filtered,
-            onEdit: (s) => StudentDialogs.showEditStudent(context, ref, s),
-            onFee: (s) => StudentDialogs.showFeeCollection(context, ref, s),
-          );
-        }
-        return _MobileStudentList(
-          students: filtered,
-          onEdit: (s) => StudentDialogs.showEditStudent(context, ref, s),
-          onFee: (s) => StudentDialogs.showFeeCollection(context, ref, s),
-        );
-      },
-    );
+    return _StudentTable(students: filtered);
   }
 }
 
 // ─────────────────────────────────────────────────────────────
-// Header: title + prominent primary CTA
+// Responsive register: sortable table on wide screens, card list
+// on narrow ones (handled inside [M360ResponsiveTable]).
 // ─────────────────────────────────────────────────────────────
 
-class _HeaderRow extends StatelessWidget {
-  final int total;
-  final VoidCallback onAdd;
+class _StudentTable extends ConsumerWidget {
+  final List<Student> students;
 
-  const _HeaderRow({required this.total, required this.onAdd});
+  const _StudentTable({required this.students});
+
+  static void _openProfile(BuildContext context, Student s) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => StudentProfileScreen(studentId: s.id),
+      ),
+    );
+  }
 
   @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('طلبہ', style: AppTypography.headingSmall),
-                Text(
-                  'کل $total طالب علم',
-                  style: AppTypography.bodySmall,
+  Widget build(BuildContext context, WidgetRef ref) {
+    final feeStatusByStudent = _feeStatusByStudent(ref);
+    return M360ResponsiveTable<Student>(
+      rows: students,
+      rowId: (s) => s.id,
+      pageSize: 25,
+      emptyIcon: Icons.person_off,
+      emptyTitle: 'کوئی طالب علم نہیں ملا',
+      emptyDescription: 'تلاش یا فلٹر تبدیل کر کے دوبارہ کوشش کریں۔',
+      columns: [
+        M360TableColumn<Student>(
+          title: 'نام',
+          value: (s) => s.name,
+          sortable: true,
+          sortKey: (s) => s.name,
+          cell: (s) => Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              StudentAvatar(student: s, radius: 18),
+              const SizedBox(width: 10),
+              Flexible(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(s.name,
+                        style: AppTypography.titleSmall.copyWith(fontSize: 15)),
+                    Text('بن ${s.fatherName}', style: AppTypography.bodySmall),
+                  ],
                 ),
-              ],
-            ),
-          ),
-          ElevatedButton.icon(
-            onPressed: onAdd,
-            icon: const Icon(Icons.person_add, color: Colors.white),
-            label: Text('+ نیا طالب علم', style: AppTypography.buttonText),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
               ),
-            ),
+            ],
           ),
-        ],
-      ),
+        ),
+        M360TableColumn<Student>(
+          title: 'رول نمبر',
+          value: (s) => s.rollNo.isEmpty ? '—' : s.rollNo,
+          cell: (s) => M360LatinText(s.rollNo.isEmpty ? '—' : s.rollNo),
+        ),
+        M360TableColumn<Student>(
+          title: 'کلاس',
+          value: (s) => _shortClassLabel(s.className),
+        ),
+        M360TableColumn<Student>(
+          title: 'حاضری',
+          value: (s) => _attendanceLabel(s.attendanceStatus),
+          cell: (s) => M360StatusChip.attendance(
+            attendance: _mapAttendance(s.attendanceStatus),
+          ),
+        ),
+        M360TableColumn<Student>(
+          title: 'فیس',
+          value: (s) {
+            final fee = feeStatusByStudent[s.id];
+            return fee == null ? '—' : _feeLabel(fee);
+          },
+          cell: (s) {
+            final fee = feeStatusByStudent[s.id];
+            return fee == null
+                ? Text('—', style: AppTypography.bodySmall)
+                : M360StatusChip.fee(fee: _mapFee(fee));
+          },
+        ),
+      ],
+      rowActions: [
+        M360TableAction<Student>(
+          label: 'پروفائل دیکھیں',
+          icon: Icons.visibility,
+          onTap: (s) => _openProfile(context, s),
+        ),
+        M360TableAction<Student>(
+          label: 'ترمیم',
+          icon: Icons.edit,
+          onTap: (s) => StudentDialogs.showEditStudent(context, ref, s),
+        ),
+        M360TableAction<Student>(
+          label: 'فیس وصول کریں',
+          icon: Icons.receipt,
+          onTap: (s) => StudentDialogs.showFeeCollection(context, ref, s),
+        ),
+      ],
     );
   }
 }
@@ -255,20 +317,14 @@ class _FilterChips extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Align(
             alignment: Alignment.centerLeft,
-            child: TextButton(
+            child: M360TertiaryButton(
+              label: 'فلٹر صاف کریں',
               onPressed: onClear,
-              child: Text('فلٹر صاف کریں', style: AppTypography.labelNastaliq),
             ),
           ),
         ),
       ],
     );
-  }
-
-  static String _shortClassLabel(String full) {
-    // 'درجہ اولیٰ (اول سال)' -> 'درجہ اولیٰ'
-    final idx = full.indexOf('(');
-    return idx > 0 ? full.substring(0, idx).trim() : full;
   }
 }
 
@@ -330,253 +386,65 @@ class _ChipRow extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────
-// Desktop: professional data table
-// ─────────────────────────────────────────────────────────────
-
-class _DesktopStudentTable extends ConsumerWidget {
-  final List<Student> students;
-  final ValueChanged<Student> onEdit;
-  final ValueChanged<Student> onFee;
-
-  const _DesktopStudentTable({
-    required this.students,
-    required this.onEdit,
-    required this.onFee,
-  });
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final feeStatusByStudent = _feeStatusByStudent(ref);
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-      child: AppCard(
-        padding: EdgeInsets.zero,
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: DataTable(
-            headingRowColor: WidgetStateProperty.all(
-              AppColors.primary.withValues(alpha: 0.08),
-            ),
-            headingTextStyle: AppTypography.labelNastaliq.copyWith(
-              color: AppColors.primaryDark,
-            ),
-            dataTextStyle: AppTypography.bodyMedium,
-            showCheckboxColumn: false,
-            columns: const [
-              DataColumn(label: Text('نام')),
-              DataColumn(label: Text('رول نمبر')),
-              DataColumn(label: Text('کلاس')),
-              DataColumn(label: Text('حاضری')),
-              DataColumn(label: Text('فیس کی حالت')),
-              DataColumn(label: Text('اعمال')),
-            ],
-            rows: students.map((s) {
-              final feeStatus = feeStatusByStudent[s.id];
-              return DataRow(
-                onSelectChanged: (_) => _openProfile(context, s),
-                cells: [
-                  DataCell(
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        StudentAvatar(student: s, radius: 18),
-                        const SizedBox(width: 10),
-                        Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(s.name,
-                                style: AppTypography.titleSmall
-                                    .copyWith(fontSize: 15)),
-                            Text('بن ${s.fatherName}',
-                                style: AppTypography.bodySmall),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  DataCell(Text(s.rollNo.isEmpty ? '—' : s.rollNo)),
-                  DataCell(Text(_FilterChips._shortClassLabel(s.className))),
-                  DataCell(attendanceBadge(s.attendanceStatus)),
-                  DataCell(feeStatus == null
-                      ? Text('—', style: AppTypography.bodySmall)
-                      : feeBadge(feeStatus)),
-                  DataCell(
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          tooltip: 'پروفائل',
-                          icon: const Icon(Icons.visibility,
-                              color: AppColors.primary),
-                          onPressed: () => _openProfile(context, s),
-                        ),
-                        IconButton(
-                          tooltip: 'ترمیم',
-                          icon: const Icon(Icons.edit, color: AppColors.info),
-                          onPressed: () => onEdit(s),
-                        ),
-                        IconButton(
-                          tooltip: 'فیس وصول کریں',
-                          icon: const Icon(Icons.receipt,
-                              color: AppColors.success),
-                          onPressed: () => onFee(s),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              );
-            }).toList(),
-          ),
-        ),
-      ),
-    );
-  }
-
-  static void _openProfile(BuildContext context, Student s) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => StudentProfileScreen(studentId: s.id),
-      ),
-    );
-  }
+/// 'درجہ اولیٰ (اول سال)' -> 'درجہ اولیٰ'
+String _shortClassLabel(String full) {
+  final idx = full.indexOf('(');
+  return idx > 0 ? full.substring(0, idx).trim() : full;
 }
 
 // ─────────────────────────────────────────────────────────────
-// Mobile: compact student cards
+// Status mapping onto the canonical m360 chips
 // ─────────────────────────────────────────────────────────────
 
-class _MobileStudentList extends ConsumerWidget {
-  final List<Student> students;
-  final ValueChanged<Student> onEdit;
-  final ValueChanged<Student> onFee;
-
-  const _MobileStudentList({
-    required this.students,
-    required this.onEdit,
-    required this.onFee,
-  });
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final feeStatusByStudent = _feeStatusByStudent(ref);
-    return ListView.builder(
-      padding: const EdgeInsets.only(bottom: 90, top: 4),
-      itemCount: students.length,
-      itemBuilder: (context, index) {
-        final s = students[index];
-        final feeStatus = feeStatusByStudent[s.id];
-        return AppCard(
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => StudentProfileScreen(studentId: s.id),
-            ),
-          ),
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              StudentAvatar(student: s, radius: 26),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(s.name,
-                        style:
-                            AppTypography.labelNastaliq.copyWith(fontSize: 17)),
-                    Text(
-                      'بن ${s.fatherName} • رول: ${s.rollNo.isEmpty ? '—' : s.rollNo}',
-                      style: AppTypography.bodySmall,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 6),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 4,
-                      children: [
-                        _MiniTag(
-                          label: _FilterChips._shortClassLabel(s.className),
-                          color: AppColors.primary,
-                        ),
-                        attendanceBadge(s.attendanceStatus, compact: true),
-                        if (feeStatus != null)
-                          feeBadge(feeStatus, compact: true),
-                        if (!s.isActive)
-                          _MiniTag(label: 'غیر فعال', color: AppColors.error),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              PopupMenuButton<String>(
-                icon:
-                    const Icon(Icons.more_vert, color: AppColors.textSecondary),
-                onSelected: (value) {
-                  if (value == 'edit') onEdit(s);
-                  if (value == 'fee') onFee(s);
-                  if (value == 'profile') {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => StudentProfileScreen(studentId: s.id),
-                      ),
-                    );
-                  }
-                },
-                itemBuilder: (_) => [
-                  PopupMenuItem(
-                    value: 'profile',
-                    child: Text('پروفائل دیکھیں',
-                        style:
-                            AppTypography.labelNastaliq.copyWith(fontSize: 15)),
-                  ),
-                  PopupMenuItem(
-                    value: 'edit',
-                    child: Text('ترمیم',
-                        style:
-                            AppTypography.labelNastaliq.copyWith(fontSize: 15)),
-                  ),
-                  PopupMenuItem(
-                    value: 'fee',
-                    child: Text('فیس وصول کریں',
-                        style:
-                            AppTypography.labelNastaliq.copyWith(fontSize: 15)),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
-    );
+M360AttendanceStatus _mapAttendance(AttendanceStatus s) {
+  switch (s) {
+    case AttendanceStatus.present:
+      return M360AttendanceStatus.present;
+    case AttendanceStatus.absent:
+      return M360AttendanceStatus.absent;
+    case AttendanceStatus.leave:
+      return M360AttendanceStatus.leave;
+    case AttendanceStatus.late:
+      return M360AttendanceStatus.late;
   }
 }
 
-class _MiniTag extends StatelessWidget {
-  final String label;
-  final Color color;
+String _attendanceLabel(AttendanceStatus s) {
+  switch (s) {
+    case AttendanceStatus.present:
+      return 'حاضر';
+    case AttendanceStatus.absent:
+      return 'غیر حاضر';
+    case AttendanceStatus.leave:
+      return 'رخصت';
+    case AttendanceStatus.late:
+      return 'تاخیر';
+  }
+}
 
-  const _MiniTag({required this.label, required this.color});
+M360FeeStatus _mapFee(FeeStatus s) {
+  switch (s) {
+    case FeeStatus.paid:
+      return M360FeeStatus.paid;
+    case FeeStatus.partial:
+      return M360FeeStatus.partial;
+    case FeeStatus.pending:
+      return M360FeeStatus.due;
+    case FeeStatus.pastDue:
+      return M360FeeStatus.overdue;
+  }
+}
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        label,
-        style: AppTypography.labelSmall.copyWith(color: color),
-      ),
-    );
+String _feeLabel(FeeStatus s) {
+  switch (s) {
+    case FeeStatus.paid:
+      return 'ادا شدہ';
+    case FeeStatus.partial:
+      return 'جزوی';
+    case FeeStatus.pending:
+      return 'واجب الادا';
+    case FeeStatus.pastDue:
+      return 'بقایا';
   }
 }
 

@@ -3,12 +3,14 @@ import 'dart:io';
 import 'package:flutter/material.dart' hide DateUtils;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:madrasa_360/core/design/m360.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/services/tenant_context.dart';
 import '../../../core/utils/date_utils.dart';
+import '../../../core/utils/money_format.dart';
 import '../../../data/models/darja.dart';
 import '../../../data/models/fee.dart';
 import '../../../data/models/student.dart';
@@ -26,11 +28,15 @@ class DarjaSelection {
 
 /// Shared student dialogs — new-admission, edit, and fee collection.
 ///
-/// Extracted from `admin/student_list_screen.dart` with the SAME providers,
-/// the SAME fields and the SAME Urdu validation messages. Only the styling
-/// was refreshed (Nastaleeq labels, teal/gold accents). Used by both the
-/// redesigned student list and the student profile screen so the create/edit
-/// flow behaves identically everywhere.
+/// Phase 10 (m360): visual/UX layer only — same providers, same fields,
+/// same Urdu validation messages, same save flows. [AlertDialog] becomes
+/// [M360Dialog], fields become [M360TextField]/[M360Dropdown], snackbars go
+/// through [showM360SnackBar], and the blocking loader dialog is replaced
+/// by the primary button's [isLoading] state.
+///
+/// Used by both the redesigned student list and the student profile screen
+/// so the create/edit flow behaves identically everywhere. Public API is
+/// unchanged (admin/student_list_screen.dart shares it).
 class StudentDialogs {
   StudentDialogs._();
 
@@ -57,8 +63,6 @@ class StudentDialogs {
     'امتحان فیس',
     'دیگر',
   ];
-
-  static const Color gold = Color(0xFFC9A227);
 
   /// Class/darja picker bound to REAL darja rows.
   ///
@@ -95,19 +99,14 @@ class StudentDialogs {
             }
             selection.id = current.id;
             selection.name = current.nameUrdu;
-            return DropdownButtonFormField<String>(
-              initialValue: current.id,
-              decoration: const InputDecoration(
-                labelText: 'جماعت',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.class_),
-              ),
-              items: options
-                  .map((d) => DropdownMenuItem<String>(
-                        value: d.id,
-                        child: Text(d.nameUrdu),
-                      ))
-                  .toList(),
+            return M360Dropdown<String>(
+              label: 'جماعت',
+              prefixIcon: Icons.class_,
+              items: [
+                for (final d in options)
+                  M360DropdownItem(value: d.id!, label: d.nameUrdu),
+              ],
+              value: current.id,
               onChanged: (value) {
                 if (value == null) return;
                 final chosen = options.firstWhere((d) => d.id == value,
@@ -136,6 +135,7 @@ class StudentDialogs {
   // ─────────────────────────────────────────────────────────────
 
   static void showNewAdmission(BuildContext context, WidgetRef ref) {
+    final screenContext = context;
     final nameController = TextEditingController();
     final fatherNameController = TextEditingController();
     final phoneController = TextEditingController();
@@ -144,12 +144,13 @@ class StudentDialogs {
     final darjaSelection = DarjaSelection();
     String selectedSection = sectionOptions.first;
     XFile? pickedPhoto;
+    bool saving = false;
 
     showDialog(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: Text('+ نیا طالب علم', style: AppTypography.titleLarge),
+        builder: (context, setState) => M360Dialog(
+          title: 'نیا طالب علم',
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -161,10 +162,10 @@ class StudentDialogs {
                   pickedPhoto: pickedPhoto,
                 ),
                 const SizedBox(height: 16),
-                _LabeledField(
+                M360TextField(
                   controller: nameController,
                   label: 'طالب علم کا نام',
-                  icon: Icons.person,
+                  prefixIcon: Icons.person,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'نام درج کریں';
@@ -173,10 +174,10 @@ class StudentDialogs {
                   },
                 ),
                 const SizedBox(height: 16),
-                _LabeledField(
+                M360TextField(
                   controller: fatherNameController,
                   label: 'والد کا نام',
-                  icon: Icons.family_restroom,
+                  prefixIcon: Icons.family_restroom,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'والد کا نام درج کریں';
@@ -185,10 +186,10 @@ class StudentDialogs {
                   },
                 ),
                 const SizedBox(height: 16),
-                _LabeledField(
+                M360TextField(
                   controller: phoneController,
                   label: 'فون نمبر',
-                  icon: Icons.phone,
+                  prefixIcon: Icons.phone,
                   keyboardType: TextInputType.phone,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -203,53 +204,55 @@ class StudentDialogs {
                   onChanged: () => setState(() {}),
                 ),
                 const SizedBox(height: 16),
-                DropdownButtonFormField<String>(
-                  initialValue: selectedSection,
-                  decoration: const InputDecoration(
-                    labelText: 'سیکشن',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.group),
-                  ),
-                  items: sectionOptions
-                      .map((v) => DropdownMenuItem<String>(
-                            value: v,
-                            child: Text(v),
-                          ))
-                      .toList(),
-                  onChanged: (value) =>
-                      setState(() => selectedSection = value!),
+                M360Dropdown<String>(
+                  label: 'سیکشن',
+                  prefixIcon: Icons.group,
+                  items: [
+                    for (final v in sectionOptions)
+                      M360DropdownItem(value: v, label: v),
+                  ],
+                  value: selectedSection,
+                  onChanged: (value) => setState(
+                      () => selectedSection = value ?? sectionOptions.first),
                 ),
                 const SizedBox(height: 16),
-                _LabeledField(
+                M360TextField(
                   controller: addressController,
                   label: 'پتہ (اختیاری)',
-                  icon: Icons.location_on,
+                  prefixIcon: Icons.location_on,
                   maxLines: 2,
                 ),
               ],
             ),
           ),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: Text('منسوخ کریں', style: AppTypography.labelNastaliq),
+            M360TertiaryButton(
+              label: 'منسوخ کریں',
+              onPressed: saving ? null : () => Navigator.pop(dialogContext),
             ),
-            ElevatedButton(
-              onPressed: () => _submitNewAdmission(
-                dialogContext,
-                ref,
-                nameController: nameController,
-                fatherNameController: fatherNameController,
-                phoneController: phoneController,
-                addressController: addressController,
-                darjaId: darjaSelection.id ?? '',
-                darjaName: darjaSelection.name,
-                pickedPhoto: pickedPhoto,
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-              ),
-              child: Text('داخلہ لیں', style: AppTypography.buttonText),
+            M360PrimaryButton(
+              label: 'داخلہ لیں',
+              isLoading: saving,
+              onPressed: saving
+                  ? null
+                  : () => _submitNewAdmission(
+                        screenContext,
+                        dialogContext,
+                        ref,
+                        () => setState(() => saving = true),
+                        () {
+                          if (dialogContext.mounted) {
+                            setState(() => saving = false);
+                          }
+                        },
+                        nameController: nameController,
+                        fatherNameController: fatherNameController,
+                        phoneController: phoneController,
+                        addressController: addressController,
+                        darjaId: darjaSelection.id ?? '',
+                        darjaName: darjaSelection.name,
+                        pickedPhoto: pickedPhoto,
+                      ),
             ),
           ],
         ),
@@ -258,8 +261,11 @@ class StudentDialogs {
   }
 
   static Future<void> _submitNewAdmission(
+    BuildContext screenContext,
     BuildContext dialogContext,
-    WidgetRef ref, {
+    WidgetRef ref,
+    VoidCallback setSaving,
+    VoidCallback clearSaving, {
     required TextEditingController nameController,
     required TextEditingController fatherNameController,
     required TextEditingController phoneController,
@@ -271,12 +277,8 @@ class StudentDialogs {
     if (nameController.text.isEmpty || fatherNameController.text.isEmpty) {
       return;
     }
+    setSaving();
     try {
-      showDialog(
-        context: dialogContext,
-        barrierDismissible: false,
-        builder: (_) => const Center(child: CircularProgressIndicator()),
-      );
       final tenantId = ref.read(currentTenantIdProvider);
       if (tenantId == null) {
         throw StateError('No active tenant');
@@ -306,21 +308,15 @@ class StudentDialogs {
             .read(studentNotifierProvider.notifier)
             .uploadPhoto(saved.id, photoToUpload);
       }
-      if (dialogContext.mounted) {
-        Navigator.pop(dialogContext); // close loader
-        Navigator.pop(dialogContext); // close dialog
-        ScaffoldMessenger.of(dialogContext).showSnackBar(SnackBar(
-          content: Text('${nameController.text} کا داخلہ کامیابی سے ہو گیا'),
-          backgroundColor: Colors.green,
-        ));
+      if (dialogContext.mounted) Navigator.pop(dialogContext); // close dialog
+      if (screenContext.mounted) {
+        showM360SnackBar(
+            screenContext, '${nameController.text} کا داخلہ کامیابی سے ہو گیا');
       }
-    } catch (e) {
-      if (dialogContext.mounted) {
-        Navigator.pop(dialogContext); // close loader
-        ScaffoldMessenger.of(dialogContext).showSnackBar(SnackBar(
-          content: Text('خطا: $e'),
-          backgroundColor: Colors.red,
-        ));
+    } catch (_) {
+      clearSaving();
+      if (screenContext.mounted) {
+        showM360SnackBar(screenContext, 'داخلہ میں خطا', isError: true);
       }
     }
   }
@@ -331,6 +327,7 @@ class StudentDialogs {
 
   static void showEditStudent(
       BuildContext context, WidgetRef ref, Student student) {
+    final screenContext = context;
     final nameController = TextEditingController(text: student.name);
     final fatherNameController =
         TextEditingController(text: student.fatherName);
@@ -342,15 +339,13 @@ class StudentDialogs {
       ..id = student.classId.isNotEmpty ? student.classId : null
       ..name = student.className;
     XFile? pickedPhoto;
+    bool saving = false;
 
     showDialog(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: Text(
-            'طالب علم کی معلومات ترمیم کریں',
-            style: AppTypography.titleLarge,
-          ),
+        builder: (context, setState) => M360Dialog(
+          title: 'طالب علم کی معلومات ترمیم کریں',
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -364,10 +359,10 @@ class StudentDialogs {
                   pickedPhoto: pickedPhoto,
                 ),
                 const SizedBox(height: 16),
-                _LabeledField(
+                M360TextField(
                   controller: nameController,
                   label: 'طالب علم کا نام',
-                  icon: Icons.person,
+                  prefixIcon: Icons.person,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'نام درج کریں';
@@ -376,10 +371,10 @@ class StudentDialogs {
                   },
                 ),
                 const SizedBox(height: 16),
-                _LabeledField(
+                M360TextField(
                   controller: fatherNameController,
                   label: 'والد کا نام',
-                  icon: Icons.family_restroom,
+                  prefixIcon: Icons.family_restroom,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'والد کا نام درج کریں';
@@ -388,10 +383,10 @@ class StudentDialogs {
                   },
                 ),
                 const SizedBox(height: 16),
-                _LabeledField(
+                M360TextField(
                   controller: phoneController,
                   label: 'فون نمبر',
-                  icon: Icons.phone,
+                  prefixIcon: Icons.phone,
                   keyboardType: TextInputType.phone,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -409,75 +404,69 @@ class StudentDialogs {
             ),
           ),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: Text('منسوخ کریں', style: AppTypography.labelNastaliq),
+            M360TertiaryButton(
+              label: 'منسوخ کریں',
+              onPressed: saving ? null : () => Navigator.pop(dialogContext),
             ),
-            ElevatedButton(
-              onPressed: () async {
-                if (nameController.text.isNotEmpty &&
-                    fatherNameController.text.isNotEmpty) {
-                  try {
-                    showDialog(
-                      context: dialogContext,
-                      barrierDismissible: false,
-                      builder: (_) =>
-                          const Center(child: CircularProgressIndicator()),
-                    );
-                    final tenantId = ref.read(currentTenantIdProvider);
-                    if (tenantId == null) {
-                      throw StateError('No active tenant');
-                    }
-                    final updated = Student(
-                      id: student.id,
-                      tenantId: tenantId,
-                      rollNo: student.rollNo,
-                      name: nameController.text.trim(),
-                      fatherName: fatherNameController.text.trim(),
-                      darjaId: darjaSelection.id ?? '',
-                      darjaName: darjaSelection.name,
-                      classId: darjaSelection.id ?? '',
-                      className: darjaSelection.name,
-                      phone: phoneController.text.trim().isEmpty
-                          ? null
-                          : phoneController.text.trim(),
-                      address: student.address,
-                      photoUrl: student.photoUrl,
-                      isActive: student.isActive,
-                    );
-                    final saved = await ref
-                        .read(studentNotifierProvider.notifier)
-                        .save(updated);
-                    final photoToUpload = pickedPhoto;
-                    if (photoToUpload != null) {
-                      await ref
-                          .read(studentNotifierProvider.notifier)
-                          .uploadPhoto(saved.id, photoToUpload);
-                    }
-                    if (dialogContext.mounted) {
-                      Navigator.pop(dialogContext); // close loader
-                      Navigator.pop(dialogContext); // close dialog
-                      ScaffoldMessenger.of(dialogContext).showSnackBar(SnackBar(
-                        content: Text(
-                            '${nameController.text} کی معلومات ترمیم کر دی گئیں'),
-                        backgroundColor: Colors.green,
-                      ));
-                    }
-                  } catch (e) {
-                    if (dialogContext.mounted) {
-                      Navigator.pop(dialogContext);
-                      ScaffoldMessenger.of(dialogContext).showSnackBar(SnackBar(
-                        content: Text('خطا: $e'),
-                        backgroundColor: Colors.red,
-                      ));
-                    }
-                  }
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-              ),
-              child: Text('ترمیم کریں', style: AppTypography.buttonText),
+            M360PrimaryButton(
+              label: 'ترمیم کریں',
+              isLoading: saving,
+              onPressed: saving
+                  ? null
+                  : () async {
+                      if (nameController.text.isEmpty ||
+                          fatherNameController.text.isEmpty) {
+                        return;
+                      }
+                      setState(() => saving = true);
+                      try {
+                        final tenantId = ref.read(currentTenantIdProvider);
+                        if (tenantId == null) {
+                          throw StateError('No active tenant');
+                        }
+                        final updated = Student(
+                          id: student.id,
+                          tenantId: tenantId,
+                          rollNo: student.rollNo,
+                          name: nameController.text.trim(),
+                          fatherName: fatherNameController.text.trim(),
+                          darjaId: darjaSelection.id ?? '',
+                          darjaName: darjaSelection.name,
+                          classId: darjaSelection.id ?? '',
+                          className: darjaSelection.name,
+                          phone: phoneController.text.trim().isEmpty
+                              ? null
+                              : phoneController.text.trim(),
+                          address: student.address,
+                          photoUrl: student.photoUrl,
+                          isActive: student.isActive,
+                        );
+                        final saved = await ref
+                            .read(studentNotifierProvider.notifier)
+                            .save(updated);
+                        final photoToUpload = pickedPhoto;
+                        if (photoToUpload != null) {
+                          await ref
+                              .read(studentNotifierProvider.notifier)
+                              .uploadPhoto(saved.id, photoToUpload);
+                        }
+                        if (dialogContext.mounted) {
+                          Navigator.pop(dialogContext); // close dialog
+                        }
+                        if (screenContext.mounted) {
+                          showM360SnackBar(screenContext,
+                              '${nameController.text} کی معلومات ترمیم کر دی گئیں');
+                        }
+                      } catch (_) {
+                        if (dialogContext.mounted) {
+                          setState(() => saving = false);
+                        }
+                        if (screenContext.mounted) {
+                          showM360SnackBar(screenContext, 'ترمیم میں خطا',
+                              isError: true);
+                        }
+                      }
+                    },
             ),
           ],
         ),
@@ -491,6 +480,7 @@ class StudentDialogs {
 
   static void showFeeCollection(
       BuildContext context, WidgetRef ref, Student student) {
+    final screenContext = context;
     final amountController = TextEditingController();
     final descriptionController = TextEditingController();
 
@@ -505,17 +495,14 @@ class StudentDialogs {
       return '${d.year}-${d.month.toString().padLeft(2, '0')}';
     });
     String selectedMonth = monthOptions.first;
-    final screenContext = context;
+    bool saving = false;
 
     showDialog(
       context: context,
       builder: (dialogContext) => Consumer(
         builder: (context, innerRef, _) => StatefulBuilder(
-          builder: (context, setState) => AlertDialog(
-            title: Text(
-              '${student.name} کی فیس',
-              style: AppTypography.titleLarge,
-            ),
+          builder: (context, setState) => M360Dialog(
+            title: '${student.name} کی فیس',
             content: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -543,49 +530,35 @@ class StudentDialogs {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  DropdownButtonFormField<String>(
-                    initialValue: selectedFeeType,
-                    decoration: const InputDecoration(
-                      labelText: 'فیس کی قسم',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.category),
-                    ),
-                    items: feeTypeOptions
-                        .map((v) => DropdownMenuItem<String>(
-                              value: v,
-                              child: Text(v),
-                            ))
-                        .toList(),
-                    onChanged: (value) =>
-                        setState(() => selectedFeeType = value!),
+                  M360Dropdown<String>(
+                    label: 'فیس کی قسم',
+                    prefixIcon: Icons.category,
+                    items: [
+                      for (final v in feeTypeOptions)
+                        M360DropdownItem(value: v, label: v),
+                    ],
+                    value: selectedFeeType,
+                    onChanged: (value) => setState(
+                        () => selectedFeeType = value ?? feeTypeOptions.first),
                   ),
                   const SizedBox(height: 16),
-                  DropdownButtonFormField<String>(
-                    initialValue: selectedMonth,
-                    decoration: const InputDecoration(
-                      labelText: 'ماہ',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.calendar_month),
-                    ),
-                    items: monthOptions
-                        .map((v) => DropdownMenuItem<String>(
-                              value: v,
-                              child: Text(v),
-                            ))
-                        .toList(),
-                    onChanged: (value) =>
-                        setState(() => selectedMonth = value!),
+                  M360Dropdown<String>(
+                    label: 'ماہ',
+                    prefixIcon: Icons.calendar_month,
+                    items: [
+                      for (final v in monthOptions)
+                        M360DropdownItem(value: v, label: v),
+                    ],
+                    value: selectedMonth,
+                    onChanged: (value) => setState(
+                        () => selectedMonth = value ?? monthOptions.first),
                   ),
                   const SizedBox(height: 16),
-                  TextFormField(
+                  M360TextField(
                     controller: amountController,
+                    label: 'رقم',
+                    prefixIcon: Icons.attach_money,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'رقم',
-                      border: OutlineInputBorder(),
-                      prefixText: 'ر ',
-                      prefixIcon: Icon(Icons.attach_money),
-                    ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'رقم درج کریں';
@@ -598,96 +571,98 @@ class StudentDialogs {
                     },
                   ),
                   const SizedBox(height: 16),
-                  TextFormField(
+                  M360TextField(
                     controller: descriptionController,
+                    label: 'تفصیل (اختیاری)',
+                    prefixIcon: Icons.description,
                     maxLines: 2,
-                    decoration: const InputDecoration(
-                      labelText: 'تفصیل (اختیاری)',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.description),
-                    ),
                   ),
                 ],
               ),
             ),
             actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext),
-                child: Text('منسوخ کریں', style: AppTypography.labelNastaliq),
+              M360TertiaryButton(
+                label: 'منسوخ کریں',
+                onPressed: saving ? null : () => Navigator.pop(dialogContext),
               ),
-              ElevatedButton(
-                onPressed: () async {
-                  final amount = double.tryParse(amountController.text);
-                  if (amount == null || amount <= 0) {
-                    ScaffoldMessenger.of(screenContext).showSnackBar(
-                      const SnackBar(content: Text('درست رقم درج کریں')),
-                    );
-                    return;
-                  }
-                  final monthIdx = monthOptions.indexOf(selectedMonth);
-                  final monthValue = monthValues[monthIdx < 0 ? 0 : monthIdx];
-                  final fees = innerRef
-                          .read(feesByStudentProvider(student.id))
-                          .valueOrNull ??
-                      const <Fee>[];
-                  Fee? existing;
-                  for (final f in fees) {
-                    if (f.month == monthValue) {
-                      existing = f;
-                      break;
-                    }
-                  }
-                  final nowPaid = DateTime.now();
-                  final todayStr =
-                      '${nowPaid.year}-${nowPaid.month.toString().padLeft(2, '0')}-${nowPaid.day.toString().padLeft(2, '0')}';
-                  final messenger = ScaffoldMessenger.of(screenContext);
-                  try {
-                    final Fee record;
-                    if (existing != null) {
-                      record = existing.copyWith(
-                        amountPaid: existing.amountPaid + amount,
-                        paidDate: todayStr,
-                      );
-                    } else {
-                      final tenantId = innerRef.read(currentTenantIdProvider);
-                      if (tenantId == null) {
-                        throw StateError('No active tenant');
-                      }
-                      record = Fee(
-                        id: const Uuid().v4(),
-                        tenantId: tenantId,
-                        studentId: student.id,
-                        studentName: student.name,
-                        studentClass: student.className,
-                        month: monthValue,
-                        amountDue: amount,
-                        amountPaid: amount,
-                        dueDate: todayStr,
-                        paidDate: todayStr,
-                        status: FeeStatus.paid,
-                      );
-                    }
-                    await innerRef
-                        .read(feeNotifierProvider.notifier)
-                        .save(record);
-                    if (dialogContext.mounted) Navigator.pop(dialogContext);
-                    messenger.showSnackBar(
-                      SnackBar(
-                        content: Text(
-                            'ر $amount کی $selectedFeeType کامیابی سے وصول کر لی گئی'),
-                        backgroundColor: Colors.green,
-                      ),
-                    );
-                  } catch (_) {
-                    messenger.showSnackBar(
-                      const SnackBar(content: Text('فیس وصول کرنے میں خطا')),
-                    );
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.success,
-                ),
-                child: Text('وصول کریں', style: AppTypography.buttonText),
+              M360PrimaryButton(
+                label: 'وصول کریں',
+                isLoading: saving,
+                onPressed: saving
+                    ? null
+                    : () async {
+                        final amount = double.tryParse(amountController.text);
+                        if (amount == null || amount <= 0) {
+                          showM360SnackBar(screenContext, 'درست رقم درج کریں',
+                              isError: true);
+                          return;
+                        }
+                        setState(() => saving = true);
+                        try {
+                          final monthIdx = monthOptions.indexOf(selectedMonth);
+                          final monthValue =
+                              monthValues[monthIdx < 0 ? 0 : monthIdx];
+                          final fees = innerRef
+                                  .read(feesByStudentProvider(student.id))
+                                  .valueOrNull ??
+                              const <Fee>[];
+                          Fee? existing;
+                          for (final f in fees) {
+                            if (f.month == monthValue) {
+                              existing = f;
+                              break;
+                            }
+                          }
+                          final nowPaid = DateTime.now();
+                          final todayStr =
+                              '${nowPaid.year}-${nowPaid.month.toString().padLeft(2, '0')}-${nowPaid.day.toString().padLeft(2, '0')}';
+                          final Fee record;
+                          if (existing != null) {
+                            record = existing.copyWith(
+                              amountPaid: existing.amountPaid + amount,
+                              paidDate: todayStr,
+                            );
+                          } else {
+                            final tenantId =
+                                innerRef.read(currentTenantIdProvider);
+                            if (tenantId == null) {
+                              throw StateError('No active tenant');
+                            }
+                            record = Fee(
+                              id: const Uuid().v4(),
+                              tenantId: tenantId,
+                              studentId: student.id,
+                              studentName: student.name,
+                              studentClass: student.className,
+                              month: monthValue,
+                              amountDue: amount,
+                              amountPaid: amount,
+                              dueDate: todayStr,
+                              paidDate: todayStr,
+                              status: FeeStatus.paid,
+                            );
+                          }
+                          await innerRef
+                              .read(feeNotifierProvider.notifier)
+                              .save(record);
+                          if (dialogContext.mounted) {
+                            Navigator.pop(dialogContext);
+                          }
+                          if (screenContext.mounted) {
+                            showM360SnackBar(screenContext,
+                                'ر ${formatPK(amount)} کی $selectedFeeType کامیابی سے وصول کر لی گئی');
+                          }
+                        } catch (_) {
+                          if (dialogContext.mounted) {
+                            setState(() => saving = false);
+                          }
+                          if (screenContext.mounted) {
+                            showM360SnackBar(
+                                screenContext, 'فیس وصول کرنے میں خطا',
+                                isError: true);
+                          }
+                        }
+                      },
               ),
             ],
           ),
@@ -700,41 +675,6 @@ class StudentDialogs {
 // ─────────────────────────────────────────────────────────────
 // Private UI helpers for the dialogs
 // ─────────────────────────────────────────────────────────────
-
-class _LabeledField extends StatelessWidget {
-  final TextEditingController controller;
-  final String label;
-  final IconData icon;
-  final TextInputType? keyboardType;
-  final int? maxLines;
-  final String? Function(String?)? validator;
-
-  const _LabeledField({
-    required this.controller,
-    required this.label,
-    required this.icon,
-    this.keyboardType,
-    this.maxLines,
-    this.validator,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return TextFormField(
-      controller: controller,
-      keyboardType: keyboardType,
-      maxLines: maxLines,
-      style: AppTypography.bodyMedium,
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: AppTypography.labelNastaliq.copyWith(fontSize: 15),
-        border: const OutlineInputBorder(),
-        prefixIcon: Icon(icon, color: AppColors.primary),
-      ),
-      validator: validator,
-    );
-  }
-}
 
 class _PhotoPicker extends StatelessWidget {
   final String? currentPhotoUrl;
@@ -783,7 +723,7 @@ class _PhotoPicker extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.all(6),
                 decoration: const BoxDecoration(
-                  color: StudentDialogs.gold,
+                  color: AppColors.gold,
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(Icons.add_a_photo,

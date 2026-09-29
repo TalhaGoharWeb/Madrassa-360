@@ -1,22 +1,32 @@
+/// پروفائل سکرین
+/// Profile — identity hero, settings groups, support and sign-out.
+///
+/// Renders inside [AppShell] via [ShellPageBody] (no nested Scaffold).
+/// All values are real session data (auth provider, role service, tenant
+/// branding); SharedPreferences holds only locally-edited phone/photo
+/// fallbacks. Sign-out keeps its exact flow, confirmed via the
+/// design-system dialog.
+
 import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../core/design/m360.dart';
 import '../../../core/services/role_service.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/tenant_branding_provider.dart';
+import '../../shell/shell_page_body.dart';
 import '../auth/login_screen.dart';
 import '../settings/user_management_hub.dart';
 import '../settings/delegation_screen.dart';
-import '../../shell/shell_page_body.dart';
 import 'about_screen.dart';
 
-/// پروفائل سکرین
-/// Profile Screen (Placeholder for Phase 1)
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
 
@@ -71,146 +81,130 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final canManage = ref.watch(roleServiceProvider).canManageUsers();
+    final canDelegate = ref.watch(roleServiceProvider).canManageRoles();
+
     return ShellPageBody(
       backgroundColor: AppColors.background,
-      child: CustomScrollView(
-        slivers: [
-          // ── Gradient header ──────────────────────────────
-          SliverToBoxAdapter(child: _buildProfileHeader()),
-
-          // ── Settings groups ──────────────────────────────
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Account group
-                  _GroupLabel('اکاؤنٹ'),
-                  const SizedBox(height: 8),
-                  _SettingsGroup(children: [
-                    _SettingsTile(
-                      icon: Icons.manage_accounts_outlined,
-                      label: 'پروفائل ترتیبات',
-                      subtitle: 'نام، فون، تصویر تبدیل کریں',
-                      onTap: () => _showEditProfileSheet(context),
-                    ),
-                    _SettingsTile(
-                      icon: Icons.notifications_outlined,
-                      label: 'اطلاعات',
-                      subtitle: 'پش نوٹیفکیشن کنٹرول کریں',
-                      onTap: () => _showNotificationSettings(context),
-                    ),
-                    _SettingsTile(
-                      icon: Icons.language_outlined,
-                      label: 'زبان',
-                      subtitle: 'اردو / English',
-                      onTap: () => _showLanguageSettings(context),
-                      isLast: true,
-                    ),
-                  ]),
-
-                  const SizedBox(height: 20),
-
-                  // Administration group (Phase 8a — permission-gated)
-                  Builder(
-                    builder: (context) {
-                      final canManage =
-                          ref.watch(roleServiceProvider).canManageUsers();
-                      if (!canManage) {
-                        return const SizedBox.shrink();
-                      }
-                      // Delegation management needs `roles.assign` (Phase 8b).
-                      final canDelegate =
-                          ref.watch(roleServiceProvider).canManageRoles();
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _GroupLabel('انتظام'),
-                          const SizedBox(height: 8),
-                          _SettingsGroup(children: [
-                            _SettingsTile(
-                              icon: Icons.people_alt_outlined,
-                              label: 'صارفین اور ذمہ داریاں',
-                              subtitle: 'صارفین بنائیں، ذمہ داریاں سونپیں',
-                              onTap: () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      const UserManagementHubScreen(),
-                                ),
-                              ),
-                              isLast: !canDelegate,
-                            ),
-                            if (canDelegate)
-                              _SettingsTile(
-                                icon: Icons.handshake_outlined,
-                                label: 'اختیار سونپنا',
-                                subtitle: 'کسی صارف کو عارضی اختیار دیں',
-                                onTap: () => Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => const DelegationScreen(),
-                                  ),
-                                ),
-                                isLast: true,
-                              ),
-                          ]),
-                          const SizedBox(height: 20),
-                        ],
-                      );
-                    },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildProfileHeader(),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+              children: [
+                // Account group
+                const M360SectionHeader(
+                  title: 'اکاؤنٹ',
+                  padding: EdgeInsets.only(bottom: 4),
+                ),
+                _SettingsGroup(children: [
+                  _SettingsTile(
+                    icon: Icons.manage_accounts_outlined,
+                    label: 'پروفائل ترتیبات',
+                    subtitle: 'نام، فون، تصویر تبدیل کریں',
+                    onTap: () => _showEditProfileSheet(context),
                   ),
+                  _SettingsTile(
+                    icon: Icons.notifications_outlined,
+                    label: 'اطلاعات',
+                    subtitle: 'پش نوٹیفکیشن کنٹرول کریں',
+                    onTap: () => _showNotificationSettings(context),
+                  ),
+                  _SettingsTile(
+                    icon: Icons.language_outlined,
+                    label: 'زبان',
+                    subtitle: 'اردو / English',
+                    onTap: () => _showLanguageSettings(context),
+                    isLast: true,
+                  ),
+                ]),
+                const SizedBox(height: 12),
 
-                  // Support group
-                  _GroupLabel('معاونت'),
-                  const SizedBox(height: 8),
+                // Administration group (permission-gated)
+                if (canManage) ...[
+                  const M360SectionHeader(
+                    title: 'انتظام',
+                    padding: EdgeInsets.only(bottom: 4),
+                  ),
                   _SettingsGroup(children: [
                     _SettingsTile(
-                      icon: Icons.help_outline,
-                      label: 'مدد اور رہنمائی',
-                      subtitle: 'استعمال کرنے کا طریقہ',
-                      onTap: () => _showHelpDialog(context),
-                    ),
-                    _SettingsTile(
-                      icon: Icons.info_outline,
-                      label: 'ایپ کے بارے میں',
-                      subtitle: 'ڈویلپر معلومات، منصوبے کی تفصیل',
+                      icon: Icons.people_alt_outlined,
+                      label: 'صارفین اور ذمہ داریاں',
+                      subtitle: 'صارفین بنائیں، ذمہ داریاں سونپیں',
                       onTap: () => Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const AboutScreen()),
+                        MaterialPageRoute(
+                          builder: (_) => const UserManagementHubScreen(),
+                        ),
                       ),
-                      isLast: true,
+                      isLast: !canDelegate,
                     ),
+                    if (canDelegate)
+                      _SettingsTile(
+                        icon: Icons.handshake_outlined,
+                        label: 'اختیار سونپنا',
+                        subtitle: 'کسی صارف کو عارضی اختیار دیں',
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const DelegationScreen(),
+                          ),
+                        ),
+                        isLast: true,
+                      ),
                   ]),
-
-                  const SizedBox(height: 20),
-
-                  // Danger zone
-                  _SettingsGroup(children: [
-                    _SettingsTile(
-                      icon: Icons.logout,
-                      label: 'لاگ آؤٹ',
-                      subtitle: 'اپنے اکاؤنٹ سے باہر نکلیں',
-                      onTap: () => _showLogoutConfirmation(context),
-                      isDestructive: true,
-                      isLast: true,
-                    ),
-                  ]),
-
-                  const SizedBox(height: 32),
-
-                  // Footer
-                  Center(
-                    child: Text(
-                      'Madrasa 360',
-                      style: AppTypography.labelSmall
-                          .copyWith(color: AppColors.textSecondary),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
                 ],
-              ),
+
+                // Support group
+                const M360SectionHeader(
+                  title: 'معاونت',
+                  padding: EdgeInsets.only(bottom: 4),
+                ),
+                _SettingsGroup(children: [
+                  _SettingsTile(
+                    icon: Icons.help_outline,
+                    label: 'مدد اور رہنمائی',
+                    subtitle: 'استعمال کرنے کا طریقہ',
+                    onTap: () => _showHelpDialog(context),
+                  ),
+                  _SettingsTile(
+                    icon: Icons.info_outline,
+                    label: 'ایپ کے بارے میں',
+                    subtitle: 'ڈویلپر معلومات، منصوبے کی تفصیل',
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const AboutScreen()),
+                    ),
+                    isLast: true,
+                  ),
+                ]),
+                const SizedBox(height: 12),
+
+                // Sign out
+                _SettingsGroup(children: [
+                  _SettingsTile(
+                    icon: Icons.logout,
+                    label: 'لاگ آؤٹ',
+                    subtitle: 'اپنے اکاؤنٹ سے باہر نکلیں',
+                    onTap: () => _showLogoutConfirmation(context),
+                    isDestructive: true,
+                    isLast: true,
+                  ),
+                ]),
+
+                const SizedBox(height: 24),
+                Center(
+                  child: Text(
+                    'Madrasa 360',
+                    style: AppTypography.labelSmall
+                        .copyWith(color: AppColors.textSecondary),
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
             ),
           ),
         ],
@@ -250,6 +244,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           begin: Alignment.topRight,
           end: Alignment.bottomLeft,
         ),
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
       ),
       child: SafeArea(
         bottom: false,
@@ -257,7 +252,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
           child: Column(
             children: [
-              // AppBar row
+              // Header row
               Row(
                 children: [
                   Text(
@@ -267,15 +262,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ),
                   ),
                   const Spacer(),
-                  IconButton(
-                    icon: const Icon(Icons.edit_outlined,
-                        color: Colors.white70, size: 22),
-                    onPressed: () => _showEditProfileSheet(context),
+                  M360IconButton(
+                    icon: Icons.edit_outlined,
                     tooltip: 'پروفائل ترمیم',
+                    color: Colors.white70,
+                    onPressed: () => _showEditProfileSheet(context),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
 
               // Avatar
               GestureDetector(
@@ -315,7 +310,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       ),
                     ),
                     // Directional badge position so it mirrors with the
-                    // app-wide RTL layout (Phase 13).
+                    // app-wide RTL layout.
                     Positioned.directional(
                       textDirection: Directionality.of(context),
                       end: 2,
@@ -439,118 +434,103 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text('پروفائل ترتیبات', style: AppTypography.titleLarge),
+              // Drag handle
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.divider,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'پروفائل ترتیبات',
+                style: AppTypography.titleLarge,
+                textAlign: TextAlign.center,
+              ),
               const SizedBox(height: 20),
 
               // Photo picker
-              GestureDetector(
-                onTap: () async {
-                  final picked = await ImagePicker()
-                      .pickImage(source: ImageSource.gallery, imageQuality: 70);
-                  if (picked != null) {
-                    setSheetState(() => tempPhotoPath = picked.path);
-                  }
-                },
-                child: Stack(
-                  alignment: Alignment.bottomRight,
-                  children: [
-                    CircleAvatar(
-                      radius: 50,
-                      backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-                      backgroundImage: tempPhotoPath != null
-                          ? FileImage(File(tempPhotoPath!)) as ImageProvider
-                          : null,
-                      child: tempPhotoPath == null
-                          ? const Icon(Icons.person,
-                              size: 45, color: AppColors.primary)
-                          : null,
-                    ),
-                    Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: const BoxDecoration(
-                          color: AppColors.primary, shape: BoxShape.circle),
-                      child: const Icon(Icons.camera_alt,
-                          color: Colors.white, size: 16),
-                    ),
-                  ],
+              Center(
+                child: GestureDetector(
+                  onTap: () async {
+                    final picked = await ImagePicker().pickImage(
+                        source: ImageSource.gallery, imageQuality: 70);
+                    if (picked != null) {
+                      setSheetState(() => tempPhotoPath = picked.path);
+                    }
+                  },
+                  child: Stack(
+                    alignment: Alignment.bottomRight,
+                    children: [
+                      CircleAvatar(
+                        radius: 50,
+                        backgroundColor:
+                            AppColors.primary.withValues(alpha: 0.1),
+                        backgroundImage: tempPhotoPath != null
+                            ? FileImage(File(tempPhotoPath!)) as ImageProvider
+                            : null,
+                        child: tempPhotoPath == null
+                            ? const Icon(Icons.person,
+                                size: 45, color: AppColors.primary)
+                            : null,
+                      ),
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: const BoxDecoration(
+                            color: AppColors.primary, shape: BoxShape.circle),
+                        child: const Icon(Icons.camera_alt,
+                            color: Colors.white, size: 16),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(height: 20),
 
-              // Name
-              TextField(
+              M360TextField(
+                label: 'نام',
+                hint: 'اپنا نام لکھیں',
                 controller: nameCtrl,
-                textDirection: TextDirection.rtl,
-                decoration: InputDecoration(
-                  labelText: 'نام',
-                  prefixIcon: const Icon(Icons.person_outline),
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                ),
+                prefixIcon: Icons.person_outline,
               ),
               const SizedBox(height: 12),
-
-              // Phone
-              TextField(
+              M360TextField(
+                label: 'فون نمبر',
+                hint: '03xx-xxxxxxx',
                 controller: phoneCtrl,
                 keyboardType: TextInputType.phone,
-                textDirection: TextDirection.ltr,
-                decoration: InputDecoration(
-                  labelText: 'فون نمبر',
-                  prefixIcon: const Icon(Icons.phone_outlined),
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                ),
+                prefixIcon: Icons.phone_outlined,
               ),
               const SizedBox(height: 12),
-
-              // Email
-              TextField(
+              M360TextField(
+                label: 'ای میل',
+                hint: 'example@mail.com',
                 controller: emailCtrl,
                 keyboardType: TextInputType.emailAddress,
-                textDirection: TextDirection.ltr,
-                decoration: InputDecoration(
-                  labelText: 'ای میل',
-                  prefixIcon: const Icon(Icons.email_outlined),
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                ),
+                prefixIcon: Icons.email_outlined,
               ),
               const SizedBox(height: 24),
 
-              // Save button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                  ),
-                  onPressed: () async {
-                    final name = nameCtrl.text.trim();
-                    final phone = phoneCtrl.text.trim();
-                    final email = emailCtrl.text.trim();
-                    final messenger = ScaffoldMessenger.of(context);
-                    Navigator.pop(sheetContext);
-                    await _saveProfile(name, phone, email, tempPhotoPath);
-                    if (mounted) {
-                      messenger.showSnackBar(
-                        SnackBar(
-                          content: Text('پروفائل محفوظ کر دیا گیا',
-                              style: AppTypography.labelNastaliq.copyWith(
-                                color: Colors.white,
-                              )),
-                          backgroundColor: Colors.green,
-                        ),
-                      );
-                    }
-                  },
-                  child: Text('محفوظ کریں', style: AppTypography.labelNastaliq),
-                ),
+              M360PrimaryButton(
+                label: 'محفوظ کریں',
+                icon: Icons.check,
+                fullWidth: true,
+                onPressed: () async {
+                  final name = nameCtrl.text.trim();
+                  final phone = phoneCtrl.text.trim();
+                  final email = emailCtrl.text.trim();
+                  Navigator.pop(sheetContext);
+                  await _saveProfile(name, phone, email, tempPhotoPath);
+                  if (mounted) {
+                    showM360SnackBar(context, 'پروفائل محفوظ کر دیا گیا');
+                  }
+                },
               ),
               const SizedBox(height: 8),
             ],
@@ -561,149 +541,123 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   void _showNotificationSettings(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('اطلاعات کی ترتیبات', style: AppTypography.titleLarge),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildSwitchRow('کلاس کی اطلاعات', true),
-            _buildSwitchRow('امتحانات کی اطلاعات', true),
-            _buildSwitchRow('فیس کی اطلاعات', true),
-            _buildSwitchRow('تقسیمات کی اطلاعات', false),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('محفوظ کریں', style: AppTypography.labelNastaliq),
-          ),
+    showM360Dialog<void>(
+      context,
+      title: 'اطلاعات کی ترتیبات',
+      icon: Icons.notifications_outlined,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildSwitchRow('کلاس کی اطلاعات', true),
+          _buildSwitchRow('امتحانات کی اطلاعات', true),
+          _buildSwitchRow('فیس کی اطلاعات', true),
+          _buildSwitchRow('تقسیمات کی اطلاعات', false),
         ],
       ),
+      actions: [
+        M360TertiaryButton(
+          label: 'بند کریں',
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ],
     );
   }
 
   void _showLanguageSettings(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('زبان منتخب کریں', style: AppTypography.titleLarge),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildLanguageOption('اردو', true),
-            _buildLanguageOption('انگریزی', false),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('بند کریں', style: AppTypography.labelNastaliq),
-          ),
+    showM360Dialog<void>(
+      context,
+      title: 'زبان منتخب کریں',
+      icon: Icons.language_outlined,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildLanguageOption('اردو', true),
+          _buildLanguageOption('انگریزی', false),
         ],
       ),
+      actions: [
+        M360TertiaryButton(
+          label: 'بند کریں',
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ],
     );
   }
 
   void _showHelpDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      // Phase 4 — contact section is tenant-driven (was hard-coded
-      // institution email/phone via AppConfig).
-      builder: (context) => Consumer(
+    // Contact section is tenant-driven (was hard-coded institution
+    // email/phone via AppConfig).
+    showM360Dialog<void>(
+      context,
+      title: 'مدد اور معاونت',
+      icon: Icons.help_outline,
+      content: Consumer(
         builder: (context, ref, _) {
           final branding = ref.watch(tenantBrandingProvider).valueOrNull;
           final contactLines = [
             if (branding?.phone?.isNotEmpty == true) branding!.phone!,
             if (branding?.email?.isNotEmpty == true) branding!.email!,
           ];
-          return AlertDialog(
-            title: Text('مدد اور معاونت', style: AppTypography.titleLarge),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'استعمال کرنے کے طریقے:',
-                    style: AppTypography.labelNastaliq
-                        .copyWith(fontSize: 17, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '• ڈیش بورڈ: اپنی کلاسوں اور طلباء کی معلومات دیکھیں\n'
-                    '• حاضری: طلباء کی حاضری مارک کریں\n'
-                    '• نتائج: امتحانات کے نتائج درج اور دیکھیں\n'
-                    '• پروفائل: اپنی معلومات دیکھیں اور ترتیبات تبدیل کریں',
-                    style: AppTypography.bodyMedium,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'رابطہ کریں:',
-                    style: AppTypography.labelNastaliq
-                        .copyWith(fontSize: 17, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    contactLines.isNotEmpty ? contactLines.join('\n') : '—',
-                    style: AppTypography.bodyMedium,
-                  ),
-                ],
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'استعمال کرنے کے طریقے:',
+                style: AppTypography.labelNastaliq
+                    .copyWith(fontSize: 17, fontWeight: FontWeight.bold),
               ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text('بند کریں', style: AppTypography.labelNastaliq),
+              const SizedBox(height: 8),
+              Text(
+                '• ڈیش بورڈ: اپنی کلاسوں اور طلباء کی معلومات دیکھیں\n'
+                '• حاضری: طلباء کی حاضری مارک کریں\n'
+                '• نتائج: امتحانات کے نتائج درج اور دیکھیں\n'
+                '• پروفائل: اپنی معلومات دیکھیں اور ترتیبات تبدیل کریں',
+                style: AppTypography.bodyMedium,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'رابطہ کریں:',
+                style: AppTypography.labelNastaliq
+                    .copyWith(fontSize: 17, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                contactLines.isNotEmpty ? contactLines.join('\n') : '—',
+                style: AppTypography.bodyMedium,
               ),
             ],
           );
         },
       ),
+      actions: [
+        M360TertiaryButton(
+          label: 'بند کریں',
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ],
     );
   }
 
   void _showLogoutConfirmation(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text('لاگ آؤٹ کی تصدیق', style: AppTypography.titleLarge),
-        content: Text(
-          'کیا آپ واقعی لاگ آؤٹ کرنا چاہتے ہیں؟',
-          style: AppTypography.labelNastaliq
-              .copyWith(fontSize: 17, fontWeight: FontWeight.normal),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: Text('منسوخ کریں', style: AppTypography.labelNastaliq),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(dialogContext); // Close dialog
-              // Real sign-out: revoke the Supabase session + clear tenant
-              // context (handled inside the auth provider).
-              await ref.read(authProvider.notifier).logout();
-              if (!context.mounted) return;
-              // Navigate back to login screen
-              Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (_) => const LoginScreen()),
-                (route) => false,
-              );
-            },
-            child: Text(
-              'لاگ آؤٹ',
-              style: AppTypography.labelNastaliq.copyWith(
-                fontSize: 17,
-                fontWeight: FontWeight.normal,
-                color: AppColors.error,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+    showM360ConfirmDialog(
+      context,
+      title: 'لاگ آؤٹ کی تصدیق',
+      message: 'کیا آپ واقعی لاگ آؤٹ کرنا چاہتے ہیں؟',
+      confirmLabel: 'لاگ آؤٹ',
+      danger: true,
+    ).then((confirmed) async {
+      if (!confirmed) return;
+      // Real sign-out: revoke the Supabase session + clear tenant
+      // context (handled inside the auth provider).
+      await ref.read(authProvider.notifier).logout();
+      if (!context.mounted) return;
+      // Navigate back to login screen
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        (route) => false,
+      );
+    });
   }
 
   Widget _buildSwitchRow(String label, bool initialValue) {
@@ -711,6 +665,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       builder: (context, setState) {
         bool value = initialValue;
         return SwitchListTile(
+          contentPadding: EdgeInsets.zero,
           title: Text(label, style: AppTypography.labelNastaliq),
           value: value,
           onChanged: (newValue) => setState(() => value = newValue),
@@ -722,21 +677,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   Widget _buildLanguageOption(String language, bool isSelected) {
     return ListTile(
+      contentPadding: EdgeInsets.zero,
       title: Text(language,
           style: AppTypography.isUrduText(language)
               ? AppTypography.labelNastaliq
                   .copyWith(fontSize: 17, fontWeight: FontWeight.normal)
               : AppTypography.bodyLarge),
-      trailing: isSelected ? Icon(Icons.check, color: AppColors.primary) : null,
-      onTap: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text('$language منتخب کی گئی',
-                  style: AppTypography.labelNastaliq.copyWith(
-                    color: Colors.white,
-                  ))),
-        );
-      },
+      trailing:
+          isSelected ? const Icon(Icons.check, color: AppColors.primary) : null,
+      onTap: () => showM360SnackBar(context, '$language منتخب کی گئی'),
     );
   }
 }
@@ -745,41 +694,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 // Private helper widgets
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _GroupLabel extends StatelessWidget {
-  const _GroupLabel(this.text);
-  final String text;
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      // Directional indent so the label mirrors with RTL (Phase 13).
-      padding: const EdgeInsetsDirectional.only(start: 4, bottom: 4),
-      child: Text(
-        text,
-        style: AppTypography.labelNastaliq.copyWith(
-          color: AppColors.textSecondary,
-        ),
-      ),
-    );
-  }
-}
-
 class _SettingsGroup extends StatelessWidget {
   const _SettingsGroup({required this.children});
   final List<Widget> children;
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+    return M360Card(
+      padding: EdgeInsets.zero,
       child: Column(mainAxisSize: MainAxisSize.min, children: children),
     );
   }
@@ -794,6 +716,7 @@ class _SettingsTile extends StatelessWidget {
     this.isDestructive = false,
     this.isLast = false,
   });
+
   final IconData icon;
   final String label;
   final VoidCallback onTap;
@@ -810,17 +733,17 @@ class _SettingsTile extends StatelessWidget {
       children: [
         InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(12),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             child: Row(
               children: [
                 Container(
-                  width: 38,
-                  height: 38,
+                  width: 40,
+                  height: 40,
                   decoration: BoxDecoration(
                     color: colour.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(icon, color: colour, size: 20),
                 ),
@@ -829,30 +752,33 @@ class _SettingsTile extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(label,
-                          style: AppTypography.labelNastaliq.copyWith(
-                              fontSize: 17,
-                              fontWeight: FontWeight.normal,
-                              color: textColour)),
+                      Text(
+                        label,
+                        style: AppTypography.labelNastaliq.copyWith(
+                          fontSize: 17,
+                          fontWeight: FontWeight.normal,
+                          color: textColour,
+                        ),
+                      ),
                       if (subtitle != null)
-                        Text(subtitle!,
-                            style: AppTypography.labelNastaliq.copyWith(
-                                fontSize: 15, color: AppColors.textSecondary)),
+                        Text(
+                          subtitle!,
+                          style: AppTypography.labelNastaliq.copyWith(
+                            fontSize: 15,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
                     ],
                   ),
                 ),
-                Icon(Icons.chevron_left,
+                const Icon(Icons.chevron_left,
                     color: AppColors.textSecondary, size: 20),
               ],
             ),
           ),
         ),
         if (!isLast)
-          Divider(
-            height: 1,
-            indent: 68,
-            color: AppColors.divider,
-          ),
+          const Divider(height: 1, indent: 70, color: AppColors.divider),
       ],
     );
   }
@@ -862,6 +788,7 @@ class _ContactPill extends StatelessWidget {
   const _ContactPill({required this.icon, required this.label});
   final IconData icon;
   final String label;
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -877,10 +804,12 @@ class _ContactPill extends StatelessWidget {
           Icon(icon, color: Colors.white70, size: 14),
           const SizedBox(width: 5),
           Flexible(
-            child: Text(label,
-                style: AppTypography.labelSmall
-                    .copyWith(fontSize: 15, color: Colors.white70),
-                overflow: TextOverflow.ellipsis),
+            child: Text(
+              label,
+              style: AppTypography.labelSmall
+                  .copyWith(fontSize: 15, color: Colors.white70),
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ],
       ),

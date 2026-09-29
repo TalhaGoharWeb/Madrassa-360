@@ -1,9 +1,12 @@
 /// رپورٹس ہب
 /// Reports hub — catalog, filters, preview, save, share, print.
 ///
-/// All generation runs through [ReportsService] against the LOCAL
-/// database (offline-first). PDF preview/print/share use the
-/// `printing` package; files are saved with `path_provider`.
+/// All generation runs through the REAL [ReportsService] against the LOCAL
+/// database (offline-first) — no parallel implementation. PDF preview/print/
+/// share use the `printing` package; files are saved with `path_provider`.
+/// Generation feedback is honest: loading state while generating, inline
+/// error notices on failure, and success is only ever reported after the
+/// service actually returns bytes / writes the file.
 
 import 'dart:convert';
 import 'dart:io';
@@ -29,6 +32,7 @@ import '../../shell/shell_page_body.dart';
 
 /// رپورٹس
 /// Entry screen: two tabs (طلبہ / انتظامیہ) listing the report catalog.
+/// Renders inside [AppShell] via [ShellPageBody].
 class ReportsHubScreen extends ConsumerStatefulWidget {
   const ReportsHubScreen({super.key});
 
@@ -65,14 +69,31 @@ class _ReportsHubScreenState extends ConsumerState<ReportsHubScreen>
         tabs: const [Tab(text: 'طلبہ'), Tab(text: 'انتظامیہ')],
       ),
       child: tenantId == null
-          ? const Center(
-              child: Text('براہ کرم پہلے لاگ اِن کریں۔',
-                  style: TextStyle(fontFamily: 'JameelNooriNastaleeq')))
-          : TabBarView(
-              controller: _tabs,
+          ? const M360EmptyState(
+              icon: Icons.login,
+              title: 'براہ کرم پہلے لاگ اِن کریں',
+              description: 'رپورٹس بنانے اور دیکھنے کے لیے لاگ اِن ضروری ہے۔',
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _reportList(context, ReportCategory.student, tenantId),
-                _reportList(context, ReportCategory.admin, tenantId),
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(16, 12, 16, 4),
+                  child: PageHeader(
+                    title: 'رپورٹس',
+                    description:
+                        'طلبہ اور انتظامی رپورٹس بنائیں، دیکھیں، پرنٹ اور شیئر کریں',
+                  ),
+                ),
+                Expanded(
+                  child: TabBarView(
+                    controller: _tabs,
+                    children: [
+                      _reportList(context, ReportCategory.student, tenantId),
+                      _reportList(context, ReportCategory.admin, tenantId),
+                    ],
+                  ),
+                ),
               ],
             ),
     );
@@ -81,28 +102,66 @@ class _ReportsHubScreenState extends ConsumerState<ReportsHubScreen>
   Widget _reportList(
       BuildContext context, ReportCategory category, String tenantId) {
     final reports = ReportCatalog.byCategory(category);
-    return ListView.separated(
-      padding: const EdgeInsets.all(12),
+    if (reports.isEmpty) {
+      return const M360EmptyState(
+        icon: Icons.description_outlined,
+        title: 'کوئی رپورٹ نہیں',
+        description: 'اس زمرے میں فی الحال کوئی رپورٹ دستیاب نہیں۔',
+      );
+    }
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
       itemCount: reports.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 8),
       itemBuilder: (_, i) {
         final r = reports[i];
-        return Card(
-          child: ListTile(
-            leading: CircleAvatar(
-              backgroundColor: AppColors.primary.withValues(alpha: 0.12),
-              child: Icon(
-                r.tabular ? Icons.table_chart : Icons.description,
-                color: AppColors.primary,
+        return M360TappableCard(
+          margin: const EdgeInsets.only(bottom: 10),
+          onTap: () => _openFilters(context, tenantId, r),
+          semanticLabel: r.titleUr,
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  r.tabular
+                      ? Icons.table_chart_outlined
+                      : Icons.description_outlined,
+                  color: AppColors.primary,
+                  size: 24,
+                ),
               ),
-            ),
-            title: Text(r.titleUr,
-                style: AppTypography.titleSmall.copyWith(fontSize: 17)),
-            subtitle: Text('${r.titleEn}\n${r.descriptionUr}',
-                style: AppTypography.bodySmall),
-            isThreeLine: true,
-            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-            onTap: () => _openFilters(context, tenantId, r),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(r.titleUr,
+                        style: AppTypography.titleSmall.copyWith(fontSize: 17)),
+                    M360LatinText(
+                      r.titleEn,
+                      style: AppTypography.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      r.descriptionUr,
+                      style: AppTypography.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_left, color: AppColors.textSecondary),
+            ],
           ),
         );
       },
@@ -158,7 +217,7 @@ class _ReportFilterSheetState extends ConsumerState<_ReportFilterSheet> {
 
   /// Inline feedback (validation / errors / save confirmation) rendered in
   /// the sheet itself — the sheet has no Scaffold ancestor to host a
-  /// SnackBar (it works both as a shell destination and standalone).
+  /// SnackBar, so honest feedback renders here instead.
   String? _notice;
   bool _noticeIsError = true;
 
@@ -310,26 +369,38 @@ class _ReportFilterSheetState extends ConsumerState<_ReportFilterSheet> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(_def.titleUr,
-                  textAlign: TextAlign.center,
-                  style: AppTypography.titleMedium.copyWith(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  )),
-              Text(_def.titleEn,
-                  textAlign: TextAlign.center,
-                  style: AppTypography.bodySmall.copyWith(color: Colors.grey)),
+              // Drag handle
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.divider,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
               const SizedBox(height: 12),
+              Text(
+                _def.titleUr,
+                textAlign: TextAlign.center,
+                style: AppTypography.titleMedium.copyWith(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              M360LatinText(
+                _def.titleEn,
+                textAlign: TextAlign.center,
+                style: AppTypography.bodySmall
+                    .copyWith(color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 16),
               if (_def.needsStudent) ...[
                 _label('طالب علم'),
                 if (_student == null)
-                  TextField(
-                    decoration: const InputDecoration(
-                      hintText: 'نام یا رول نمبر لکھیں…',
-                      prefixIcon: Icon(Icons.search),
-                      border: OutlineInputBorder(),
-                      isDense: true,
-                    ),
+                  M360SearchField(
+                    hint: 'نام یا رول نمبر لکھیں…',
                     onChanged: _searchStudents,
                   )
                 else
@@ -337,61 +408,72 @@ class _ReportFilterSheetState extends ConsumerState<_ReportFilterSheet> {
                     '${_student!.name} (${_student!.rollNo ?? '—'})',
                     () => setState(() => _student = null),
                   ),
-                ..._searchHits.map((s) => ListTile(
-                      dense: true,
-                      title: Text(s.name),
-                      subtitle: Text(
-                          'رول: ${s.rollNo ?? '—'} | ${s.className ?? ''}'),
+                ..._searchHits.map((s) => InkWell(
                       onTap: () => setState(() {
                         _student = s;
                         _searchHits = [];
                       }),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 10, horizontal: 4),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.person_outline,
+                                size: 20, color: AppColors.textSecondary),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(s.name, style: AppTypography.bodyMedium),
+                                  Text(
+                                    'رول: ${s.rollNo ?? '—'} | ${s.className ?? ''}',
+                                    style: AppTypography.bodySmall.copyWith(
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     )),
               ],
-              if (_def.needsClass) ...[
-                _label('جماعت (اختیاری)'),
-                _dropdown<String>(
+              if (_def.needsClass)
+                _dropdown(
+                  label: 'جماعت (اختیاری)',
                   value: _classId,
                   hint: 'تمام جماعتیں',
-                  items: {
-                    for (final c in _classes) c.id: c.name,
-                  },
+                  items: {for (final c in _classes) c.id: c.name},
                   onChanged: (v) => setState(() => _classId = v),
                 ),
-              ],
-              if (_def.needsDarja && _classId == null) ...[
-                _label('درجہ (اختیاری)'),
-                _dropdown<String>(
+              if (_def.needsDarja && _classId == null)
+                _dropdown(
+                  label: 'درجہ (اختیاری)',
                   value: _darjaId,
                   hint: 'تمام درجات',
-                  items: {
-                    for (final d in _darjas) d.id: d.name,
-                  },
+                  items: {for (final d in _darjas) d.id: d.name},
                   onChanged: (v) => setState(() => _darjaId = v),
                 ),
-              ],
-              if (_def.needsExam) ...[
-                _label(_def.id == 'exam_results'
-                    ? 'امتحان'
-                    : 'امتحان (اختیاری — خالی ہو تو تازہ ترین)'),
-                _dropdown<String>(
+              if (_def.needsExam)
+                _dropdown(
+                  label: _def.id == 'exam_results'
+                      ? 'امتحان'
+                      : 'امتحان (اختیاری — خالی ہو تو تازہ ترین)',
                   value: _examId,
                   hint: 'منتخب کریں',
-                  items: {
-                    for (final e in _exams) e.id: e.name,
-                  },
+                  items: {for (final e in _exams) e.id: e.name},
                   onChanged: (v) => setState(() => _examId = v),
                 ),
-              ],
               if (_def.needsDateRange) ...[
                 _label('مدت (اختیاری)'),
-                OutlinedButton.icon(
-                  icon: const Icon(Icons.date_range),
-                  label: Text(
-                    _range == null
-                        ? 'تاریخ منتخب کریں'
-                        : '${_fmtD(_range!.start)} تا ${_fmtD(_range!.end)}',
-                  ),
+                M360SecondaryButton(
+                  label: _range == null
+                      ? 'تاریخ منتخب کریں'
+                      : '${_fmtD(_range!.start)} تا ${_fmtD(_range!.end)}',
+                  icon: Icons.date_range_outlined,
+                  fullWidth: true,
                   onPressed: () async {
                     final picked = await showDateRangePicker(
                       context: context,
@@ -406,8 +488,7 @@ class _ReportFilterSheetState extends ConsumerState<_ReportFilterSheet> {
               ],
               const SizedBox(height: 16),
               // Inline validation / error / success notice — the sheet has
-              // no Scaffold ancestor, so feedback renders here instead of
-              // a SnackBar.
+              // no Scaffold ancestor, so honest feedback renders here.
               if (_notice != null) ...[
                 Container(
                   padding: const EdgeInsets.symmetric(
@@ -431,26 +512,38 @@ class _ReportFilterSheetState extends ConsumerState<_ReportFilterSheet> {
                 const SizedBox(height: 8),
               ],
               if (_busy)
-                const Center(child: CircularProgressIndicator())
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2.5),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'رپورٹ تیار ہو رہی ہے…',
+                      style: AppTypography.labelNastaliq.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                )
               else ...[
                 Row(
                   children: [
                     Expanded(
-                      child: ElevatedButton.icon(
-                        icon: const Icon(Icons.preview),
-                        label: const Text('پیش نظارہ'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
-                        ),
+                      child: M360PrimaryButton(
+                        label: 'پیش نظارہ',
+                        icon: Icons.preview_outlined,
                         onPressed: _preview,
                       ),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: OutlinedButton.icon(
-                        icon: const Icon(Icons.print),
-                        label: const Text('پرنٹ'),
+                      child: M360SecondaryButton(
+                        label: 'پرنٹ',
+                        icon: Icons.print_outlined,
                         onPressed: _print,
                       ),
                     ),
@@ -460,17 +553,17 @@ class _ReportFilterSheetState extends ConsumerState<_ReportFilterSheet> {
                 Row(
                   children: [
                     Expanded(
-                      child: OutlinedButton.icon(
-                        icon: const Icon(Icons.save_alt),
-                        label: const Text('محفوظ کریں'),
+                      child: M360SecondaryButton(
+                        label: 'محفوظ کریں',
+                        icon: Icons.save_alt_outlined,
                         onPressed: _savePdf,
                       ),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: OutlinedButton.icon(
-                        icon: const Icon(Icons.share),
-                        label: const Text('شیئر'),
+                      child: M360SecondaryButton(
+                        label: 'شیئر',
+                        icon: Icons.share_outlined,
                         onPressed: _sharePdf,
                       ),
                     ),
@@ -481,17 +574,14 @@ class _ReportFilterSheetState extends ConsumerState<_ReportFilterSheet> {
                   Row(
                     children: [
                       Expanded(
-                        child: OutlinedButton.icon(
-                          icon: const Icon(Icons.grid_on),
-                          label: const Text('CSV'),
+                        child: M360TertiaryButton(
+                          label: 'CSV',
                           onPressed: _shareCsv,
                         ),
                       ),
-                      const SizedBox(width: 8),
                       Expanded(
-                        child: OutlinedButton.icon(
-                          icon: const Icon(Icons.table_chart),
-                          label: const Text('Excel'),
+                        child: M360TertiaryButton(
+                          label: 'Excel',
                           onPressed: _shareXlsx,
                         ),
                       ),
@@ -507,40 +597,39 @@ class _ReportFilterSheetState extends ConsumerState<_ReportFilterSheet> {
   }
 
   Widget _label(String text) => Padding(
-        padding: const EdgeInsets.only(top: 8, bottom: 4),
-        child:
-            Text(text, style: AppTypography.labelLarge.copyWith(fontSize: 15)),
+        padding: const EdgeInsets.only(top: 8, bottom: 6),
+        child: Text(text, style: AppTypography.labelNastaliq),
       );
 
-  Widget _selectedChip(String text, VoidCallback onClear) => Chip(
-        label: Text(text),
-        deleteIcon: const Icon(Icons.close, size: 18),
-        onDeleted: onClear,
+  Widget _selectedChip(String text, VoidCallback onClear) => Padding(
+        padding: const EdgeInsets.only(bottom: 4),
+        child: Chip(
+          label: Text(text, style: AppTypography.bodyMedium),
+          deleteIcon: const Icon(Icons.close, size: 18),
+          onDeleted: onClear,
+        ),
       );
 
-  Widget _dropdown<T>({
-    required T? value,
+  Widget _dropdown({
+    required String label,
+    required String? value,
     required String hint,
-    required Map<T, String> items,
-    required ValueChanged<T?> onChanged,
+    required Map<String, String> items,
+    required ValueChanged<String?> onChanged,
   }) =>
-      DropdownButtonFormField<T>(
-        initialValue: value,
-        decoration:
-            const InputDecoration(border: OutlineInputBorder(), isDense: true),
-        hint: Text(hint),
-        items: [
-          DropdownMenuItem<T>(
-            value: null,
-            child: Text(
-              '— $hint —',
-              style: AppTypography.bodySmall.copyWith(color: Colors.grey),
-            ),
-          ),
-          for (final e in items.entries)
-            DropdownMenuItem<T>(value: e.key, child: Text(e.value)),
-        ],
-        onChanged: onChanged,
+      Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: M360Dropdown<String?>(
+          label: label,
+          value: value,
+          hint: hint,
+          items: [
+            M360DropdownItem<String?>(value: null, label: '— $hint —'),
+            for (final e in items.entries)
+              M360DropdownItem<String?>(value: e.key, label: e.value),
+          ],
+          onChanged: onChanged,
+        ),
       );
 
   String _fmtD(DateTime d) =>
@@ -563,8 +652,8 @@ class _PdfPreviewScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Deep-pushed preview: AppShell owns the only Scaffold/AppBar, so the
-    // preview renders inside ShellPageBody (back chevron restored via
-    // canPop) with a PageHeader carrying the report title.
+    // preview renders inside ShellPageBody with a PageHeader carrying the
+    // report title.
     return ShellPageBody(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
