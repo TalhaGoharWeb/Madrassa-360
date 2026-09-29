@@ -131,7 +131,7 @@ class _CollectFeeScreenState extends ConsumerState<CollectFeeScreen> {
         _step = 3;
       });
       _snack(
-        '${formatPK(amount)} روپے کی فیس کامیابی سے وصول کر لی گئی',
+        '${formatPK(amount)} کی فیس کامیابی سے وصول کر لی گئی',
         isError: false,
       );
     } catch (_) {
@@ -445,11 +445,11 @@ class _CollectFeeScreenState extends ConsumerState<CollectFeeScreen> {
             children: [
               _infoRow(Icons.person, 'طالب علم', fee.studentName),
               _infoRow(Icons.calendar_month, 'مہینہ', view.monthLabel),
-              _infoRow(Icons.payments, 'وصول کی جانے والی رقم',
-                  '${formatPK(amount)} روپے',
+              _infoRow(
+                  Icons.payments, 'وصول کی جانے والی رقم', formatPK(amount),
                   iconColor: AppColors.success),
-              _infoRow(Icons.pending, 'اس کے بعد بقایا',
-                  '${formatPK(afterRemaining)} روپے',
+              _infoRow(
+                  Icons.pending, 'اس کے بعد بقایا', formatPK(afterRemaining),
                   iconColor:
                       afterRemaining > 0 ? AppColors.error : AppColors.success),
             ],
@@ -523,7 +523,7 @@ class _CollectFeeScreenState extends ConsumerState<CollectFeeScreen> {
               ),
               const SizedBox(height: 4),
               Text(
-                '${formatPK(_paidAmount)} روپے وصول کر لیے گئے',
+                '${formatPK(_paidAmount)} وصول کر لیے گئے',
                 style: Theme.of(context).textTheme.titleMedium,
               ),
             ],
@@ -548,8 +548,8 @@ class _CollectFeeScreenState extends ConsumerState<CollectFeeScreen> {
               _receiptRow('کلاس', record.studentClass),
               _receiptRow('مہینہ', monthLabelUrdu(record.month)),
               _receiptRow('فیس کی قسم', 'ماہانہ فیس'),
-              _receiptRow('وصول شدہ رقم', '${formatPK(_paidAmount)} روپے'),
-              _receiptRow('بقایا', '${formatPK(record.remaining)} روپے'),
+              _receiptRow('وصول شدہ رقم', formatPK(_paidAmount)),
+              _receiptRow('بقایا', formatPK(record.remaining)),
               _receiptRow('حیثیت', afterKind.urduLabel),
               _receiptRow(
                   'تاریخ',

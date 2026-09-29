@@ -28,21 +28,28 @@ String formatRs(double amount) {
 /// پاکستانی گروپنگ کے ساتھ رقم — مشترکہ معاون
 /// Shared PKR money format for every financial surface.
 ///
-/// Pakistani digit grouping: 380000 → '3,80,000'. Rounds to whole rupees —
-/// the app never records paisa. Use this (never a local re-implementation)
-/// wherever money is shown: dashboards, fee rows, invoices, payments,
-/// ledger, expenses, receipts and reports.
+/// Pakistani digit grouping: 380000 → '3,80,000 روپے'. Rounds to whole
+/// rupees — the app never records paisa. Use this (never a local
+/// re-implementation) wherever money is shown: dashboards, fee rows,
+/// invoices, payments, ledger, expenses, receipts and reports. The currency
+/// marker is part of the output — do NOT append another 'روپے' yourself.
 String formatPK(num value) {
   final n = value.round();
+  final sign = n < 0 ? '-' : '';
   final digits = n.abs().toString();
-  if (digits.length <= 3) return (n < 0 ? '-' : '') + digits;
-  final last3 = digits.substring(digits.length - 3);
-  var rest = digits.substring(0, digits.length - 3);
-  final groups = <String>[];
-  while (rest.length > 2) {
-    groups.add(rest.substring(rest.length - 2));
-    rest = rest.substring(0, rest.length - 2);
+  final String grouped;
+  if (digits.length <= 3) {
+    grouped = digits;
+  } else {
+    final last3 = digits.substring(digits.length - 3);
+    var rest = digits.substring(0, digits.length - 3);
+    final groups = <String>[];
+    while (rest.length > 2) {
+      groups.add(rest.substring(rest.length - 2));
+      rest = rest.substring(0, rest.length - 2);
+    }
+    groups.add(rest);
+    grouped = '${groups.reversed.join(',')},$last3';
   }
-  groups.add(rest);
-  return '${n < 0 ? '-' : ''}${groups.reversed.join(',')},$last3';
+  return '$sign$grouped روپے';
 }

@@ -117,10 +117,10 @@ Payment _payment({
 void main() {
   group('formatPK — Pakistani grouping', () {
     test('groups lakh/crore style', () {
-      expect(formatPK(1000), '1,000');
-      expect(formatPK(100000), '1,00,000');
-      expect(formatPK(1500000), '15,00,000');
-      expect(formatPK(0), '0');
+      expect(formatPK(1000), '1,000 روپے');
+      expect(formatPK(100000), '1,00,000 روپے');
+      expect(formatPK(1500000), '15,00,000 روپے');
+      expect(formatPK(0), '0 روپے');
     });
   });
 
@@ -156,7 +156,7 @@ void main() {
         status: FeeStatus.paid,
       ));
       expect(view.chipKind, FinancialChipKind.paid);
-      expect(view.remainingLabel, '0');
+      expect(view.remainingLabel, '0 روپے');
       expect(view.progress, 1.0);
     });
 
@@ -202,7 +202,7 @@ void main() {
       expect(view.fee.studentName, 'احمد خان');
       expect(view.fee.studentClass, 'درجہ اول');
       expect(view.monthLabel, 'ستمبر 2026');
-      expect(view.amountDueLabel, '1,000');
+      expect(view.amountDueLabel, '1,000 روپے');
     });
   });
 
@@ -265,7 +265,7 @@ void main() {
       final view = InvoiceView(_invoice(total: 2500));
       expect(view.numberLabel, 'INV-1');
       expect(view.studentLabel, 'احمد خان');
-      expect(view.totalLabel, '2,500');
+      expect(view.totalLabel, '2,500 روپے');
       expect(view.monthLabel, 'ستمبر 2026');
     });
   });
@@ -326,7 +326,7 @@ void main() {
     test('status chips and amount/category labels', () {
       final view = ExpenseView(_expense(status: DocStatus.approved));
       expect(view.chipKind, FinancialChipKind.due);
-      expect(view.amountLabel, '5,000');
+      expect(view.amountLabel, '5,000 روپے');
       expect(view.categoryLabel, 'بجلی');
       expect(view.recipientLabel, '—');
     });

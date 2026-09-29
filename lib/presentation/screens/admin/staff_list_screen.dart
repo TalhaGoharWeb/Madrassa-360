@@ -350,7 +350,7 @@ class _StaffListScreenState extends ConsumerState<StaffListScreen> {
                   _DetailRow(
                     icon: Icons.payments,
                     label: 'ماہانہ تنخواہ',
-                    value: '${formatPK(staff.salary ?? 0)} روپے',
+                    value: formatPK(staff.salary ?? 0),
                     iconColor: AppColors.success,
                   ),
                   const SizedBox(height: 24),

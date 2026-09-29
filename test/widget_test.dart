@@ -139,11 +139,11 @@ void main() {
     });
 
     test('formatPK uses Pakistani grouping', () {
-      expect(formatPK(0), '0');
-      expect(formatPK(999), '999');
-      expect(formatPK(45000), '45,000');
-      expect(formatPK(380000), '3,80,000');
-      expect(formatPK(468000), '4,68,000');
+      expect(formatPK(0), '0 روپے');
+      expect(formatPK(999), '999 روپے');
+      expect(formatPK(45000), '45,000 روپے');
+      expect(formatPK(380000), '3,80,000 روپے');
+      expect(formatPK(468000), '4,68,000 روپے');
     });
 
     test('urduTimeAgo labels', () {

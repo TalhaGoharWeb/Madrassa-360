@@ -468,7 +468,7 @@ class _LedgerFormState extends ConsumerState<_LedgerForm> {
       context,
       title: 'حتمی اندراج',
       message:
-          '${formatPK(amount)} روپے کا ${_kind.urduLabel} اندراج حتمی ہو جائے گا۔ جاری رکھیں؟',
+          '${formatPK(amount)} کا ${_kind.urduLabel} اندراج حتمی ہو جائے گا۔ جاری رکھیں؟',
       confirmLabel: 'جی ہاں، درج کریں',
     );
     if (confirmed != true || !mounted) return;

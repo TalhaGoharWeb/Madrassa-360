@@ -263,6 +263,11 @@ class _LicenseDetailDialogState extends State<_LicenseDetailDialog> {
     );
     if (picked == null || !mounted) return;
     final newExpiry = DateTime(picked.year, picked.month, picked.day);
+    // Typed confirmation — same guard as revoke: the operator must type
+    // the exact tenant name before a license write can proceed.
+    final typedName = (_r.tenantName?.trim().isNotEmpty ?? false)
+        ? _r.tenantName!.trim()
+        : _r.id;
     final confirmed = await showM360ConfirmDialog(
       context,
       title: 'میعاد بڑھائیں',
@@ -271,6 +276,9 @@ class _LicenseDetailDialogState extends State<_LicenseDetailDialog> {
           '${newExpiry.day.toString().padLeft(2, '0')} تک بڑھا دی جائے؟ '
           'یہ عمل آڈٹ لاگ میں درج ہو گا۔',
       confirmLabel: 'میعاد بڑھائیں',
+      requireTypedConfirmation: true,
+      expectedText: typedName,
+      typedHint: 'تصدیق کے لیے مدرسے کا نام لکھیں',
     );
     if (!confirmed || !mounted) return;
     setState(() {

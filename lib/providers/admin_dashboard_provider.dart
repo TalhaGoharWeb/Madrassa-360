@@ -215,7 +215,7 @@ final dashboardStatsProvider = FutureProvider<DashboardStats>((ref) async {
       activities.add(DashboardActivity(
         iconKey: 'fee',
         title: 'فیس وصولی',
-        subtitle: '$student - ${formatPK(amount)} روپے',
+        subtitle: '$student - ${formatPK(amount)}',
         timeLabel: urduTimeAgo(at),
         occurredAt: at,
       ));
