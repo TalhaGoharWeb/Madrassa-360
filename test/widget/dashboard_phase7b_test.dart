@@ -218,7 +218,7 @@ void main() {
         ),
         const ClerkDashboardScreen(),
       );
-      expect(find.text('❁ دفتر کا جائزہ'), findsOneWidget);
+      expect(find.text('دفتر کی سرگرمی'), findsOneWidget);
       expect(find.text('نئے داخلے'), findsOneWidget);
       expect(find.text('آج کی فیس'), findsOneWidget);
       expect(find.text('میرا آج کا کام'), findsOneWidget);
@@ -243,7 +243,7 @@ void main() {
         ),
         const AccountantDashboardScreen(),
       );
-      expect(find.text('❁ آج کا مالی خلاصہ'), findsOneWidget);
+      expect(find.text('مالی خلاصہ'), findsOneWidget);
       expect(find.text('آج کی وصولی'), findsOneWidget);
       expect(find.text('آج کے اخراجات'), findsOneWidget);
       expect(find.text('بقایا فیس'), findsOneWidget);
@@ -276,7 +276,9 @@ void main() {
       expect(find.text('غیر حاضر'), findsOneWidget);
       // Honest empty states, not zeros presented as data.
       expect(find.text('ابھی دستیاب نہیں'), findsWidgets);
-      expect(find.textContaining('جلد مکمل ہوگا'), findsOneWidget);
+      // No coming-soon placeholders — the honest backend-missing state.
+      expect(find.text('دارالاقامہ کا ریکارڈ دستیاب نہیں'), findsOneWidget);
+      expect(find.textContaining('جلد'), findsNothing);
     });
   });
 

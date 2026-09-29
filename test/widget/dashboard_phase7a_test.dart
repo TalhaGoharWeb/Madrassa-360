@@ -1,8 +1,9 @@
 // Phase 7a dashboard framework + router tests.
 //
 // Widgets under test:
-//   lib/presentation/widgets/dashboard/{dashboard_scaffold,stat_card,
-//     alert_card,quick_actions,today_tasks,dashboard_section}.dart
+//   lib/presentation/widgets/dashboard/{dashboard_scaffold,
+//     dashboard_stat_card,alert_card,quick_actions,today_tasks,
+//     dashboard_section}.dart
 //   lib/presentation/screens/dashboards/role_home.dart
 //   (RoleHomeScreen routing, GenericDashboardScreen fallback)
 //
@@ -19,7 +20,7 @@ import 'package:madrasa_360/presentation/widgets/dashboard/alert_card.dart';
 import 'package:madrasa_360/presentation/widgets/dashboard/dashboard_scaffold.dart';
 import 'package:madrasa_360/presentation/widgets/dashboard/dashboard_section.dart';
 import 'package:madrasa_360/presentation/widgets/dashboard/quick_actions.dart';
-import 'package:madrasa_360/presentation/widgets/dashboard/stat_card.dart';
+import 'package:madrasa_360/presentation/widgets/dashboard/dashboard_stat_card.dart';
 import 'package:madrasa_360/presentation/widgets/dashboard/today_tasks.dart';
 import 'package:madrasa_360/providers/announcement_provider.dart';
 import 'package:madrasa_360/providers/auth_provider.dart';
@@ -60,12 +61,13 @@ ProviderContainer _container({
 }
 
 void main() {
-  group('StatCard', () {
+  group('DashboardStatCard', () {
     testWidgets('renders icon, Urdu label and value together', (tester) async {
       await _pump(
         tester,
         _container(),
-        const StatCard(icon: Icons.people, label: 'طلبہ', value: '1245'),
+        const DashboardStatCard(
+            icon: Icons.people, label: 'طلبہ', value: '1245'),
       );
       expect(find.text('طلبہ'), findsOneWidget);
       expect(find.text('1245'), findsOneWidget);
@@ -77,7 +79,7 @@ void main() {
       await _pump(
         tester,
         _container(),
-        StatCard(
+        DashboardStatCard(
           icon: Icons.people,
           label: 'طلبہ',
           value: '1245',
@@ -198,7 +200,7 @@ void main() {
       await _pump(tester, _container(), const RoleHomeScreen());
       expect(find.text('السلام علیکم ورحمۃ اللہ'), findsOneWidget);
       expect(find.text('میری پروفائل'), findsOneWidget);
-      expect(find.text('ابھی کوئی اعلان نہیں'), findsOneWidget);
+      expect(find.text('کوئی اعلان نہیں'), findsOneWidget);
     });
 
     testWidgets('principal authority → principal dashboard', (tester) async {
