@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:madrasa_360/core/constants/app_colors.dart';
+
 /// مدرسہ 360 — ڈیزائن ٹوکنز
 /// Design tokens: the single source of truth for spacing, radii, elevation,
 /// motion and breakpoints used by every `m360_*` widget.
@@ -116,16 +118,14 @@ class M360TouchTarget {
 
 /// Brand accent tokens.
 ///
-/// [AppColors] carries the full product palette; the gold accent below is
-/// the companion to the teal primary (app icon, premium highlights,
+/// [AppColors] carries the full product palette — use [AppColors.gold] as
+/// the single source for the gold accent (app icon, premium highlights,
 /// dividers). It is decorative — never use it as the sole carrier of
 /// meaning, and never as small body text on light surfaces.
 class M360Brand {
   M360Brand._();
 
-  /// Muted gold accent (icon star, premium highlights, hairline dividers).
-  static const Color gold = Color(0xFFC9A227);
-
-  /// Gold for dark surfaces.
+  /// Gold for dark surfaces (unique to the design tokens; [AppColors] has
+  /// no dark-surface variant).
   static const Color goldLight = Color(0xFFE3C766);
 }

@@ -203,6 +203,54 @@ class _ShimmerBoxState extends State<_ShimmerBox>
   }
 }
 
+/// Loading state: a shimmering skeleton card grid.
+///
+/// Renders a responsive grid of skeleton cards (e.g. for dashboard stat
+/// cards or gallery views) while content loads. Pure presentation.
+class M360CardGridSkeleton extends StatelessWidget {
+  /// Creates a skeleton card grid.
+  const M360CardGridSkeleton({
+    super.key,
+    this.itemCount = 6,
+    this.crossAxisCount = 2,
+    this.cardHeight = 120,
+    this.padding = const EdgeInsets.all(M360Spacing.md),
+  });
+
+  /// Number of skeleton cards.
+  final int itemCount;
+
+  /// Cards per row; consider the responsive helpers in `responsive.dart`
+  /// for breakpoint-driven counts.
+  final int crossAxisCount;
+
+  /// Skeleton card height.
+  final double cardHeight;
+
+  /// Outer padding.
+  final EdgeInsetsGeometry padding;
+
+  @override
+  Widget build(BuildContext context) {
+    return GridView.builder(
+      padding: padding,
+      physics: const NeverScrollableScrollPhysics(),
+      shrinkWrap: true,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: crossAxisCount,
+        crossAxisSpacing: M360Spacing.sm,
+        mainAxisSpacing: M360Spacing.sm,
+        mainAxisExtent: cardHeight,
+      ),
+      itemCount: itemCount,
+      itemBuilder: (_, __) => const _ShimmerBox(
+        width: double.infinity,
+        height: double.infinity,
+      ),
+    );
+  }
+}
+
 /// Error state: warning icon, Urdu message and a retry button.
 class M360ErrorState extends StatelessWidget {
   /// Creates an error state.

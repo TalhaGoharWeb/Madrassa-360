@@ -14,7 +14,13 @@ import 'm360_states.dart';
 /// * Narrow screens: the same data auto-falls-back to a card list — one
 ///   [M360Card] per row, each column rendered as «title: value».
 ///
-/// Pure presentation: sorting is view-local; the caller owns the data.
+/// Optional built-ins: row selection ([selectable], [selectedIds],
+/// [onSelectionChanged]) and client-side pagination ([pageSize],
+/// [pageSizeOptions]).
+///
+/// Pure presentation: sorting, selection state (when uncontrolled), and
+/// pagination are view-local; the caller owns the data. Bulk actions go
+/// through [onSelectionChanged].
 
 /// One table column.
 class M360TableColumn<T> {
@@ -83,6 +89,12 @@ class M360ResponsiveTable<T> extends StatefulWidget {
     this.emptyTitle = 'کوئی ریکارڈ نہیں ملا',
     this.emptyDescription =
         'اس فہرست میں دکھانے کے لیے کوئی ریکارڈ موجود نہیں ہے۔',
+    this.rowId,
+    this.selectable = false,
+    this.selectedIds,
+    this.onSelectionChanged,
+    this.pageSize,
+    this.pageSizeOptions = const [10, 25, 50],
   });
 
   /// Column definitions (Urdu headers).
@@ -103,6 +115,26 @@ class M360ResponsiveTable<T> extends StatefulWidget {
   /// Empty-state Urdu description.
   final String emptyDescription;
 
+  /// Stable identity for selection callbacks and pagination state.
+  /// Defaults to the row itself (identity). Must be non-null per row.
+  final Object? Function(T row)? rowId;
+
+  /// Enables row selection UI. Defaults to false.
+  final bool selectable;
+
+  /// Controlled selected ids; when null the table keeps selection
+  /// internally and still reports it via [onSelectionChanged].
+  final Set<Object>? selectedIds;
+
+  /// Fired with the current selected ids after every change.
+  final ValueChanged<Set<Object>>? onSelectionChanged;
+
+  /// Rows per page; null disables pagination. Defaults to null.
+  final int? pageSize;
+
+  /// Page-size options shown in the footer; defaults to [10, 25, 50].
+  final List<int> pageSizeOptions;
+
   @override
   State<M360ResponsiveTable<T>> createState() => _M360ResponsiveTableState<T>();
 }
@@ -110,6 +142,64 @@ class M360ResponsiveTable<T> extends StatefulWidget {
 class _M360ResponsiveTableState<T> extends State<M360ResponsiveTable<T>> {
   int? _sortColumnIndex;
   bool _sortAscending = true;
+  int _pageIndex = 0;
+  late int _effectivePageSize;
+  Set<Object> _internalSelection = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _effectivePageSize = widget.pageSize ?? widget.rows.length;
+  }
+
+  @override
+  void didUpdateWidget(M360ResponsiveTable<T> oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.pageSize != widget.pageSize) {
+      _effectivePageSize = widget.pageSize ?? widget.rows.length;
+      _pageIndex = 0;
+    }
+    // Prune selection ids that no longer exist in the data.
+    final ids = _allIds;
+    _internalSelection = _internalSelection.intersection(ids);
+  }
+
+  /// Identity of a row; used as the selection key.
+  Object _idOf(T row) {
+    final id = widget.rowId != null ? widget.rowId!(row) : row;
+    assert(id != null, 'M360ResponsiveTable: rowId must be non-null.');
+    return id!;
+  }
+
+  Set<Object> get _allIds => widget.rows.map(_idOf).toSet();
+
+  Set<Object> get _selection =>
+      widget.selectedIds ?? _internalSelection;
+
+  bool get _selectionControlled => widget.selectedIds != null;
+
+  void _setSelection(Set<Object> next) {
+    if (!_selectionControlled) {
+      setState(() => _internalSelection = next);
+    } else {
+      setState(() {});
+    }
+    widget.onSelectionChanged?.call(Set<Object>.unmodifiable(next));
+  }
+
+  void _toggleRow(Object id, bool? selected) {
+    final next = Set<Object>.of(_selection);
+    if (selected == true) {
+      next.add(id);
+    } else {
+      next.remove(id);
+    }
+    _setSelection(next);
+  }
+
+  void _toggleAll(bool? selected) {
+    _setSelection(selected == true ? _allIds : <Object>{});
+  }
 
   List<T> get _sortedRows {
     final rows = List<T>.of(widget.rows);
@@ -125,10 +215,32 @@ class _M360ResponsiveTableState<T> extends State<M360ResponsiveTable<T>> {
     return rows;
   }
 
+  List<T> get _pagedRows {
+    final rows = _sortedRows;
+    if (widget.pageSize == null) return rows;
+    final totalPages = _totalPages;
+    if (totalPages == 0) return const [];
+    final clamped = _pageIndex.clamp(0, totalPages - 1);
+    final start = clamped * _effectivePageSize;
+    final end = (start + _effectivePageSize).clamp(0, rows.length);
+    return rows.sublist(start, end);
+  }
+
+  int get _totalPages {
+    if (widget.pageSize == null || widget.rows.isEmpty) return 1;
+    return (widget.rows.length / _effectivePageSize).ceil();
+  }
+
   void _onSort(int columnIndex, bool ascending) {
     setState(() {
       _sortColumnIndex = columnIndex;
       _sortAscending = ascending;
+    });
+  }
+
+  void _goToPage(int page) {
+    setState(() {
+      _pageIndex = page.clamp(0, _totalPages - 1);
     });
   }
 
@@ -143,10 +255,18 @@ class _M360ResponsiveTableState<T> extends State<M360ResponsiveTable<T>> {
     }
     return LayoutBuilder(
       builder: (context, constraints) {
-        if (constraints.maxWidth < M360Breakpoint.mobile) {
-          return _buildCardList();
-        }
-        return _buildTable();
+        final body = constraints.maxWidth < M360Breakpoint.mobile
+            ? _buildCardList()
+            : _buildTable();
+        if (widget.pageSize == null) return body;
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            body,
+            _buildPaginationFooter(),
+          ],
+        );
       },
     );
   }
@@ -157,12 +277,24 @@ class _M360ResponsiveTableState<T> extends State<M360ResponsiveTable<T>> {
 
   Widget _buildTable() {
     final hasActions = widget.rowActions.isNotEmpty;
+    final selection = _selection;
+    final allIds = _allIds;
+    final allSelected =
+        allIds.isNotEmpty && selection.containsAll(allIds);
+    final someSelected =
+        selection.isNotEmpty && !allSelected;
+    // DataTable reports column indexes including the selection column;
+    // subtract it so sorting maps back onto [widget.columns].
+    final sortOffset = widget.selectable ? 1 : 0;
+
     return Directionality(
       textDirection: TextDirection.rtl,
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: DataTable(
-          sortColumnIndex: _sortColumnIndex,
+          sortColumnIndex: _sortColumnIndex != null
+              ? _sortColumnIndex! + (widget.selectable ? 1 : 0)
+              : null,
           sortAscending: _sortAscending,
           headingTextStyle: AppTypography.labelNastaliq,
           dataTextStyle: AppTypography.bodyMedium,
@@ -174,6 +306,18 @@ class _M360ResponsiveTableState<T> extends State<M360ResponsiveTable<T>> {
           horizontalMargin: M360Spacing.md,
           dividerThickness: 1,
           columns: [
+            if (widget.selectable)
+              DataColumn(
+                label: Checkbox(
+                  tristate: true,
+                  value: allSelected
+                      ? true
+                      : someSelected
+                          ? null
+                          : false,
+                  onChanged: _toggleAll,
+                ),
+              ),
             for (int i = 0; i < widget.columns.length; i++)
               DataColumn(
                 label: Text(
@@ -181,9 +325,11 @@ class _M360ResponsiveTableState<T> extends State<M360ResponsiveTable<T>> {
                   textDirection: TextDirection.rtl,
                 ),
                 onSort: widget.columns[i].sortable
-                    ? (index, ascending) => _onSort(index, ascending)
-                    : null,
-              ),
+                    ? (index, ascending) => _onSort(
+                          index - sortOffset,
+                          ascending,
+                        )
+                    : null,              ),
             if (hasActions)
               const DataColumn(
                 label: Text(
@@ -193,8 +339,13 @@ class _M360ResponsiveTableState<T> extends State<M360ResponsiveTable<T>> {
               ),
           ],
           rows: [
-            for (final row in _sortedRows)
+            for (final row in _pagedRows)
               DataRow(
+                selected:
+                    widget.selectable && selection.contains(_idOf(row)),
+                onSelectChanged: widget.selectable
+                    ? (selected) => _toggleRow(_idOf(row), selected)
+                    : null,
                 cells: [
                   for (final column in widget.columns)
                     DataCell(
@@ -224,18 +375,39 @@ class _M360ResponsiveTableState<T> extends State<M360ResponsiveTable<T>> {
   // ------------------------------------------------------------------
 
   Widget _buildCardList() {
+    final rows = _pagedRows;
+    final selection = _selection;
     return ListView.separated(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       padding: const EdgeInsets.all(M360Spacing.md),
-      itemCount: _sortedRows.length,
+      itemCount: rows.length,
       separatorBuilder: (_, __) => const SizedBox(height: M360Spacing.sm),
       itemBuilder: (context, index) {
-        final row = _sortedRows[index];
+        final row = rows[index];
+        final id = _idOf(row);
         return M360Card(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              if (widget.selectable)
+                Row(
+                  children: [
+                    Checkbox(
+                      value: selection.contains(id),
+                      onChanged: (selected) =>
+                          _toggleRow(id, selected),
+                    ),
+                    Expanded(
+                      child: Text(
+                        widget.columns.first.value(row),
+                        textDirection: TextDirection.rtl,
+                        style: AppTypography.labelNastaliq,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
               for (final column in widget.columns) ...[
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -264,7 +436,7 @@ class _M360ResponsiveTableState<T> extends State<M360ResponsiveTable<T>> {
               ],
               if (widget.rowActions.isNotEmpty)
                 Align(
-                  alignment: Alignment.centerLeft,
+                  alignment: AlignmentDirectional.centerEnd,
                   child: _ActionsMenu<T>(
                     row: row,
                     actions: widget.rowActions,
@@ -274,6 +446,80 @@ class _M360ResponsiveTableState<T> extends State<M360ResponsiveTable<T>> {
           ),
         );
       },
+    );
+  }
+
+  // ------------------------------------------------------------------
+  // Pagination footer.
+  // ------------------------------------------------------------------
+
+  Widget _buildPaginationFooter() {
+    final totalPages = _totalPages;
+    final page = _pageIndex.clamp(0, totalPages - 1);
+    final start = page * _effectivePageSize + 1;
+    final end =
+        (start + _effectivePageSize - 1).clamp(0, widget.rows.length);
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: M360Spacing.md,
+        vertical: M360Spacing.sm,
+      ),
+      child: Row(
+        children: [
+          Text(
+            '$start–$end از ${widget.rows.length}',
+            textDirection: TextDirection.rtl,
+            style: AppTypography.bodySmall,
+          ),
+          const Spacer(),
+          DropdownButton<int>(
+            value: _effectivePageSize,
+            underline: const SizedBox.shrink(),
+            items: [
+              for (final option in widget.pageSizeOptions)
+                DropdownMenuItem(
+                  value: option,
+                  child: Text(
+                    '$option',
+                    textDirection: TextDirection.ltr,
+                    style: AppTypography.bodySmall,
+                  ),
+                ),
+            ],
+            onChanged: (value) {
+              if (value == null) return;
+              setState(() {
+                _effectivePageSize = value;
+                _pageIndex = 0;
+              });
+            },
+          ),
+          Text(
+            ' فی صفحہ',
+            textDirection: TextDirection.rtl,
+            style: AppTypography.bodySmall,
+          ),
+          const SizedBox(width: M360Spacing.sm),
+          IconButton(
+            tooltip: 'پچھلا صفحہ',
+            icon: const Icon(Icons.chevron_right),
+            color: AppColors.textSecondary,
+            onPressed: page > 0 ? () => _goToPage(page - 1) : null,
+          ),
+          Text(
+            '${page + 1} / $totalPages',
+            textDirection: TextDirection.ltr,
+            style: AppTypography.bodySmall,
+          ),
+          IconButton(
+            tooltip: 'اگلا صفحہ',
+            icon: const Icon(Icons.chevron_left),
+            color: AppColors.textSecondary,
+            onPressed:
+                page < totalPages - 1 ? () => _goToPage(page + 1) : null,
+          ),
+        ],
+      ),
     );
   }
 }

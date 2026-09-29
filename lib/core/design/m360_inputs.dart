@@ -119,61 +119,78 @@ class M360TextField extends StatelessWidget {
       textDirection: TextDirection.rtl,
       textAlign: TextAlign.right,
       style: AppTypography.bodyLarge,
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: AppTypography.labelNastaliq,
-        hintText: hint,
-        // Policy: hints MUST be Nastaleeq.
-        hintStyle: AppTypography.labelNastaliq.copyWith(
-          color: AppColors.textSecondary,
-        ),
-        hintTextDirection: TextDirection.rtl,
-        floatingLabelBehavior: FloatingLabelBehavior.auto,
+      decoration: m360FieldDecoration(
+        label: label,
+        hint: hint,
         prefixIcon: prefixIcon == null ? null : Icon(prefixIcon, size: 22),
         suffixIcon: suffixIcon == null ? null : Icon(suffixIcon, size: 22),
-        prefixIconColor: AppColors.textSecondary,
-        suffixIconColor: AppColors.textSecondary,
-        filled: true,
-        fillColor: AppColors.surface,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: M360Spacing.md,
-          vertical: M360Spacing.md,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(M360Radius.md),
-          borderSide: const BorderSide(color: AppColors.divider),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(M360Radius.md),
-          borderSide: const BorderSide(color: AppColors.divider),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(M360Radius.md),
-          borderSide: const BorderSide(color: AppColors.primary, width: 2),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(M360Radius.md),
-          borderSide: const BorderSide(color: AppColors.error),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(M360Radius.md),
-          borderSide: const BorderSide(color: AppColors.error, width: 2),
-        ),
-        disabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(M360Radius.md),
-          borderSide:
-              BorderSide(color: AppColors.divider.withValues(alpha: 0.6)),
-        ),
-        errorStyle: AppTypography.bodySmall.copyWith(
-          color: AppColors.error,
-        ),
-        errorMaxLines: 3,
       ),
     );
   }
 }
 
-/// A read-only field that opens a picker (date, dropdown, …) on tap.
+/// Shared field decoration for every design-system field ([M360TextField],
+/// [M360Dropdown], [M360DatePicker]).
+///
+/// Nastaleeq label + hint, Naskh error text, radius 12, teal focus ring.
+/// Fields must never build their own [InputDecoration].
+InputDecoration m360FieldDecoration({
+  required String label,
+  String? hint,
+  Widget? prefixIcon,
+  Widget? suffixIcon,
+}) {
+  return InputDecoration(
+    labelText: label,
+    labelStyle: AppTypography.labelNastaliq,
+    hintText: hint,
+    // Policy: hints MUST be Nastaleeq.
+    hintStyle: AppTypography.labelNastaliq.copyWith(
+      color: AppColors.textSecondary,
+    ),
+    hintTextDirection: TextDirection.rtl,
+    floatingLabelBehavior: FloatingLabelBehavior.auto,
+    prefixIcon: prefixIcon,
+    suffixIcon: suffixIcon,
+    prefixIconColor: AppColors.textSecondary,
+    suffixIconColor: AppColors.textSecondary,
+    filled: true,
+    fillColor: AppColors.surface,
+    contentPadding: const EdgeInsets.symmetric(
+      horizontal: M360Spacing.md,
+      vertical: M360Spacing.md,
+    ),
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(M360Radius.md),
+      borderSide: const BorderSide(color: AppColors.divider),
+    ),
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(M360Radius.md),
+      borderSide: const BorderSide(color: AppColors.divider),
+    ),
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(M360Radius.md),
+      borderSide: const BorderSide(color: AppColors.primary, width: 2),
+    ),
+    errorBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(M360Radius.md),
+      borderSide: const BorderSide(color: AppColors.error),
+    ),
+    focusedErrorBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(M360Radius.md),
+      borderSide: const BorderSide(color: AppColors.error, width: 2),
+    ),
+    disabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(M360Radius.md),
+      borderSide:
+          BorderSide(color: AppColors.divider.withValues(alpha: 0.6)),
+    ),
+    errorStyle: AppTypography.bodySmall.copyWith(
+      color: AppColors.error,
+    ),
+    errorMaxLines: 3,
+  );
+}
 ///
 /// Renders an [M360TextField] in read-only mode with a trailing affordance
 /// icon; [onTap] opens the picker and the caller writes the chosen value

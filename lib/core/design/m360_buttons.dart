@@ -9,12 +9,13 @@ import 'design_tokens.dart';
 /// every button guarantees a 48px minimum touch target and full RTL support.
 ///
 /// Variants:
-/// * [M360PrimaryButton] — filled teal, the default call-to-action.
+/// * [M360PrimaryButton] — filled orange, the default call-to-action.
 /// * [M360SecondaryButton] — outlined teal, secondary actions.
 /// * [M360DangerButton] — filled red, destructive actions.
+/// * [M360TertiaryButton] — text button, low-emphasis actions.
 /// * [M360IconButton] — 48×48 icon-only button.
 class M360PrimaryButton extends StatelessWidget {
-  /// Creates a primary (filled teal) button.
+  /// Creates a primary (filled orange) button.
   ///
   /// When [isLoading] is true a spinner replaces the label and the button
   /// is disabled. Set [fullWidth] to stretch across the parent.
@@ -218,6 +219,71 @@ class M360DangerButton extends StatelessWidget {
       label: semanticLabel ?? label,
       child:
           fullWidth ? SizedBox(width: double.infinity, child: button) : button,
+    );
+  }
+}
+
+/// Low-emphasis text button — teal Nastaleeq label, no fill.
+///
+/// Use for secondary inline actions like «منسوخ کریں» in dialogs, «مزید
+/// دیکھیں» links, and dialog footers. For icon-only actions see
+/// [M360IconButton].
+class M360TertiaryButton extends StatelessWidget {
+  /// Creates a tertiary (text) button.
+  ///
+  /// When [isLoading] is true a spinner replaces the label and the button
+  /// is disabled.
+  const M360TertiaryButton({
+    super.key,
+    required this.label,
+    required this.onPressed,
+    this.isLoading = false,
+    this.semanticLabel,
+  });
+
+  /// Urdu label, rendered in Nastaleeq.
+  final String label;
+
+  /// Null disables the button.
+  final VoidCallback? onPressed;
+
+  /// Shows a loading spinner and disables the button.
+  final bool isLoading;
+
+  /// Accessibility label; defaults to [label].
+  final String? semanticLabel;
+
+  bool get _disabled => onPressed == null || isLoading;
+
+  @override
+  Widget build(BuildContext context) {
+    final button = TextButton(
+      onPressed: _disabled ? null : onPressed,
+      style: TextButton.styleFrom(
+        foregroundColor: AppColors.primary,
+        disabledForegroundColor: AppColors.textSecondary,
+        minimumSize:
+            const Size(M360TouchTarget.minWidth, M360TouchTarget.minHeight),
+        padding: const EdgeInsets.symmetric(
+          horizontal: M360Spacing.md,
+          vertical: M360Spacing.xs,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(M360Radius.md),
+        ),
+        textStyle: AppTypography.labelNastaliq,
+      ),
+      child: _ButtonContent(
+        label: label,
+        isLoading: isLoading,
+        spinnerColor: AppColors.primary,
+      ),
+    );
+    return Semantics(
+      button: true,
+      enabled: !_disabled,
+      label: semanticLabel ?? label,
+      child: button,
     );
   }
 }

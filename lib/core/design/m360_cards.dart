@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:madrasa_360/core/constants/app_colors.dart';
 import 'package:madrasa_360/core/constants/app_typography.dart';
 import 'design_tokens.dart';
+import 'm360_buttons.dart';
 
 /// مدرسہ 360 — کارڈز
 /// Card surfaces. Titles in Nastaleeq, body text in Naskh.
@@ -21,6 +22,7 @@ class M360Card extends StatelessWidget {
     this.margin = EdgeInsets.zero,
     this.elevation = M360Elevation.sm,
     this.borderColor,
+    this.borderRadius = M360Radius.md,
     this.semanticLabel,
   });
 
@@ -36,8 +38,11 @@ class M360Card extends StatelessWidget {
   /// Material elevation.
   final double elevation;
 
-  /// Optional hairline border color (e.g. [M360Brand.gold] for highlights).
+  /// Optional hairline border color (e.g. [AppColors.gold] for highlights).
   final Color? borderColor;
+
+  /// Corner radius; defaults to [M360Radius.md].
+  final double borderRadius;
 
   /// Accessibility label for the card region.
   final String? semanticLabel;
@@ -49,7 +54,7 @@ class M360Card extends StatelessWidget {
       elevation: elevation,
       color: AppColors.surface,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(M360Radius.md),
+        borderRadius: BorderRadius.circular(borderRadius),
         side: borderColor == null
             ? BorderSide.none
             : BorderSide(color: borderColor!, width: 1),
@@ -123,6 +128,9 @@ class M360TappableCard extends StatelessWidget {
 
 /// Metric card: big value, Urdu label, optional trend line and action.
 ///
+/// Horizontal layout: tinted icon circle, then a label/value column. Radius
+/// 16 ([M360Radius.lg]) — not the generic card radius — with an optional
+/// subtitle/trend/action slot.
 /// The value renders in Naskh (digits/amounts), the label in Nastaleeq.
 /// [actionLabel]/[onAction] render a text button — prefer wiring a real
 /// action («تفصیل دیکھیں») over a decorative stat.
@@ -178,6 +186,7 @@ class M360StatCard extends StatelessWidget {
     final hasAction = actionLabel != null && onAction != null;
     return M360Card(
       semanticLabel: semanticLabel ?? '$label: $value',
+      borderRadius: M360Radius.lg,
       padding: const EdgeInsets.all(M360Spacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -186,8 +195,8 @@ class M360StatCard extends StatelessWidget {
             children: [
               if (icon != null)
                 Container(
-                  width: 44,
-                  height: 44,
+                  width: M360TouchTarget.minHeight,
+                  height: M360TouchTarget.minHeight,
                   decoration: BoxDecoration(
                     color: iconBackground ??
                         AppColors.primary.withValues(alpha: 0.12),
@@ -228,21 +237,9 @@ class M360StatCard extends StatelessWidget {
                 if (trendText != null)
                   Expanded(child: _TrendLine(text: trendText!, up: trendUp)),
                 if (hasAction)
-                  TextButton(
+                  M360TertiaryButton(
+                    label: actionLabel!,
                     onPressed: onAction,
-                    style: TextButton.styleFrom(
-                      foregroundColor: AppColors.primary,
-                      textStyle: AppTypography.labelNastaliq
-                          .copyWith(color: AppColors.primary),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: M360Spacing.sm,
-                      ),
-                      minimumSize: const Size(64, M360TouchTarget.minHeight),
-                    ),
-                    child: Text(
-                      actionLabel!,
-                      textDirection: TextDirection.rtl,
-                    ),
                   ),
               ],
             ),
