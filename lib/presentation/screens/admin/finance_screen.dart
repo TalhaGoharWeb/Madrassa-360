@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../core/utils/money_format.dart';
+import '../../../core/widgets/confirm_dialog.dart';
 import '../../../data/models/models.dart';
 import '../../../providers/finance_provider.dart';
 import '../../../providers/auth_provider.dart';
@@ -186,7 +188,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
                 onChanged: (v) => setS(() => accountId = v),
               ),
             const SizedBox(height: 12),
-            _field(amtCtrl, 'رقم (₹)'),
+            _field(amtCtrl, 'رقم (Rs)'),
             _field(descCtrl, entryKind == 1 ? 'تفصیل / مد' : 'تفصیل'),
             _field(
                 nameCtrl,
@@ -279,7 +281,7 @@ class _SummaryTile extends StatelessWidget {
               style: AppTypography.labelSmall.copyWith(color: Colors.white70)),
           const SizedBox(height: 4),
           Text(
-            '₹${amount.toStringAsFixed(0)}',
+            formatRs(amount),
             style: AppTypography.titleSmall.copyWith(color: color),
           ),
         ]),
@@ -320,7 +322,7 @@ class _LedgerCard extends StatelessWidget {
               child:
                   Text(t.description ?? '', style: AppTypography.bodyMedium)),
           Text(
-            '${isIncome ? '+' : '-'}₹${t.amount.toStringAsFixed(0)}',
+            isIncome ? '+${formatRs(t.amount)}' : formatRs(-t.amount),
             style: AppTypography.bodyLarge
                 .copyWith(color: color, fontWeight: FontWeight.bold),
           ),
@@ -347,9 +349,21 @@ class _LedgerCard extends StatelessWidget {
             ? IconButton(
                 icon: Icon(Icons.delete_outline,
                     size: 18, color: AppColors.error),
-                onPressed: () => ref
-                    .read(financeProvider.notifier)
-                    .deleteLedgerDraft(t.id ?? ''),
+                tooltip: 'ڈرافٹ حذف کریں',
+                onPressed: () async {
+                  final confirmed = await showConfirmDialog(
+                    context,
+                    title: 'ڈرافٹ حذف کریں؟',
+                    message:
+                        'یہ ڈرافٹ لین دین مستقل طور پر حذف ہو جائے گا۔'
+                        ' یہ عمل واپس نہیں ہو سکتا۔',
+                  );
+                  if (confirmed) {
+                    ref
+                        .read(financeProvider.notifier)
+                        .deleteLedgerDraft(t.id ?? '');
+                  }
+                },
               )
             : null,
       ),

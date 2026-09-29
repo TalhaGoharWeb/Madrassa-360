@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/services/tenant_context.dart';
+import '../../../core/widgets/confirm_dialog.dart';
 import '../../../data/models/models.dart';
 import '../../../providers/announcement_provider.dart';
 import '../../../providers/auth_provider.dart';
@@ -141,13 +142,19 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                   foregroundColor: Colors.white),
               onPressed: () async {
                 Navigator.pop(dCtx);
+                // Display the poster's real name; fall back to email only
+                // when no name is on the auth profile.
+                final posterName = user?.name as String?;
                 await ref.read(announcementProvider.notifier).create(
                       Announcement(
                         title: titleCtrl.text,
                         body: bodyCtrl.text,
                         target: _targetFromString(target),
                         postedByUserId: user?.id ?? '',
-                        postedByName: user?.email ?? '',
+                        postedByName:
+                            (posterName != null && posterName.isNotEmpty)
+                                ? posterName
+                                : (user?.email as String? ?? ''),
                         tenantId: ref.read(currentTenantIdProvider) ?? '',
                         madrasaId: widget.madrasaId,
                         isPinned: pinned,
@@ -259,8 +266,21 @@ class _AnnouncementCard extends StatelessWidget {
               IconButton(
                 icon: Icon(Icons.delete_outline,
                     size: 18, color: AppColors.error),
-                onPressed: () =>
-                    ref.read(announcementProvider.notifier).delete(a.id ?? ''),
+                tooltip: 'اعلان حذف کریں',
+                onPressed: () async {
+                  final confirmed = await showConfirmDialog(
+                    context,
+                    title: 'اعلان حذف کریں؟',
+                    message:
+                        '«${a.title}» مستقل طور پر حذف ہو جائے گا۔'
+                        ' یہ عمل واپس نہیں ہو سکتا۔',
+                  );
+                  if (confirmed) {
+                    ref
+                        .read(announcementProvider.notifier)
+                        .delete(a.id ?? '');
+                  }
+                },
               ),
             ],
           ]),

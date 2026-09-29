@@ -36,60 +36,51 @@ String _todayStr() {
 }
 
 /// Total fee amount collected today (Rs), from real fee rows whose
-/// `paid_date` is today. 0 when logged out or on query failure.
+/// `paid_date` is today. 0 when logged out; query errors propagate as
+/// AsyncError so the UI can distinguish failure from an empty day.
 final todayCollectionProvider = FutureProvider<double>((ref) async {
   final tenantId = ref.watch(currentTenantIdProvider);
   if (tenantId == null) return 0.0;
-  try {
-    final fees = await ref.watch(allFeesProvider.future);
-    final today = _todayStr();
-    return fees
-        .where((f) => f.paidDate == today)
-        .fold<double>(0.0, (sum, f) => sum + f.amountPaid);
-  } catch (_) {
-    return 0.0;
-  }
+  final fees = await ref.watch(allFeesProvider.future);
+  final today = _todayStr();
+  return fees
+      .where((f) => f.paidDate == today)
+      .fold<double>(0.0, (sum, f) => sum + f.amountPaid);
 });
 
 /// Exams that have no results entered yet (drives the "نتائج باقی" alert).
-/// Empty when logged out or on failure — the alert simply doesn't render.
+/// Empty when logged out; errors propagate as AsyncError instead of
+/// silently hiding the alert.
 final examsWithoutResultsProvider = FutureProvider<List<Exam>>((ref) async {
   final tenantId = ref.watch(currentTenantIdProvider);
   if (tenantId == null) return const [];
-  try {
-    final exams = await ref.watch(allExamsProvider.future);
-    final pending = <Exam>[];
-    for (final exam in exams) {
-      final results = await ref.watch(examResultsProvider(exam.id).future);
-      if (results.isEmpty) pending.add(exam);
-    }
-    return pending;
-  } catch (_) {
-    return const [];
+  final exams = await ref.watch(allExamsProvider.future);
+  final pending = <Exam>[];
+  for (final exam in exams) {
+    final results = await ref.watch(examResultsProvider(exam.id).future);
+    if (results.isEmpty) pending.add(exam);
   }
+  return pending;
 });
 
 /// How many of the teacher's assigned classes have attendance marked today.
-/// `(done: 0, total: 0)` when logged out, unassigned, or on failure.
+/// `(done: 0, total: 0)` when logged out or unassigned; errors propagate
+/// as AsyncError instead of silently reporting zero progress.
 final teacherTodayAttendanceStatusProvider =
     FutureProvider<({int done, int total})>((ref) async {
   final tenantId = ref.watch(currentTenantIdProvider);
   if (tenantId == null) return (done: 0, total: 0);
-  try {
-    final classIds = ref.watch(teacherAssignedClassIdsProvider);
-    if (classIds.isEmpty) return (done: 0, total: 0);
-    final now = DateTime.now();
-    var done = 0;
-    for (final classId in classIds) {
-      final records = await ref.watch(classAttendanceProvider(
-        AttendanceParams(classId: classId, date: now),
-      ).future);
-      if (records.isNotEmpty) done++;
-    }
-    return (done: done, total: classIds.length);
-  } catch (_) {
-    return (done: 0, total: 0);
+  final classIds = ref.watch(teacherAssignedClassIdsProvider);
+  if (classIds.isEmpty) return (done: 0, total: 0);
+  final now = DateTime.now();
+  var done = 0;
+  for (final classId in classIds) {
+    final records = await ref.watch(classAttendanceProvider(
+      AttendanceParams(classId: classId, date: now),
+    ).future);
+    if (records.isNotEmpty) done++;
   }
+  return (done: done, total: classIds.length);
 });
 
 // ─────────────────────────────────────────────────────────────
@@ -107,16 +98,12 @@ final teacherTodayAttendanceStatusProvider =
 final newAdmissionsProvider = FutureProvider<List<Student>>((ref) async {
   final tenantId = ref.watch(currentTenantIdProvider);
   if (tenantId == null) return const [];
-  try {
-    final students = await ref.watch(allStudentsProvider.future);
-    final cutoff = DateTime.now().subtract(const Duration(days: 7));
-    return students.where((s) {
-      final admitted = DateTime.tryParse(s.dateOfAdmit ?? '');
-      return admitted != null && !admitted.isBefore(cutoff);
-    }).toList();
-  } catch (_) {
-    return const [];
-  }
+  final students = await ref.watch(allStudentsProvider.future);
+  final cutoff = DateTime.now().subtract(const Duration(days: 7));
+  return students.where((s) {
+    final admitted = DateTime.tryParse(s.dateOfAdmit ?? '');
+    return admitted != null && !admitted.isBefore(cutoff);
+  }).toList();
 });
 
 bool _isSameDay(DateTime d) {
@@ -152,43 +139,39 @@ class FinanceOverview {
 final financeOverviewProvider = FutureProvider<FinanceOverview>((ref) async {
   final tenantId = ref.watch(currentTenantIdProvider);
   if (tenantId == null) return const FinanceOverview.zero();
-  try {
-    await ref.watch(financeProvider.notifier).load();
-    final state = ref.read(financeProvider);
+  await ref.watch(financeProvider.notifier).load();
+  final state = ref.read(financeProvider);
 
-    var expenses = 0.0;
-    var income = 0.0;
-    for (final t in state.ledger) {
-      if (t.status != DocStatus.posted) continue;
-      if (!_isSameDay(t.entryDate)) continue;
-      if (t.isIncome) {
-        income += t.amount;
-      } else {
-        expenses += t.amount;
-      }
+  var expenses = 0.0;
+  var income = 0.0;
+  for (final t in state.ledger) {
+    if (t.status != DocStatus.posted) continue;
+    if (!_isSameDay(t.entryDate)) continue;
+    if (t.isIncome) {
+      income += t.amount;
+    } else {
+      expenses += t.amount;
     }
-
-    var cash = 0.0;
-    for (final a in state.accounts) {
-      if (!a.isActive || a.id == null) continue;
-      final name = '${a.nameUrdu ?? ''} ${a.name}'.toLowerCase();
-      if (!name.contains('نقد') && !name.contains('cash')) continue;
-      var balance = a.openingBalance;
-      for (final t in state.ledger) {
-        if (t.status != DocStatus.posted || t.accountId != a.id) continue;
-        balance += t.isIncome ? t.amount : -t.amount;
-      }
-      cash += balance;
-    }
-
-    return FinanceOverview(
-      todayExpenses: expenses,
-      todayIncome: income,
-      cashBalance: cash,
-    );
-  } catch (_) {
-    return const FinanceOverview.zero();
   }
+
+  var cash = 0.0;
+  for (final a in state.accounts) {
+    if (!a.isActive || a.id == null) continue;
+    final name = '${a.nameUrdu ?? ''} ${a.name}'.toLowerCase();
+    if (!name.contains('نقد') && !name.contains('cash')) continue;
+    var balance = a.openingBalance;
+    for (final t in state.ledger) {
+      if (t.status != DocStatus.posted || t.accountId != a.id) continue;
+      balance += t.isIncome ? t.amount : -t.amount;
+    }
+    cash += balance;
+  }
+
+  return FinanceOverview(
+    todayExpenses: expenses,
+    todayIncome: income,
+    cashBalance: cash,
+  );
 });
 
 /// Library overview (Phase 7b, §14): total books, currently issued,
@@ -214,20 +197,16 @@ class LibraryOverview {
 final libraryOverviewProvider = FutureProvider<LibraryOverview>((ref) async {
   final tenantId = ref.watch(currentTenantIdProvider);
   if (tenantId == null) return const LibraryOverview.zero();
-  try {
-    await ref.watch(libraryProvider.notifier).load();
-    final state = ref.read(libraryProvider);
-    final now = DateTime.now();
-    final active = state.issues.where((i) => !i.isReturned).toList();
-    final overdue = active.where((i) => i.dueAt.isBefore(now)).length;
-    return LibraryOverview(
-      totalBooks: state.books.length,
-      issued: active.length,
-      overdue: overdue,
-    );
-  } catch (_) {
-    return const LibraryOverview.zero();
-  }
+  await ref.watch(libraryProvider.notifier).load();
+  final state = ref.read(libraryProvider);
+  final now = DateTime.now();
+  final active = state.issues.where((i) => !i.isReturned).toList();
+  final overdue = active.where((i) => i.dueAt.isBefore(now)).length;
+  return LibraryOverview(
+    totalBooks: state.books.length,
+    issued: active.length,
+    overdue: overdue,
+  );
 });
 
 /// Darja list for pickers — empty when logged out (never touches
@@ -235,12 +214,8 @@ final libraryOverviewProvider = FutureProvider<LibraryOverview>((ref) async {
 final safeDarjaListProvider = FutureProvider<List<Darja>>((ref) async {
   final tenantId = ref.watch(currentTenantIdProvider);
   if (tenantId == null) return const [];
-  try {
-    await ref.watch(darjaProvider.notifier).loadAll();
-    return ref.read(darjaProvider).darjas;
-  } catch (_) {
-    return const [];
-  }
+  await ref.watch(darjaProvider.notifier).loadAll();
+  return ref.read(darjaProvider).darjas;
 });
 
 /// Academic overview (Phase 7b, §12): darjas, teachers, students, today's
@@ -273,22 +248,18 @@ class AcademicOverview {
 final academicOverviewProvider = FutureProvider<AcademicOverview>((ref) async {
   final tenantId = ref.watch(currentTenantIdProvider);
   if (tenantId == null) return const AcademicOverview.zero();
-  try {
-    final darjas = await ref.watch(safeDarjaListProvider.future);
-    final stats = await ref.watch(dashboardStatsProvider.future);
-    final pending = await ref.watch(examsWithoutResultsProvider.future);
-    final marked = stats.todayPresent + stats.todayAbsent + stats.todayLeave;
-    final pct = marked == 0 ? null : stats.todayPresent * 100 / marked;
-    return AcademicOverview(
-      darjas: darjas.length,
-      teachers: stats.totalTeachers,
-      students: stats.totalStudents,
-      attendancePct: pct,
-      pendingResults: pending.length,
-    );
-  } catch (_) {
-    return const AcademicOverview.zero();
-  }
+  final darjas = await ref.watch(safeDarjaListProvider.future);
+  final stats = await ref.watch(dashboardStatsProvider.future);
+  final pending = await ref.watch(examsWithoutResultsProvider.future);
+  final marked = stats.todayPresent + stats.todayAbsent + stats.todayLeave;
+  final pct = marked == 0 ? null : stats.todayPresent * 100 / marked;
+  return AcademicOverview(
+    darjas: darjas.length,
+    teachers: stats.totalTeachers,
+    students: stats.totalStudents,
+    attendancePct: pct,
+    pendingResults: pending.length,
+  );
 });
 
 /// Exam overview (Phase 7b, §15).
@@ -321,27 +292,23 @@ class ExamSummary {
 final examSummaryProvider = FutureProvider<ExamSummary>((ref) async {
   final tenantId = ref.watch(currentTenantIdProvider);
   if (tenantId == null) return const ExamSummary.zero();
-  try {
-    final exams = await ref.watch(allExamsProvider.future);
-    final pending = await ref.watch(examsWithoutResultsProvider.future);
-    final pendingIds = pending.map((e) => e.id).toSet();
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final weekAgo = today.subtract(const Duration(days: 7));
-    var ongoing = 0;
-    for (final e in exams) {
-      final d = DateTime.tryParse(e.examDate);
-      if (d == null) continue;
-      final day = DateTime(d.year, d.month, d.day);
-      if (!day.isBefore(weekAgo)) ongoing++;
-    }
-    return ExamSummary(
-      ongoing: ongoing,
-      pendingMarks: pending.length,
-      ready: exams.where((e) => !pendingIds.contains(e.id)).length,
-      total: exams.length,
-    );
-  } catch (_) {
-    return const ExamSummary.zero();
+  final exams = await ref.watch(allExamsProvider.future);
+  final pending = await ref.watch(examsWithoutResultsProvider.future);
+  final pendingIds = pending.map((e) => e.id).toSet();
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final weekAgo = today.subtract(const Duration(days: 7));
+  var ongoing = 0;
+  for (final e in exams) {
+    final d = DateTime.tryParse(e.examDate);
+    if (d == null) continue;
+    final day = DateTime(d.year, d.month, d.day);
+    if (!day.isBefore(weekAgo)) ongoing++;
   }
+  return ExamSummary(
+    ongoing: ongoing,
+    pendingMarks: pending.length,
+    ready: exams.where((e) => !pendingIds.contains(e.id)).length,
+    total: exams.length,
+  );
 });

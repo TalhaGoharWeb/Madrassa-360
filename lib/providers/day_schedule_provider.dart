@@ -78,30 +78,26 @@ final teacherDayScheduleProvider =
     FutureProvider<List<DayScheduleEvent>>((ref) async {
   final tenantId = ref.watch(currentTenantIdProvider);
   if (tenantId == null) return const [];
-  try {
-    final assignments = await ref.watch(teacherAssignmentsProvider.future);
-    if (assignments.isEmpty) return const [];
-    final today = DateTime.now();
-    final events = <DayScheduleEvent>[];
-    for (final a in assignments) {
-      final records = await ref.watch(
-        classAttendanceProvider(
-                AttendanceParams(classId: a.classId, date: today))
-            .future,
-      );
-      final done = records.isNotEmpty;
-      events.add(DayScheduleEvent(
-        title: 'حاضری — ${a.className}',
-        subtitle: done
-            ? '${records.length} طلبہ کی حاضری درج ہو گئی'
-            : 'حاضری درج کرنا باقی ہے',
-        state: done ? DayScheduleState.done : DayScheduleState.upcoming,
-      ));
-    }
-    return _orderEvents(events);
-  } catch (_) {
-    return const [];
+  final assignments = await ref.watch(teacherAssignmentsProvider.future);
+  if (assignments.isEmpty) return const [];
+  final today = DateTime.now();
+  final events = <DayScheduleEvent>[];
+  for (final a in assignments) {
+    final records = await ref.watch(
+      classAttendanceProvider(
+              AttendanceParams(classId: a.classId, date: today))
+          .future,
+    );
+    final done = records.isNotEmpty;
+    events.add(DayScheduleEvent(
+      title: 'حاضری — ${a.className}',
+      subtitle: done
+          ? '${records.length} طلبہ کی حاضری درج ہو گئی'
+          : 'حاضری درج کرنا باقی ہے',
+      state: done ? DayScheduleState.done : DayScheduleState.upcoming,
+    ));
   }
+  return _orderEvents(events);
 });
 
 // ─────────────────────────────────────────────────────────────
@@ -115,31 +111,27 @@ final accountantDayScheduleProvider =
     FutureProvider<List<DayScheduleEvent>>((ref) async {
   final tenantId = ref.watch(currentTenantIdProvider);
   if (tenantId == null) return const [];
-  try {
-    final collected = await ref.watch(todayCollectionProvider.future);
-    final summary = await ref.watch(feeSummaryProvider.future);
-    final events = <DayScheduleEvent>[
-      DayScheduleEvent(
-        title: 'آج کی وصولی',
-        subtitle: collected > 0
-            ? '${formatRs(collected)} وصول ہو چکے'
-            : 'ابھی کوئی وصولی نہیں ہوئی',
-        state:
-            collected > 0 ? DayScheduleState.done : DayScheduleState.upcoming,
-      ),
-    ];
-    if (summary.pendingCount > 0) {
-      events.add(DayScheduleEvent(
-        title: 'بقایا فیس کی وصولی',
-        subtitle:
-            '${summary.pendingCount} فیس بقایا ہے — ${formatRs(summary.totalDue)}',
-        state: DayScheduleState.upcoming,
-      ));
-    }
-    return _orderEvents(events);
-  } catch (_) {
-    return const [];
+  final collected = await ref.watch(todayCollectionProvider.future);
+  final summary = await ref.watch(feeSummaryProvider.future);
+  final events = <DayScheduleEvent>[
+    DayScheduleEvent(
+      title: 'آج کی وصولی',
+      subtitle: collected > 0
+          ? '${formatRs(collected)} وصول ہو چکے'
+          : 'ابھی کوئی وصولی نہیں ہوئی',
+      state:
+          collected > 0 ? DayScheduleState.done : DayScheduleState.upcoming,
+    ),
+  ];
+  if (summary.pendingCount > 0) {
+    events.add(DayScheduleEvent(
+      title: 'بقایا فیس کی وصولی',
+      subtitle:
+          '${summary.pendingCount} فیس بقایا ہے — ${formatRs(summary.totalDue)}',
+      state: DayScheduleState.upcoming,
+    ));
   }
+  return _orderEvents(events);
 });
 
 // ─────────────────────────────────────────────────────────────
@@ -152,40 +144,36 @@ final examDayScheduleProvider =
     FutureProvider<List<DayScheduleEvent>>((ref) async {
   final tenantId = ref.watch(currentTenantIdProvider);
   if (tenantId == null) return const [];
-  try {
-    final exams = await ref.watch(allExamsProvider.future);
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final dated = <({DateTime date, String name})>[];
-    for (final exam in exams) {
-      final d = DateTime.tryParse(exam.examDate);
-      if (d == null) continue;
-      dated.add((date: DateTime(d.year, d.month, d.day), name: exam.name));
-    }
-    dated.sort((a, b) => a.date.compareTo(b.date));
-    final events = <DayScheduleEvent>[];
-    for (final e in dated.take(6)) {
-      final label = app_date.DateUtils.formatDateUrdu(e.date);
-      if (e.date.isBefore(today)) {
-        events.add(DayScheduleEvent(
-          title: e.name,
-          subtitle: label,
-          timeLabel: label,
-          state: DayScheduleState.done,
-        ));
-      } else {
-        events.add(DayScheduleEvent(
-          title: e.name,
-          subtitle: label,
-          timeLabel: label,
-          state: DayScheduleState.upcoming,
-        ));
-      }
-    }
-    return _orderEvents(events);
-  } catch (_) {
-    return const [];
+  final exams = await ref.watch(allExamsProvider.future);
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final dated = <({DateTime date, String name})>[];
+  for (final exam in exams) {
+    final d = DateTime.tryParse(exam.examDate);
+    if (d == null) continue;
+    dated.add((date: DateTime(d.year, d.month, d.day), name: exam.name));
   }
+  dated.sort((a, b) => a.date.compareTo(b.date));
+  final events = <DayScheduleEvent>[];
+  for (final e in dated.take(6)) {
+    final label = app_date.DateUtils.formatDateUrdu(e.date);
+    if (e.date.isBefore(today)) {
+      events.add(DayScheduleEvent(
+        title: e.name,
+        subtitle: label,
+        timeLabel: label,
+        state: DayScheduleState.done,
+      ));
+    } else {
+      events.add(DayScheduleEvent(
+        title: e.name,
+        subtitle: label,
+        timeLabel: label,
+        state: DayScheduleState.upcoming,
+      ));
+    }
+  }
+  return _orderEvents(events);
 });
 
 // ─────────────────────────────────────────────────────────────
@@ -198,41 +186,37 @@ final principalDayScheduleProvider =
     FutureProvider<List<DayScheduleEvent>>((ref) async {
   final tenantId = ref.watch(currentTenantIdProvider);
   if (tenantId == null) return const [];
-  try {
-    final now = DateTime.now();
-    final events = <DayScheduleEvent>[];
+  final now = DateTime.now();
+  final events = <DayScheduleEvent>[];
 
-    final announcements = ref.watch(announcementListProvider);
-    for (final a in announcements) {
-      final scheduled = a.scheduledAt;
-      if (scheduled != null && _isSameDay(scheduled, now)) {
-        events.add(DayScheduleEvent(
-          title: a.title,
-          subtitle: 'آج کا اعلان',
-          timeLabel: app_date.DateUtils.formatTime(scheduled),
-          state: DayScheduleState.upcoming,
-        ));
-      }
-    }
-
-    final admissions = await ref.watch(newAdmissionsProvider.future);
-    final todayCount = admissions.where((s) {
-      final d = DateTime.tryParse(s.dateOfAdmit ?? '');
-      return d != null && _isSameDay(d, now);
-    }).length;
-    if (todayCount > 0) {
+  final announcements = ref.watch(announcementListProvider);
+  for (final a in announcements) {
+    final scheduled = a.scheduledAt;
+    if (scheduled != null && _isSameDay(scheduled, now)) {
       events.add(DayScheduleEvent(
-        title: 'نئے داخلے',
-        subtitle:
-            '$todayCount ${todayCount == 1 ? 'طالب علم' : 'طلبہ'} کا آج داخلہ ہوا',
-        state: DayScheduleState.done,
+        title: a.title,
+        subtitle: 'آج کا اعلان',
+        timeLabel: app_date.DateUtils.formatTime(scheduled),
+        state: DayScheduleState.upcoming,
       ));
     }
-
-    return _orderEvents(events);
-  } catch (_) {
-    return const [];
   }
+
+  final admissions = await ref.watch(newAdmissionsProvider.future);
+  final todayCount = admissions.where((s) {
+    final d = DateTime.tryParse(s.dateOfAdmit ?? '');
+    return d != null && _isSameDay(d, now);
+  }).length;
+  if (todayCount > 0) {
+    events.add(DayScheduleEvent(
+      title: 'نئے داخلے',
+      subtitle:
+          '$todayCount ${todayCount == 1 ? 'طالب علم' : 'طلبہ'} کا آج داخلہ ہوا',
+      state: DayScheduleState.done,
+    ));
+  }
+
+  return _orderEvents(events);
 });
 
 // ─────────────────────────────────────────────────────────────
@@ -245,35 +229,31 @@ final clerkDayScheduleProvider =
     FutureProvider<List<DayScheduleEvent>>((ref) async {
   final tenantId = ref.watch(currentTenantIdProvider);
   if (tenantId == null) return const [];
-  try {
-    final now = DateTime.now();
-    final events = <DayScheduleEvent>[];
+  final now = DateTime.now();
+  final events = <DayScheduleEvent>[];
 
-    final admissions = await ref.watch(newAdmissionsProvider.future);
-    final todayCount = admissions.where((s) {
-      final d = DateTime.tryParse(s.dateOfAdmit ?? '');
-      return d != null && _isSameDay(d, now);
-    }).length;
-    if (todayCount > 0) {
-      events.add(DayScheduleEvent(
-        title: 'آج کے نئے داخلے',
-        subtitle:
-            '$todayCount ${todayCount == 1 ? 'طالب علم' : 'طلبہ'} کا داخلہ مکمل',
-        state: DayScheduleState.done,
-      ));
-    }
-
-    final summary = await ref.watch(feeSummaryProvider.future);
-    if (summary.pendingCount > 0) {
-      events.add(DayScheduleEvent(
-        title: 'بقایا فیس کی وصولی',
-        subtitle: '${summary.pendingCount} فیس بقایا ہے',
-        state: DayScheduleState.upcoming,
-      ));
-    }
-
-    return _orderEvents(events);
-  } catch (_) {
-    return const [];
+  final admissions = await ref.watch(newAdmissionsProvider.future);
+  final todayCount = admissions.where((s) {
+    final d = DateTime.tryParse(s.dateOfAdmit ?? '');
+    return d != null && _isSameDay(d, now);
+  }).length;
+  if (todayCount > 0) {
+    events.add(DayScheduleEvent(
+      title: 'آج کے نئے داخلے',
+      subtitle:
+          '$todayCount ${todayCount == 1 ? 'طالب علم' : 'طلبہ'} کا داخلہ مکمل',
+      state: DayScheduleState.done,
+    ));
   }
+
+  final summary = await ref.watch(feeSummaryProvider.future);
+  if (summary.pendingCount > 0) {
+    events.add(DayScheduleEvent(
+      title: 'بقایا فیس کی وصولی',
+      subtitle: '${summary.pendingCount} فیس بقایا ہے',
+      state: DayScheduleState.upcoming,
+    ));
+  }
+
+  return _orderEvents(events);
 });

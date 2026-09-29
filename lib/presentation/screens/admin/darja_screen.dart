@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/services/tenant_context.dart';
+import '../../../core/widgets/confirm_dialog.dart';
 import '../../../data/models/models.dart';
 import '../../../providers/darja_provider.dart';
 
@@ -239,8 +240,19 @@ class _DarjaCard extends StatelessWidget {
         trailing: Row(mainAxisSize: MainAxisSize.min, children: [
           IconButton(
             icon: Icon(Icons.delete_outline, color: AppColors.error, size: 20),
-            onPressed: () =>
-                ref.read(darjaProvider.notifier).deleteDarja(darja.id ?? ''),
+            tooltip: 'درجہ حذف کریں',
+            onPressed: () async {
+              final confirmed = await showConfirmDialog(
+                context,
+                title: 'درجہ حذف کریں؟',
+                message:
+                    '«${darja.nameUrdu}» مستقل طور پر حذف ہو جائے گا۔'
+                    ' یہ عمل واپس نہیں ہو سکتا۔',
+              );
+              if (confirmed) {
+                ref.read(darjaProvider.notifier).deleteDarja(darja.id ?? '');
+              }
+            },
           ),
         ]),
         children: [
@@ -260,9 +272,21 @@ class _DarjaCard extends StatelessWidget {
                   trailing: IconButton(
                     icon: Icon(Icons.remove_circle_outline,
                         color: AppColors.error, size: 18),
-                    onPressed: () => ref
-                        .read(darjaProvider.notifier)
-                        .deleteSection(sec.id ?? ''),
+                    tooltip: 'سیکشن حذف کریں',
+                    onPressed: () async {
+                      final confirmed = await showConfirmDialog(
+                        context,
+                        title: 'سیکشن حذف کریں؟',
+                        message:
+                            '«${sec.nameUrdu}» مستقل طور پر حذف ہو جائے گا۔'
+                            ' یہ عمل واپس نہیں ہو سکتا۔',
+                      );
+                      if (confirmed) {
+                        ref
+                            .read(darjaProvider.notifier)
+                            .deleteSection(sec.id ?? '');
+                      }
+                    },
                   ),
                 ),
               const SizedBox(height: 6),

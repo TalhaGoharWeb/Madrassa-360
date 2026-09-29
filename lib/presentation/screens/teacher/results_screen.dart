@@ -1048,16 +1048,43 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen>
     try {
       final notifier = ref.read(resultNotifierProvider.notifier);
       final now = DateTime.now();
-      final exam = await notifier.createExam(
-        name: '$examType — $className',
+      final examName = '$examType — $className';
+      // Reuse the existing exam header for this class + exam type instead
+      // of creating a duplicate header on every save.
+      final existingExams = await ref.read(allExamsProvider.future);
+      Exam? exam;
+      for (final e in existingExams) {
+        if (e.classId == classId && e.name == examName) {
+          exam = e;
+          break;
+        }
+      }
+      exam ??= await notifier.createExam(
+        name: examName,
         classId: classId,
         examDate:
             '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}',
         totalMarks: _entrySubjects.length * 100,
       );
+      // Reuse existing result row ids (wizard's `_resultIds` pattern) so
+      // re-saving updates the same rows instead of duplicating them.
+      final resultIds = <String, Map<String, String>>{};
+      try {
+        final existing =
+            await ref.read(examResultsProvider(exam.id).future);
+        for (final sr in existing) {
+          for (final sub in sr.subjects) {
+            (resultIds[sr.studentId] ??= {})[sub.subject] = sub.id;
+          }
+        }
+      } catch (_) {
+        // Prefill is best-effort; new rows still save correctly.
+      }
       for (final m in marks) {
+        final rowId =
+            resultIds[m.studentId]?[m.subject] ?? const Uuid().v4();
         await notifier.save(SubjectResult(
-          id: const Uuid().v4(),
+          id: rowId,
           tenantId: tenantId,
           examId: exam.id,
           studentId: m.studentId,

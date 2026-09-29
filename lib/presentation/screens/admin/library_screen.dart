@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/services/tenant_context.dart';
+import '../../../core/widgets/confirm_dialog.dart';
 import '../../../data/models/models.dart';
 import '../../../providers/library_provider.dart';
 import '../../../providers/auth_provider.dart';
@@ -229,9 +230,21 @@ class _BooksList extends StatelessWidget {
                   IconButton(
                     icon: const Icon(Icons.delete_outline),
                     color: AppColors.error,
-                    onPressed: () => ref
-                        .read(libraryProvider.notifier)
-                        .deleteBook(b.id ?? ''),
+                    tooltip: 'کتاب حذف کریں',
+                    onPressed: () async {
+                      final confirmed = await showConfirmDialog(
+                        context,
+                        title: 'کتاب حذف کریں؟',
+                        message:
+                            '«${b.title}» مستقل طور پر حذف ہو جائے گی۔'
+                            ' یہ عمل واپس نہیں ہو سکتا۔',
+                      );
+                      if (confirmed) {
+                        ref
+                            .read(libraryProvider.notifier)
+                            .deleteBook(b.id ?? '');
+                      }
+                    },
                   ),
                 ]),
             ]),

@@ -9,10 +9,20 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/services/tenant_context.dart';
 import '../../../core/utils/date_utils.dart';
+import '../../../data/models/darja.dart';
 import '../../../data/models/fee.dart';
 import '../../../data/models/student.dart';
+import '../../../providers/dashboard_data_provider.dart';
 import '../../../providers/fee_provider.dart';
 import '../../../providers/student_provider.dart';
+
+/// Mutable holder for the darja picker's resolved selection (real row id +
+/// Urdu display name). Mutated idempotently during build; the surrounding
+/// [StatefulBuilder] rebuilds it via the picker's [onChanged] callback.
+class _DarjaSelection {
+  String? id;
+  String name = '';
+}
 
 /// Shared student dialogs — new-admission, edit, and fee collection.
 ///
@@ -50,6 +60,77 @@ class StudentDialogs {
 
   static const Color gold = Color(0xFFC9A227);
 
+  /// Class/darja picker bound to REAL darja rows.
+  ///
+  /// The chosen row's UUID is written into [selection] (id + Urdu name) so
+  /// rosters, filters and attendance queries — which all join on real row
+  /// ids — keep working. Never stores display strings as ids. [onChanged]
+  /// must rebuild the surrounding [StatefulBuilder].
+  static Widget darjaPicker({
+    required _DarjaSelection selection,
+    required VoidCallback onChanged,
+  }) {
+    return Consumer(
+      builder: (ctx, dref, _) {
+        final darjasAsync = dref.watch(safeDarjaListProvider);
+        return darjasAsync.when(
+          data: (darjas) {
+            final options = darjas
+                .where((Darja d) => d.id != null && d.id!.isNotEmpty)
+                .toList();
+            if (options.isEmpty) {
+              return Text(
+                'کوئی درجہ دستیاب نہیں — پہلے درجات شامل کریں',
+                style: AppTypography.labelMedium
+                    .copyWith(color: AppColors.textSecondary),
+              );
+            }
+            // Resolve the current selection idempotently (no rebuild).
+            // A legacy display-string id simply won't match and falls back
+            // to the first real darja.
+            var current = options.first;
+            if (selection.id != null) {
+              final match = options.where((d) => d.id == selection.id);
+              if (match.isNotEmpty) current = match.first;
+            }
+            selection.id = current.id;
+            selection.name = current.nameUrdu;
+            return DropdownButtonFormField<String>(
+              value: current.id,
+              decoration: const InputDecoration(
+                labelText: 'جماعت',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.class_),
+              ),
+              items: options
+                  .map((d) => DropdownMenuItem<String>(
+                        value: d.id,
+                        child: Text(d.nameUrdu),
+                      ))
+                  .toList(),
+              onChanged: (value) {
+                if (value == null) return;
+                final chosen = options.firstWhere((d) => d.id == value,
+                    orElse: () => options.first);
+                selection.id = chosen.id;
+                selection.name = chosen.nameUrdu;
+                onChanged();
+              },
+            );
+          },
+          loading: () => const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: LinearProgressIndicator(),
+          ),
+          error: (_, __) => Text(
+            'درجات لوڈ نہیں ہو سکے — دوبارہ کوشش کریں',
+            style: AppTypography.labelMedium.copyWith(color: AppColors.error),
+          ),
+        );
+      },
+    );
+  }
+
   // ─────────────────────────────────────────────────────────────
   // New admission dialog (same fields, same validation, same save flow)
   // ─────────────────────────────────────────────────────────────
@@ -60,7 +141,7 @@ class StudentDialogs {
     final phoneController = TextEditingController();
     final addressController = TextEditingController();
 
-    String selectedClass = classOptions.first;
+    final darjaSelection = _DarjaSelection();
     String selectedSection = sectionOptions.first;
     XFile? pickedPhoto;
 
@@ -117,20 +198,9 @@ class StudentDialogs {
                   },
                 ),
                 const SizedBox(height: 16),
-                DropdownButtonFormField<String>(
-                  initialValue: selectedClass,
-                  decoration: const InputDecoration(
-                    labelText: 'جماعت',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.class_),
-                  ),
-                  items: classOptions
-                      .map((v) => DropdownMenuItem<String>(
-                            value: v,
-                            child: Text(v),
-                          ))
-                      .toList(),
-                  onChanged: (value) => setState(() => selectedClass = value!),
+                darjaPicker(
+                  selection: darjaSelection,
+                  onChanged: () => setState(() {}),
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
@@ -172,7 +242,8 @@ class StudentDialogs {
                 fatherNameController: fatherNameController,
                 phoneController: phoneController,
                 addressController: addressController,
-                selectedClass: selectedClass,
+                darjaId: darjaSelection.id ?? '',
+                darjaName: darjaSelection.name,
                 pickedPhoto: pickedPhoto,
               ),
               style: ElevatedButton.styleFrom(
@@ -193,7 +264,8 @@ class StudentDialogs {
     required TextEditingController fatherNameController,
     required TextEditingController phoneController,
     required TextEditingController addressController,
-    required String selectedClass,
+    required String darjaId,
+    required String darjaName,
     required XFile? pickedPhoto,
   }) async {
     if (nameController.text.isEmpty || fatherNameController.text.isEmpty) {
@@ -215,10 +287,10 @@ class StudentDialogs {
         rollNo: '',
         name: nameController.text.trim(),
         fatherName: fatherNameController.text.trim(),
-        darjaId: selectedClass,
-        darjaName: selectedClass,
-        classId: selectedClass,
-        className: selectedClass,
+        darjaId: darjaId,
+        darjaName: darjaName,
+        classId: darjaId,
+        className: darjaName,
         phone: phoneController.text.trim().isEmpty
             ? null
             : phoneController.text.trim(),
@@ -264,9 +336,11 @@ class StudentDialogs {
         TextEditingController(text: student.fatherName);
     final phoneController = TextEditingController(text: student.phone ?? '');
 
-    String selectedClass = classOptions.contains(student.className)
-        ? student.className
-        : classOptions.first;
+    // Preselect the student's real darja row id; a legacy display-string id
+    // won't match any row and falls back to the first real darja.
+    final darjaSelection = _DarjaSelection()
+      ..id = student.classId.isNotEmpty ? student.classId : null
+      ..name = student.className;
     XFile? pickedPhoto;
 
     showDialog(
@@ -327,20 +401,9 @@ class StudentDialogs {
                   },
                 ),
                 const SizedBox(height: 16),
-                DropdownButtonFormField<String>(
-                  initialValue: selectedClass,
-                  decoration: const InputDecoration(
-                    labelText: 'جماعت',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.class_),
-                  ),
-                  items: classOptions
-                      .map((v) => DropdownMenuItem<String>(
-                            value: v,
-                            child: Text(v),
-                          ))
-                      .toList(),
-                  onChanged: (value) => setState(() => selectedClass = value!),
+                darjaPicker(
+                  selection: darjaSelection,
+                  onChanged: () => setState(() {}),
                 ),
               ],
             ),
@@ -371,10 +434,10 @@ class StudentDialogs {
                       rollNo: student.rollNo,
                       name: nameController.text.trim(),
                       fatherName: fatherNameController.text.trim(),
-                      darjaId: selectedClass,
-                      darjaName: selectedClass,
-                      classId: selectedClass,
-                      className: selectedClass,
+                      darjaId: darjaSelection.id ?? '',
+                      darjaName: darjaSelection.name,
+                      classId: darjaSelection.id ?? '',
+                      className: darjaSelection.name,
                       phone: phoneController.text.trim().isEmpty
                           ? null
                           : phoneController.text.trim(),
