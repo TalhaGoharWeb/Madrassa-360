@@ -271,14 +271,11 @@ class _AnnouncementCard extends StatelessWidget {
                   final confirmed = await showConfirmDialog(
                     context,
                     title: 'اعلان حذف کریں؟',
-                    message:
-                        '«${a.title}» مستقل طور پر حذف ہو جائے گا۔'
+                    message: '«${a.title}» مستقل طور پر حذف ہو جائے گا۔'
                         ' یہ عمل واپس نہیں ہو سکتا۔',
                   );
                   if (confirmed) {
-                    ref
-                        .read(announcementProvider.notifier)
-                        .delete(a.id ?? '');
+                    ref.read(announcementProvider.notifier).delete(a.id ?? '');
                   }
                 },
               ),

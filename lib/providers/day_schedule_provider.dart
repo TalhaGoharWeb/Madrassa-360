@@ -84,8 +84,7 @@ final teacherDayScheduleProvider =
   final events = <DayScheduleEvent>[];
   for (final a in assignments) {
     final records = await ref.watch(
-      classAttendanceProvider(
-              AttendanceParams(classId: a.classId, date: today))
+      classAttendanceProvider(AttendanceParams(classId: a.classId, date: today))
           .future,
     );
     final done = records.isNotEmpty;
@@ -119,8 +118,7 @@ final accountantDayScheduleProvider =
       subtitle: collected > 0
           ? '${formatRs(collected)} وصول ہو چکے'
           : 'ابھی کوئی وصولی نہیں ہوئی',
-      state:
-          collected > 0 ? DayScheduleState.done : DayScheduleState.upcoming,
+      state: collected > 0 ? DayScheduleState.done : DayScheduleState.upcoming,
     ),
   ];
   if (summary.pendingCount > 0) {

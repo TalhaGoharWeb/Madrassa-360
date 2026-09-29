@@ -1070,8 +1070,7 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen>
       // re-saving updates the same rows instead of duplicating them.
       final resultIds = <String, Map<String, String>>{};
       try {
-        final existing =
-            await ref.read(examResultsProvider(exam.id).future);
+        final existing = await ref.read(examResultsProvider(exam.id).future);
         for (final sr in existing) {
           for (final sub in sr.subjects) {
             (resultIds[sr.studentId] ??= {})[sub.subject] = sub.id;
@@ -1081,8 +1080,7 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen>
         // Prefill is best-effort; new rows still save correctly.
       }
       for (final m in marks) {
-        final rowId =
-            resultIds[m.studentId]?[m.subject] ?? const Uuid().v4();
+        final rowId = resultIds[m.studentId]?[m.subject] ?? const Uuid().v4();
         await notifier.save(SubjectResult(
           id: rowId,
           tenantId: tenantId,

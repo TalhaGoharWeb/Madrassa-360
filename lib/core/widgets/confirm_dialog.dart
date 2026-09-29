@@ -29,8 +29,7 @@ Future<bool> showConfirmDialog(
           onPressed: () => Navigator.pop(ctx, true),
           child: Text(
             confirmLabel,
-            style:
-                AppTypography.labelNastaliq.copyWith(color: Colors.white),
+            style: AppTypography.labelNastaliq.copyWith(color: Colors.white),
           ),
         ),
       ],

@@ -354,8 +354,7 @@ class _LedgerCard extends StatelessWidget {
                   final confirmed = await showConfirmDialog(
                     context,
                     title: 'ڈرافٹ حذف کریں؟',
-                    message:
-                        'یہ ڈرافٹ لین دین مستقل طور پر حذف ہو جائے گا۔'
+                    message: 'یہ ڈرافٹ لین دین مستقل طور پر حذف ہو جائے گا۔'
                         ' یہ عمل واپس نہیں ہو سکتا۔',
                   );
                   if (confirmed) {

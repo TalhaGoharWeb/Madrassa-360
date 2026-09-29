@@ -235,8 +235,7 @@ class _BooksList extends StatelessWidget {
                       final confirmed = await showConfirmDialog(
                         context,
                         title: 'کتاب حذف کریں؟',
-                        message:
-                            '«${b.title}» مستقل طور پر حذف ہو جائے گی۔'
+                        message: '«${b.title}» مستقل طور پر حذف ہو جائے گی۔'
                             ' یہ عمل واپس نہیں ہو سکتا۔',
                       );
                       if (confirmed) {

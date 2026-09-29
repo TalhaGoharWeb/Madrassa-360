@@ -245,8 +245,7 @@ class _DarjaCard extends StatelessWidget {
               final confirmed = await showConfirmDialog(
                 context,
                 title: 'درجہ حذف کریں؟',
-                message:
-                    '«${darja.nameUrdu}» مستقل طور پر حذف ہو جائے گا۔'
+                message: '«${darja.nameUrdu}» مستقل طور پر حذف ہو جائے گا۔'
                     ' یہ عمل واپس نہیں ہو سکتا۔',
               );
               if (confirmed) {

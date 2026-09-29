@@ -19,7 +19,7 @@ import '../../../providers/student_provider.dart';
 /// Mutable holder for the darja picker's resolved selection (real row id +
 /// Urdu display name). Mutated idempotently during build; the surrounding
 /// [StatefulBuilder] rebuilds it via the picker's [onChanged] callback.
-class _DarjaSelection {
+class DarjaSelection {
   String? id;
   String name = '';
 }
@@ -67,7 +67,7 @@ class StudentDialogs {
   /// ids — keep working. Never stores display strings as ids. [onChanged]
   /// must rebuild the surrounding [StatefulBuilder].
   static Widget darjaPicker({
-    required _DarjaSelection selection,
+    required DarjaSelection selection,
     required VoidCallback onChanged,
   }) {
     return Consumer(
@@ -96,7 +96,7 @@ class StudentDialogs {
             selection.id = current.id;
             selection.name = current.nameUrdu;
             return DropdownButtonFormField<String>(
-              value: current.id,
+              initialValue: current.id,
               decoration: const InputDecoration(
                 labelText: 'جماعت',
                 border: OutlineInputBorder(),
@@ -141,7 +141,7 @@ class StudentDialogs {
     final phoneController = TextEditingController();
     final addressController = TextEditingController();
 
-    final darjaSelection = _DarjaSelection();
+    final darjaSelection = DarjaSelection();
     String selectedSection = sectionOptions.first;
     XFile? pickedPhoto;
 
@@ -338,7 +338,7 @@ class StudentDialogs {
 
     // Preselect the student's real darja row id; a legacy display-string id
     // won't match any row and falls back to the first real darja.
-    final darjaSelection = _DarjaSelection()
+    final darjaSelection = DarjaSelection()
       ..id = student.classId.isNotEmpty ? student.classId : null
       ..name = student.className;
     XFile? pickedPhoto;
