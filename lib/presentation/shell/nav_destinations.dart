@@ -30,7 +30,6 @@ import 'package:madrasa_360/core/notifications/notification_providers.dart'
 import 'package:madrasa_360/providers/announcement_provider.dart'
     show announcementListProvider;
 
-import 'package:madrasa_360/core/constants/app_colors.dart';
 import 'package:madrasa_360/core/constants/app_permissions.dart';
 import 'package:madrasa_360/core/constants/app_typography.dart';
 
@@ -42,8 +41,12 @@ import 'package:madrasa_360/presentation/screens/common/about_screen.dart'
     show AboutScreen;
 import 'package:madrasa_360/presentation/screens/common/profile_screen.dart'
     show ProfileScreen;
-import 'package:madrasa_360/presentation/screens/dashboards/hostel_dashboard.dart'
-    show HostelDashboardScreen;
+import 'package:madrasa_360/presentation/screens/hostel/hostel_screen.dart'
+    show HostelScreen;
+import 'package:madrasa_360/presentation/screens/transport/transport_screen.dart'
+    show TransportScreen;
+import 'package:madrasa_360/presentation/screens/certificates/certificates_screen.dart'
+    show CertificatesScreen;
 import 'package:madrasa_360/presentation/screens/common/announcements_screen.dart'
     show AnnouncementsScreen;
 import 'package:madrasa_360/presentation/screens/common/notifications_screen.dart'
@@ -136,7 +139,6 @@ class NavDestination {
     this.requiredPermissions = const [],
     this.visibleForRoleKeys = const [],
     this.badgeProvider,
-    this.planned = false,
   });
 
   /// Stable machine id, e.g. 'dashboard', 'students'.
@@ -147,8 +149,7 @@ class NavDestination {
 
   final IconData icon;
 
-  /// Screen builder. For `planned: true` destinations this is the shared
-  /// honest backend-unavailable state — never an invented screen.
+  /// Screen builder. Must be a real screen — never an invented one.
   final WidgetBuilder builder;
 
   /// Permission codes from [AppPermissions]; the user needs ANY of them.
@@ -163,10 +164,6 @@ class NavDestination {
   /// static-method tear-off so it stays a compile-time constant inside the
   /// const [kNavGroups] list; the shell calls it to obtain the provider.
   final ProviderListenable<Object?> Function()? badgeProvider;
-
-  /// True when the destination's screen does not exist yet. The shell shows
-  /// an honest backend-unavailable state instead of navigating to a screen.
-  final bool planned;
 
   /// True when the current user may see this destination.
   bool isVisible(Set<String> permissions, List<String> roleKeys) {
@@ -200,50 +197,6 @@ class NavGroup {
     return destinations
         .where((d) => d.isVisible(permissions, roleKeys))
         .toList(growable: false);
-  }
-}
-
-/// Honest backend-unavailable state for destinations whose backend does not
-/// exist yet (hostel/transport: no tables; certificates: no issuance log).
-///
-/// This is a professional dependency state — NOT a "جلد آرہا ہے" marketing
-/// placeholder. Phase 8 builds the real screens against isolated repository
-/// interfaces; see `docs/audit-backend-capabilities.md`.
-class BackendUnavailableScreen extends StatelessWidget {
-  const BackendUnavailableScreen({super.key, required this.labelUr});
-
-  final String labelUr;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              Icons.cloud_off_outlined,
-              size: 56,
-              color: AppColors.textSecondary,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              labelUr,
-              style: AppTypography.labelNastaliq.copyWith(fontSize: 22),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'یہ ماڈیول ابھی دستیاب نہیں ہے — اس کا ڈیٹا بیک اینڈ سے منسلک نہیں۔',
-              textAlign: TextAlign.center,
-              style: AppTypography.bodySmall.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }
 
@@ -470,23 +423,21 @@ const List<NavGroup> kNavGroups = [
         id: 'transport',
         labelUr: 'ٹرانسپورٹ',
         icon: Icons.directions_bus_outlined,
-        builder: _transportUnavailableBuilder,
+        builder: _transportBuilder,
         requiredPermissions: [
           AppPermissions.viewTransport,
           AppPermissions.manageTransport,
         ],
-        planned: true,
       ),
       NavDestination(
         id: 'certificates',
         labelUr: 'اسناد',
         icon: Icons.workspace_premium_outlined,
-        builder: _certificatesUnavailableBuilder,
+        builder: _certificatesBuilder,
         requiredPermissions: [
           AppPermissions.viewCertificates,
           AppPermissions.issueCertificates,
         ],
-        planned: true,
       ),
     ],
   ),
@@ -562,14 +513,18 @@ Widget _aboutBuilder(BuildContext context) => const AboutScreen();
 Widget _profileBuilder(BuildContext context) => const ProfileScreen();
 Widget _backupBuilder(BuildContext context) => const BackupScreen();
 
-/// Hostel renders the existing honest empty-state dashboard until Phase 8
-/// builds the real screens (no backend exists yet).
-Widget _hostelBuilder(BuildContext context) => const HostelDashboardScreen();
+/// Hostel opens the Phase 8 module hub (buildings → rooms → beds →
+/// allocations). Its data layer is backend-pending, so the hub renders
+/// honest unavailable states until the tables exist.
+Widget _hostelBuilder(BuildContext context) => const HostelScreen();
 
-Widget _transportUnavailableBuilder(BuildContext context) =>
-    const BackendUnavailableScreen(labelUr: 'ٹرانسپورٹ');
-Widget _certificatesUnavailableBuilder(BuildContext context) =>
-    const BackendUnavailableScreen(labelUr: 'اسناد');
+/// Transport opens the Phase 8 module hub (vehicles, drivers, routes,
+/// assignments) against the isolated repository interface.
+Widget _transportBuilder(BuildContext context) => const TransportScreen();
+
+/// Certificates opens the Phase 8 module: real PDF generation through the
+/// reporting engine + issuance history behind the isolated repository.
+Widget _certificatesBuilder(BuildContext context) => const CertificatesScreen();
 
 /// The shell intercepts the 'logout' id (confirmation + sign-out) — this
 /// builder is never rendered.

@@ -292,6 +292,27 @@ final class ValidationException extends AppException {
         );
 }
 
+/// Backend table/RPC for a module does not exist yet (hostel, transport,
+/// certificate issuance log). The UI architecture is complete against an
+/// isolated repository interface; the data service is intentionally
+/// pending. Throwing this (instead of returning fake data or success)
+/// surfaces the honest "not connected to the backend" state in the UI.
+final class BackendUnavailableException extends AppException {
+  const BackendUnavailableException({
+    String? userMessageUr,
+    String? userMessageEn,
+    String? code,
+    super.technicalDetails,
+    super.cause,
+  }) : super(
+          userMessageEn: userMessageEn ??
+              'This module is not connected to the backend yet. The screens are ready; the data service is pending.',
+          userMessageUr: userMessageUr ??
+              'یہ ماڈیول ابھی بیک اینڈ سے منسلک نہیں ہے۔ اسکرینیں تیار ہیں، ڈیٹا سروس زیرِ تکمیل ہے۔',
+          code: code ?? 'backend_unavailable',
+        );
+}
+
 /// Server demands a minimum app version (forced-upgrade path).
 final class UpdateRequiredException extends AppException {
   const UpdateRequiredException({
