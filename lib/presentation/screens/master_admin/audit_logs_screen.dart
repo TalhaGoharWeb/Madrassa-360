@@ -249,25 +249,46 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
   /// Real export actions — both honour the ACTIVE filters (same query
   /// params as the list). Buttons are never decorative: they generate
   /// real files and report real success or failure.
+  ///
+  /// Narrow phones stack the two buttons (their Nastaleeq labels do not
+  /// fit side-by-side at 360px); wider screens place them in one row.
   Widget _exportBar() {
+    final csvButton = M360SecondaryButton(
+      icon: Icons.download_outlined,
+      label: 'CSV ڈاؤن لوڈ',
+      isLoading: _exporting,
+      fullWidth: true,
+      onPressed: _exporting ? null : _exportCsv,
+    );
+    final pdfButton = M360SecondaryButton(
+      icon: Icons.picture_as_pdf_outlined,
+      label: 'PDF ایکسپورٹ',
+      isLoading: _exporting,
+      fullWidth: true,
+      onPressed: _exporting ? null : _exportPdf,
+    );
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-      child: Row(
-        children: [
-          M360SecondaryButton(
-            icon: Icons.download_outlined,
-            label: 'CSV ڈاؤن لوڈ',
-            isLoading: _exporting,
-            onPressed: _exporting ? null : _exportCsv,
-          ),
-          const SizedBox(width: 8),
-          M360SecondaryButton(
-            icon: Icons.picture_as_pdf_outlined,
-            label: 'PDF ایکسپورٹ',
-            isLoading: _exporting,
-            onPressed: _exporting ? null : _exportPdf,
-          ),
-        ],
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          if (constraints.maxWidth < 480) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                csvButton,
+                const SizedBox(height: 8),
+                pdfButton,
+              ],
+            );
+          }
+          return Row(
+            children: [
+              Expanded(child: csvButton),
+              const SizedBox(width: 8),
+              Expanded(child: pdfButton),
+            ],
+          );
+        },
       ),
     );
   }
@@ -354,7 +375,9 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
     try {
       final logs = await _fetchAllForExport();
       if (logs.isEmpty) {
-        showM360SnackBar(context, 'ایکسپورٹ کے لیے کوئی ریکارڈ نہیں ملا۔');
+        if (mounted) {
+          showM360SnackBar(context, 'ایکسپورٹ کے لیے کوئی ریکارڈ نہیں ملا۔');
+        }
         return;
       }
       final networkCols = auditNetworkColumns(logs);
@@ -393,7 +416,9 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
     try {
       final logs = await _fetchAllForExport();
       if (logs.isEmpty) {
-        showM360SnackBar(context, 'ایکسپورٹ کے لیے کوئی ریکارڈ نہیں ملا۔');
+        if (mounted) {
+          showM360SnackBar(context, 'ایکسپورٹ کے لیے کوئی ریکارڈ نہیں ملا۔');
+        }
         return;
       }
       final networkCols = auditNetworkColumns(logs);

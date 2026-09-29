@@ -160,24 +160,28 @@ class _LicensesScreenState extends State<LicensesScreen> {
   }
 
   Widget _row(LicenseRecord r) {
-    return M360Card(
-      margin: EdgeInsets.zero,
-      padding: EdgeInsets.zero,
+    return InkWell(
+      borderRadius: BorderRadius.circular(M360Radius.md),
       onTap: () => _openDetail(r),
-      child: ListTile(
-        leading: const Icon(Icons.verified, color: AppColors.primary, size: 32),
-        title: Text(
-          r.tenantName ?? r.tenantId ?? '—',
-          style:
-              AppTypography.titleMedium.copyWith(fontWeight: FontWeight.w600),
+      child: M360Card(
+        margin: EdgeInsets.zero,
+        padding: EdgeInsets.zero,
+        child: ListTile(
+          leading:
+              const Icon(Icons.verified, color: AppColors.primary, size: 32),
+          title: Text(
+            r.tenantName ?? r.tenantId ?? '—',
+            style:
+                AppTypography.titleMedium.copyWith(fontWeight: FontWeight.w600),
+          ),
+          subtitle: Text(
+            'پلان: ${r.planName ?? '—'}  •  '
+            'اختتام: ${r.expiresAt != null ? _day(r.expiresAt!) : '—'}',
+            style: AppTypography.bodySmall
+                .copyWith(color: AppColors.textSecondary),
+          ),
+          trailing: MaStatusChip(status: r.status),
         ),
-        subtitle: Text(
-          'پلان: ${r.planName ?? '—'}  •  '
-          'اختتام: ${r.expiresAt != null ? _day(r.expiresAt!) : '—'}',
-          style:
-              AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
-        ),
-        trailing: MaStatusChip(status: r.status),
       ),
     );
   }
