@@ -182,8 +182,7 @@ InputDecoration m360FieldDecoration({
     ),
     disabledBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(M360Radius.md),
-      borderSide:
-          BorderSide(color: AppColors.divider.withValues(alpha: 0.6)),
+      borderSide: BorderSide(color: AppColors.divider.withValues(alpha: 0.6)),
     ),
     errorStyle: AppTypography.bodySmall.copyWith(
       color: AppColors.error,
@@ -191,6 +190,7 @@ InputDecoration m360FieldDecoration({
     errorMaxLines: 3,
   );
 }
+
 ///
 /// Renders an [M360TextField] in read-only mode with a trailing affordance
 /// icon; [onTap] opens the picker and the caller writes the chosen value

@@ -106,8 +106,7 @@ class _ToastView extends StatelessWidget {
                 message,
                 textDirection: TextDirection.rtl,
                 textAlign: TextAlign.center,
-                style:
-                    AppTypography.bodyMedium.copyWith(color: Colors.white),
+                style: AppTypography.bodyMedium.copyWith(color: Colors.white),
               ),
             ),
           ),

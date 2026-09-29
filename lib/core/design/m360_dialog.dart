@@ -151,8 +151,7 @@ class M360ConfirmDialog extends StatefulWidget {
     this.expectedText,
     this.typedHint = 'تصدیق کے لیے نام لکھیں',
   }) : assert(
-          !requireTypedConfirmation ||
-              (expectedText != null && expectedText.isNotEmpty),
+          !requireTypedConfirmation || expectedText != null,
           'Typed confirmation needs a non-empty expectedText.',
         );
 
@@ -196,13 +195,10 @@ class _M360ConfirmDialogState extends State<M360ConfirmDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final canConfirm =
-        !widget.requireTypedConfirmation || _matches;
+    final canConfirm = !widget.requireTypedConfirmation || _matches;
     return M360Dialog(
       title: widget.title,
-      icon: widget.danger
-          ? Icons.warning_amber_rounded
-          : Icons.help_outline,
+      icon: widget.danger ? Icons.warning_amber_rounded : Icons.help_outline,
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,

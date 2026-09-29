@@ -173,8 +173,7 @@ class _M360ResponsiveTableState<T> extends State<M360ResponsiveTable<T>> {
 
   Set<Object> get _allIds => widget.rows.map(_idOf).toSet();
 
-  Set<Object> get _selection =>
-      widget.selectedIds ?? _internalSelection;
+  Set<Object> get _selection => widget.selectedIds ?? _internalSelection;
 
   bool get _selectionControlled => widget.selectedIds != null;
 
@@ -279,10 +278,8 @@ class _M360ResponsiveTableState<T> extends State<M360ResponsiveTable<T>> {
     final hasActions = widget.rowActions.isNotEmpty;
     final selection = _selection;
     final allIds = _allIds;
-    final allSelected =
-        allIds.isNotEmpty && selection.containsAll(allIds);
-    final someSelected =
-        selection.isNotEmpty && !allSelected;
+    final allSelected = allIds.isNotEmpty && selection.containsAll(allIds);
+    final someSelected = selection.isNotEmpty && !allSelected;
     // DataTable reports column indexes including the selection column;
     // subtract it so sorting maps back onto [widget.columns].
     final sortOffset = widget.selectable ? 1 : 0;
@@ -329,7 +326,8 @@ class _M360ResponsiveTableState<T> extends State<M360ResponsiveTable<T>> {
                           index - sortOffset,
                           ascending,
                         )
-                    : null,              ),
+                    : null,
+              ),
             if (hasActions)
               const DataColumn(
                 label: Text(
@@ -341,8 +339,7 @@ class _M360ResponsiveTableState<T> extends State<M360ResponsiveTable<T>> {
           rows: [
             for (final row in _pagedRows)
               DataRow(
-                selected:
-                    widget.selectable && selection.contains(_idOf(row)),
+                selected: widget.selectable && selection.contains(_idOf(row)),
                 onSelectChanged: widget.selectable
                     ? (selected) => _toggleRow(_idOf(row), selected)
                     : null,
@@ -395,8 +392,7 @@ class _M360ResponsiveTableState<T> extends State<M360ResponsiveTable<T>> {
                   children: [
                     Checkbox(
                       value: selection.contains(id),
-                      onChanged: (selected) =>
-                          _toggleRow(id, selected),
+                      onChanged: (selected) => _toggleRow(id, selected),
                     ),
                     Expanded(
                       child: Text(
@@ -457,8 +453,7 @@ class _M360ResponsiveTableState<T> extends State<M360ResponsiveTable<T>> {
     final totalPages = _totalPages;
     final page = _pageIndex.clamp(0, totalPages - 1);
     final start = page * _effectivePageSize + 1;
-    final end =
-        (start + _effectivePageSize - 1).clamp(0, widget.rows.length);
+    final end = (start + _effectivePageSize - 1).clamp(0, widget.rows.length);
     return Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: M360Spacing.md,
@@ -515,8 +510,7 @@ class _M360ResponsiveTableState<T> extends State<M360ResponsiveTable<T>> {
             tooltip: 'اگلا صفحہ',
             icon: const Icon(Icons.chevron_left),
             color: AppColors.textSecondary,
-            onPressed:
-                page < totalPages - 1 ? () => _goToPage(page + 1) : null,
+            onPressed: page < totalPages - 1 ? () => _goToPage(page + 1) : null,
           ),
         ],
       ),

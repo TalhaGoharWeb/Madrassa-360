@@ -75,7 +75,10 @@ enum M360FeeStatus {
 /// Canonical status chip: fixed color + Urdu label per status.
 class M360StatusChip extends StatelessWidget {
   /// Creates a chip for a canonical [M360Status].
-  const M360StatusChip({super.key, required this.status}) : _kind = _Kind.status;
+  const M360StatusChip({super.key, required this.status})
+      : _attendance = null,
+        _fee = null,
+        _kind = _Kind.status;
 
   /// Creates a chip for an attendance status.
   const M360StatusChip.attendance({
@@ -83,11 +86,13 @@ class M360StatusChip extends StatelessWidget {
     required M360AttendanceStatus attendance,
   })  : status = null,
         _attendance = attendance,
+        _fee = null,
         _kind = _Kind.attendance;
 
   /// Creates a chip for a fee status.
   const M360StatusChip.fee({super.key, required M360FeeStatus fee})
       : status = null,
+        _attendance = null,
         _fee = fee,
         _kind = _Kind.fee;
 

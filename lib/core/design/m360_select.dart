@@ -88,8 +88,7 @@ class M360Dropdown<T> extends StatelessWidget {
       decoration: m360FieldDecoration(
         label: label,
         hint: hint,
-        prefixIcon:
-            prefixIcon == null ? null : Icon(prefixIcon, size: 22),
+        prefixIcon: prefixIcon == null ? null : Icon(prefixIcon, size: 22),
       ),
     );
   }
