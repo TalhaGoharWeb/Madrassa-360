@@ -5,6 +5,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_permissions.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../core/utils/money_format.dart';
 import '../../../core/widgets/tenant_logo.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/admin_dashboard_provider.dart';
@@ -13,7 +14,7 @@ import '../../widgets/common/app_widgets.dart';
 import 'user_management_screen.dart';
 import 'darja_screen.dart';
 import 'library_screen.dart';
-import 'finance_screen.dart';
+import '../finance/finance_hub_screen.dart' show FinanceHubScreen, FinanceSection;
 import '../common/announcements_screen.dart';
 import '../teacher/attendance_screen.dart';
 import '../teacher/results_screen.dart';
@@ -350,7 +351,7 @@ class AdminDashboardScreen extends StatelessWidget {
         subtitle: 'عطیات و اخراجات',
         icon: Icons.account_balance_wallet_outlined,
         color: const Color(0xFFE65100),
-        screen: const FinanceScreen(),
+        screen: const FinanceHubScreen(section: FinanceSection.dashboard),
         requiredPerm: AppPermissions.viewFinance,
         module: 'finance',
       ),

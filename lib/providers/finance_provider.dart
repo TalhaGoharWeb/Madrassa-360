@@ -15,6 +15,7 @@ class FinanceState {
   final List<Account> accounts;
   final List<Invoice> invoices;
   final List<Payment> payments;
+  final List<ExpenseEntry> expenses;
   final bool isLoading;
   final String? error;
 
@@ -23,6 +24,7 @@ class FinanceState {
     this.accounts = const [],
     this.invoices = const [],
     this.payments = const [],
+    this.expenses = const [],
     this.isLoading = false,
     this.error,
   });
@@ -32,6 +34,7 @@ class FinanceState {
     List<Account>? accounts,
     List<Invoice>? invoices,
     List<Payment>? payments,
+    List<ExpenseEntry>? expenses,
     bool? isLoading,
     String? error,
     bool clearError = false,
@@ -42,6 +45,7 @@ class FinanceState {
         accounts: clearData ? const [] : (accounts ?? this.accounts),
         invoices: clearData ? const [] : (invoices ?? this.invoices),
         payments: clearData ? const [] : (payments ?? this.payments),
+        expenses: clearData ? const [] : (expenses ?? this.expenses),
         isLoading: isLoading ?? this.isLoading,
         error: clearError ? null : (error ?? this.error),
       );
@@ -88,6 +92,7 @@ class FinanceNotifier extends StateNotifier<FinanceState> {
         _repo.getAccounts(tenantId: tenantId),
         _repo.getInvoices(tenantId: tenantId),
         _repo.getPayments(tenantId: tenantId),
+        _repo.getExpenses(tenantId: tenantId),
       ]);
       state = state.copyWith(
         isLoading: false,
@@ -95,6 +100,7 @@ class FinanceNotifier extends StateNotifier<FinanceState> {
         accounts: results[1] as List<Account>,
         invoices: results[2] as List<Invoice>,
         payments: results[3] as List<Payment>,
+        expenses: results[4] as List<ExpenseEntry>,
       );
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
@@ -221,6 +227,151 @@ class FinanceNotifier extends StateNotifier<FinanceState> {
       await _repo.deleteLedgerDraft(id, tenantId: tenantId);
       state = state.copyWith(
           ledger: state.ledger.where((e) => e.id != id).toList());
+      return null;
+    } catch (e) {
+      return e.toString();
+    }
+  }
+
+  /// Deletes a DRAFT payment. Posted/void rows are immutable
+  /// (DB-enforced).
+  Future<String?> deletePaymentDraft(String id) async {
+    final tenantId = _tenantId;
+    if (tenantId == null) return 'No active tenant';
+    try {
+      await _repo.deletePaymentDraft(id, tenantId: tenantId);
+      state = state.copyWith(
+          payments: state.payments.where((e) => e.id != id).toList());
+      return null;
+    } catch (e) {
+      return e.toString();
+    }
+  }
+
+  /// Allocations of one payment across invoices (view-only).
+  Future<List<PaymentAllocation>> paymentAllocations(String paymentId) async {
+    final tenantId = _tenantId;
+    if (tenantId == null) return [];
+    try {
+      return await _repo.getAllocationsForPayment(paymentId,
+          tenantId: tenantId);
+    } catch (_) {
+      return [];
+    }
+  }
+
+  /// Creates an invoice (draft) with its line items, then reloads.
+  /// Returns an error message, or null on success.
+  Future<String?> createInvoice({
+    required String studentId,
+    required DateTime issueDate,
+    required DateTime dueDate,
+    required List<InvoiceItem> items,
+    String? billingMonth,
+    String? notes,
+  }) async {
+    final tenantId = _tenantId;
+    if (tenantId == null) return 'No active tenant';
+    final actorId = _actorId;
+    if (actorId == null) return 'Not signed in';
+    if (items.isEmpty) return 'کم از کم ایک مد درج کریں';
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      await _repo.createInvoice(
+        Invoice(
+          tenantId: tenantId,
+          studentId: studentId,
+          billingMonth: billingMonth,
+          issueDate: issueDate,
+          dueDate: dueDate,
+          notes: notes,
+          createdBy: actorId,
+        ),
+        items,
+        tenantId: tenantId,
+      );
+      await load();
+      return null;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      return e.toString();
+    }
+  }
+
+  /// Moves an invoice along its lifecycle (draft → issued, issued →
+  /// cancelled, …). Returns an error message, or null on success.
+  Future<String?> transitionInvoice(String id, InvoiceStatus to) async {
+    final tenantId = _tenantId;
+    if (tenantId == null) return 'No active tenant';
+    try {
+      await _repo.transitionInvoice(id, to, tenantId: tenantId);
+      await load();
+      return null;
+    } catch (e) {
+      return e.toString();
+    }
+  }
+
+  /// Deletes a DRAFT invoice. Issued/paid rows are immutable
+  /// (DB-enforced) — corrections go through cancellation.
+  Future<String?> deleteInvoiceDraft(String id) async {
+    final tenantId = _tenantId;
+    if (tenantId == null) return 'No active tenant';
+    try {
+      await _repo.deleteInvoiceDraft(id, tenantId: tenantId);
+      state = state.copyWith(
+          invoices: state.invoices.where((e) => e.id != id).toList());
+      return null;
+    } catch (e) {
+      return e.toString();
+    }
+  }
+
+  /// Creates an expense as a DRAFT for the approval workflow
+  /// (draft → approved → posted). Returns an error message, or null.
+  Future<String?> createExpenseDraft({
+    required String category,
+    String? recipient,
+    required double amount,
+    String? accountId,
+    String? description,
+  }) async {
+    final tenantId = _tenantId;
+    if (tenantId == null) return 'No active tenant';
+    final actorId = _actorId;
+    if (actorId == null) return 'Not signed in';
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      await _repo.createExpense(
+        ExpenseEntry(
+          tenantId: tenantId,
+          category: category,
+          recipient: recipient,
+          amount: amount,
+          accountId: accountId ?? _defaultAccountId(),
+          expenseDate: DateTime.now(),
+          description: description,
+          createdBy: actorId,
+        ),
+        tenantId: tenantId,
+      );
+      await load();
+      return null;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      return e.toString();
+    }
+  }
+
+  /// Moves an expense along its lifecycle (draft → approved → posted,
+  /// or → voided). Returns an error message, or null on success.
+  Future<String?> transitionExpense(String id, DocStatus to) async {
+    final tenantId = _tenantId;
+    if (tenantId == null) return 'No active tenant';
+    try {
+      await _repo.transitionExpense(id, to,
+          tenantId: tenantId, actorId: _actorId);
+      await load();
       return null;
     } catch (e) {
       return e.toString();

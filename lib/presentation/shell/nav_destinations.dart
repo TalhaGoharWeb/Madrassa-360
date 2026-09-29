@@ -77,15 +77,13 @@ import 'package:madrasa_360/presentation/screens/teacher/attendance_screen.dart'
 // مالیات
 import 'package:madrasa_360/presentation/screens/admin/fee_management_screen.dart'
     show FeeManagementScreen;
-import 'package:madrasa_360/presentation/screens/admin/finance_screen.dart'
-    show FinanceScreen;
+import 'package:madrasa_360/presentation/screens/finance/finance_hub_screen.dart'
+    show FinanceHubScreen, FinanceSection;
 // ادارہ
 import 'package:madrasa_360/presentation/screens/admin/library_screen.dart'
     show LibraryScreen;
 import 'package:madrasa_360/presentation/screens/admin/staff_list_screen.dart'
     show StaffListScreen;
-import 'package:madrasa_360/presentation/screens/reports/reports_hub_screen.dart'
-    show ReportsHubScreen;
 import 'package:madrasa_360/presentation/screens/settings/user_management_hub.dart'
     show UserManagementHubScreen;
 
@@ -336,14 +334,24 @@ const List<NavGroup> kNavGroups = [
     ],
   ),
 
-  // ── مالی نظام ────────────────────────────────────────────────────────────
+  // ── مالی ─────────────────────────────────────────────────────────────────
   NavGroup(
     id: 'finance',
-    labelUr: 'مالی نظام',
+    labelUr: 'مالی',
     destinations: [
       NavDestination(
-        id: 'fees',
-        labelUr: 'فیس وصولی',
+        id: 'finance_dashboard',
+        labelUr: 'مالی ڈیش بورڈ',
+        icon: Icons.dashboard_outlined,
+        builder: _financeDashboardBuilder,
+        requiredPermissions: [
+          AppPermissions.viewFinance,
+          AppPermissions.viewFees,
+        ],
+      ),
+      NavDestination(
+        id: 'student_fees',
+        labelUr: 'طلبہ کی فیس',
         icon: Icons.payments_outlined,
         builder: _feesBuilder,
         requiredPermissions: [
@@ -352,18 +360,58 @@ const List<NavGroup> kNavGroups = [
         ],
       ),
       NavDestination(
-        id: 'ledger',
-        labelUr: 'مالیاتی کھاتہ',
-        icon: Icons.account_balance_wallet_outlined,
-        builder: _financeBuilder,
+        id: 'finance_dues',
+        labelUr: 'واجبات',
+        icon: Icons.pending_actions_outlined,
+        builder: _financeDuesBuilder,
+        requiredPermissions: [
+          AppPermissions.collectFees,
+          AppPermissions.viewFees,
+        ],
+      ),
+      NavDestination(
+        id: 'finance_invoices',
+        labelUr: 'انوائسز',
+        icon: Icons.receipt_long_outlined,
+        builder: _financeInvoicesBuilder,
         requiredPermissions: [
           AppPermissions.viewFinance,
           AppPermissions.approveFinance,
         ],
       ),
       NavDestination(
-        id: 'reports',
-        labelUr: 'رپورٹیں',
+        id: 'finance_payments',
+        labelUr: 'ادائیگیاں',
+        icon: Icons.account_balance_wallet_outlined,
+        builder: _financePaymentsBuilder,
+        requiredPermissions: [
+          AppPermissions.viewFinance,
+          AppPermissions.approveFinance,
+        ],
+      ),
+      NavDestination(
+        id: 'finance_ledger',
+        labelUr: 'لیجر',
+        icon: Icons.book_outlined,
+        builder: _financeLedgerBuilder,
+        requiredPermissions: [
+          AppPermissions.viewFinance,
+          AppPermissions.approveFinance,
+        ],
+      ),
+      NavDestination(
+        id: 'finance_expenses',
+        labelUr: 'اخراجات',
+        icon: Icons.shopping_cart_outlined,
+        builder: _financeExpensesBuilder,
+        requiredPermissions: [
+          AppPermissions.viewFinance,
+          AppPermissions.approveFinance,
+        ],
+      ),
+      NavDestination(
+        id: 'finance_reports',
+        labelUr: 'مالی رپورٹس',
         icon: Icons.bar_chart_outlined,
         builder: _reportsBuilder,
         requiredPermissions: [
@@ -503,8 +551,20 @@ Widget _examsBuilder(BuildContext context) => const ExamDashboardScreen();
 Widget _resultsBuilder(BuildContext context) => const ResultsScreen();
 Widget _attendanceBuilder(BuildContext context) => const AttendanceScreen();
 Widget _feesBuilder(BuildContext context) => const FeeManagementScreen();
-Widget _financeBuilder(BuildContext context) => const FinanceScreen();
-Widget _reportsBuilder(BuildContext context) => const ReportsHubScreen();
+Widget _financeDashboardBuilder(BuildContext context) =>
+    const FinanceHubScreen(section: FinanceSection.dashboard);
+Widget _financeDuesBuilder(BuildContext context) =>
+    const FinanceHubScreen(section: FinanceSection.dues);
+Widget _financeInvoicesBuilder(BuildContext context) =>
+    const FinanceHubScreen(section: FinanceSection.invoices);
+Widget _financePaymentsBuilder(BuildContext context) =>
+    const FinanceHubScreen(section: FinanceSection.payments);
+Widget _financeLedgerBuilder(BuildContext context) =>
+    const FinanceHubScreen(section: FinanceSection.ledger);
+Widget _financeExpensesBuilder(BuildContext context) =>
+    const FinanceHubScreen(section: FinanceSection.expenses);
+Widget _reportsBuilder(BuildContext context) =>
+    const FinanceHubScreen(section: FinanceSection.reports);
 Widget _staffBuilder(BuildContext context) => const StaffListScreen();
 Widget _libraryBuilder(BuildContext context) => const LibraryScreen();
 Widget _userMgmtBuilder(BuildContext context) =>

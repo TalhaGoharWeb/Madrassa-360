@@ -53,7 +53,7 @@ import '../../../providers/result_provider.dart';
 import '../../../providers/tenant_branding_provider.dart';
 import '../admin/darja_screen.dart';
 import '../admin/fee_management_screen.dart';
-import '../admin/finance_screen.dart';
+import '../finance/finance_hub_screen.dart';
 import '../admin/library_screen.dart';
 import '../admin/staff_list_screen.dart';
 import '../admin/student_list_screen.dart';
@@ -1058,7 +1058,7 @@ class _DepartmentsSection extends StatelessWidget {
         SectionTile(
           icon: Icons.account_balance_outlined,
           label: 'مالی حساب',
-          onTap: () => go(const FinanceScreen()),
+          onTap: () => go(const FinanceHubScreen(section: FinanceSection.dashboard)),
         ),
       if (can(AppPermissions.viewReports))
         SectionTile(

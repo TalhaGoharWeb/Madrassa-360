@@ -103,7 +103,7 @@ class _CommandPaletteState extends ConsumerState<CommandPalette> {
           icon: Icons.payments_outlined,
           title: 'فیس وصول کریں',
           subtitle: 'فیس مینجمنٹ',
-          onActivate: () => _go('fees'),
+          onActivate: () => _go('student_fees'),
         ),
         _PaletteEntry(
           icon: Icons.assignment_outlined,
@@ -115,7 +115,7 @@ class _CommandPaletteState extends ConsumerState<CommandPalette> {
           icon: Icons.bar_chart_outlined,
           title: 'رپورٹ بنائیں',
           subtitle: 'رپورٹس ہب',
-          onActivate: () => _go('reports'),
+          onActivate: () => _go('finance_reports'),
         ),
         _PaletteEntry(
           icon: Icons.campaign_outlined,
@@ -152,9 +152,9 @@ class _CommandPaletteState extends ConsumerState<CommandPalette> {
     const targets = {
       '+ نیا طالب علم': 'student-list',
       'حاضری لگائیں': 'attendance',
-      'فیس وصول کریں': 'fees',
+      'فیس وصول کریں': 'student_fees',
       'امتحانات': 'exams',
-      'رپورٹ بنائیں': 'reports',
+      'رپورٹ بنائیں': 'finance_reports',
       'اعلان جاری کریں': 'announcements',
     };
     return [
@@ -222,7 +222,7 @@ class _CommandPaletteState extends ConsumerState<CommandPalette> {
         icon: Icons.receipt_long_outlined,
         title: f.studentName,
         subtitle: 'فیس • ${f.month}',
-        onActivate: () => _go('fees'),
+        onActivate: () => _go('student_fees'),
       ));
     }
     return entries;

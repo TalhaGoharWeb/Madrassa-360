@@ -38,6 +38,7 @@ import 'app_nav_rail.dart';
 import 'command_palette.dart';
 import 'mobile_nav.dart';
 import 'nav_destinations.dart';
+import 'shell_nav.dart';
 
 /// Desktop breakpoint: persistent rail at ≥ 1100px logical width.
 const double kDesktopBreakpoint = 1100;
@@ -103,6 +104,21 @@ class _AppShellState extends ConsumerState<AppShell> {
   Widget build(BuildContext context) {
     final permissions = ref.watch(userPermissionsProvider);
     final roleKeys = ref.watch(activeRoleKeysProvider);
+
+    // Hub-driven navigation requests (e.g. the finance hub's tab bar
+    // switching between destinations). Consumed once, on the next frame.
+    final navRequest = ref.watch(shellNavRequestProvider);
+    if (navRequest != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ref.read(shellNavRequestProvider.notifier).state = null;
+        if (navRequest != _selectedId &&
+            findDestination(navRequest) != null &&
+            navRequest != kLogoutDestinationId) {
+          _select(navRequest);
+        }
+      });
+    }
 
     // Permission-filtered flat destination list for this user.
     final visible = [

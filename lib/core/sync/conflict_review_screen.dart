@@ -10,7 +10,7 @@
 ///     NON-FINANCIAL entities.
 ///   * Financial entities (invoices, payments, transactions, refunds) show
 ///     an explanatory note instead: corrections must go through the finance
-///     reversal flow, with a link to [FinanceScreen]. Sync never overwrites
+///     reversal flow, with a link to [FinanceHubScreen]. Sync never overwrites
 ///     server financial data.
 ///
 /// Style follows the existing screens (AppColors / AppTypography / AppCard /
@@ -25,7 +25,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_typography.dart';
 import '../../presentation/widgets/common/app_widgets.dart';
-import '../../presentation/screens/admin/finance_screen.dart';
+import '../../presentation/screens/finance/finance_hub_screen.dart';
 import 'sync_engine.dart';
 import 'sync_providers.dart';
 
@@ -316,7 +316,7 @@ class _ConflictCardState extends ConsumerState<_ConflictCard> {
                   onPressed: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (_) => const FinanceScreen(),
+                        builder: (_) => const FinanceHubScreen(section: FinanceSection.ledger),
                       ),
                     );
                   },

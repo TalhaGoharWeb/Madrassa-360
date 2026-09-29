@@ -20,7 +20,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/services/supabase_service.dart';
 import '../core/services/tenant_context.dart';
+import '../core/utils/date_utils.dart';
 import '../core/utils/date_utils.dart' as app_date;
+import '../core/utils/money_format.dart';
 
 // ─────────────────────────────────────────────
 // Models
@@ -265,38 +267,7 @@ DateTime _activityTime(Map<String, dynamic> row) {
       DateTime.fromMillisecondsSinceEpoch(0);
 }
 
-/// Relative Urdu timestamp: 'ابھی' | 'X منٹ پہلے' | 'X گھنٹے پہلے' |
-/// 'کل' | '<day> <month> <year>'.
-String urduTimeAgo(DateTime at) {
-  if (at.millisecondsSinceEpoch == 0) return '';
-  final diff = DateTime.now().difference(at);
-  if (diff.inMinutes < 1) return 'ابھی';
-  if (diff.inMinutes < 60) return '${diff.inMinutes} منٹ پہلے';
-  if (diff.inHours < 24) {
-    return diff.inHours == 1 ? '1 گھنٹہ پہلے' : '${diff.inHours} گھنٹے پہلے';
-  }
-  final now = DateTime.now();
-  final yesterday = now.subtract(const Duration(days: 1));
-  if (at.year == yesterday.year &&
-      at.month == yesterday.month &&
-      at.day == yesterday.day) {
-    return 'کل';
-  }
-  return app_date.DateUtils.formatDateUrdu(at);
-}
-
-/// Pakistani digit grouping: 380000 → '3,80,000'.
-String formatPK(num value) {
-  final n = value.round();
-  final digits = n.abs().toString();
-  if (digits.length <= 3) return (n < 0 ? '-' : '') + digits;
-  final last3 = digits.substring(digits.length - 3);
-  var rest = digits.substring(0, digits.length - 3);
-  final groups = <String>[];
-  while (rest.length > 2) {
-    groups.add(rest.substring(rest.length - 2));
-    rest = rest.substring(0, rest.length - 2);
-  }
-  groups.add(rest);
-  return '${n < 0 ? '-' : ''}${groups.reversed.join(',')},$last3';
-}
+// ── Shared helpers moved to canonical util files ─────────────────────
+// * urduTimeAgo → lib/core/utils/date_utils.dart
+// * formatPK    → lib/core/utils/money_format.dart
+// (Phase 9: one currency format for every financial surface.)

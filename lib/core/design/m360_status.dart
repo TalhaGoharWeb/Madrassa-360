@@ -34,6 +34,9 @@ enum M360Status {
 
   /// میعاد ختم / Expired (grey).
   expired,
+
+  /// مسودہ / Draft (grey).
+  draft,
 }
 
 /// Attendance statuses with fixed color + Urdu label.
@@ -148,6 +151,8 @@ class M360StatusChip extends StatelessWidget {
             return _ChipSpec('ادا شدہ', AppColors.success);
           case M360Status.expired:
             return _ChipSpec('میعاد ختم', AppColors.textSecondary);
+          case M360Status.draft:
+            return _ChipSpec('مسودہ', AppColors.textSecondary);
         }
     }
   }

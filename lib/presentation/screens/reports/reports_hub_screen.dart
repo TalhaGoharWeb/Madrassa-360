@@ -16,6 +16,7 @@ import 'package:printing/printing.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../core/design/m360.dart';
 import '../../../core/reports/data/report_data.dart';
 import '../../../core/reports/data/report_models.dart';
 import '../../../core/reports/report_catalog.dart';
@@ -561,17 +562,25 @@ class _PdfPreviewScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(title,
-            style: const TextStyle(fontFamily: 'JameelNooriNastaleeq')),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-      ),
-      body: PdfPreview(
-        build: (_) async => bytes,
-        canChangePageFormat: false,
-        canChangeOrientation: false,
+    // Deep-pushed preview: AppShell owns the only Scaffold/AppBar, so the
+    // preview renders inside ShellPageBody (back chevron restored via
+    // canPop) with a PageHeader carrying the report title.
+    return ShellPageBody(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          PageHeader(
+            title: title,
+            breadcrumb: 'رپورٹس',
+          ),
+          Expanded(
+            child: PdfPreview(
+              build: (_) async => bytes,
+              canChangePageFormat: false,
+              canChangeOrientation: false,
+            ),
+          ),
+        ],
       ),
     );
   }

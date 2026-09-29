@@ -29,7 +29,7 @@ import '../../../providers/dashboard_data_provider.dart';
 import '../../../providers/fee_provider.dart';
 import '../../../providers/tenant_branding_provider.dart';
 import '../admin/fee_management_screen.dart';
-import '../admin/finance_screen.dart';
+import '../finance/finance_hub_screen.dart';
 import '../reports/reports_hub_screen.dart';
 
 class AccountantDashboardScreen extends ConsumerStatefulWidget {
@@ -136,7 +136,7 @@ class _FinanceSummary extends ConsumerWidget {
                   color: AppColors.warning,
                   subtitle:
                       overview.todayExpenses == 0 ? 'ابھی کوئی خرچ نہیں' : null,
-                  onTap: () => go(const FinanceScreen()),
+                  onTap: () => go(const FinanceHubScreen(section: FinanceSection.expenses)),
                 ),
               ),
           ],
@@ -167,7 +167,7 @@ class _FinanceSummary extends ConsumerWidget {
                   label: 'نقد رقم',
                   value: formatRs(overview.cashBalance),
                   color: AppColors.primary,
-                  onTap: () => go(const FinanceScreen()),
+                  onTap: () => go(const FinanceHubScreen(section: FinanceSection.ledger)),
                 ),
               ),
           ],
@@ -213,7 +213,7 @@ class _FinanceAlerts extends ConsumerWidget {
           icon: Icons.shopping_cart_outlined,
           message: 'آج ${formatRs(overview.todayExpenses)} خرچ ہوئے',
           actionLabel: 'دیکھیں',
-          onAction: () => go(const FinanceScreen()),
+          onAction: () => go(const FinanceHubScreen(section: FinanceSection.expenses)),
           severity: AlertSeverity.info,
         ));
       }
@@ -256,19 +256,19 @@ class _FinanceQuickActions extends ConsumerWidget {
         QuickActionItem(
           icon: Icons.remove_circle_outline,
           label: 'خرچ درج کریں',
-          onTap: () => go(const FinanceScreen()),
+          onTap: () => go(const FinanceHubScreen(section: FinanceSection.expenses)),
         ),
       if (can(AppPermissions.createFinance))
         QuickActionItem(
           icon: Icons.add_circle_outline,
           label: 'آمدن درج کریں',
-          onTap: () => go(const FinanceScreen()),
+          onTap: () => go(const FinanceHubScreen(section: FinanceSection.ledger)),
         ),
       if (can(AppPermissions.viewFinance))
         QuickActionItem(
           icon: Icons.account_balance_wallet_outlined,
           label: 'حساب دیکھیں',
-          onTap: () => go(const FinanceScreen()),
+          onTap: () => go(const FinanceHubScreen(section: FinanceSection.ledger)),
         ),
       if (can(AppPermissions.viewReports))
         QuickActionItem(
@@ -280,7 +280,7 @@ class _FinanceQuickActions extends ConsumerWidget {
         QuickActionItem(
           icon: Icons.account_balance_outlined,
           label: 'تفصیلی حسابات',
-          onTap: () => go(const FinanceScreen()),
+          onTap: () => go(const FinanceHubScreen(section: FinanceSection.ledger)),
         ),
     ];
 
@@ -338,7 +338,7 @@ class _FinanceTasks extends ConsumerWidget {
               : 'ابھی کوئی خرچ درج نہیں',
           done: false,
         ),
-        action: () => go(const FinanceScreen()),
+        action: () => go(const FinanceHubScreen(section: FinanceSection.expenses)),
         slot: 1,
       ));
     }

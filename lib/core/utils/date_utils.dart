@@ -191,3 +191,25 @@ class UrduNumbers {
     }).join();
   }
 }
+
+/// Relative Urdu timestamp: 'ابھی' | 'X منٹ پہلے' | 'X گھنٹے پہلے' |
+/// 'کل' | '<day> <month> <year>'.
+///
+/// Shared by dashboards and the finance activity feeds.
+String urduTimeAgo(DateTime at) {
+  if (at.millisecondsSinceEpoch == 0) return '';
+  final diff = DateTime.now().difference(at);
+  if (diff.inMinutes < 1) return 'ابھی';
+  if (diff.inMinutes < 60) return '${diff.inMinutes} منٹ پہلے';
+  if (diff.inHours < 24) {
+    return diff.inHours == 1 ? '1 گھنٹہ پہلے' : '${diff.inHours} گھنٹے پہلے';
+  }
+  final now = DateTime.now();
+  final yesterday = now.subtract(const Duration(days: 1));
+  if (at.year == yesterday.year &&
+      at.month == yesterday.month &&
+      at.day == yesterday.day) {
+    return 'کل';
+  }
+  return DateUtils.formatDateUrdu(at);
+}
