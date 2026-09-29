@@ -43,7 +43,6 @@ Future<bool> confirmTransportDelete(
 class _TransportFormShell extends StatefulWidget {
   final GlobalKey<FormState> formKey;
   final List<Widget> fields;
-  final String saveLabel;
   final Future<bool> Function() onSave;
   final String? Function() readError;
 
@@ -52,7 +51,6 @@ class _TransportFormShell extends StatefulWidget {
     required this.fields,
     required this.onSave,
     required this.readError,
-    this.saveLabel = 'محفوظ کریں',
   });
 
   @override
@@ -109,7 +107,7 @@ class _TransportFormShellState extends State<_TransportFormShell> {
               ),
               const SizedBox(width: 8),
               M360PrimaryButton(
-                label: widget.saveLabel,
+                label: 'محفوظ کریں',
                 isLoading: _saving,
                 onPressed: _saving ? null : _save,
               ),
@@ -426,7 +424,7 @@ Future<void> showTransportAssignmentForm(
   );
 }
 
-class _AssignmentForm extends StatefulWidget {
+class _AssignmentForm extends ConsumerStatefulWidget {
   final List<TransportVehicle> vehicles;
   final List<TransportDriver> drivers;
   final List<TransportRoute> routes;
@@ -440,7 +438,7 @@ class _AssignmentForm extends StatefulWidget {
   });
 
   @override
-  State<_AssignmentForm> createState() => _AssignmentFormState();
+  ConsumerState<_AssignmentForm> createState() => _AssignmentFormState();
 }
 
 class _AssignmentFormState extends ConsumerState<_AssignmentForm> {
