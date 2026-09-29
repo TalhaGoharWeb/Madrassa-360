@@ -60,6 +60,15 @@ class _StaffListScreenState extends State<StaffListScreen> {
       final staffList = staffAsync.valueOrNull ?? [];
 
       return ShellPageBody(
+        floatingActionButton: FloatingActionButton.extended(
+          heroTag: 'staff_list_add_fab',
+          onPressed: _showNewStaffDialog,
+          icon: const Icon(Icons.person_add),
+          label: Text(
+            'نیا عملہ',
+            style: AppTypography.buttonText,
+          ),
+        ),
         child: staffAsync.isLoading
             ? const Center(child: CircularProgressIndicator())
             : staffAsync.hasError
@@ -90,15 +99,6 @@ class _StaffListScreenState extends State<StaffListScreen> {
                       ),
                     ],
                   ),
-        floatingActionButton: FloatingActionButton.extended(
-          heroTag: 'staff_list_add_fab',
-          onPressed: _showNewStaffDialog,
-          icon: const Icon(Icons.person_add),
-          label: Text(
-            'نیا عملہ',
-            style: AppTypography.buttonText,
-          ),
-        ),
       );
     });
   }

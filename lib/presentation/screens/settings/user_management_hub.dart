@@ -89,17 +89,6 @@ class _UserManagementHubScreenState
           Tab(text: 'ذمہ داریاں', icon: Icon(Icons.badge_outlined)),
         ],
       ),
-      child: TabBarView(
-        controller: _tabs,
-        children: [
-          _UsersTab(
-            search: _search,
-            onSearch: (v) => setState(() => _search = v),
-            onBulkActive: (v) => setState(() => _bulkActive = v),
-          ),
-          const _RolesTab(),
-        ],
-      ),
       floatingActionButton: AnimatedBuilder(
         animation: _tabs,
         // Hide the FAB while the bulk-action bar is up: it would float
@@ -119,6 +108,17 @@ class _UserManagementHubScreenState
                 label: const Text('نیا صارف'),
               )
             : const SizedBox.shrink(),
+      ),
+      child: TabBarView(
+        controller: _tabs,
+        children: [
+          _UsersTab(
+            search: _search,
+            onSearch: (v) => setState(() => _search = v),
+            onBulkActive: (v) => setState(() => _bulkActive = v),
+          ),
+          const _RolesTab(),
+        ],
       ),
     );
   }

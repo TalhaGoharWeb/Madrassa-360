@@ -80,13 +80,6 @@ class _FeeManagementScreenState extends ConsumerState<FeeManagementScreen>
           Tab(text: 'وصولی'),
         ],
       ),
-      child: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildFeeListTab(),
-          _buildCollectionTab(),
-        ],
-      ),
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'fee_voucher_fab',
         onPressed: () => _showNewVoucherDialog(context),
@@ -95,6 +88,13 @@ class _FeeManagementScreenState extends ConsumerState<FeeManagementScreen>
           'نیا واؤچر',
           style: AppTypography.buttonText,
         ),
+      ),
+      child: TabBarView(
+        controller: _tabController,
+        children: [
+          _buildFeeListTab(),
+          _buildCollectionTab(),
+        ],
       ),
     );
   }

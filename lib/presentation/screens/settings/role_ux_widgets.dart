@@ -133,21 +133,54 @@ class UxEmptyState extends StatelessWidget {
   }
 }
 
-/// Plain-Urdu snackbar.
+/// Plain-Urdu snackbar. When there is no Scaffold ancestor (standalone /
+// test usage — the shell refactor stripped nested Scaffolds), falls back
+// to a floating overlay banner so the message is never lost and never
+// throws. The overlay is tap-to-dismiss; it carries no timer so it cannot
+// race widget-test pumpAndSettle.
 void showUxSnack(BuildContext context, String message, {bool isError = false}) {
-  ScaffoldMessenger.of(context)
-    ..hideCurrentSnackBar()
-    ..showSnackBar(
-      SnackBar(
-        content: Text(
-          message,
-          style: AppTypography.bodyMedium.copyWith(color: Colors.white),
+  final bar = SnackBar(
+    content: Text(
+      message,
+      style: AppTypography.bodyMedium.copyWith(color: Colors.white),
+    ),
+    backgroundColor: isError ? AppColors.error : AppColors.success,
+    behavior: SnackBarBehavior.floating,
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+  );
+  if (Scaffold.maybeOf(context) != null) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(bar);
+    return;
+  }
+  late final OverlayEntry entry;
+  entry = OverlayEntry(
+    builder: (_) => Positioned(
+      left: 16,
+      right: 16,
+      bottom: 24,
+      child: GestureDetector(
+        onTap: () => entry.remove(),
+        child: Material(
+          color: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: isError ? AppColors.error : AppColors.success,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              message,
+              style: AppTypography.bodyMedium.copyWith(color: Colors.white),
+              textAlign: TextAlign.center,
+            ),
+          ),
         ),
-        backgroundColor: isError ? AppColors.error : AppColors.success,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
-    );
+    ),
+  );
+  Overlay.of(context).insert(entry);
 }
 
 /// Destructive-action confirmation in plain Urdu. Returns true when the
