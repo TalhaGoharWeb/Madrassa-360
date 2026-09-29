@@ -454,63 +454,79 @@ class _M360ResponsiveTableState<T> extends State<M360ResponsiveTable<T>> {
     final page = _pageIndex.clamp(0, totalPages - 1);
     final start = page * _effectivePageSize + 1;
     final end = (start + _effectivePageSize - 1).clamp(0, widget.rows.length);
+    // Wrap (not Row): the range text + page-size dropdown + pager buttons
+    // do not fit on one line at 360px — they flow to a second line instead
+    // of overflowing.
     return Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: M360Spacing.md,
         vertical: M360Spacing.sm,
       ),
-      child: Row(
+      child: Wrap(
+        alignment: WrapAlignment.spaceBetween,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        runSpacing: M360Spacing.xs,
         children: [
           Text(
             '$start–$end از ${widget.rows.length}',
             textDirection: TextDirection.rtl,
             style: AppTypography.bodySmall,
           ),
-          const Spacer(),
-          DropdownButton<int>(
-            value: _effectivePageSize,
-            underline: const SizedBox.shrink(),
-            items: [
-              for (final option in widget.pageSizeOptions)
-                DropdownMenuItem(
-                  value: option,
-                  child: Text(
-                    '$option',
-                    textDirection: TextDirection.ltr,
-                    style: AppTypography.bodySmall,
-                  ),
-                ),
+          // Wrap (not Row): the range text + page-size dropdown + pager
+          // buttons do not fit on one line at 360px — they flow instead of
+          // overflowing.
+          Wrap(
+            alignment: WrapAlignment.start,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: M360Spacing.xs,
+            runSpacing: M360Spacing.xs,
+            children: [
+              DropdownButton<int>(
+                value: _effectivePageSize,
+                underline: const SizedBox.shrink(),
+                items: [
+                  for (final option in widget.pageSizeOptions)
+                    DropdownMenuItem(
+                      value: option,
+                      child: Text(
+                        '$option',
+                        textDirection: TextDirection.ltr,
+                        style: AppTypography.bodySmall,
+                      ),
+                    ),
+                ],
+                onChanged: (value) {
+                  if (value == null) return;
+                  setState(() {
+                    _effectivePageSize = value;
+                    _pageIndex = 0;
+                  });
+                },
+              ),
+              Text(
+                ' فی صفحہ',
+                textDirection: TextDirection.rtl,
+                style: AppTypography.bodySmall,
+              ),
+              IconButton(
+                tooltip: 'پچھلا صفحہ',
+                icon: const Icon(Icons.chevron_right),
+                color: AppColors.textSecondary,
+                onPressed: page > 0 ? () => _goToPage(page - 1) : null,
+              ),
+              Text(
+                '${page + 1} / $totalPages',
+                textDirection: TextDirection.ltr,
+                style: AppTypography.bodySmall,
+              ),
+              IconButton(
+                tooltip: 'اگلا صفحہ',
+                icon: const Icon(Icons.chevron_left),
+                color: AppColors.textSecondary,
+                onPressed:
+                    page < totalPages - 1 ? () => _goToPage(page + 1) : null,
+              ),
             ],
-            onChanged: (value) {
-              if (value == null) return;
-              setState(() {
-                _effectivePageSize = value;
-                _pageIndex = 0;
-              });
-            },
-          ),
-          Text(
-            ' فی صفحہ',
-            textDirection: TextDirection.rtl,
-            style: AppTypography.bodySmall,
-          ),
-          const SizedBox(width: M360Spacing.sm),
-          IconButton(
-            tooltip: 'پچھلا صفحہ',
-            icon: const Icon(Icons.chevron_right),
-            color: AppColors.textSecondary,
-            onPressed: page > 0 ? () => _goToPage(page - 1) : null,
-          ),
-          Text(
-            '${page + 1} / $totalPages',
-            textDirection: TextDirection.ltr,
-            style: AppTypography.bodySmall,
-          ),
-          IconButton(
-            tooltip: 'اگلا صفحہ',
-            icon: const Icon(Icons.chevron_left),
-            color: AppColors.textSecondary,
-            onPressed: page < totalPages - 1 ? () => _goToPage(page + 1) : null,
           ),
         ],
       ),

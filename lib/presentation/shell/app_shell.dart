@@ -234,6 +234,10 @@ class _ShellAppBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isRoot = destinationId == 'dashboard';
+    // Compact app bar below 600px: the full tenant chip + search pill +
+    // profile chip do not fit in 360px, so search collapses to an icon,
+    // the tenant name shortens, and the profile chip keeps only the avatar.
+    final compact = MediaQuery.sizeOf(context).width < 600;
     return Material(
       color: AppColors.primary,
       elevation: 2,
@@ -249,7 +253,7 @@ class _ShellAppBar extends ConsumerWidget {
                 // arrow_back auto-mirrors in RTL (points right).
                 icon: const Icon(Icons.arrow_back, color: Colors.white),
               ),
-            const _TenantChip(),
+            _TenantChip(compact: compact),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -271,9 +275,9 @@ class _ShellAppBar extends ConsumerWidget {
                 ],
               ),
             ),
-            _SearchTrigger(onOpen: onOpenSearch),
+            _SearchTrigger(onOpen: onOpenSearch, compact: compact),
             _NotificationsBell(onSelect: onSelect),
-            _ProfileChip(onSelect: onSelect),
+            _ProfileChip(onSelect: onSelect, compact: compact),
           ],
         ),
       ),
@@ -284,53 +288,81 @@ class _ShellAppBar extends ConsumerWidget {
 // ── Global search trigger (Ctrl+K) ──────────────────────────────────────────
 
 class _SearchTrigger extends StatelessWidget {
-  const _SearchTrigger({required this.onOpen});
+  const _SearchTrigger({required this.onOpen, this.compact = false});
 
   final VoidCallback onOpen;
 
+  /// At <600px the pill does not fit — collapse to an icon-only button.
+  /// [M360IconButton] already provides the 48px target, Urdu tooltip, and
+  /// button semantics.
+  final bool compact;
+
   @override
   Widget build(BuildContext context) {
+    if (compact) {
+      return M360IconButton(
+        icon: Icons.search,
+        tooltip: 'تلاش (Ctrl+K)',
+        color: Colors.white,
+        onPressed: onOpen,
+      );
+    }
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4),
-      child: InkWell(
-        onTap: onOpen,
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.15),
+      // Semantics + Tooltip: a screen reader must announce this as a
+      // button with a purpose (the visible «تلاش» text alone is vague).
+      // The Container's minHeight guarantees the 48px touch target.
+      child: Semantics(
+        button: true,
+        label: 'تلاش (Ctrl+K)',
+        child: Tooltip(
+          message: 'تلاش (Ctrl+K)',
+          child: InkWell(
+            onTap: onOpen,
             borderRadius: BorderRadius.circular(20),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.search, color: Colors.white, size: 20),
-              const SizedBox(width: 6),
-              Text(
-                'تلاش',
-                style: AppTypography.labelNastaliq.copyWith(
-                  fontSize: 14,
-                  color: Colors.white,
-                ),
+            child: Container(
+              constraints: const BoxConstraints(
+                minHeight: M360TouchTarget.minHeight,
               ),
-              const SizedBox(width: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: const Text(
-                  'Ctrl+K',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
+              alignment: Alignment.center,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.search, color: Colors.white, size: 20),
+                  const SizedBox(width: 6),
+                  Text(
+                    'تلاش',
+                    style: AppTypography.labelNastaliq.copyWith(
+                      fontSize: 14,
+                      color: Colors.white,
+                    ),
                   ),
-                  textDirection: TextDirection.ltr,
-                ),
+                  const SizedBox(width: 6),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Text(
+                      'Ctrl+K',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textDirection: TextDirection.ltr,
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -341,7 +373,11 @@ class _SearchTrigger extends StatelessWidget {
 // ── Tenant chip (institution logo/name; switcher when multi-tenant) ─────────
 
 class _TenantChip extends ConsumerWidget {
-  const _TenantChip();
+  const _TenantChip({this.compact = false});
+
+  /// At <600px the name shortens and the swap affordance hides — the chip
+  /// stays tappable (switcher) with full semantics.
+  final bool compact;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -352,46 +388,59 @@ class _TenantChip extends ConsumerWidget {
 
     return Padding(
       padding: const EdgeInsets.only(left: 8),
-      child: InkWell(
-        onTap: multi
-            ? () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const TenantPickerScreen(),
-                  ),
-                );
-              }
-            : null,
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.12),
+      // Semantics + Tooltip + 48px minimum height: the chip must announce
+      // as a button («ادارہ تبدیل کریں») and be a full touch target.
+      child: Semantics(
+        button: true,
+        label: multi ? 'ادارہ تبدیل کریں' : 'موجودہ ادارہ',
+        child: Tooltip(
+          message: multi ? 'ادارہ تبدیل کریں' : name,
+          child: InkWell(
+            onTap: multi
+                ? () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const TenantPickerScreen(),
+                      ),
+                    );
+                  }
+                : null,
             borderRadius: BorderRadius.circular(20),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.account_balance_outlined,
-                  color: Colors.white, size: 18),
-              const SizedBox(width: 6),
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 120),
-                child: Text(
-                  name,
-                  style: AppTypography.labelNastaliq.copyWith(
-                    fontSize: 14,
-                    color: Colors.white,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
+            child: Container(
+              constraints: const BoxConstraints(
+                minHeight: M360TouchTarget.minHeight,
               ),
-              if (multi) ...[
-                const SizedBox(width: 4),
-                const Icon(Icons.swap_horiz, color: Colors.white, size: 16),
-              ],
-            ],
+              alignment: Alignment.center,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.account_balance_outlined,
+                      color: Colors.white, size: 18),
+                  const SizedBox(width: 6),
+                  ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: compact ? 72 : 120),
+                    child: Text(
+                      name,
+                      style: AppTypography.labelNastaliq.copyWith(
+                        fontSize: 14,
+                        color: Colors.white,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (multi && !compact) ...[
+                    const SizedBox(width: 4),
+                    const Icon(Icons.swap_horiz, color: Colors.white, size: 16),
+                  ],
+                ],
+              ),
+            ),
           ),
         ),
       ),
@@ -426,9 +475,12 @@ class _NotificationsBell extends ConsumerWidget {
 // ── User profile chip ───────────────────────────────────────────────────────
 
 class _ProfileChip extends ConsumerWidget {
-  const _ProfileChip({required this.onSelect});
+  const _ProfileChip({required this.onSelect, this.compact = false});
 
   final ValueChanged<String> onSelect;
+
+  /// At <600px only the avatar shows — the name/role column does not fit.
+  final bool compact;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -439,63 +491,78 @@ class _ProfileChip extends ConsumerWidget {
     final name = user?.name ?? 'مہمان';
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4),
-      child: InkWell(
-        onTap: () => onSelect('profile'),
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.12),
+      // Semantics + Tooltip + 48px minimum height: announces as a button
+      // («پروفائل») and meets the touch-target minimum.
+      child: Semantics(
+        button: true,
+        label: 'پروفائل',
+        child: Tooltip(
+          message: 'پروفائل',
+          child: InkWell(
+            onTap: () => onSelect('profile'),
             borderRadius: BorderRadius.circular(20),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircleAvatar(
-                radius: 14,
-                backgroundColor: Colors.white.withValues(alpha: 0.25),
-                child: Text(
-                  name.isNotEmpty ? name.characters.first : 'م',
-                  style: AppTypography.labelNastaliq.copyWith(
-                    fontSize: 13,
-                    color: Colors.white,
-                  ),
-                ),
+            child: Container(
+              constraints: const BoxConstraints(
+                minHeight: M360TouchTarget.minHeight,
               ),
-              const SizedBox(width: 6),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              alignment: Alignment.center,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 90),
+                  CircleAvatar(
+                    radius: 14,
+                    backgroundColor: Colors.white.withValues(alpha: 0.25),
                     child: Text(
-                      name,
+                      name.isNotEmpty ? name.characters.first : 'م',
                       style: AppTypography.labelNastaliq.copyWith(
                         fontSize: 13,
                         color: Colors.white,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  FutureBuilder<String>(
-                    future: roleKeys.isEmpty
-                        ? Future.value('مہمان')
-                        : roleService.roleUrduLabel(roleKeys.first),
-                    builder: (context, snap) => Text(
-                      snap.data ?? '…',
-                      style: AppTypography.labelSmall.copyWith(
-                        fontSize: 10,
-                        color: Colors.white.withValues(alpha: 0.8),
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                  if (!compact) ...[
+                    const SizedBox(width: 6),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 90),
+                          child: Text(
+                            name,
+                            style: AppTypography.labelNastaliq.copyWith(
+                              fontSize: 13,
+                              color: Colors.white,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        FutureBuilder<String>(
+                          future: roleKeys.isEmpty
+                              ? Future.value('مہمان')
+                              : roleService.roleUrduLabel(roleKeys.first),
+                          builder: (context, snap) => Text(
+                            snap.data ?? '…',
+                            style: AppTypography.labelSmall.copyWith(
+                              fontSize: 10,
+                              color: Colors.white.withValues(alpha: 0.8),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
+                  ],
                 ],
               ),
-            ],
+            ),
           ),
         ),
       ),

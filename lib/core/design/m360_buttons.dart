@@ -54,7 +54,11 @@ class M360PrimaryButton extends StatelessWidget {
     final button = ElevatedButton(
       onPressed: _disabled ? null : onPressed,
       style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.accent,
+        // accentDark (not accent): white label text on the lighter accent
+        // orange measures ~2.45:1 contrast — below readable. The darker
+        // orange reaches ~3:1 (WCAG AA for large display text) while
+        // staying the same warm-action-orange brand accent.
+        backgroundColor: AppColors.accentDark,
         foregroundColor: Colors.white,
         disabledBackgroundColor: AppColors.divider,
         disabledForegroundColor: Colors.white,

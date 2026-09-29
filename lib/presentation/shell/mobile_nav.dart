@@ -77,10 +77,11 @@ class MobileNavBar extends ConsumerWidget {
       },
       selectedItemColor: AppColors.primaryDark,
       unselectedItemColor: AppColors.textSecondary,
+      // Small labels render in Naskh: product policy keeps Nastaliq at
+      // >= 15sp, and 12sp Nastaliq with a tight line height clips nuqtas.
       selectedLabelStyle:
-          AppTypography.navLabel.copyWith(fontSize: 12, height: 1.6),
-      unselectedLabelStyle:
-          AppTypography.navLabel.copyWith(fontSize: 12, height: 1.6),
+          AppTypography.labelSmall.copyWith(color: AppColors.primaryDark),
+      unselectedLabelStyle: AppTypography.labelSmall,
       items: [
         for (final t in tabs)
           BottomNavigationBarItem(

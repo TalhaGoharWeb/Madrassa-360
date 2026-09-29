@@ -467,6 +467,7 @@ class _InvoiceFormState extends ConsumerState<_InvoiceForm> {
                   ),
                   if (_items.length > 1)
                     IconButton(
+                      tooltip: 'آئٹم ہٹائیں',
                       icon: const Icon(Icons.remove_circle_outline,
                           color: AppColors.error),
                       onPressed: () =>

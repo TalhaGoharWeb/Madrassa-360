@@ -60,7 +60,7 @@ class HostelBuildingDetailScreen extends ConsumerWidget {
     return ShellPageBody(
       floatingActionButton: canManage
           ? FloatingActionButton.extended(
-              backgroundColor: AppColors.accent,
+              backgroundColor: AppColors.accentDark,
               foregroundColor: Colors.white,
               icon: const Icon(Icons.add),
               label: const Text('نیا کمرہ'),
@@ -271,7 +271,7 @@ class HostelRoomDetailScreen extends ConsumerWidget {
     return ShellPageBody(
       floatingActionButton: canManage
           ? FloatingActionButton.extended(
-              backgroundColor: AppColors.accent,
+              backgroundColor: AppColors.accentDark,
               foregroundColor: Colors.white,
               icon: const Icon(Icons.add),
               label: const Text('نیا بستر'),

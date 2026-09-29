@@ -16,6 +16,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:madrasa_360/core/constants/app_colors.dart';
 import 'package:madrasa_360/core/constants/app_typography.dart';
+import 'package:madrasa_360/core/design/design_tokens.dart';
 import 'package:madrasa_360/core/services/role_service.dart';
 import 'package:madrasa_360/providers/auth_provider.dart';
 import 'package:madrasa_360/providers/tenant_branding_provider.dart';
@@ -196,10 +197,16 @@ class _BrandingHeader extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 6),
-                    Text(
-                      'تعلیمی انتظام',
-                      style: AppTypography.labelSmall.copyWith(
-                        color: Colors.white.withValues(alpha: 0.85),
+                    // Flexible: the subtitle must ellipsize instead of
+                    // pushing the header Row past the rail width.
+                    Flexible(
+                      child: Text(
+                        'تعلیمی انتظام',
+                        style: AppTypography.labelSmall.copyWith(
+                          color: Colors.white.withValues(alpha: 0.85),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
@@ -291,31 +298,42 @@ class _NavGroupSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        InkWell(
-          onTap: onToggle,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    group.labelUr,
-                    style: AppTypography.navLabel.copyWith(
-                      fontSize: 14,
-                      color: Colors.white.withValues(alpha: 0.75),
+        // The collapse toggle must announce as a button with its expanded
+        // state; the label text inside provides the group name. Min 48px
+        // touch target.
+        Semantics(
+          button: true,
+          expanded: !collapsed,
+          child: InkWell(
+            onTap: onToggle,
+            child: Container(
+              constraints: const BoxConstraints(
+                minHeight: M360TouchTarget.minHeight,
+              ),
+              alignment: Alignment.center,
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      group.labelUr,
+                      style: AppTypography.navLabel.copyWith(
+                        fontSize: 14,
+                        color: Colors.white.withValues(alpha: 0.75),
+                      ),
                     ),
                   ),
-                ),
-                AnimatedRotation(
-                  turns: collapsed ? 0.5 : 0,
-                  duration: const Duration(milliseconds: 200),
-                  child: Icon(
-                    Icons.keyboard_arrow_down,
-                    size: 20,
-                    color: Colors.white.withValues(alpha: 0.6),
+                  AnimatedRotation(
+                    turns: collapsed ? 0.5 : 0,
+                    duration: const Duration(milliseconds: 200),
+                    child: Icon(
+                      Icons.keyboard_arrow_down,
+                      size: 20,
+                      color: Colors.white.withValues(alpha: 0.6),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -381,58 +399,73 @@ class _NavItemState extends ConsumerState<_NavItem> {
     return MouseRegion(
       onEnter: (_) => setState(() => _hovering = true),
       onExit: (_) => setState(() => _hovering = false),
-      child: InkWell(
-        onTap: widget.onTap,
-        borderRadius: BorderRadius.circular(10),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          decoration: BoxDecoration(
-            color: bg,
-            borderRadius: BorderRadius.circular(10),
-            border: selected
-                ? Border(
-                    right: const BorderSide(color: _kGold, width: 3),
-                    top:
-                        BorderSide(color: Colors.white.withValues(alpha: 0.18)),
-                    bottom:
-                        BorderSide(color: Colors.white.withValues(alpha: 0.18)),
-                    left:
-                        BorderSide(color: Colors.white.withValues(alpha: 0.18)),
-                  )
-                : null,
-          ),
-          child: Row(
-            children: [
-              Icon(d.icon, size: 22, color: fg),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  d.labelUr,
-                  style: AppTypography.navLabel.copyWith(color: fg),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              if (badgeCount != null && badgeCount > 0)
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: AppColors.error,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text(
-                    '$badgeCount',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
+      // The destination label text inside provides the accessible label;
+      // we only add the button role and the selected state.
+      child: Semantics(
+        button: true,
+        selected: selected,
+        child: InkWell(
+          onTap: widget.onTap,
+          borderRadius: BorderRadius.circular(10),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: bg,
+              borderRadius: BorderRadius.circular(10),
+              // Uniform border: a non-uniform Border with a borderRadius
+              // throws at paint time («borderRadius can only be given on
+              // borders with uniform colors»). The gold selected-edge is a
+              // separate bar in the Row below.
+              border: selected
+                  ? Border.all(
+                      color: Colors.white.withValues(alpha: 0.18),
+                    )
+                  : null,
+            ),
+            child: Row(
+              children: [
+                if (selected) ...[
+                  Container(
+                    width: 3,
+                    height: 22,
+                    decoration: BoxDecoration(
+                      color: _kGold,
+                      borderRadius: BorderRadius.circular(2),
                     ),
                   ),
+                  const SizedBox(width: 9),
+                ],
+                Icon(d.icon, size: 22, color: fg),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    d.labelUr,
+                    style: AppTypography.navLabel.copyWith(color: fg),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
-            ],
+                if (badgeCount != null && badgeCount > 0)
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppColors.error,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      '$badgeCount',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
       ),

@@ -463,6 +463,7 @@ class _ExamWizardScreenState extends ConsumerState<ExamWizardScreen> {
                   ),
                 ),
                 IconButton(
+                  tooltip: 'مضمون ہٹائیں',
                   icon: const Icon(Icons.remove_circle_outline),
                   color: AppColors.error,
                   onPressed: _subjects.length <= 1

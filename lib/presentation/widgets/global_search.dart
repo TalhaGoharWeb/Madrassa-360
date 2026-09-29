@@ -69,6 +69,7 @@ class _GlobalSearchPageState extends ConsumerState<GlobalSearchPage> {
             border: InputBorder.none,
             suffixIcon: _query.isNotEmpty
                 ? IconButton(
+                    tooltip: 'صاف کریں',
                     icon: const Icon(Icons.clear, color: Colors.white70),
                     onPressed: () {
                       _controller.clear();

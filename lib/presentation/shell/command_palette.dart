@@ -400,7 +400,14 @@ class _CommandPaletteState extends ConsumerState<CommandPalette> {
                   horizontal: M360Spacing.md,
                   vertical: M360Spacing.xs,
                 ),
-                child: Row(
+                // Wrap, not Row+Spacer: the hint text is long and the fixed
+                // Row overflowed at narrow widths — the shortcut flows below
+                // the hint instead.
+                child: Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: M360Spacing.sm,
+                  runSpacing: M360Spacing.xxs,
                   children: [
                     Text(
                       '↑↓ انتخاب • Enter کھولیں • Esc بند کریں',
@@ -408,7 +415,6 @@ class _CommandPaletteState extends ConsumerState<CommandPalette> {
                         color: AppColors.textSecondary,
                       ),
                     ),
-                    const Spacer(),
                     Text(
                       'Ctrl+K',
                       style: AppTypography.bodySmall.copyWith(

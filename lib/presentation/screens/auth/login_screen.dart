@@ -323,12 +323,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                   setState(() => _rememberMe = value ?? true);
                 },
               ),
-              GestureDetector(
-                onTap: () => setState(() => _rememberMe = !_rememberMe),
-                child: Text(
-                  'مجھے یاد رکھیں',
-                  style: AppTypography.labelNastaliq.copyWith(
-                    color: AppColors.textPrimary,
+              // Expanded: the Nastaleeq label must wrap instead of pushing
+              // the Row 8px past the card at 360px.
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => setState(() => _rememberMe = !_rememberMe),
+                  child: Text(
+                    'مجھے یاد رکھیں',
+                    style: AppTypography.labelNastaliq.copyWith(
+                      color: AppColors.textPrimary,
+                    ),
                   ),
                 ),
               ),

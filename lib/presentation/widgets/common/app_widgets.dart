@@ -271,6 +271,7 @@ class SearchField extends StatelessWidget {
           prefixIcon: const Icon(Icons.search, color: AppColors.textSecondary),
           suffixIcon: onFilterTap != null
               ? IconButton(
+                  tooltip: 'فلٹر',
                   icon: const Icon(Icons.tune, color: AppColors.primary),
                   onPressed: onFilterTap,
                 )

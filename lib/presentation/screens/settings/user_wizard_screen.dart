@@ -428,6 +428,8 @@ class _UserWizardScreenState extends ConsumerState<UserWizardScreen> {
               label: 'پاس ورڈ *',
               hint: 'کم از کم 6 حروف',
               suffixIcon: IconButton(
+                tooltip:
+                    _passwordVisible ? 'پاس ورڈ چھپائیں' : 'پاس ورڈ دکھائیں',
                 icon: Icon(
                     _passwordVisible ? Icons.visibility_off : Icons.visibility),
                 onPressed: () =>

@@ -339,12 +339,13 @@ class _CollectFeeScreenState extends ConsumerState<CollectFeeScreen> {
                     ),
               ),
               const SizedBox(height: 12),
+              // Expanded (not spaceAround): the three stats share the row
+              // evenly instead of overflowing at 360px.
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  _heroStat('کل فیس', view.amountDueLabel),
-                  _heroStat('ادا شدہ', view.amountPaidLabel),
-                  _heroStat('آخری تاریخ', fee.dueDate),
+                  Expanded(child: _heroStat('کل فیس', view.amountDueLabel)),
+                  Expanded(child: _heroStat('ادا شدہ', view.amountPaidLabel)),
+                  Expanded(child: _heroStat('آخری تاریخ', fee.dueDate)),
                 ],
               ),
             ],
@@ -360,10 +361,12 @@ class _CollectFeeScreenState extends ConsumerState<CollectFeeScreen> {
       children: [
         Text(
           value,
+          textAlign: TextAlign.center,
           style: theme.titleMedium?.copyWith(color: Colors.white),
         ),
         Text(
           label,
+          textAlign: TextAlign.center,
           style: theme.labelSmall?.copyWith(color: Colors.white70),
         ),
       ],

@@ -162,7 +162,7 @@ class _TransportScreenState extends ConsumerState<TransportScreen>
             );
     }
     return FloatingActionButton.extended(
-      backgroundColor: AppColors.accent,
+      backgroundColor: AppColors.accentDark,
       foregroundColor: Colors.white,
       icon: const Icon(Icons.add),
       label: Text(label),

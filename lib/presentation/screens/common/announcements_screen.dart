@@ -50,7 +50,7 @@ class _AnnouncementsScreenState extends ConsumerState<AnnouncementsScreen> {
       backgroundColor: AppColors.background,
       floatingActionButton: isAdmin
           ? FloatingActionButton.extended(
-              backgroundColor: AppColors.accent,
+              backgroundColor: AppColors.accentDark,
               foregroundColor: Colors.white,
               icon: const Icon(Icons.add),
               label: const Text('نیا اعلان'),

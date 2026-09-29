@@ -67,10 +67,11 @@ class AppTheme {
         ),
       ),
 
-      // Elevated Button Theme — Warm Action Orange for primary CTAs (10%)
+      // Elevated Button Theme — Warm Action Orange for primary CTAs (10%).
+      // accentDark keeps white label text at readable contrast (~3:1).
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.accent,
+          backgroundColor: AppColors.accentDark,
           foregroundColor: Colors.white,
           elevation: 2,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -81,9 +82,10 @@ class AppTheme {
         ),
       ),
 
-      // Floating Action Button Theme — Warm Action Orange
+      // Floating Action Button Theme — Warm Action Orange.
+      // accentDark keeps the white icon at readable contrast.
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
-        backgroundColor: AppColors.accent,
+        backgroundColor: AppColors.accentDark,
         foregroundColor: Colors.white,
         elevation: 4,
       ),

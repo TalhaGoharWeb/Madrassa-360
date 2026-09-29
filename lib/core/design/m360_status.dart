@@ -160,24 +160,44 @@ class M360StatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final spec = _spec();
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: M360Spacing.sm,
-        vertical: M360Spacing.xxs,
-      ),
-      decoration: BoxDecoration(
-        color: spec.color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(M360Radius.pill),
-      ),
-      child: Text(
-        spec.label,
-        textDirection: TextDirection.rtl,
-        style: AppTypography.labelSmall.copyWith(
-          color: spec.color,
-          fontWeight: FontWeight.w600,
+    // The tinted background is near-white, so the raw status color as text
+    // fails contrast (amber ~2.1:1, orange ~2.4:1). Darken the foreground
+    // toward the same hue for a readable label; the tint + Urdu label keep
+    // the status recognizable. Not color-alone: the text label carries the
+    // meaning, and the semantics label announces it as a status.
+    final foreground = _darken(spec.color);
+    return Semantics(
+      label: 'حالت: ${spec.label}',
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 28),
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(
+          horizontal: M360Spacing.sm,
+          vertical: M360Spacing.xxs,
+        ),
+        decoration: BoxDecoration(
+          color: spec.color.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(M360Radius.pill),
+        ),
+        child: Text(
+          spec.label,
+          textDirection: TextDirection.rtl,
+          style: AppTypography.labelSmall.copyWith(
+            color: foreground,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
     );
+  }
+
+  /// Darkens [color] toward the same hue for an accessible text foreground
+  /// on the chip's light tinted background.
+  static Color _darken(Color color, [double amount = 0.32]) {
+    final hsl = HSLColor.fromColor(color);
+    return hsl
+        .withLightness((hsl.lightness - amount).clamp(0.0, 1.0))
+        .toColor();
   }
 }
 

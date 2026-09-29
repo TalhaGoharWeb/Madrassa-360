@@ -39,6 +39,7 @@ class _ParentDashboardScreenState extends ConsumerState<ParentDashboardScreen> {
         actions: [
           const DashboardGuideButton(roleKey: 'parent'),
           IconButton(
+            tooltip: 'اطلاعات',
             icon: const Icon(Icons.notifications_outlined),
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(
@@ -260,6 +261,7 @@ class _ParentDashboardScreenState extends ConsumerState<ParentDashboardScreen> {
 
           // More Options — real child actions (fee history, announcements).
           IconButton(
+            tooltip: 'مزید اختیارات',
             onPressed: () => _showChildActions(context),
             icon: const Icon(Icons.more_vert, color: Colors.white),
           ),

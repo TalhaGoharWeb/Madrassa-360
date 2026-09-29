@@ -164,7 +164,7 @@ class _HostelScreenState extends ConsumerState<HostelScreen>
             );
     }
     return FloatingActionButton.extended(
-      backgroundColor: AppColors.accent,
+      backgroundColor: AppColors.accentDark,
       foregroundColor: Colors.white,
       icon: const Icon(Icons.add),
       label: Text(label),

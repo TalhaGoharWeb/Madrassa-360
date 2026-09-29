@@ -208,10 +208,14 @@ class _Header extends StatelessWidget {
                   const Icon(Icons.calendar_today,
                       color: Colors.white70, size: 16),
                   const SizedBox(width: 6),
-                  Text(
-                    dateLine,
-                    style: AppTypography.labelNastaliq.copyWith(
-                      color: Colors.white70,
+                  // Flexible: the Urdu date line must wrap instead of
+                  // pushing the Row past 360px.
+                  Flexible(
+                    child: Text(
+                      dateLine,
+                      style: AppTypography.labelNastaliq.copyWith(
+                        color: Colors.white70,
+                      ),
                     ),
                   ),
                 ],

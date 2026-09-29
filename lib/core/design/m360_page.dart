@@ -86,10 +86,17 @@ class PageHeader extends StatelessWidget {
           ),
           if (actions.isNotEmpty) ...[
             const SizedBox(width: M360Spacing.sm),
-            Wrap(
-              spacing: M360Spacing.xs,
-              runSpacing: M360Spacing.xs,
-              children: actions,
+            // Flexible: at narrow widths the actions wrap onto multiple
+            // lines instead of forcing the title column to zero width
+            // (a bare Wrap in a Row measures with unbounded width and
+            // never wraps, which overflowed 8px at 360px).
+            Flexible(
+              child: Wrap(
+                spacing: M360Spacing.xs,
+                runSpacing: M360Spacing.xs,
+                alignment: WrapAlignment.end,
+                children: actions,
+              ),
             ),
           ],
         ],

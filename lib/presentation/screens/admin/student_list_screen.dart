@@ -58,7 +58,10 @@ class _StudentListScreenState extends ConsumerState<StudentListScreen> {
     final total = studentsAsync.valueOrNull?.length;
 
     return PageContainer(
-      scrollable: false,
+      // The whole page scrolls: the table's card list is shrink-wrapped and
+      // cannot live inside a tight Expanded (it overflowed by 115px at
+      // 360px with 15 students).
+      scrollable: true,
       header: PageHeader(
         title: 'طلبہ',
         breadcrumb: 'منتظم',
@@ -106,7 +109,7 @@ class _StudentListScreenState extends ConsumerState<StudentListScreen> {
                 _searchController.clear();
               }),
             ),
-            Expanded(child: _contentBody(students: students)),
+            _contentBody(students: students),
           ],
         ),
       ),

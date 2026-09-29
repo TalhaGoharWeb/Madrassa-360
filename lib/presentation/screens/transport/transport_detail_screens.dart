@@ -60,7 +60,7 @@ class _TransportRouteDetailScreenState
     return ShellPageBody(
       floatingActionButton: canManage
           ? FloatingActionButton.extended(
-              backgroundColor: AppColors.accent,
+              backgroundColor: AppColors.accentDark,
               foregroundColor: Colors.white,
               icon: const Icon(Icons.add),
               label: const Text('نیا اسٹاپ'),
