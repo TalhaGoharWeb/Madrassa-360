@@ -6,6 +6,7 @@ import '../../../core/services/tenant_context.dart';
 import '../../../core/widgets/confirm_dialog.dart';
 import '../../../data/models/models.dart';
 import '../../../providers/darja_provider.dart';
+import '../../shell/shell_page_body.dart';
 
 class DarjaScreen extends StatefulWidget {
   final String? madrasaId;
@@ -46,12 +47,7 @@ class _DarjaScreenState extends State<DarjaScreen> {
       }
       final levels = ['nazra', 'hifz', 'dars_e_nizami', 'takhassus'];
 
-      return Scaffold(
-        appBar: AppBar(
-          title: Text('درجات', style: AppTypography.appBarTitle),
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
-        ),
+      return ShellPageBody(
         backgroundColor: AppColors.background,
         floatingActionButton: FloatingActionButton.extended(
           backgroundColor: AppColors.primary,
@@ -60,7 +56,7 @@ class _DarjaScreenState extends State<DarjaScreen> {
           label: const Text('نیا درجہ'),
           onPressed: () => _showAddDarjaDialog(context, ref),
         ),
-        body: state.isLoading
+        child: state.isLoading
             ? const Center(child: CircularProgressIndicator())
             : darjas.isEmpty
                 ? Center(

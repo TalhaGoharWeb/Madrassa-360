@@ -8,7 +8,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/widgets/master_admin_guard.dart';
 import '../common/dashboard_guide_screen.dart';
-import '../main_screen.dart';
+import '../../shell/app_shell.dart';
 import 'audit_logs_screen.dart';
 import 'licenses_screen.dart';
 import 'madrasa_detail_screen.dart';
@@ -88,7 +88,7 @@ class _MasterAdminShellState extends State<MasterAdminShell> {
   /// A plain pop() is enough when the console was pushed on top of the app,
   /// but if the console is the only route in the stack (deep link, restored
   /// session), popping would close the app — so fall back to an explicit
-  /// replacement with [MainScreen]. Either way the operator is never
+  /// replacement with [AppShell]. Either way the operator is never
   /// stranded inside the console.
   void _backToApp() {
     final navigator = Navigator.of(context);
@@ -96,7 +96,7 @@ class _MasterAdminShellState extends State<MasterAdminShell> {
       navigator.pop();
     } else {
       navigator.pushReplacement(
-        MaterialPageRoute(builder: (_) => const MainScreen()),
+        MaterialPageRoute(builder: (_) => const AppShell()),
       );
     }
   }

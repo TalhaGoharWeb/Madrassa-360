@@ -12,6 +12,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/config/app_config.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../shell/shell_page_body.dart';
 import '../../../core/widgets/tenant_logo.dart';
 import '../../../providers/tenant_branding_provider.dart';
 
@@ -56,8 +57,8 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
     final headerColor = branding?.primaryColor ?? AppColors.primary;
     final headerDark = branding?.secondaryColor ?? AppColors.primaryDark;
 
-    return Scaffold(
-      body: CustomScrollView(
+    return ShellPageBody(
+      child: CustomScrollView(
         slivers: [
           // ── App Bar (tenant-tinted gradient) ──────────────
           SliverAppBar(

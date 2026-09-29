@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:printing/printing.dart';
 import 'package:uuid/uuid.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/reports/documents/result_documents.dart';
 import '../../../core/reports/report_branding.dart';
@@ -15,6 +14,7 @@ import '../../../data/models/student.dart';
 import '../../../providers/result_provider.dart';
 import '../../../core/widgets/tenant_logo.dart';
 import '../../../providers/teacher_portal_provider.dart';
+import '../../shell/shell_page_body.dart';
 import '../../widgets/common/app_widgets.dart';
 
 /// نتائج کی سکرین
@@ -71,20 +71,19 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(AppStrings.results),
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: Colors.white,
-          labelStyle: AppTypography.labelLarge,
-          tabs: const [
-            Tab(text: 'نتائج'),
-            Tab(text: 'نتیجہ درج کریں'),
-          ],
-        ),
+    return ShellPageBody(
+      tabBar: TabBar(
+        controller: _tabController,
+        indicatorColor: AppColors.primary,
+        labelColor: AppColors.primaryDark,
+        unselectedLabelColor: AppColors.textSecondary,
+        labelStyle: AppTypography.labelLarge,
+        tabs: const [
+          Tab(text: 'نتائج'),
+          Tab(text: 'نتیجہ درج کریں'),
+        ],
       ),
-      body: TabBarView(
+      child: TabBarView(
         controller: _tabController,
         children: [
           _buildResultsTab(),

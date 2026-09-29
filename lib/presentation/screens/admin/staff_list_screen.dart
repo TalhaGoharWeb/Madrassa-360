@@ -10,6 +10,7 @@ import '../../../core/constants/app_typography.dart';
 import '../../../core/services/tenant_context.dart';
 import '../../../data/models/staff.dart';
 import '../../../providers/staff_provider.dart';
+import '../../shell/shell_page_body.dart';
 import '../../widgets/common/app_widgets.dart';
 
 /// عملہ کی فہرست
@@ -59,11 +60,8 @@ class _StaffListScreenState extends State<StaffListScreen> {
       final staffAsync = ref.watch(allStaffProvider);
       final staffList = staffAsync.valueOrNull ?? [];
 
-      return Scaffold(
-        appBar: AppBar(
-          title: Text(AppStrings.staff),
-        ),
-        body: staffAsync.isLoading
+      return ShellPageBody(
+        child: staffAsync.isLoading
             ? const Center(child: CircularProgressIndicator())
             : staffAsync.hasError
                 ? Center(

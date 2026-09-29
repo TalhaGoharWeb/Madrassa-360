@@ -7,6 +7,7 @@ import '../../../core/widgets/confirm_dialog.dart';
 import '../../../data/models/models.dart';
 import '../../../providers/library_provider.dart';
 import '../../../providers/auth_provider.dart';
+import '../../shell/shell_page_body.dart';
 
 class LibraryScreen extends StatefulWidget {
   final String? madrasaId;
@@ -42,22 +43,17 @@ class _LibraryScreenState extends State<LibraryScreen>
       final isAdmin =
           (ref.watch(authProvider).user?.role.name ?? '').contains('admin');
 
-      return Scaffold(
-        appBar: AppBar(
-          title: Text('کتب خانہ', style: AppTypography.appBarTitle),
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
-          bottom: TabBar(
-            controller: _tabs,
-            labelColor: Colors.white,
-            unselectedLabelColor: Colors.white60,
-            indicatorColor: Colors.white,
-            tabs: const [
-              Tab(text: 'تمام کتابیں'),
-              Tab(text: 'جاری'),
-              Tab(text: 'واجبُ الواپسی'),
-            ],
-          ),
+      return ShellPageBody(
+        tabBar: TabBar(
+          controller: _tabs,
+          labelColor: AppColors.primaryDark,
+          unselectedLabelColor: AppColors.textSecondary,
+          indicatorColor: AppColors.primary,
+          tabs: const [
+            Tab(text: 'تمام کتابیں'),
+            Tab(text: 'جاری'),
+            Tab(text: 'واجبُ الواپسی'),
+          ],
         ),
         backgroundColor: AppColors.background,
         floatingActionButton: isAdmin
@@ -69,7 +65,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                 onPressed: () => _showAddBookDialog(context, ref),
               )
             : null,
-        body: state.isLoading
+        child: state.isLoading
             ? const Center(child: CircularProgressIndicator())
             : TabBarView(controller: _tabs, children: [
                 _BooksList(

@@ -27,7 +27,6 @@ import '../../../providers/auth_provider.dart';
 import '../../../providers/day_schedule_provider.dart';
 import '../../../providers/dashboard_data_provider.dart';
 import '../../../providers/fee_provider.dart';
-import '../../../providers/tenant_branding_provider.dart';
 import '../admin/fee_management_screen.dart';
 import '../admin/finance_screen.dart';
 import '../reports/reports_hub_screen.dart';
@@ -48,8 +47,6 @@ class _AccountantDashboardScreenState
   Widget build(BuildContext context) {
     final user = ref.watch(currentUserProvider);
     final userName = user?.name ?? 'محاسب';
-    final branding = ref.watch(tenantBrandingProvider).valueOrNull;
-    final madrasaName = branding?.displayName() ?? 'مدرسہ 360';
 
     final roleService = ref.watch(roleServiceProvider);
     final roleKeys = ref.watch(activeRoleKeysProvider);
@@ -68,7 +65,6 @@ class _AccountantDashboardScreenState
         greeting: 'السلام علیکم ورحمۃ اللہ',
         userName: userName,
         roleLabel: snap.data?.isEmpty == true ? null : snap.data,
-        madrasaName: madrasaName,
         actions: const [DashboardGuideButton(roleKey: 'accountant')],
         schedule: ScheduleSlot(scheduleProvider: accountantDayScheduleProvider),
         stats: _FinanceSummary(can: can, moduleOk: moduleOk),

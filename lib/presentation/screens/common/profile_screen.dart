@@ -12,6 +12,7 @@ import '../../../providers/tenant_branding_provider.dart';
 import '../auth/login_screen.dart';
 import '../settings/user_management_hub.dart';
 import '../settings/delegation_screen.dart';
+import '../../shell/shell_page_body.dart';
 import 'about_screen.dart';
 
 /// پروفائل سکرین
@@ -70,9 +71,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return ShellPageBody(
       backgroundColor: AppColors.background,
-      body: CustomScrollView(
+      child: CustomScrollView(
         slivers: [
           // ── Gradient header ──────────────────────────────
           SliverToBoxAdapter(child: _buildProfileHeader()),

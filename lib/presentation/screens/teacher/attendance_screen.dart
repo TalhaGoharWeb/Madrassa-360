@@ -16,6 +16,7 @@ import '../../../data/models/attendance_status.dart';
 import '../../../providers/attendance_provider.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/teacher_portal_provider.dart';
+import '../../shell/shell_page_body.dart';
 
 /// استاد حاضری اسکرین — رفتار کے لیے دوبارہ ڈیزائن
 /// Teacher Attendance Screen — speed-optimized redesign.
@@ -222,21 +223,20 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
         : ref.watch(classAttendanceProvider(
             AttendanceParams(classId: _classId!, date: _date)));
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(AppStrings.attendanceRegister),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: AppStrings.refresh,
-            onPressed: _classId == null
-                ? null
-                : () => ref.invalidate(classAttendanceProvider(
-                    AttendanceParams(classId: _classId!, date: _date))),
-          ),
-        ],
-      ),
-      body: Column(
+    return ShellPageBody(
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.refresh),
+          tooltip: AppStrings.refresh,
+          onPressed: _classId == null
+              ? null
+              : () => ref.invalidate(classAttendanceProvider(
+                  AttendanceParams(classId: _classId!, date: _date))),
+        ),
+      ],
+      // Sticky bottom bar (counts + save CTA) — thumb-zone, one-handed.
+      bottomNavigationBar: _stickySaveBar(recordsAsync),
+      child: Column(
         children: [
           if (pendingCount > 0) _offlineBanner(pendingCount),
           if (tenantId == null)
@@ -247,8 +247,6 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
           ],
         ],
       ),
-      // Sticky bottom bar (counts + save CTA) — thumb-zone, one-handed.
-      bottomNavigationBar: _stickySaveBar(recordsAsync),
     );
   }
 

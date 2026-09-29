@@ -20,6 +20,7 @@ import 'role_ux_widgets.dart';
 import 'scope_manager_screen.dart';
 import 'user_detail_screen.dart';
 import 'user_wizard_screen.dart';
+import '../../shell/shell_page_body.dart';
 
 class UserManagementHubScreen extends ConsumerStatefulWidget {
   const UserManagementHubScreen({super.key, this.initialTab = 0});
@@ -56,44 +57,39 @@ class _UserManagementHubScreenState
   Widget build(BuildContext context) {
     final canManage = ref.watch(roleServiceProvider).canManageUsers();
     if (!canManage) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('صارفین اور ذمہ داریاں')),
-        body: const UxEmptyState(
+      return const ShellPageBody(
+        child: UxEmptyState(
           icon: Icons.lock_outline,
           title: 'آپ کو یہ صفحہ دیکھنے کی اجازت نہیں ہے',
           hint: 'صارفین کی فہرست دیکھنے کے لیے آپ کے پاس اختیار ہونا ضروری ہے۔',
         ),
       );
     }
-    return Scaffold(
+    return ShellPageBody(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('صارفین اور ذمہ داریاں'),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            tooltip: 'ڈیٹا حدود',
-            icon: const Icon(Icons.data_object_outlined),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const ScopeManagerScreen()),
-              );
-            },
-          ),
-        ],
-        bottom: TabBar(
-          controller: _tabs,
-          labelColor: AppColors.primary,
-          unselectedLabelColor: AppColors.textSecondary,
-          indicatorColor: AppColors.primary,
-          tabs: const [
-            Tab(text: 'صارفین', icon: Icon(Icons.people_outline)),
-            Tab(text: 'ذمہ داریاں', icon: Icon(Icons.badge_outlined)),
-          ],
+      actions: [
+        IconButton(
+          tooltip: 'ڈیٹا حدود',
+          icon: const Icon(Icons.data_object_outlined),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ScopeManagerScreen()),
+            );
+          },
         ),
+      ],
+      tabBar: TabBar(
+        controller: _tabs,
+        labelColor: AppColors.primary,
+        unselectedLabelColor: AppColors.textSecondary,
+        indicatorColor: AppColors.primary,
+        tabs: const [
+          Tab(text: 'صارفین', icon: Icon(Icons.people_outline)),
+          Tab(text: 'ذمہ داریاں', icon: Icon(Icons.badge_outlined)),
+        ],
       ),
-      body: TabBarView(
+      child: TabBarView(
         controller: _tabs,
         children: [
           _UsersTab(

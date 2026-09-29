@@ -48,14 +48,13 @@ import '../../../providers/day_schedule_provider.dart';
 import '../../../providers/fee_provider.dart';
 import '../../../providers/dashboard_data_provider.dart';
 import '../../../providers/result_provider.dart';
-import '../../../providers/tenant_branding_provider.dart';
 import '../admin/darja_screen.dart';
 import '../admin/fee_management_screen.dart';
 import '../admin/finance_screen.dart';
 import '../admin/library_screen.dart';
 import '../admin/staff_list_screen.dart';
 import '../admin/student_list_screen.dart';
-import '../admin/user_management_screen.dart';
+import '../settings/user_management_hub.dart';
 import '../common/announcements_screen.dart';
 import '../common/dashboard_guide_screen.dart';
 import '../reports/reports_hub_screen.dart';
@@ -71,8 +70,6 @@ class PrincipalDashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserProvider);
     final userName = user?.name ?? 'مہتمم';
-    final branding = ref.watch(tenantBrandingProvider).valueOrNull;
-    final madrasaName = branding?.displayName() ?? 'مدرسہ 360';
 
     final roleService = ref.watch(roleServiceProvider);
     final roleKeys = ref.watch(activeRoleKeysProvider);
@@ -92,7 +89,6 @@ class PrincipalDashboardScreen extends ConsumerWidget {
         greeting: 'السلام علیکم ورحمۃ اللہ',
         userName: userName,
         roleLabel: snap.data?.isEmpty == true ? null : snap.data,
-        madrasaName: madrasaName,
         actions: [
           IconButton(
             tooltip: 'تلاش کریں',
@@ -1099,7 +1095,7 @@ class _DepartmentsSection extends StatelessWidget {
         SectionTile(
           icon: Icons.manage_accounts_outlined,
           label: 'صارفین',
-          onTap: () => go(const UserManagementScreen()),
+          onTap: () => go(const UserManagementHubScreen()),
         ),
       if (can(AppPermissions.createExams))
         SectionTile(

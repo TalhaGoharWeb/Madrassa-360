@@ -11,6 +11,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../data/models/student.dart';
 import '../../../providers/teacher_portal_provider.dart';
+import '../../shell/shell_page_body.dart';
 
 class MyStudentsScreen extends ConsumerWidget {
   const MyStudentsScreen({super.key});
@@ -33,10 +34,9 @@ class MyStudentsScreen extends ConsumerWidget {
       }
     }
 
-    return Scaffold(
+    return ShellPageBody(
       backgroundColor: AppColors.background,
-      appBar: AppBar(title: const Text('میرے طلبہ')),
-      body: Builder(builder: (context) {
+      child: Builder(builder: (context) {
         if (classIds.isEmpty) {
           return _empty('ابھی کوئی جماعت تفویض نہیں');
         }

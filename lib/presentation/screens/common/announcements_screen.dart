@@ -7,6 +7,7 @@ import '../../../core/widgets/confirm_dialog.dart';
 import '../../../data/models/models.dart';
 import '../../../providers/announcement_provider.dart';
 import '../../../providers/auth_provider.dart';
+import '../../shell/shell_page_body.dart';
 
 class AnnouncementsScreen extends StatefulWidget {
   final String? madrasaId;
@@ -38,12 +39,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
       final pinned = state.announcements.where((a) => a.isPinned).toList();
       final rest = state.announcements.where((a) => !a.isPinned).toList();
 
-      return Scaffold(
-        appBar: AppBar(
-          title: Text('اعلانات', style: AppTypography.appBarTitle),
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
-        ),
+      return ShellPageBody(
         backgroundColor: AppColors.background,
         floatingActionButton: isAdmin
             ? FloatingActionButton.extended(
@@ -57,7 +53,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                 onPressed: () => _showCreateDialog(context, ref, user),
               )
             : null,
-        body: state.isLoading
+        child: state.isLoading
             ? const Center(child: CircularProgressIndicator())
             : state.announcements.isEmpty
                 ? Center(

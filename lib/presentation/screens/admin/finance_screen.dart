@@ -7,6 +7,7 @@ import '../../../core/widgets/confirm_dialog.dart';
 import '../../../data/models/models.dart';
 import '../../../providers/finance_provider.dart';
 import '../../../providers/auth_provider.dart';
+import '../../shell/shell_page_body.dart';
 
 /// مالیات — Phase 4: reads the posted `transactions` ledger.
 /// Same layout as before (summary bar, filter chips, entry list, add
@@ -40,12 +41,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
         ? state.ledger
         : state.ledger.where((t) => t.kind == _filter).toList();
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('مالیات', style: AppTypography.appBarTitle),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-      ),
+    return ShellPageBody(
       backgroundColor: AppColors.background,
       floatingActionButton: isAdmin
           ? FloatingActionButton.extended(
@@ -56,7 +52,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
               onPressed: () => _showAddDialog(context),
             )
           : null,
-      body: Column(children: [
+      child: Column(children: [
         // ── Summary bar ──────────────────────────────────────
         Container(
           color: const Color(0xFF1A237E),

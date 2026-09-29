@@ -21,7 +21,6 @@ import '../../widgets/dashboard/slot_heading.dart';
 import '../../widgets/dashboard/stat_card.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/dashboard_data_provider.dart';
-import '../../../providers/tenant_branding_provider.dart';
 import '../admin/library_screen.dart';
 import '../reports/reports_hub_screen.dart';
 
@@ -32,8 +31,6 @@ class LibraryDashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserProvider);
     final userName = user?.name ?? 'لائبریرین';
-    final branding = ref.watch(tenantBrandingProvider).valueOrNull;
-    final madrasaName = branding?.displayName() ?? 'مدرسہ 360';
 
     final roleService = ref.watch(roleServiceProvider);
     final roleKeys = ref.watch(activeRoleKeysProvider);
@@ -52,7 +49,6 @@ class LibraryDashboardScreen extends ConsumerWidget {
         greeting: 'السلام علیکم ورحمۃ اللہ',
         userName: userName,
         roleLabel: snap.data?.isEmpty == true ? null : snap.data,
-        madrasaName: madrasaName,
         actions: const [DashboardGuideButton(roleKey: 'librarian')],
         schedule: const DayTimeline(),
         stats: _LibraryStats(can: can, moduleOk: moduleOk),

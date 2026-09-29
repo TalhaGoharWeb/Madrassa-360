@@ -8,10 +8,10 @@
 ///
 /// RULES
 /// -----
-/// * A destination may only point at a screen class that EXISTS in the repo
-///   (verified 2026-09-28 against `lib/presentation/screens/**`). Anything
-///   whose screen does not exist yet is listed with `planned: true` and a
-///   "جلد آرہا ہے" placeholder — the shell never invents screens.
+/// * A destination may only point at a screen class that EXISTS in the repo.
+///   Anything whose screen does not exist yet is listed with `planned: true`
+///   and an honest backend-unavailable state — never a "جلد آرہا ہے"
+///   marketing placeholder.
 /// * Visibility is permission-first ([requiredPermissions], OR semantics —
 ///   the user needs ANY of them), matching the app's RoleService contract
 ///   ("permission-derived capabilities, never role-name string matching for
@@ -35,8 +35,14 @@ import 'package:madrasa_360/core/constants/app_typography.dart';
 
 // ── Existing screens — every builder target verified present in the repo ───
 // مرکزی
+import 'package:madrasa_360/presentation/screens/admin/backup_screen.dart'
+    show BackupScreen;
 import 'package:madrasa_360/presentation/screens/common/about_screen.dart'
     show AboutScreen;
+import 'package:madrasa_360/presentation/screens/common/profile_screen.dart'
+    show ProfileScreen;
+import 'package:madrasa_360/presentation/screens/dashboards/hostel_dashboard.dart'
+    show HostelDashboardScreen;
 import 'package:madrasa_360/presentation/screens/common/announcements_screen.dart'
     show AnnouncementsScreen;
 import 'package:madrasa_360/presentation/screens/common/notifications_screen.dart'
@@ -141,7 +147,7 @@ class NavDestination {
   final IconData icon;
 
   /// Screen builder. For `planned: true` destinations this is the shared
-  /// "جلد آرہا ہے" placeholder — never an invented screen.
+  /// honest backend-unavailable state — never an invented screen.
   final WidgetBuilder builder;
 
   /// Permission codes from [AppPermissions]; the user needs ANY of them.
@@ -158,7 +164,7 @@ class NavDestination {
   final ProviderListenable<Object?> Function()? badgeProvider;
 
   /// True when the destination's screen does not exist yet. The shell shows
-  /// a "جلد آرہا ہے" placeholder instead of navigating to a real screen.
+  /// an honest backend-unavailable state instead of navigating to a screen.
   final bool planned;
 
   /// True when the current user may see this destination.
@@ -196,31 +202,45 @@ class NavGroup {
   }
 }
 
-/// "جلد آرہا ہے" placeholder body for [NavDestination.planned] items.
-class PlannedScreen extends StatelessWidget {
-  const PlannedScreen({super.key, required this.labelUr});
+/// Honest backend-unavailable state for destinations whose backend does not
+/// exist yet (hostel/transport: no tables; certificates: no issuance log).
+///
+/// This is a professional dependency state — NOT a "جلد آرہا ہے" marketing
+/// placeholder. Phase 8 builds the real screens against isolated repository
+/// interfaces; see `docs/audit-backend-capabilities.md`.
+class BackendUnavailableScreen extends StatelessWidget {
+  const BackendUnavailableScreen({super.key, required this.labelUr});
 
   final String labelUr;
 
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.construction_outlined,
-              size: 56, color: Color(0xFF009688)),
-          const SizedBox(height: 16),
-          Text(
-            labelUr,
-            style: AppTypography.labelNastaliq.copyWith(fontSize: 22),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'یہ سہولت جلد آرہی ہے',
-            style: AppTypography.bodySmall,
-          ),
-        ],
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.cloud_off_outlined,
+              size: 56,
+              color: AppColors.textSecondary,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              labelUr,
+              style: AppTypography.labelNastaliq.copyWith(fontSize: 22),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'یہ ماڈیول ابھی دستیاب نہیں ہے — اس کا ڈیٹا بیک اینڈ سے منسلک نہیں۔',
+              textAlign: TextAlign.center,
+              style: AppTypography.bodySmall.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -250,13 +270,6 @@ const List<NavGroup> kNavGroups = [
         icon: Icons.campaign_outlined,
         builder: _announcementsBuilder,
         badgeProvider: NavBadges.announcements,
-      ),
-      NavDestination(
-        id: 'notifications',
-        labelUr: 'اطلاعات',
-        icon: Icons.notifications_outlined,
-        builder: _notificationsBuilder,
-        badgeProvider: NavBadges.unreadNotifications,
       ),
       NavDestination(
         id: 'guide',
@@ -369,10 +382,10 @@ const List<NavGroup> kNavGroups = [
     ],
   ),
 
-  // ── مالیات ───────────────────────────────────────────────────────────────
+  // ── مالی نظام ────────────────────────────────────────────────────────────
   NavGroup(
     id: 'finance',
-    labelUr: 'مالیات',
+    labelUr: 'مالی نظام',
     destinations: [
       NavDestination(
         id: 'fees',
@@ -446,18 +459,17 @@ const List<NavGroup> kNavGroups = [
         id: 'hostel',
         labelUr: 'دارالاقامہ',
         icon: Icons.hotel_outlined,
-        builder: _hostelPlannedBuilder,
+        builder: _hostelBuilder,
         requiredPermissions: [
           AppPermissions.viewHostel,
           AppPermissions.manageHostel,
         ],
-        planned: true,
       ),
       NavDestination(
         id: 'transport',
         labelUr: 'ٹرانسپورٹ',
         icon: Icons.directions_bus_outlined,
-        builder: _transportPlannedBuilder,
+        builder: _transportUnavailableBuilder,
         requiredPermissions: [
           AppPermissions.viewTransport,
           AppPermissions.manageTransport,
@@ -468,18 +480,54 @@ const List<NavGroup> kNavGroups = [
         id: 'certificates',
         labelUr: 'اسناد',
         icon: Icons.workspace_premium_outlined,
-        builder: _certificatesPlannedBuilder,
+        builder: _certificatesUnavailableBuilder,
         requiredPermissions: [
           AppPermissions.viewCertificates,
           AppPermissions.issueCertificates,
         ],
         planned: true,
       ),
+    ],
+  ),
+
+  // ── ترتیبات ─────────────────────────────────────────────────────────────
+  NavGroup(
+    id: 'settings',
+    labelUr: 'ترتیبات',
+    destinations: [
+      NavDestination(
+        id: 'profile',
+        labelUr: 'پروفائل',
+        icon: Icons.person_outline,
+        builder: _profileBuilder,
+      ),
+      NavDestination(
+        id: 'notifications',
+        labelUr: 'اطلاعات',
+        icon: Icons.notifications_outlined,
+        builder: _notificationsBuilder,
+        badgeProvider: NavBadges.unreadNotifications,
+      ),
+      NavDestination(
+        id: 'backup',
+        labelUr: 'بیک اپ',
+        icon: Icons.backup_outlined,
+        builder: _backupBuilder,
+        requiredPermissions: [
+          AppPermissions.manageSettings,
+        ],
+      ),
       NavDestination(
         id: 'about',
         labelUr: 'ادارے کے بارے میں',
         icon: Icons.info_outline,
         builder: _aboutBuilder,
+      ),
+      NavDestination(
+        id: 'logout',
+        labelUr: 'لاگ آؤٹ',
+        icon: Icons.logout_outlined,
+        builder: _logoutStubBuilder,
       ),
     ],
   ),
@@ -510,13 +558,21 @@ Widget _libraryBuilder(BuildContext context) => const LibraryScreen();
 Widget _userMgmtBuilder(BuildContext context) =>
     const UserManagementHubScreen();
 Widget _aboutBuilder(BuildContext context) => const AboutScreen();
+Widget _profileBuilder(BuildContext context) => const ProfileScreen();
+Widget _backupBuilder(BuildContext context) => const BackupScreen();
 
-Widget _hostelPlannedBuilder(BuildContext context) =>
-    const PlannedScreen(labelUr: 'دارالاقامہ');
-Widget _transportPlannedBuilder(BuildContext context) =>
-    const PlannedScreen(labelUr: 'ٹرانسپورٹ');
-Widget _certificatesPlannedBuilder(BuildContext context) =>
-    const PlannedScreen(labelUr: 'اسناد');
+/// Hostel renders the existing honest empty-state dashboard until Phase 8
+/// builds the real screens (no backend exists yet).
+Widget _hostelBuilder(BuildContext context) => const HostelDashboardScreen();
+
+Widget _transportUnavailableBuilder(BuildContext context) =>
+    const BackendUnavailableScreen(labelUr: 'ٹرانسپورٹ');
+Widget _certificatesUnavailableBuilder(BuildContext context) =>
+    const BackendUnavailableScreen(labelUr: 'اسناد');
+
+/// The shell intercepts the 'logout' id (confirmation + sign-out) — this
+/// builder is never rendered.
+Widget _logoutStubBuilder(BuildContext context) => const SizedBox.shrink();
 
 /// Flattened list of all destinations (handy for deep-link resolution and
 /// the mobile bottom nav's "primary" lookup).

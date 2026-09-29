@@ -42,7 +42,6 @@ import '../../../core/widgets/master_admin_guard.dart'
     show fetchPlatformAdminRole;
 import '../../../providers/announcement_provider.dart';
 import '../../../providers/auth_provider.dart';
-import '../../../providers/tenant_branding_provider.dart';
 import '../common/announcements_screen.dart';
 import '../common/dashboard_guide_screen.dart';
 import '../common/profile_screen.dart';
@@ -133,14 +132,11 @@ class GenericDashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserProvider);
     final userName = user?.name ?? 'مہمان';
-    final branding = ref.watch(tenantBrandingProvider).valueOrNull;
-    final madrasaName = branding?.displayName() ?? 'مدرسہ 360';
     final announcements = ref.watch(announcementListProvider).take(5).toList();
 
     return DashboardScaffold(
       greeting: 'السلام علیکم ورحمۃ اللہ',
       userName: userName,
-      madrasaName: madrasaName,
       schedule: const DayTimeline(),
       stats: _RoleInfoCard(),
       alertsTitle: 'تازہ اعلانات',

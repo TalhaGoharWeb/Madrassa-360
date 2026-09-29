@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../providers/teacher_portal_provider.dart';
+import '../../shell/shell_page_body.dart';
 import '../teacher/attendance_screen.dart';
 
 class MyClassesScreen extends ConsumerWidget {
@@ -20,10 +21,9 @@ class MyClassesScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final assignmentsAsync = ref.watch(teacherAssignmentsProvider);
 
-    return Scaffold(
+    return ShellPageBody(
       backgroundColor: AppColors.background,
-      appBar: AppBar(title: const Text('میری جماعتیں')),
-      body: assignmentsAsync.when(
+      child: assignmentsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (_, __) => Center(
           child: Text(

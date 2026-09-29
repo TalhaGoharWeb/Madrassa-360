@@ -7,22 +7,23 @@
 /// * Mobile (< 600): [MobileNavBar] bottom navigation + drawer.
 ///
 /// The top app bar always shows WHERE the user is: a breadcrumb
-/// (group › destination) in Nastaleeq, plus a notifications bell (badge =
-/// unread count) and a madrassa switcher — but only when the user
-/// actually belongs to more than one tenant. There is intentionally NO
-/// global-search trigger: no global search exists in the repo (see
-/// INTEGRATION.md § future hooks).
+/// (group › destination) in Nastaleeq, a back affordance on non-root
+/// destinations, a global command-search trigger (Ctrl+K), the tenant
+/// chip, a notifications bell (badge = unread count), and the user
+/// profile chip.
 ///
-/// Wiring: [AuthGate] renders [AppShell] instead of [RoleHomeScreen] after
-/// login (see INTEGRATION.md). [AppShell] does not replace the role router —
-/// the "ڈیش بورڈ" destination's builder IS [RoleHomeScreen], so every role
-/// keeps its existing dashboard. No business logic is changed here.
+/// Wiring: [AuthGate] renders [AppShell] after login. [AppShell] does not
+/// replace the role router — the "ڈیش بورڈ" destination's builder IS
+/// [RoleHomeScreen], so every role keeps its existing dashboard. No
+/// business logic is changed here.
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:madrasa_360/core/constants/app_colors.dart';
 import 'package:madrasa_360/core/constants/app_typography.dart';
+import 'package:madrasa_360/core/design/m360.dart';
 import 'package:madrasa_360/core/notifications/notification_providers.dart'
     show unreadNotificationsCountProvider;
 import 'package:madrasa_360/core/services/role_service.dart';
@@ -32,10 +33,9 @@ import 'package:madrasa_360/providers/auth_provider.dart';
 import 'package:madrasa_360/providers/tenant_branding_provider.dart';
 import 'package:madrasa_360/presentation/screens/auth/tenant_picker_screen.dart'
     show TenantPickerScreen;
-import 'package:madrasa_360/presentation/screens/common/notifications_screen.dart'
-    show NotificationsScreen;
 
 import 'app_nav_rail.dart';
+import 'command_palette.dart';
 import 'mobile_nav.dart';
 import 'nav_destinations.dart';
 
@@ -44,6 +44,9 @@ const double kDesktopBreakpoint = 1100;
 
 /// Mobile breakpoint: bottom navigation below 600px logical width.
 const double kMobileBreakpoint = 600;
+
+/// Pseudo-destination id for the logout action (intercepted by [_select]).
+const String kLogoutDestinationId = 'logout';
 
 class AppShell extends ConsumerStatefulWidget {
   const AppShell({super.key});
@@ -61,7 +64,40 @@ class _AppShellState extends ConsumerState<AppShell> {
   /// stored id is not visible to the current user.
   String _selectedId = 'dashboard';
 
-  void _select(String id) => setState(() => _selectedId = id);
+  /// Guards against stacking the command palette (Ctrl+K while open).
+  bool _searchOpen = false;
+
+  void _select(String id) {
+    if (id == kLogoutDestinationId) {
+      _confirmLogout();
+      return;
+    }
+    setState(() => _selectedId = id);
+  }
+
+  Future<void> _confirmLogout() async {
+    final confirmed = await showM360ConfirmDialog(
+      context,
+      title: 'لاگ آؤٹ',
+      message: 'کیا آپ واقعی لاگ آؤٹ کرنا چاہتے ہیں؟',
+      confirmLabel: 'لاگ آؤٹ',
+    );
+    if (confirmed && mounted) {
+      await ref.read(authProvider.notifier).logout();
+    }
+  }
+
+  void _openSearch(List<NavDestination> visible) {
+    if (_searchOpen) return;
+    _searchOpen = true;
+    CommandPalette.show(
+      context,
+      visibleDestinations: visible,
+      onSelectDestination: _select,
+    ).whenComplete(() {
+      _searchOpen = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -114,6 +150,9 @@ class _AppShellState extends ConsumerState<AppShell> {
                   _ShellAppBar(
                     groupLabel: group?.labelUr,
                     destinationLabel: destination.labelUr,
+                    destinationId: active,
+                    onSelect: _select,
+                    onOpenSearch: () => _openSearch(visible),
                   ),
                   Expanded(
                     child: PageStorage(
@@ -130,18 +169,26 @@ class _AppShellState extends ConsumerState<AppShell> {
           ],
         );
 
-        return Scaffold(
-          key: _scaffoldKey,
-          // Desktop uses the persistent rail; smaller screens use the drawer.
-          drawer: isDesktop ? null : drawer,
-          body: SafeArea(child: body),
-          bottomNavigationBar: isMobile
-              ? MobileNavBar(
-                  selectedId: active,
-                  onSelect: _select,
-                  onMore: () => _scaffoldKey.currentState?.openDrawer(),
-                )
-              : null,
+        return CallbackShortcuts(
+          bindings: {
+            const SingleActivator(LogicalKeyboardKey.keyK, control: true): () =>
+                _openSearch(visible),
+            const SingleActivator(LogicalKeyboardKey.keyK, meta: true): () =>
+                _openSearch(visible),
+          },
+          child: Scaffold(
+            key: _scaffoldKey,
+            // Desktop uses the persistent rail; smaller screens use the drawer.
+            drawer: isDesktop ? null : drawer,
+            body: SafeArea(child: body),
+            bottomNavigationBar: isMobile
+                ? MobileNavBar(
+                    selectedId: active,
+                    onSelect: _select,
+                    onMore: () => _scaffoldKey.currentState?.openDrawer(),
+                  )
+                : null,
+          ),
         );
       },
     );
@@ -150,19 +197,27 @@ class _AppShellState extends ConsumerState<AppShell> {
 
 // ── Top app bar ─────────────────────────────────────────────────────────────
 
-/// App bar with breadcrumb title (group › destination), madrassa switcher
-/// (multi-tenant only) and the notifications bell.
+/// App bar with back affordance (non-root destinations), breadcrumb title
+/// (group › destination), global search trigger (Ctrl+K), tenant chip,
+/// notifications bell, and user profile chip.
 class _ShellAppBar extends ConsumerWidget {
   const _ShellAppBar({
     required this.groupLabel,
     required this.destinationLabel,
+    required this.destinationId,
+    required this.onSelect,
+    required this.onOpenSearch,
   });
 
   final String? groupLabel;
   final String destinationLabel;
+  final String destinationId;
+  final ValueChanged<String> onSelect;
+  final VoidCallback onOpenSearch;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isRoot = destinationId == 'dashboard';
     return Material(
       color: AppColors.primary,
       elevation: 2,
@@ -170,6 +225,15 @@ class _ShellAppBar extends ConsumerWidget {
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         child: Row(
           children: [
+            // Back affordance on non-root destinations → dashboard.
+            if (!isRoot)
+              IconButton(
+                tooltip: 'واپس ڈیش بورڈ',
+                onPressed: () => onSelect('dashboard'),
+                // arrow_back auto-mirrors in RTL (points right).
+                icon: const Icon(Icons.arrow_back, color: Colors.white),
+              ),
+            const _TenantChip(),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -191,8 +255,9 @@ class _ShellAppBar extends ConsumerWidget {
                 ],
               ),
             ),
-            const _TenantSwitcher(),
-            _NotificationsBell(),
+            _SearchTrigger(onOpen: onOpenSearch),
+            _NotificationsBell(onSelect: onSelect),
+            _ProfileChip(onSelect: onSelect),
           ],
         ),
       ),
@@ -200,42 +265,118 @@ class _ShellAppBar extends ConsumerWidget {
   }
 }
 
-// ── Madrassa switcher (only when the user has > 1 membership) ───────────────
+// ── Global search trigger (Ctrl+K) ──────────────────────────────────────────
 
-class _TenantSwitcher extends ConsumerWidget {
-  const _TenantSwitcher();
+class _SearchTrigger extends StatelessWidget {
+  const _SearchTrigger({required this.onOpen});
+
+  final VoidCallback onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: InkWell(
+        onTap: onOpen,
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.search, color: Colors.white, size: 20),
+              const SizedBox(width: 6),
+              Text(
+                'تلاش',
+                style: AppTypography.labelNastaliq.copyWith(
+                  fontSize: 14,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Text(
+                  'Ctrl+K',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textDirection: TextDirection.ltr,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Tenant chip (institution logo/name; switcher when multi-tenant) ─────────
+
+class _TenantChip extends ConsumerWidget {
+  const _TenantChip();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final memberships = ref.watch(tenantMembershipsProvider).valueOrNull ?? [];
-    if (memberships.length < 2) return const SizedBox.shrink();
-
     final branding = ref.watch(tenantBrandingProvider).valueOrNull;
     final name = branding?.displayName() ?? 'مدرسہ';
+    final multi = memberships.length > 1;
 
-    return TextButton.icon(
-      onPressed: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const TenantPickerScreen()),
-        );
-      },
-      icon: const Icon(Icons.swap_horiz, color: Colors.white, size: 20),
-      label: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 140),
-        child: Text(
-          name,
-          style: AppTypography.labelNastaliq.copyWith(
-            fontSize: 15,
-            color: Colors.white,
+    return Padding(
+      padding: const EdgeInsets.only(left: 8),
+      child: InkWell(
+        onTap: multi
+            ? () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const TenantPickerScreen(),
+                  ),
+                );
+              }
+            : null,
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(20),
           ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ),
-      style: TextButton.styleFrom(
-        backgroundColor: Colors.white.withValues(alpha: 0.15),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.account_balance_outlined,
+                  color: Colors.white, size: 18),
+              const SizedBox(width: 6),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 120),
+                child: Text(
+                  name,
+                  style: AppTypography.labelNastaliq.copyWith(
+                    fontSize: 14,
+                    color: Colors.white,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (multi) ...[
+                const SizedBox(width: 4),
+                const Icon(Icons.swap_horiz, color: Colors.white, size: 16),
+              ],
+            ],
+          ),
         ),
       ),
     );
@@ -245,21 +386,102 @@ class _TenantSwitcher extends ConsumerWidget {
 // ── Notifications bell with unread badge ────────────────────────────────────
 
 class _NotificationsBell extends ConsumerWidget {
+  const _NotificationsBell({required this.onSelect});
+
+  final ValueChanged<String> onSelect;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final unread = ref.watch(unreadNotificationsCountProvider).valueOrNull ?? 0;
+    // Bell navigates inside the shell (no duplicate pushed screen).
     return IconButton(
       tooltip: 'اطلاعات',
-      onPressed: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const NotificationsScreen()),
-        );
-      },
+      onPressed: () => onSelect('notifications'),
       icon: Badge(
         isLabelVisible: unread > 0,
         label: Text('$unread'),
         backgroundColor: AppColors.error,
         child: const Icon(Icons.notifications_outlined, color: Colors.white),
+      ),
+    );
+  }
+}
+
+// ── User profile chip ───────────────────────────────────────────────────────
+
+class _ProfileChip extends ConsumerWidget {
+  const _ProfileChip({required this.onSelect});
+
+  final ValueChanged<String> onSelect;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(currentUserProvider);
+    final roleKeys = ref.watch(activeRoleKeysProvider);
+    final roleService = ref.watch(roleServiceProvider);
+
+    final name = user?.name ?? 'مہمان';
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: InkWell(
+        onTap: () => onSelect('profile'),
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircleAvatar(
+                radius: 14,
+                backgroundColor: Colors.white.withValues(alpha: 0.25),
+                child: Text(
+                  name.isNotEmpty ? name.characters.first : 'م',
+                  style: AppTypography.labelNastaliq.copyWith(
+                    fontSize: 13,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 90),
+                    child: Text(
+                      name,
+                      style: AppTypography.labelNastaliq.copyWith(
+                        fontSize: 13,
+                        color: Colors.white,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  FutureBuilder<String>(
+                    future: roleKeys.isEmpty
+                        ? Future.value('مہمان')
+                        : roleService.roleUrduLabel(roleKeys.first),
+                    builder: (context, snap) => Text(
+                      snap.data ?? '…',
+                      style: AppTypography.labelSmall.copyWith(
+                        fontSize: 10,
+                        color: Colors.white.withValues(alpha: 0.8),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

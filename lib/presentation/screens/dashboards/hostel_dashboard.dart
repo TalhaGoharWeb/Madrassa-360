@@ -21,7 +21,6 @@ import '../common/dashboard_guide_screen.dart';
 import '../../widgets/dashboard/slot_heading.dart';
 import '../../widgets/dashboard/stat_card.dart';
 import '../../../providers/auth_provider.dart';
-import '../../../providers/tenant_branding_provider.dart';
 import '../reports/reports_hub_screen.dart';
 import '../teacher/attendance_screen.dart';
 
@@ -32,8 +31,6 @@ class HostelDashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserProvider);
     final userName = user?.name ?? 'وارڈن';
-    final branding = ref.watch(tenantBrandingProvider).valueOrNull;
-    final madrasaName = branding?.displayName() ?? 'مدرسہ 360';
 
     final roleService = ref.watch(roleServiceProvider);
     final roleKeys = ref.watch(activeRoleKeysProvider);
@@ -52,7 +49,6 @@ class HostelDashboardScreen extends ConsumerWidget {
         greeting: 'السلام علیکم ورحمۃ اللہ',
         userName: userName,
         roleLabel: snap.data?.isEmpty == true ? null : snap.data,
-        madrasaName: madrasaName,
         actions: const [DashboardGuideButton(roleKey: 'hostel')],
         schedule: const DayTimeline(),
         stats: _HostelStats(can: can, moduleOk: moduleOk),

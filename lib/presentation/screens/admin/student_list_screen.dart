@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../data/models/fee.dart';
 import '../../../data/models/student.dart';
 import '../../../providers/fee_provider.dart';
 import '../../../providers/student_provider.dart';
+import '../../shell/shell_page_body.dart';
 import '../../widgets/common/app_widgets.dart';
 import '../students/student_dialogs.dart';
 import '../students/student_profile_screen.dart';
@@ -39,18 +39,15 @@ class _StudentListScreenState extends ConsumerState<StudentListScreen> {
   Widget build(BuildContext context) {
     final studentsAsync = ref.watch(allStudentsProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(AppStrings.students, style: AppTypography.appBarTitle),
-        actions: [
-          IconButton(
-            tooltip: 'تازہ کریں',
-            icon: const Icon(Icons.refresh),
-            onPressed: () => ref.invalidate(allStudentsProvider),
-          ),
-        ],
-      ),
-      body: studentsAsync.when(
+    return ShellPageBody(
+      actions: [
+        IconButton(
+          tooltip: 'تازہ کریں',
+          icon: const Icon(Icons.refresh),
+          onPressed: () => ref.invalidate(allStudentsProvider),
+        ),
+      ],
+      child: studentsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(
           child: Column(

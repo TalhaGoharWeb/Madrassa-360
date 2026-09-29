@@ -10,6 +10,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../shell/shell_page_body.dart';
 import '../../../core/constants/app_typography.dart';
 
 /// One guide section: a heading plus bullet-point explanations.
@@ -542,15 +543,9 @@ class DashboardGuideScreen extends StatelessWidget {
     final guide = dashboardGuides[roleKey] ?? dashboardGuides['generic']!;
     return Directionality(
       textDirection: TextDirection.rtl,
-      child: Scaffold(
+      child: ShellPageBody(
         backgroundColor: AppColors.background,
-        appBar: AppBar(
-          title: Text(
-            'رہنمائی',
-            style: AppTypography.appBarTitle.copyWith(color: Colors.white),
-          ),
-        ),
-        body: ListView(
+        child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
             Text(guide.title, style: AppTypography.headingSmall),

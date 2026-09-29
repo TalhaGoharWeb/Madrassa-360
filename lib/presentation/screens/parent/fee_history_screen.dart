@@ -5,6 +5,7 @@ import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../data/models/fee.dart';
 import '../../../providers/parent_portal_provider.dart';
+import '../../shell/shell_page_body.dart';
 import '../../widgets/common/app_widgets.dart';
 
 /// فیس کی تاریخ
@@ -22,11 +23,8 @@ class FeeHistoryScreen extends StatelessWidget {
       final feesAsync = ref.watch(parentFeesProvider);
       final childrenAsync = ref.watch(parentChildrenProvider);
 
-      return Scaffold(
-        appBar: AppBar(
-          title: Text(AppStrings.fees),
-        ),
-        body: feesAsync.when(
+      return ShellPageBody(
+        child: feesAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (e, _) => Center(
             child:

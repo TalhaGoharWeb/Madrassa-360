@@ -9,6 +9,7 @@ import '../../../core/services/supabase_service.dart';
 import '../../../core/services/tenant_context.dart';
 import '../../../data/local/app_database.dart';
 import '../../../data/local/database_provider.dart';
+import '../../shell/shell_page_body.dart';
 
 /// اطلاعات — In-app notifications inbox (Phase 6).
 ///
@@ -103,23 +104,20 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     final inbox = ref.watch(inboxNotificationsProvider);
     final unread = ref.watch(unreadNotificationsCountProvider).valueOrNull ?? 0;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_isUrdu ? 'اطلاعات' : 'Notifications'),
-        actions: [
-          TextButton(
-            onPressed: () => setState(() => _isUrdu = !_isUrdu),
-            child: Text(_isUrdu ? 'EN' : 'اردو'),
+    return ShellPageBody(
+      actions: [
+        TextButton(
+          onPressed: () => setState(() => _isUrdu = !_isUrdu),
+          child: Text(_isUrdu ? 'EN' : 'اردو'),
+        ),
+        if (unread > 0)
+          IconButton(
+            tooltip: _isUrdu ? 'سب پڑھی ہوئی' : 'Mark all read',
+            icon: const Icon(Icons.done_all_outlined),
+            onPressed: _markAllRead,
           ),
-          if (unread > 0)
-            IconButton(
-              tooltip: _isUrdu ? 'سب پڑھی ہوئی' : 'Mark all read',
-              icon: const Icon(Icons.done_all_outlined),
-              onPressed: _markAllRead,
-            ),
-        ],
-      ),
-      body: inbox.when(
+      ],
+      child: inbox.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(
           child: Text(

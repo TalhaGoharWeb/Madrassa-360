@@ -24,6 +24,7 @@ import '../../../core/reports/reports_service.dart';
 import '../../../core/services/tenant_context.dart';
 import '../../../data/local/app_database.dart';
 import '../../../data/local/database_provider.dart';
+import '../../shell/shell_page_body.dart';
 
 /// رپورٹس
 /// Entry screen: two tabs (طلبہ / انتظامیہ) listing the report catalog.
@@ -53,21 +54,16 @@ class _ReportsHubScreenState extends ConsumerState<ReportsHubScreen>
   @override
   Widget build(BuildContext context) {
     final tenantId = ref.watch(currentTenantIdProvider);
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('رپورٹس',
-            style: TextStyle(fontFamily: 'JameelNooriNastaleeq')),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        bottom: TabBar(
-          controller: _tabs,
-          indicatorColor: Colors.white,
-          labelStyle:
-              TextStyle(fontFamily: 'JameelNooriNastaleeq', fontSize: 16),
-          tabs: const [Tab(text: 'طلبہ'), Tab(text: 'انتظامیہ')],
-        ),
+    return ShellPageBody(
+      tabBar: TabBar(
+        controller: _tabs,
+        indicatorColor: AppColors.primary,
+        labelColor: AppColors.primaryDark,
+        unselectedLabelColor: AppColors.textSecondary,
+        labelStyle: AppTypography.labelLarge,
+        tabs: const [Tab(text: 'طلبہ'), Tab(text: 'انتظامیہ')],
       ),
-      body: tenantId == null
+      child: tenantId == null
           ? const Center(
               child: Text('براہ کرم پہلے لاگ اِن کریں۔',
                   style: TextStyle(fontFamily: 'JameelNooriNastaleeq')))

@@ -19,8 +19,6 @@ import 'package:madrasa_360/core/constants/app_typography.dart';
 import 'package:madrasa_360/core/services/role_service.dart';
 import 'package:madrasa_360/providers/auth_provider.dart';
 import 'package:madrasa_360/providers/tenant_branding_provider.dart';
-import 'package:madrasa_360/presentation/screens/common/profile_screen.dart'
-    show ProfileScreen;
 
 import 'nav_destinations.dart';
 
@@ -95,19 +93,12 @@ class _AppNavRailState extends ConsumerState<AppNavRail> {
       textDirection: TextDirection.rtl,
       child: Container(
         width: widget.inDrawer ? null : kNavRailWidth,
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          border: Border(
-            // In RTL this is the rail's inner (left) edge.
-            left: BorderSide(color: AppColors.divider.withValues(alpha: 0.5)),
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [AppColors.primary, AppColors.primaryDark],
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 12,
-              offset: const Offset(-2, 0),
-            ),
-          ],
         ),
         child: Column(
           children: [
@@ -116,7 +107,7 @@ class _AppNavRailState extends ConsumerState<AppNavRail> {
               inDrawer: widget.inDrawer,
               onCloseDrawer: widget.onCloseDrawer,
             ),
-            const Divider(height: 1),
+            const Divider(height: 1, color: Colors.white24),
             Expanded(
               child: ListView.builder(
                 padding: const EdgeInsets.symmetric(vertical: 8),
@@ -143,8 +134,13 @@ class _AppNavRailState extends ConsumerState<AppNavRail> {
                 },
               ),
             ),
-            const Divider(height: 1),
-            _UserFooter(userName: user?.name, roleKeys: roleKeys),
+            const Divider(height: 1, color: Colors.white24),
+            _UserFooter(
+              userName: user?.name,
+              roleKeys: roleKeys,
+              onSelect: widget.onSelect,
+              onCloseDrawer: widget.onCloseDrawer,
+            ),
           ],
         ),
       ),
@@ -169,14 +165,9 @@ class _BrandingHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final name = branding?.displayName() ?? 'مدرسہ 360';
     return Container(
+      // Transparent over the rail's teal gradient; the logo tile carries
+      // the brand.
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topRight,
-          end: Alignment.bottomLeft,
-          colors: [AppColors.primaryDark, AppColors.primary],
-        ),
-      ),
       child: Row(
         children: [
           _LogoTile(branding: branding),
@@ -311,17 +302,17 @@ class _NavGroupSection extends StatelessWidget {
                     group.labelUr,
                     style: AppTypography.navLabel.copyWith(
                       fontSize: 14,
-                      color: AppColors.textSecondary,
+                      color: Colors.white.withValues(alpha: 0.75),
                     ),
                   ),
                 ),
                 AnimatedRotation(
                   turns: collapsed ? 0.5 : 0,
                   duration: const Duration(milliseconds: 200),
-                  child: const Icon(
+                  child: Icon(
                     Icons.keyboard_arrow_down,
                     size: 20,
-                    color: AppColors.textSecondary,
+                    color: Colors.white.withValues(alpha: 0.6),
                   ),
                 ),
               ],
@@ -380,11 +371,12 @@ class _NavItemState extends ConsumerState<_NavItem> {
         : _badgeValueOf(ref.watch(d.badgeProvider!()));
 
     final bg = selected
-        ? AppColors.primary.withValues(alpha: 0.12)
+        ? Colors.white.withValues(alpha: 0.14)
         : _hovering
-            ? AppColors.primary.withValues(alpha: 0.05)
+            ? Colors.white.withValues(alpha: 0.06)
             : Colors.transparent;
-    final fg = selected ? AppColors.primaryDark : AppColors.textPrimary;
+    // Subtle mint/white on teal; selected state never a full-orange fill.
+    final fg = selected ? Colors.white : Colors.white.withValues(alpha: 0.88);
 
     return MouseRegion(
       onEnter: (_) => setState(() => _hovering = true),
@@ -402,12 +394,12 @@ class _NavItemState extends ConsumerState<_NavItem> {
             border: selected
                 ? Border(
                     right: const BorderSide(color: _kGold, width: 3),
-                    top: BorderSide(
-                        color: AppColors.primary.withValues(alpha: 0.25)),
-                    bottom: BorderSide(
-                        color: AppColors.primary.withValues(alpha: 0.25)),
-                    left: BorderSide(
-                        color: AppColors.primary.withValues(alpha: 0.25)),
+                    top:
+                        BorderSide(color: Colors.white.withValues(alpha: 0.18)),
+                    bottom:
+                        BorderSide(color: Colors.white.withValues(alpha: 0.18)),
+                    left:
+                        BorderSide(color: Colors.white.withValues(alpha: 0.18)),
                   )
                 : null,
           ),
@@ -423,22 +415,6 @@ class _NavItemState extends ConsumerState<_NavItem> {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              if (d.planned)
-                Container(
-                  margin: const EdgeInsets.only(left: 6),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: _kGold.withValues(alpha: 0.18),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    'جلد',
-                    style: AppTypography.labelSmall.copyWith(
-                      color: const Color(0xFF8a6d1c),
-                    ),
-                  ),
-                ),
               if (badgeCount != null && badgeCount > 0)
                 Container(
                   padding:
@@ -467,10 +443,20 @@ class _NavItemState extends ConsumerState<_NavItem> {
 // ── Bottom user profile + settings ──────────────────────────────────────────
 
 class _UserFooter extends ConsumerWidget {
-  const _UserFooter({required this.userName, required this.roleKeys});
+  const _UserFooter({
+    required this.userName,
+    required this.roleKeys,
+    required this.onSelect,
+    this.onCloseDrawer,
+  });
 
   final String? userName;
   final List<String> roleKeys;
+
+  /// Shell navigation (the gear now opens the in-shell profile destination
+  /// instead of pushing a duplicate screen).
+  final ValueChanged<String> onSelect;
+  final VoidCallback? onCloseDrawer;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -481,11 +467,11 @@ class _UserFooter extends ConsumerWidget {
         children: [
           CircleAvatar(
             radius: 20,
-            backgroundColor: AppColors.primary.withValues(alpha: 0.15),
+            backgroundColor: Colors.white.withValues(alpha: 0.2),
             child: Text(
               (userName?.isNotEmpty ?? false) ? userName![0] : 'م',
               style: AppTypography.labelNastaliq.copyWith(
-                color: AppColors.primaryDark,
+                color: Colors.white,
               ),
             ),
           ),
@@ -497,7 +483,10 @@ class _UserFooter extends ConsumerWidget {
               children: [
                 Text(
                   userName ?? 'مہمان',
-                  style: AppTypography.labelNastaliq.copyWith(fontSize: 15),
+                  style: AppTypography.labelNastaliq.copyWith(
+                    fontSize: 15,
+                    color: Colors.white,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -507,7 +496,9 @@ class _UserFooter extends ConsumerWidget {
                       : roleService.roleUrduLabel(roleKeys.first),
                   builder: (context, snap) => Text(
                     snap.data ?? '…',
-                    style: AppTypography.labelSmall,
+                    style: AppTypography.labelSmall.copyWith(
+                      color: Colors.white.withValues(alpha: 0.75),
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -516,14 +507,14 @@ class _UserFooter extends ConsumerWidget {
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.settings_outlined,
-                color: AppColors.textSecondary),
+            icon: Icon(
+              Icons.settings_outlined,
+              color: Colors.white.withValues(alpha: 0.85),
+            ),
             tooltip: 'ترتیبات',
             onPressed: () {
-              // Profile screen hosts the account settings tiles today.
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const ProfileScreen()),
-              );
+              onSelect('profile');
+              onCloseDrawer?.call();
             },
           ),
         ],

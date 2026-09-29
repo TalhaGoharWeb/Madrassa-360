@@ -2,7 +2,7 @@
 /// Dashboard framework — shared scaffold for every role dashboard.
 ///
 /// [DashboardScaffold] renders the standard dashboard anatomy:
-/// greeting header (السلام علیکم ورحمۃ اللہ + user + madrasa + آج date),
+/// greeting header (السلام علیکم ورحمۃ اللہ + user + role + آج date),
 /// then body slots: schedule timeline, stats row, alerts, quick actions,
 /// today-tasks, and collapsible sections. All widgets are RTL-native; the
 /// app root already forces [TextDirection.rtl].
@@ -13,11 +13,15 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/utils/date_utils.dart' as app_date;
 import '../../../core/utils/hijri_date.dart';
-import '../profile_avatar_button.dart';
 import 'pattern_background.dart';
 
 /// Shared dashboard shell. [schedule], [stats], [alerts], [quickActions]
 /// and [todayTasks] are the ordered body slots; [sections] renders below.
+///
+/// Must be hosted inside [AppShell] (or another Scaffold ancestor): this
+/// widget intentionally builds NO Scaffold/AppBar of its own — the shell
+/// owns the only top-level chrome. [actions] render in a slim row above
+/// the greeting header.
 class DashboardScaffold extends StatelessWidget {
   /// Greeting line, e.g. 'السلام علیکم ورحمۃ اللہ'.
   final String greeting;
@@ -27,9 +31,6 @@ class DashboardScaffold extends StatelessWidget {
 
   /// Optional role/position line under the name, e.g. 'مہتمم'.
   final String? roleLabel;
-
-  /// Madrasa name from tenant branding.
-  final String madrasaName;
 
   /// "آج کا شیڈول" slot (typically a [DayTimeline]). Hidden when null.
   final Widget? schedule;
@@ -55,7 +56,9 @@ class DashboardScaffold extends StatelessWidget {
   /// Extra titled sections rendered after the slots.
   final List<Widget> sections;
 
-  /// Optional AppBar actions (e.g. notifications bell).
+  /// Optional slim action row rendered above the greeting header
+  /// (e.g. the dashboard guide button). The shell owns the real top bar,
+  /// so dashboard actions live here now.
   final List<Widget>? actions;
 
   const DashboardScaffold({
@@ -63,7 +66,6 @@ class DashboardScaffold extends StatelessWidget {
     required this.greeting,
     required this.userName,
     this.roleLabel,
-    required this.madrasaName,
     this.schedule,
     required this.stats,
     this.alerts,
@@ -82,51 +84,55 @@ class DashboardScaffold extends StatelessWidget {
         '${app_date.DateUtils.formatDayName(now)}، ${app_date.DateUtils.formatDateUrdu(now)}';
     final hijriLine = HijriDate.fromGregorian(now).formatUrdu();
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text(madrasaName),
-        // Every dashboard gets the profile button: existing actions first
-        // (e.g. the notifications bell), then the tappable avatar.
-        actions: [...?actions, const ProfileAvatarButton()],
-      ),
-      body: PatternBackground(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _Header(
-                greeting: greeting,
-                userName: userName,
-                roleLabel: roleLabel,
-                dateLine: dateLine,
-                hijriLine: hijriLine,
+    // NOTE (Phase 6): no Scaffold/AppBar here — [AppShell] owns the only
+    // Scaffold and top bar. The old AppBar (madrasa title + profile avatar)
+    // duplicated the shell's tenant chip and profile chip, so it was
+    // removed; [actions] (e.g. the dashboard guide button) now render in a
+    // slim row at the top of the body instead.
+    return PatternBackground(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (actions != null && actions!.isNotEmpty)
+              Align(
+                alignment: AlignmentDirectional.centerEnd,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: actions!,
+                ),
               ),
-              if (schedule != null) ...[
-                const SizedBox(height: 16),
-                schedule!,
-              ],
+            _Header(
+              greeting: greeting,
+              userName: userName,
+              roleLabel: roleLabel,
+              dateLine: dateLine,
+              hijriLine: hijriLine,
+            ),
+            if (schedule != null) ...[
               const SizedBox(height: 16),
-              stats,
-              if (alerts != null) ...[
-                const SizedBox(height: 8),
-                _SlotTitle(title: alertsTitle ?? 'اہم امور'),
-                alerts!,
-              ],
-              if (quickActions != null) ...[
-                const SizedBox(height: 8),
-                _SlotTitle(title: quickActionsTitle ?? 'فوری عمل'),
-                quickActions!,
-              ],
-              if (todayTasks != null) ...[
-                const SizedBox(height: 16),
-                todayTasks!,
-              ],
-              ...sections,
-              const SizedBox(height: 32),
+              schedule!,
             ],
-          ),
+            const SizedBox(height: 16),
+            stats,
+            if (alerts != null) ...[
+              const SizedBox(height: 8),
+              _SlotTitle(title: alertsTitle ?? 'اہم امور'),
+              alerts!,
+            ],
+            if (quickActions != null) ...[
+              const SizedBox(height: 8),
+              _SlotTitle(title: quickActionsTitle ?? 'فوری عمل'),
+              quickActions!,
+            ],
+            if (todayTasks != null) ...[
+              const SizedBox(height: 16),
+              todayTasks!,
+            ],
+            ...sections,
+            const SizedBox(height: 32),
+          ],
         ),
       ),
     );

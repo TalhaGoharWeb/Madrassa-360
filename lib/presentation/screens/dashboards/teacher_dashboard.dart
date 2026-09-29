@@ -32,7 +32,6 @@ import '../../../providers/auth_provider.dart';
 import '../../../providers/day_schedule_provider.dart';
 import '../../../providers/dashboard_data_provider.dart';
 import '../../../providers/teacher_portal_provider.dart';
-import '../../../providers/tenant_branding_provider.dart';
 import '../common/announcements_screen.dart';
 
 class TeacherDashboardScreen extends ConsumerStatefulWidget {
@@ -62,8 +61,6 @@ class _TeacherDashboardScreenState
   Widget build(BuildContext context) {
     final user = ref.watch(currentUserProvider);
     final teacherName = user?.name ?? 'استاد';
-    final branding = ref.watch(tenantBrandingProvider).valueOrNull;
-    final madrasaName = branding?.displayName() ?? 'مدرسہ 360';
 
     bool can(String permission) => ref.watch(hasPermissionProvider(permission));
     final canAttendance = can(AppPermissions.viewAttendance) ||
@@ -103,7 +100,6 @@ class _TeacherDashboardScreenState
       greeting: 'السلام علیکم استاد محترم',
       userName: teacherName,
       roleLabel: 'آج کی تدریس',
-      madrasaName: madrasaName,
       schedule: ScheduleSlot(scheduleProvider: teacherDayScheduleProvider),
       stats: _Cards(
         onMarkAttendance: widget.onMarkAttendance,

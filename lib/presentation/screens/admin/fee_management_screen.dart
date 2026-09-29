@@ -2,7 +2,6 @@ import 'package:flutter/material.dart' hide DateUtils;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:printing/printing.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/reports/documents/fee_receipt.dart';
 import '../../../core/reports/report_branding.dart';
@@ -68,20 +67,19 @@ class _FeeManagementScreenState extends ConsumerState<FeeManagementScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(AppStrings.fees),
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: Colors.white,
-          labelStyle: AppTypography.labelLarge,
-          tabs: const [
-            Tab(text: 'فیس کی تفصیل'),
-            Tab(text: 'وصولی'),
-          ],
-        ),
+    return ShellPageBody(
+      tabBar: TabBar(
+        controller: _tabController,
+        indicatorColor: AppColors.primary,
+        labelColor: AppColors.primaryDark,
+        unselectedLabelColor: AppColors.textSecondary,
+        labelStyle: AppTypography.labelLarge,
+        tabs: const [
+          Tab(text: 'فیس کی تفصیل'),
+          Tab(text: 'وصولی'),
+        ],
       ),
-      body: TabBarView(
+      child: TabBarView(
         controller: _tabController,
         children: [
           _buildFeeListTab(),

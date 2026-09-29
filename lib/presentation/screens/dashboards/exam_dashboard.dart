@@ -25,7 +25,6 @@ import '../../widgets/dashboard/stat_card.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/day_schedule_provider.dart';
 import '../../../providers/dashboard_data_provider.dart';
-import '../../../providers/tenant_branding_provider.dart';
 import '../reports/reports_hub_screen.dart';
 import '../teacher/results_screen.dart';
 import 'exam_wizard_screen.dart';
@@ -37,8 +36,6 @@ class ExamDashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserProvider);
     final userName = user?.name ?? 'ممتحن';
-    final branding = ref.watch(tenantBrandingProvider).valueOrNull;
-    final madrasaName = branding?.displayName() ?? 'مدرسہ 360';
 
     final roleService = ref.watch(roleServiceProvider);
     final roleKeys = ref.watch(activeRoleKeysProvider);
@@ -53,7 +50,6 @@ class ExamDashboardScreen extends ConsumerWidget {
         greeting: 'السلام علیکم ورحمۃ اللہ',
         userName: userName,
         roleLabel: snap.data?.isEmpty == true ? null : snap.data,
-        madrasaName: madrasaName,
         actions: const [DashboardGuideButton(roleKey: 'exam')],
         schedule: ScheduleSlot(scheduleProvider: examDayScheduleProvider),
         stats: _ExamStats(can: can),

@@ -23,7 +23,6 @@ import '../../widgets/dashboard/slot_heading.dart';
 import '../../widgets/dashboard/stat_card.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/dashboard_data_provider.dart';
-import '../../../providers/tenant_branding_provider.dart';
 import '../admin/darja_screen.dart';
 import '../admin/staff_list_screen.dart';
 import '../admin/student_list_screen.dart';
@@ -38,8 +37,6 @@ class AcademicAdminDashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserProvider);
     final userName = user?.name ?? 'ناظم تعلیم';
-    final branding = ref.watch(tenantBrandingProvider).valueOrNull;
-    final madrasaName = branding?.displayName() ?? 'مدرسہ 360';
 
     final roleService = ref.watch(roleServiceProvider);
     final roleKeys = ref.watch(activeRoleKeysProvider);
@@ -58,7 +55,6 @@ class AcademicAdminDashboardScreen extends ConsumerWidget {
         greeting: 'السلام علیکم ورحمۃ اللہ',
         userName: userName,
         roleLabel: snap.data?.isEmpty == true ? null : snap.data,
-        madrasaName: madrasaName,
         actions: const [DashboardGuideButton(roleKey: 'academic_admin')],
         schedule: const DayTimeline(),
         stats: _AcademicStats(can: can, moduleOk: moduleOk),
