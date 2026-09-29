@@ -310,6 +310,7 @@ const List<NavGroup> kNavGroups = [
         requiredPermissions: [
           AppPermissions.viewResults,
           AppPermissions.enterResults,
+          AppPermissions.editResults,
           AppPermissions.publishResults,
         ],
       ),
@@ -617,5 +618,5 @@ const List<String> kMobilePrimaryIds = [
   'dashboard',
   'student-list',
   'attendance',
-  'fees',
+  'student_fees',
 ];
