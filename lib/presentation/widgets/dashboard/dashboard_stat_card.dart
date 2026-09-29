@@ -39,7 +39,7 @@ class DashboardStatCard extends StatelessWidget {
     required this.label,
     required this.value,
     this.subtitle,
-    required this.color,
+    this.color = AppColors.primary,
     this.onTap,
   });
 
