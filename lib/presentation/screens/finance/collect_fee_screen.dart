@@ -31,7 +31,7 @@ import '../../../core/reports/report_branding.dart';
 import '../../../core/reports/urdu_pdf.dart';
 import '../../../core/services/tenant_context.dart';
 import '../../../data/local/database_provider.dart';
-import '../../../core/utils/date_utils.dart';
+import '../../../core/utils/date_utils.dart' as app_date;
 import '../../../core/utils/money_format.dart';
 import '../../../data/models/fee.dart';
 import '../../../providers/fee_provider.dart';
@@ -88,8 +88,8 @@ class _CollectFeeScreenState extends ConsumerState<CollectFeeScreen> {
 
   /// Validation — identical rules to the pre-redesign collection dialog:
   /// amount must be a positive number and not exceed the remaining balance.
-  String? _validateAmount(String value) {
-    if (value.isEmpty) return 'رقم درج کریں';
+  String? _validateAmount(String? value) {
+    if (value == null || value.isEmpty) return 'رقم درج کریں';
     final amount = double.tryParse(value);
     if (amount == null || amount <= 0) return 'درست رقم درج کریں';
     if (amount > widget.fee.remaining) {
@@ -406,7 +406,7 @@ class _CollectFeeScreenState extends ConsumerState<CollectFeeScreen> {
           controller: _amountController,
           keyboardType: TextInputType.number,
           autofocus: true,
-          prefixIcon: const Icon(Icons.payments_outlined),
+          prefixIcon: Icons.payments_outlined,
           validator: _validateAmount,
         ),
         const SizedBox(height: 12),
@@ -548,8 +548,11 @@ class _CollectFeeScreenState extends ConsumerState<CollectFeeScreen> {
               _receiptRow('وصول شدہ رقم', '${formatPK(_paidAmount)} روپے'),
               _receiptRow('بقایا', '${formatPK(record.remaining)} روپے'),
               _receiptRow('حیثیت', afterKind.urduLabel),
-              _receiptRow('تاریخ',
-                  paidAt == null ? '—' : DateUtils.formatDateUrdu(paidAt)),
+              _receiptRow(
+                  'تاریخ',
+                  paidAt == null
+                      ? '—'
+                      : app_date.DateUtils.formatDateUrdu(paidAt)),
             ],
           ),
         ),

@@ -13,7 +13,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_permissions.dart';
 import '../../../core/design/m360.dart';
 import '../../../core/services/tenant_context.dart';
-import '../../../core/utils/date_utils.dart';
+import '../../../core/utils/date_utils.dart' as app_date;
 import '../../../core/utils/money_format.dart';
 import '../../../data/models/finance.dart';
 import '../../../providers/auth_provider.dart';
@@ -241,8 +241,9 @@ class _FinanceInvoicesTabState extends ConsumerState<FinanceInvoicesTab> {
           const SizedBox(height: 12),
           _kv('طالب علم', view.studentLabel),
           _kv('بلنگ ماہ', view.monthLabel),
-          _kv('تاریخ اجراء', formatDateUrdu(invoice.issueDate)),
-          _kv('آخری تاریخ', formatDateUrdu(invoice.dueDate)),
+          _kv('تاریخ اجراء',
+              app_date.DateUtils.formatDateUrdu(invoice.issueDate)),
+          _kv('آخری تاریخ', app_date.DateUtils.formatDateUrdu(invoice.dueDate)),
           const Divider(),
           _kv('ذیلی کل', formatPK(invoice.subtotal)),
           _kv('رعایت', formatPK(invoice.discountTotal)),
@@ -535,7 +536,7 @@ class _InvoiceFormState extends ConsumerState<_InvoiceForm> {
             Text(label,
                 style: const TextStyle(
                     fontSize: 11, color: AppColors.textSecondary)),
-            Text(formatDateUrdu(value),
+            Text(app_date.DateUtils.formatDateUrdu(value),
                 textDirection: TextDirection.rtl,
                 style: const TextStyle(fontWeight: FontWeight.w600)),
           ],
@@ -552,7 +553,7 @@ class _InvoiceFormState extends ConsumerState<_InvoiceForm> {
       final amt = double.tryParse(row.amount.text.trim());
       if (desc.isEmpty || amt == null || amt <= 0) continue;
       items.add(InvoiceItem(
-        tenantId: tenantId ?? '',
+        tenantId: tenantId,
         invoiceId: '',
         description: desc,
         unitAmount: amt,

@@ -13,7 +13,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_permissions.dart';
 import '../../../core/design/m360.dart';
-import '../../../core/utils/date_utils.dart';
+import '../../../core/utils/date_utils.dart' as app_date;
 import '../../../core/utils/money_format.dart';
 import '../../../data/models/finance.dart';
 import '../../../providers/auth_provider.dart';
@@ -218,7 +218,7 @@ class _FinanceExpensesTabState extends ConsumerState<FinanceExpensesTab> {
                       ],
                     ),
                     Text(
-                      '${view.recipientLabel} • ${formatDateUrdu(expense.expenseDate)}',
+                      '${view.recipientLabel} • ${app_date.DateUtils.formatDateUrdu(expense.expenseDate)}',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: AppColors.textSecondary,
                           ),
@@ -254,7 +254,7 @@ class _FinanceExpensesTabState extends ConsumerState<FinanceExpensesTab> {
           _kv('مد', view.categoryLabel),
           _kv('رقم', formatPK(expense.amount)),
           _kv('وصول کنندہ', view.recipientLabel),
-          _kv('تاریخ', formatDateUrdu(expense.expenseDate)),
+          _kv('تاریخ', app_date.DateUtils.formatDateUrdu(expense.expenseDate)),
           if ((expense.description ?? '').isNotEmpty)
             _kv('تفصیل', expense.description!),
           if (expense.status == DocStatus.posted)
@@ -398,7 +398,7 @@ class _ExpenseFormState extends ConsumerState<_ExpenseForm> {
           hint: 'مثال: 5000',
           controller: _amountController,
           keyboardType: TextInputType.number,
-          prefixIcon: const Icon(Icons.payments_outlined),
+          prefixIcon: Icons.payments_outlined,
         ),
         const SizedBox(height: 12),
         M360TextField(

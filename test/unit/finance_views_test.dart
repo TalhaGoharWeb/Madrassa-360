@@ -165,10 +165,21 @@ void main() {
         amountDue: 1000,
         amountPaid: 400,
         status: FeeStatus.partial,
+        dueDate: '2099-12-31',
       ));
       expect(view.chipKind, FinancialChipKind.partial);
       expect(view.remainingLabel, formatPK(600));
       expect(view.progress, closeTo(0.4, 0.0001));
+    });
+
+    test('partial payment past its due date maps to overdue chip', () {
+      final view = FeeRecordView(_fee(
+        amountDue: 1000,
+        amountPaid: 400,
+        status: FeeStatus.partial,
+        dueDate: '2026-09-10',
+      ));
+      expect(view.chipKind, FinancialChipKind.overdue);
     });
 
     test('past dueDate maps to overdue chip, future to due', () {

@@ -13,7 +13,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_permissions.dart';
 import '../../../core/design/m360.dart';
-import '../../../core/utils/date_utils.dart';
+import '../../../core/utils/date_utils.dart' as app_date;
 import '../../../core/utils/money_format.dart';
 import '../../../data/models/finance.dart';
 import '../../../providers/auth_provider.dart';
@@ -232,7 +232,7 @@ class _FinancePaymentsTabState extends ConsumerState<FinancePaymentsTab> {
                           ),
                     ),
                     Text(
-                      formatDateUrdu(payment.paymentDate),
+                      app_date.DateUtils.formatDateUrdu(payment.paymentDate),
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
                             color: AppColors.textSecondary,
                           ),
@@ -268,7 +268,7 @@ class _FinancePaymentsTabState extends ConsumerState<FinancePaymentsTab> {
           _kv('طالب علم', view.studentLabel),
           _kv('رقم', formatPK(payment.amount)),
           _kv('طریقہ', view.methodLabel),
-          _kv('تاریخ', formatDateUrdu(payment.paymentDate)),
+          _kv('تاریخ', app_date.DateUtils.formatDateUrdu(payment.paymentDate)),
           if ((payment.notes ?? '').isNotEmpty) _kv('نوٹس', payment.notes!),
           const SizedBox(height: 8),
           const Text(
@@ -382,7 +382,7 @@ class _PaymentFormState extends ConsumerState<_PaymentForm> {
             hint: 'مثلاً 1000',
             controller: _amountController,
             keyboardType: TextInputType.number,
-            prefixIcon: const Icon(Icons.payments_outlined),
+            prefixIcon: Icons.payments_outlined,
           ),
           const SizedBox(height: 12),
           M360Dropdown<PaymentMethod>(

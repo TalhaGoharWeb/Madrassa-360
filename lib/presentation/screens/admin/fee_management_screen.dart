@@ -481,7 +481,7 @@ class _VoucherFormState extends ConsumerState<_VoucherForm> {
           hint: 'مثال: 500',
           controller: _amountController,
           keyboardType: TextInputType.number,
-          prefixIcon: const Icon(Icons.payments_outlined),
+          prefixIcon: Icons.payments_outlined,
         ),
         const SizedBox(height: 16),
         Row(
@@ -538,11 +538,11 @@ class _VoucherFormState extends ConsumerState<_VoucherForm> {
             dueDate: dueStr,
             status: FeeStatus.pending,
           ));
-      if (context.mounted) Navigator.of(context).pop();
+      if (!mounted) return;
+      Navigator.of(context).pop();
     } catch (_) {
-      if (context.mounted) {
-        showM360SnackBar(context, 'واؤچر بنانے میں خطا');
-      }
+      if (!mounted) return;
+      showM360SnackBar(context, 'واؤچر بنانے میں خطا');
     } finally {
       if (mounted) setState(() => _saving = false);
     }

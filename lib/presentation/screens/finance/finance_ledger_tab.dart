@@ -13,7 +13,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_permissions.dart';
 import '../../../core/design/m360.dart';
-import '../../../core/utils/date_utils.dart';
+import '../../../core/utils/date_utils.dart' as app_date;
 import '../../../core/utils/money_format.dart';
 import '../../../data/models/finance.dart';
 import '../../../providers/auth_provider.dart';
@@ -238,7 +238,7 @@ class _FinanceLedgerTabState extends ConsumerState<FinanceLedgerTab> {
                       ],
                     ),
                     Text(
-                      '${entry.category.urduLabel} • ${formatDateUrdu(entry.entryDate)}',
+                      '${entry.category.urduLabel} • ${app_date.DateUtils.formatDateUrdu(entry.entryDate)}',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: AppColors.textSecondary,
                           ),
@@ -274,7 +274,7 @@ class _FinanceLedgerTabState extends ConsumerState<FinanceLedgerTab> {
           _kv('قسم', entry.kind.urduLabel),
           _kv('زمرہ', entry.category.urduLabel),
           _kv('رقم', formatPK(entry.amount)),
-          _kv('تاریخ', formatDateUrdu(entry.entryDate)),
+          _kv('تاریخ', app_date.DateUtils.formatDateUrdu(entry.entryDate)),
           _kv('تفصیل', view.title),
           if (entry.status == DocStatus.posted)
             const Padding(
@@ -418,7 +418,7 @@ class _LedgerFormState extends ConsumerState<_LedgerForm> {
           hint: 'مثال: 5000',
           controller: _amountController,
           keyboardType: TextInputType.number,
-          prefixIcon: const Icon(Icons.payments_outlined),
+          prefixIcon: Icons.payments_outlined,
         ),
         const SizedBox(height: 12),
         M360TextField(
