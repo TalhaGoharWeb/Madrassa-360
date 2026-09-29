@@ -17,6 +17,7 @@ import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:madrasa_360/core/design/m360.dart';
 import 'package:madrasa_360/core/services/tenant_context.dart';
 import 'package:madrasa_360/data/local/app_database.dart';
 import 'package:madrasa_360/data/local/database_provider.dart';
@@ -97,7 +98,8 @@ void main() {
       // Role chips use _roleLabel: 'منتظم (Madrasa admin)' and 'استاد (Teacher)'.
       expect(find.text('منتظم (Madrasa admin)'), findsOneWidget);
       expect(find.text('استاد (Teacher)'), findsOneWidget);
-      expect(find.byType(ListTile), findsNWidgets(2));
+      // Tiles are canonical M360TappableCards (one per membership).
+      expect(find.byType(M360TappableCard), findsNWidgets(2));
     });
 
     testWidgets(

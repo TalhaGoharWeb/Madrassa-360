@@ -175,12 +175,19 @@ class M360Badge extends StatelessWidget {
               Icon(icon, size: 14, color: foreground),
               const SizedBox(width: M360Spacing.xxs),
             ],
-            Text(
-              _resolvedLabel,
-              textDirection: TextDirection.rtl,
-              style: AppTypography.labelNastaliq.copyWith(
-                color: foreground,
-                fontSize: 14,
+            Flexible(
+              child: Text(
+                _resolvedLabel,
+                textDirection: TextDirection.rtl,
+                // Flexible + ellipsis: long labels (e.g. expiry dates) must
+                // truncate inside narrow parents instead of overflowing the
+                // badge Row on 360px phones.
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+                style: AppTypography.labelNastaliq.copyWith(
+                  color: foreground,
+                  fontSize: 14,
+                ),
               ),
             ),
           ],

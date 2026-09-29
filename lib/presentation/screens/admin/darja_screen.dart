@@ -146,9 +146,9 @@ class _DarjaScreenState extends ConsumerState<DarjaScreen> {
       icon: Icons.class_outlined,
       content: _DarjaForm(madrasaId: widget.madrasaId),
     );
-    if (added == true && mounted) {
-      showM360SnackBar(context, 'درجہ شامل کر دیا گیا');
-    }
+    if (added != true) return;
+    if (!context.mounted) return;
+    showM360SnackBar(context, 'درجہ شامل کر دیا گیا');
   }
 }
 

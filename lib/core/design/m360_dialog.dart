@@ -92,14 +92,13 @@ class M360Dialog extends StatelessWidget {
               ),
               if (actions.isNotEmpty) ...[
                 const SizedBox(height: M360Spacing.lg),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    for (var i = 0; i < actions.length; i++) ...[
-                      if (i > 0) const SizedBox(width: M360Spacing.xs),
-                      actions[i],
-                    ],
-                  ],
+                // Wrap (not Row): long Urdu action labels must wrap to a
+                // second line on 360px phones instead of overflowing.
+                Wrap(
+                  alignment: WrapAlignment.end,
+                  spacing: M360Spacing.xs,
+                  runSpacing: M360Spacing.xs,
+                  children: actions,
                 ),
               ],
             ],

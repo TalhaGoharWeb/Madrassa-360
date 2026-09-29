@@ -127,9 +127,9 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
       icon: Icons.menu_book_outlined,
       content: _BookForm(madrasaId: widget.madrasaId),
     );
-    if (title != null && mounted) {
-      showM360SnackBar(context, '«$title» شامل کر دی گئی');
-    }
+    if (title == null) return;
+    if (!context.mounted) return;
+    showM360SnackBar(context, '«$title» شامل کر دی گئی');
   }
 }
 

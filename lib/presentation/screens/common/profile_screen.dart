@@ -527,9 +527,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   final email = emailCtrl.text.trim();
                   Navigator.pop(sheetContext);
                   await _saveProfile(name, phone, email, tempPhotoPath);
-                  if (mounted) {
-                    showM360SnackBar(context, 'پروفائل محفوظ کر دیا گیا');
-                  }
+                  if (!context.mounted) return;
+                  showM360SnackBar(context, 'پروفائل محفوظ کر دیا گیا');
                 },
               ),
               const SizedBox(height: 8),

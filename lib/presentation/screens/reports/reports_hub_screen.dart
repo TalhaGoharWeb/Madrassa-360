@@ -71,7 +71,7 @@ class _ReportsHubScreenState extends ConsumerState<ReportsHubScreen>
       child: tenantId == null
           ? const M360EmptyState(
               icon: Icons.login,
-              title: 'براہ کرم پہلے لاگ اِن کریں',
+              title: 'براہ کرم پہلے لاگ اِن کریں۔',
               description: 'رپورٹس بنانے اور دیکھنے کے لیے لاگ اِن ضروری ہے۔',
             )
           : Column(

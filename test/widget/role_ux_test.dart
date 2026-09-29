@@ -400,7 +400,13 @@ void main() {
         child: const ProfileScreen(),
       ));
       await tester.pumpAndSettle();
-      expect(find.text('صارفین اور ذمہ داریاں'), findsOneWidget);
+      // skipOffstage: the redesigned taller header pushes the admin group
+      // below the fold at the default 800x600 test size; gating (not scroll
+      // position) is what this test asserts.
+      expect(
+        find.text('صارفین اور ذمہ داریاں', skipOffstage: false),
+        findsOneWidget,
+      );
 
       await tester.pumpWidget(_scope(
         repo: repo,

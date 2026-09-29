@@ -673,6 +673,7 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen>
     try {
       await ref.read(resultNotifierProvider.notifier).deleteExam(result.examId);
       if (!mounted) return;
+      if (!sheetContext.mounted) return;
       Navigator.of(sheetContext).pop(); // close the details sheet
       showM360SnackBar(context, 'امتحان حذف کر دیا گیا');
     } catch (_) {
