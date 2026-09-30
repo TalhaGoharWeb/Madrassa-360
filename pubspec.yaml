@@ -99,8 +99,13 @@ flutter:
   uses-material-design: true
   
   # Assets
+  # NOTE: Flutter bundles directory assets NON-recursively
+  # (flutter_tools asset.dart: _parseAssetsFromFolder uses listSync()
+  # without recursive:true). Declaring `assets/` alone does NOT bundle
+  # `assets/images/*` — each image subdirectory must be declared.
   assets:
     - assets/
+    - assets/images/
     - version.json   # release source of truth; read at runtime by UpdateService
   
   # Fonts
