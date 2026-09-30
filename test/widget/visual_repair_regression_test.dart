@@ -85,6 +85,31 @@ void main() {
     test('chips use Nastaleeq labels', () {
       expect(theme.chipTheme.labelStyle!.fontFamily, _nastaliq);
     });
+
+    test('theme default fontFamily is Nastaleeq (hints, dialogs, tooltips)',
+        () {
+      // Regression: the ThemeData-level default used to be Noto Naskh,
+      // so every unstyled label/hint/dropdown/tooltip rendered in Naskh.
+      // ThemeData has no fontFamily getter — it applies the family to the
+      // default text theme, observable on slots our textTheme doesn't
+      // override (e.g. displayLarge).
+      expect(theme.textTheme.displayLarge!.fontFamily, _nastaliq);
+    });
+
+    test('textTheme body/label slots all resolve to Nastaleeq', () {
+      final styles = [
+        theme.textTheme.bodyLarge,
+        theme.textTheme.bodyMedium,
+        theme.textTheme.bodySmall,
+        theme.textTheme.labelLarge,
+        theme.textTheme.labelMedium,
+        theme.textTheme.labelSmall,
+      ];
+      for (final s in styles) {
+        expect(s!.fontFamily, _nastaliq);
+        expect(s.height, greaterThanOrEqualTo(2.0));
+      }
+    });
   });
 
   group('Kasheeda confinement', () {

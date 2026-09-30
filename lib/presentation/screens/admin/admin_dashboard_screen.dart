@@ -50,7 +50,8 @@ class AdminDashboardScreen extends StatelessWidget {
       final role = authState.user?.role ?? UserRole.teacher;
       final roleConfig = role.config;
 
-      final adminName = authState.user?.name ?? 'اسٹاف';
+      // Display name contract: local profile edit wins; never an email.
+      final adminName = ref.watch(displayNameProvider('اسٹاف'));
 
       // Live tenant-scoped numbers (zeros while loading/offline).
       final stats = ref.watch(dashboardStatsProvider).valueOrNull ??

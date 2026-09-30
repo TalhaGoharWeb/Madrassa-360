@@ -18,6 +18,7 @@ import 'core/widgets/master_admin_guard.dart';
 import 'data/local/app_database.dart';
 import 'presentation/screens/crash_screen.dart';
 import 'providers/tenant_branding_provider.dart';
+import 'providers/auth_provider.dart';
 import 'presentation/screens/auth/auth_gate.dart';
 import 'presentation/screens/master_admin/master_admin_shell.dart';
 
@@ -168,6 +169,12 @@ void _runMainApp() {
     ProviderScope(
       overrides: [
         appDatabaseProvider.overrideWithValue(_db!),
+        // Seed the local profile display name synchronously from
+        // SharedPreferences (StorageService.init ran in _bootstrap).
+        // The profile screen keeps this provider in sync on save.
+        localProfileNameProvider.overrideWith(
+          (ref) => StorageService.getString(kLocalProfileNameKey) ?? '',
+        ),
       ],
       // UpdateGate must sit inside ProviderScope (it is a ConsumerStatefulWidget).
       child: const UpdateGate(child: Madrasa360App()),

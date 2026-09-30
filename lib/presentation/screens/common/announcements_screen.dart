@@ -172,9 +172,12 @@ class _AnnouncementsScreenState extends ConsumerState<AnnouncementsScreen> {
               icon: Icons.send_outlined,
               onPressed: () async {
                 Navigator.of(dCtx).pop();
-                // Display the poster's real name; fall back to email only
-                // when no name is on the auth profile.
-                final posterName = user?.name as String?;
+                // Poster attribution: the user's chosen display name first
+                // (never an email address); the login email only as a last
+                // resort so the record stays traceable.
+                final displayName = ref.read(displayNameProvider(''));
+                final posterName =
+                    displayName.isNotEmpty ? displayName : (user?.email ?? '');
                 final error =
                     await ref.read(announcementProvider.notifier).create(
                           Announcement(

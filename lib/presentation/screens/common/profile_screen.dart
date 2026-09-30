@@ -41,7 +41,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   String _email = '';
   String? _photoPath;
 
-  static const _kName = 'profile_name';
+  // Local profile keys — the display NAME key is shared with
+  // [kLocalProfileNameKey] (auth_provider) so the shell chips and
+  // dashboards resolve the same name the user typed here.
   static const _kPhone = 'profile_phone';
   static const _kEmail = 'profile_email';
   static const _kPhoto = 'profile_photo_path';
@@ -56,7 +58,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final prefs = await SharedPreferences.getInstance();
     if (!mounted) return;
     setState(() {
-      _name = prefs.getString(_kName) ?? '';
+      _name = prefs.getString(kLocalProfileNameKey) ?? '';
       _phone = prefs.getString(_kPhone) ?? '';
       _email = prefs.getString(_kEmail) ?? '';
       _photoPath = prefs.getString(_kPhoto);
@@ -66,10 +68,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Future<void> _saveProfile(
       String name, String phone, String email, String? photoPath) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_kName, name);
+    await prefs.setString(kLocalProfileNameKey, name);
     await prefs.setString(_kPhone, phone);
     await prefs.setString(_kEmail, email);
     if (photoPath != null) await prefs.setString(_kPhoto, photoPath);
+    // Keep the shared display-name provider in sync so shell chips,
+    // the nav footer and dashboard greetings refresh immediately.
+    ref.read(localProfileNameProvider.notifier).state = name;
     if (!mounted) return;
     setState(() {
       _name = name;
@@ -213,19 +218,19 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Widget _buildProfileHeader() {
-    // Real session data — never mock: name/email from the auth provider,
-    // Urdu role label from the role service (tenant's own display_urdu
-    // wins), institution name from tenant branding. SharedPreferences
-    // values are only fallbacks for locally-edited phone/photo.
+    // Real session data — never mock: display name from the shared
+    // contract (the name the user typed in this screen wins; the Supabase
+    // profile name is next; an email address is never shown as a name),
+    // email from the auth provider, Urdu role label from the role service
+    // (tenant's own display_urdu wins), institution name from branding.
+    // SharedPreferences values are only fallbacks for locally-edited
+    // phone/photo.
     final user = ref.watch(currentUserProvider);
     final branding = ref.watch(tenantBrandingProvider).valueOrNull;
     final roleService = ref.watch(roleServiceProvider);
     final roleKeys = ref.watch(activeRoleKeysProvider);
 
-    final authName = (user?.name ?? '').trim();
-    final displayName = authName.isNotEmpty
-        ? authName
-        : (_name.isNotEmpty ? _name : 'اپنا نام شامل کریں');
+    final displayName = ref.watch(displayNameProvider('اپنا نام شامل کریں'));
     final authEmail = (user?.email ?? '').trim();
     final displayEmail = authEmail.isNotEmpty ? authEmail : _email;
     final authPhone = (user?.phone ?? '').trim();
@@ -406,11 +411,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   void _showEditProfileSheet(BuildContext context) {
-    // Prefill from the signed-in user first; locally saved values are the
-    // fallback (e.g. device-local phone/photo customisations).
+    // Prefill with the currently displayed name (the shared display-name
+    // contract: local edit wins, never an email address); locally saved
+    // values are the fallback for phone/photo customisations.
     final user = ref.read(currentUserProvider);
-    final nameCtrl =
-        TextEditingController(text: _name.isNotEmpty ? _name : user?.name);
+    final currentDisplayName = ref.read(displayNameProvider(''));
+    final nameCtrl = TextEditingController(
+        text: currentDisplayName.isNotEmpty ? currentDisplayName : _name);
     final phoneCtrl =
         TextEditingController(text: _phone.isNotEmpty ? _phone : user?.phone);
     final emailCtrl =

@@ -46,8 +46,8 @@ class _AccountantDashboardScreenState
 
   @override
   Widget build(BuildContext context) {
-    final user = ref.watch(currentUserProvider);
-    final userName = user?.name ?? 'محاسب';
+    // Display name contract: local profile edit wins; never an email.
+    final userName = ref.watch(displayNameProvider('محاسب'));
 
     final roleService = ref.watch(roleServiceProvider);
     final roleKeys = ref.watch(activeRoleKeysProvider);

@@ -207,6 +207,10 @@ class _IssueTabState extends ConsumerState<_IssueTab> {
     final student = _student;
     if (tenantId == null || student == null) return;
     final user = ref.read(currentUserProvider);
+    // Issuer attribution: the user's chosen display name (never an email
+    // address); the login email only as a last resort for traceability.
+    final displayName = ref.read(displayNameProvider(''));
+    final issuedBy = displayName.isNotEmpty ? displayName : user?.email;
     final ok = await ref
         .read(certificateProvider.notifier)
         .recordIssuance(CertificateIssuance(
@@ -216,7 +220,7 @@ class _IssueTabState extends ConsumerState<_IssueTab> {
           studentName: student.name,
           type: _type,
           issuedAt: DateTime.now(),
-          issuedBy: user?.name,
+          issuedBy: issuedBy,
         ));
     if (!mounted) return;
     if (ok) {

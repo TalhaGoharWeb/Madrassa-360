@@ -487,11 +487,13 @@ class _ProfileChip extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(currentUserProvider);
     final roleKeys = ref.watch(activeRoleKeysProvider);
     final roleService = ref.watch(roleServiceProvider);
 
-    final name = user?.name ?? 'مہمان';
+    // Display name contract: the name the user set in the profile screen
+    // wins; the Supabase profile name is next; an email address is never
+    // shown as a name ('مہمان' when nothing real is known).
+    final name = ref.watch(displayNameProvider('مہمان'));
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4),
       // Semantics + Tooltip + 48px minimum height: announces as a button

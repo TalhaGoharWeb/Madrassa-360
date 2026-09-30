@@ -71,8 +71,8 @@ class PrincipalDashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(currentUserProvider);
-    final userName = user?.name ?? 'مہتمم';
+    // Display name contract: local profile edit wins; never an email.
+    final userName = ref.watch(displayNameProvider('مہتمم'));
 
     final roleService = ref.watch(roleServiceProvider);
     final roleKeys = ref.watch(activeRoleKeysProvider);

@@ -59,8 +59,8 @@ class _TeacherDashboardScreenState
 
   @override
   Widget build(BuildContext context) {
-    final user = ref.watch(currentUserProvider);
-    final teacherName = user?.name ?? 'استاد';
+    // Display name contract: local profile edit wins; never an email.
+    final teacherName = ref.watch(displayNameProvider('استاد'));
 
     bool can(String permission) => ref.watch(hasPermissionProvider(permission));
     final canAttendance = can(AppPermissions.viewAttendance) ||

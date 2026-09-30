@@ -521,6 +521,36 @@ final currentUserProvider = Provider<AppUser?>((ref) {
   return ref.watch(authProvider).user;
 });
 
+// ─────────────────────────────────────────────────────────────
+// Display name contract (profile screen ⇄ shell chips ⇄ dashboards)
+//
+// The profile screen persists the user's chosen name locally
+// (SharedPreferences key [kLocalProfileNameKey]) — it is the name the
+// user typed themselves, so it wins over everything else.
+// [AppUser.name] falls back to the login email when the Supabase
+// `profiles` row has no name; an email address must never be shown
+// as a person's name, so email-like values are treated as "no name".
+// ─────────────────────────────────────────────────────────────
+
+/// SharedPreferences key for the locally-edited profile display name.
+const kLocalProfileNameKey = 'profile_name';
+
+/// The local profile display name, seeded from SharedPreferences at
+/// startup (see main.dart's ProviderScope override) and updated by the
+/// profile screen on save so every chip/greeting refreshes immediately.
+final localProfileNameProvider = StateProvider<String>((ref) => '');
+
+/// Resolved display name for UI: local profile edit first, then the
+/// Supabase profile name (never an email address), then [fallback]
+/// (e.g. 'مہمان') when nothing real is known.
+final displayNameProvider = Provider.family<String, String>((ref, fallback) {
+  final local = ref.watch(localProfileNameProvider).trim();
+  if (local.isNotEmpty) return local;
+  final authName = (ref.watch(currentUserProvider)?.name ?? '').trim();
+  if (authName.isNotEmpty && !authName.contains('@')) return authName;
+  return fallback;
+});
+
 /// Current [UserRole], or null when signed out.
 final currentUserRoleProvider = Provider<UserRole?>((ref) {
   return ref.watch(authProvider).user?.role;

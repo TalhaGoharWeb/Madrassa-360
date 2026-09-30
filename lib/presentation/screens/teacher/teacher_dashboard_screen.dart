@@ -18,8 +18,8 @@ class TeacherDashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Consumer(builder: (context, ref, _) {
-      final user = ref.watch(currentUserProvider);
-      final teacherName = user?.name ?? 'استاد';
+      // Display name contract: local profile edit wins; never an email.
+      final teacherName = ref.watch(displayNameProvider('استاد'));
       return Scaffold(
         appBar: AppBar(
           title: Text(AppStrings.dashboard),

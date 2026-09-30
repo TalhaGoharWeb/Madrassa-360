@@ -139,8 +139,8 @@ class GenericDashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(currentUserProvider);
-    final userName = user?.name ?? 'مہمان';
+    // Display name contract: local profile edit wins; never an email.
+    final userName = ref.watch(displayNameProvider('مہمان'));
     final announcements = ref.watch(announcementListProvider).take(5).toList();
 
     return DashboardScaffold(

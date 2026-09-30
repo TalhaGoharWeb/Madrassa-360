@@ -3,8 +3,8 @@
 ///
 /// Institution identity (name, city, phone, email, address, logo) is
 /// loaded per-tenant from [tenantBrandingProvider] — nothing is
-/// hard-coded. Developer contact PII was removed from this shipped screen;
-/// the contact section now reaches the tenant's own administration.
+/// hard-coded. The developer credit section below is shown at the
+/// product owner's explicit request (2026-09-30).
 ///
 /// Renders inside [AppShell] via [ShellPageBody] (no nested Scaffold or
 /// AppBar); the tenant-tinted gradient hero is the page's visual identity.
@@ -36,12 +36,46 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
   static const _descUrdu =
       'مدرسہ 360 ایک مکمل ڈیجیٹل انتظامی نظام ہے جو مدارس کے ریکارڈ، طلباء، '
       'عملے اور روزمرہ کے انتظامی امور کو آسان، منظم اور جدید انداز میں '
-      'سنبھالنے میں مدد فراہم کرتا ہے۔';
+      'سنبھالنے میں مدد فراہم کرتا ہے۔ اس کا مقصد کاغذی رجسٹروں اور بکھرے ہوئے '
+      'ریکارڈ کی جگہ ایک محفوظ اور مرکزی نظام فراہم کرنا ہے، تاکہ مہتمم، '
+      'اساتذہ اور عملہ اپنا قیمتی وقت تعلیم و تربیت پر لگا سکیں۔';
 
   static const _descEnglish =
       'Madrasa 360 is a complete digital management system that helps '
       'madrassas manage their records, students, staff, and day-to-day '
-      'operations in an easy, organised, and modern way.';
+      'operations in an easy, organised, and modern way. Its purpose is to '
+      'replace paper registers and scattered records with one secure, '
+      'central system — so the administration, teachers and staff can spend '
+      'their valuable time on teaching and training instead of paperwork.';
+
+  // ── What the product covers (honest module list) ────────────────
+
+  static const _featuresUrdu = <String>[
+    'طلباء کا مکمل ریکارڈ — داخلہ، درجہ جات اور حاضری',
+    'عملے اور اساتذہ کا انتظام',
+    'فیس، وصولی، اخراجات اور مکمل مالی حساب کتاب',
+    'امتحانات، نتائج اور رزلٹ کارڈ',
+    'لائبریری، ہاسٹل اور ٹرانسپورٹ کا انتظام',
+    'اعلانات، اطلاعات اور اسناد',
+    'کردار کے مطابق رسائی — مہتمم، استاد، دفتر دار، محاسب اور دیگر',
+    'رپورٹس، پرنٹ اور ادارے کا اپنا لوگو',
+  ];
+
+  static const _featuresEnglish = <String>[
+    'Complete student records — admission, classes and attendance',
+    'Staff and teacher management',
+    'Fees, collections, expenses and full financial accounting',
+    'Examinations, results and result cards',
+    'Library, hostel and transport management',
+    'Announcements, notifications and certificates',
+    'Role-based access — principal, teacher, clerk, accountant and more',
+    'Reports, printing and the institution\u2019s own logo',
+  ];
+
+  // ── Developer credit (shown at the product owner's request) ─────
+
+  static const _developerName = 'محمد طلحہ بن فرید الفاروقی';
+  static const _developerPhone = '0317008311';
 
   // ── Helpers ───────────────────────────────────────────────
 
@@ -111,8 +145,35 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
                   headerIcon: Icons.info_outline,
                   child: Text(
                     _isUrdu ? _descUrdu : _descEnglish,
-                    style: AppTypography.bodyMedium.copyWith(height: 1.7),
+                    style: AppTypography.bodyMedium,
                     textAlign: TextAlign.justify,
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // ── What Madrassa 360 covers ─────────
+                _SectionCard(
+                  accent: headerColor,
+                  header: _isUrdu
+                      ? 'مدرسہ 360 میں کیا شامل ہے'
+                      : 'What\u2019s Inside',
+                  headerIcon: Icons.grid_view_outlined,
+                  child: Column(
+                    children: [
+                      for (var i = 0;
+                          i <
+                              (_isUrdu ? _featuresUrdu : _featuresEnglish)
+                                  .length;
+                          i++)
+                        _FeatureRow(
+                          text: (_isUrdu ? _featuresUrdu : _featuresEnglish)[i],
+                          accent: headerColor,
+                          isLast: i ==
+                              (_isUrdu ? _featuresUrdu : _featuresEnglish)
+                                      .length -
+                                  1,
+                        ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -208,6 +269,38 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
                     ],
                   ),
                 ),
+
+                // ── Developer credit ─────────────────
+                _SectionCard(
+                  accent: headerColor,
+                  header: _isUrdu ? 'ڈویلپر' : 'Developer',
+                  headerIcon: Icons.code_outlined,
+                  child: Column(
+                    children: [
+                      _InfoRow(
+                        label: _isUrdu ? 'ڈویلپر' : 'Developer',
+                        isUrdu: _isUrdu,
+                        value: _developerName,
+                      ),
+                      _InfoRow(
+                        label: _isUrdu ? 'فون نمبر' : 'Phone',
+                        isUrdu: _isUrdu,
+                        value: _developerPhone,
+                        isLast: true,
+                      ),
+                      const SizedBox(height: 12),
+                      _ContactButton(
+                        icon: Icons.phone,
+                        label: _isUrdu ? 'رابطہ کریں' : 'Contact',
+                        subtitle: _developerPhone,
+                        color: AppColors.success,
+                        onTap: () => _copy(context, _developerPhone,
+                            _isUrdu ? 'نمبر' : 'Number'),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
 
                 const SizedBox(height: 32),
 
@@ -361,6 +454,44 @@ class _SectionCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _FeatureRow extends StatelessWidget {
+  final String text;
+  final Color accent;
+  final bool isLast;
+
+  const _FeatureRow({
+    required this.text,
+    required this.accent,
+    this.isLast = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Icon(Icons.check_circle_outline, color: accent, size: 18),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                text,
+                style: AppTypography.bodyMedium,
+                textAlign: TextAlign.start,
+              ),
+            ),
+          ],
+        ),
+        if (!isLast) const Divider(height: 20),
+      ],
     );
   }
 }

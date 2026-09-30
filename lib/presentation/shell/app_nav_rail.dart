@@ -80,7 +80,6 @@ class _AppNavRailState extends ConsumerState<AppNavRail> {
     final permissions = ref.watch(userPermissionsProvider);
     final roleKeys = ref.watch(activeRoleKeysProvider);
     final branding = ref.watch(tenantBrandingProvider).valueOrNull;
-    final user = ref.watch(currentUserProvider);
 
     final visibleGroups = [
       for (final g in kNavGroups)
@@ -137,7 +136,9 @@ class _AppNavRailState extends ConsumerState<AppNavRail> {
             ),
             const Divider(height: 1, color: Colors.white24),
             _UserFooter(
-              userName: user?.name,
+              // Display name contract: local profile edit wins; never an
+              // email address ('مہمان' when nothing real is known).
+              userName: ref.watch(displayNameProvider('مہمان')),
               roleKeys: roleKeys,
               onSelect: widget.onSelect,
               onCloseDrawer: widget.onCloseDrawer,
@@ -483,7 +484,7 @@ class _UserFooter extends ConsumerWidget {
     this.onCloseDrawer,
   });
 
-  final String? userName;
+  final String userName;
   final List<String> roleKeys;
 
   /// Shell navigation (the gear now opens the in-shell profile destination
@@ -502,7 +503,7 @@ class _UserFooter extends ConsumerWidget {
             radius: 20,
             backgroundColor: Colors.white.withValues(alpha: 0.2),
             child: Text(
-              (userName?.isNotEmpty ?? false) ? userName![0] : 'م',
+              userName.isNotEmpty ? userName.characters.first : 'م',
               style: AppTypography.labelNastaliq.copyWith(
                 color: Colors.white,
               ),
@@ -515,7 +516,7 @@ class _UserFooter extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  userName ?? 'مہمان',
+                  userName,
                   style: AppTypography.labelNastaliq.copyWith(
                     fontSize: 15,
                     color: Colors.white,

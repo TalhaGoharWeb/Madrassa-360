@@ -36,8 +36,8 @@ class AcademicAdminDashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(currentUserProvider);
-    final userName = user?.name ?? 'ناظم تعلیم';
+    // Display name contract: local profile edit wins; never an email.
+    final userName = ref.watch(displayNameProvider('ناظم تعلیم'));
 
     final roleService = ref.watch(roleServiceProvider);
     final roleKeys = ref.watch(activeRoleKeysProvider);

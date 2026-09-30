@@ -1,8 +1,9 @@
-// v3 — typography system tests.
+// v4 — typography system tests.
 //
-// Locks the v3 type contract: Jameel Noori for display (height ≥ 2.0),
-// Kasheeda for hero moments, Noto Naskh Arabic for body text.
-// Short Urdu UI labels (navLabel, labelNastaliq) use Jameel Noori Nastaleeq.
+// Locks the v4 type contract: Jameel Noori Nastaleeq for ALL Urdu text
+// (display, labels, hints, buttons, subtitles, body — height ≥ 2.0),
+// Kasheeda for hero moments only. Noto Naskh Arabic survives solely as a
+// defensive fontFamilyFallback, never as any style's primary family.
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:madrasa_360/core/constants/app_typography.dart';
@@ -51,7 +52,7 @@ void main() {
     });
   });
 
-  group('AppTypography body styles (Noto Naskh Arabic)', () {
+  group('AppTypography body/label/button styles (Nastaleeq everywhere)', () {
     final body = {
       'bodyLarge': AppTypography.bodyLarge,
       'bodyMedium': AppTypography.bodyMedium,
@@ -63,11 +64,39 @@ void main() {
     };
 
     for (final entry in body.entries) {
-      test('${entry.key} uses NotoNaskhArabic', () {
-        expect(entry.value.fontFamily, AppTypography.naskhFamily);
-        expect(entry.value.fontFamily, 'NotoNaskhArabic');
+      test('${entry.key} uses JameelNooriNastaleeq with height ≥ 2.0', () {
+        final s = entry.value;
+        expect(s.fontFamily, AppTypography.nastaliqFamily);
+        expect(s.fontFamily, 'JameelNooriNastaleeq');
+        expect(s.height, greaterThanOrEqualTo(2.0));
       });
     }
+
+    test('Naskh is only ever a fallback, never a primary family', () {
+      final all = [
+        AppTypography.headingLarge,
+        AppTypography.headingMedium,
+        AppTypography.headingSmall,
+        AppTypography.titleLarge,
+        AppTypography.titleMedium,
+        AppTypography.titleSmall,
+        AppTypography.appBarTitle,
+        AppTypography.buttonNastaliq,
+        AppTypography.buttonText,
+        AppTypography.bodyLarge,
+        AppTypography.bodyMedium,
+        AppTypography.bodySmall,
+        AppTypography.labelLarge,
+        AppTypography.labelMedium,
+        AppTypography.labelSmall,
+        AppTypography.labelNastaliq,
+        AppTypography.navLabel,
+      ];
+      for (final s in all) {
+        expect(s.fontFamily, isNot(AppTypography.naskhFamily));
+        expect(s.fontFamilyFallback, contains(AppTypography.naskhFamily));
+      }
+    });
   });
 
   group('AppTypography short Urdu labels (Jameel Noori)', () {

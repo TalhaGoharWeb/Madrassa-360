@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'app_colors.dart';
 
-/// مدرسہ 360 - خطاطی (v3)
-/// Typography system — Jameel Noori Nastaleeq for display, Jameel Noori
-/// Nastaleeq Kasheeda for hero moments, Noto Naskh Arabic for body.
+/// مدرسہ 360 - خطاطی (v4)
+/// Typography system — Jameel Noori Nastaleeq for ALL Urdu text,
+/// Jameel Noori Nastaleeq Kasheeda for hero moments.
 ///
-/// * Display (headings, section titles, card titles): Jameel Noori v4.
-///   Nastaliq is tall — every display style keeps line height ≥ 2.0 so
-///   nuqtas never clip.
+/// * Every Urdu string in the app — headings, labels, hints, buttons,
+///   subtitles, chips, tabs, table headers, body text — renders in
+///   Jameel Noori Nastaleeq v4. Nastaliq is tall, so every style keeps
+///   line height ≥ 2.0 and no nuqta ever clips.
 /// * Hero (main greeting header): Kasheeda, generous line height.
-/// * Body / small text: Noto Naskh Arabic for readability at small sizes;
-///   Nastaliq is never used below ~15sp.
+/// * Noto Naskh Arabic is kept ONLY as a defensive fontFamilyFallback
+///   (missing glyphs) — it is never the primary family of any style.
 ///
 /// The `JameelNooriNastaleeq` family name is kept (tenant branding rows and
 /// PDF rendering reference it); it now points at the v4 font file.
@@ -42,14 +43,17 @@ class AppTypography {
         fontFamilyFallback: [nastaliqFamily, 'NotoNastaliqUrdu'],
       );
 
-  /// Base body style: Noto Naskh Arabic.
+  /// Base body style: Jameel Noori Nastaleeq v4 — same as display.
   ///
-  /// Defensive fallback to the Nastaliq family: if the Naskh family ever
-  /// fails to resolve at runtime, Urdu text must still render in an
-  /// embedded Urdu font — never the platform system font.
+  /// Every Urdu string in the app renders in Nastaliq (headings, labels,
+  /// hints, buttons, subtitles, body). Noto Naskh Arabic stays only as a
+  /// defensive fallback for glyphs the Nastaliq file may lack — Urdu text
+  /// must still render in an embedded Urdu font, never the platform font.
+  /// Line height stays ≥ 2.0: Nastaliq is tall and nuqtas must not clip.
   static TextStyle get _bodyBase => const TextStyle(
-        fontFamily: naskhFamily,
-        fontFamilyFallback: [nastaliqFamily],
+        fontFamily: nastaliqFamily,
+        fontFamilyFallback: [naskhFamily],
+        height: 2.0,
       );
 
   // ------------------------------------------------------------------
@@ -101,7 +105,8 @@ class AppTypography {
   /// True when [text] contains Urdu/Arabic-script characters.
   ///
   /// Use for bilingual labels whose language is only known from the string
-  /// itself: pick [labelNastaliq] for Urdu text, a Naskh style for Latin.
+  /// itself: pick [labelNastaliq] for Urdu text; Latin text in a Nastaleeq
+  /// style falls back gracefully through the embedded font chain.
   static bool isUrduText(String text) => RegExp(
         r'[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]',
       ).hasMatch(text);
@@ -140,64 +145,59 @@ class AppTypography {
       );
 
   // ------------------------------------------------------------------
-  // Body styles — Noto Naskh Arabic.
+  // Body / label / button styles — Jameel Noori Nastaleeq v4 as well.
+  // Every style below inherits the Nastaliq-first _bodyBase, so labels,
+  // hints, buttons, subtitles and body text all render in Nastaleeq.
   // ------------------------------------------------------------------
 
   static TextStyle get bodyLarge => _bodyBase.copyWith(
         fontSize: 17,
         fontWeight: FontWeight.normal,
         color: AppColors.textPrimary,
-        height: 1.8,
       );
 
   static TextStyle get bodyMedium => _bodyBase.copyWith(
         fontSize: 16,
         fontWeight: FontWeight.normal,
         color: AppColors.textPrimary,
-        height: 1.8,
       );
 
   static TextStyle get bodySmall => _bodyBase.copyWith(
         fontSize: 14,
         fontWeight: FontWeight.normal,
         color: AppColors.textSecondary,
-        height: 1.7,
       );
 
   static TextStyle get labelLarge => _bodyBase.copyWith(
         fontSize: 16,
         fontWeight: FontWeight.w500,
         color: AppColors.textPrimary,
-        height: 1.7,
       );
 
   static TextStyle get labelMedium => _bodyBase.copyWith(
         fontSize: 14,
         fontWeight: FontWeight.w500,
         color: AppColors.textSecondary,
-        height: 1.7,
       );
 
   static TextStyle get labelSmall => _bodyBase.copyWith(
         fontSize: 12,
         fontWeight: FontWeight.w500,
         color: AppColors.textSecondary,
-        height: 1.6,
       );
 
   static TextStyle get buttonText => _bodyBase.copyWith(
         fontSize: 18,
         fontWeight: FontWeight.w600,
         color: Colors.white,
-        height: 1.8,
       );
 
   /// Primary button label in Jameel Noori Nastaleeq (18sp, semibold, white).
   ///
   /// This is the themed default for filled buttons ([app_theme.dart]
   /// wires it into [elevatedButtonTheme]) so every Urdu button label in
-  /// the app renders in Nastaleeq. [buttonText] (Naskh) is kept for
-  /// explicit opt-in only.
+  /// the app renders in Nastaleeq. [buttonText] renders identically —
+  /// both are Nastaleeq since the v4 "Nastaleeq everywhere" policy.
   static TextStyle get buttonNastaliq => _displayBase.copyWith(
         fontSize: 18,
         fontWeight: FontWeight.w600,
@@ -233,12 +233,12 @@ class AppTypography {
     );
   }
 
-  /// Helper to create a custom body (Naskh) style.
+  /// Helper to create a custom body style (Nastaleeq, like all body text).
   static TextStyle customBody({
     double fontSize = 16,
     FontWeight fontWeight = FontWeight.normal,
     Color color = AppColors.textPrimary,
-    double height = 1.8,
+    double height = 2.0,
   }) {
     return _bodyBase.copyWith(
       fontSize: fontSize,

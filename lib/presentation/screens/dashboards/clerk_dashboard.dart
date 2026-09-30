@@ -43,8 +43,8 @@ class _ClerkDashboardScreenState extends ConsumerState<ClerkDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final user = ref.watch(currentUserProvider);
-    final userName = user?.name ?? 'دفتر دار';
+    // Display name contract: local profile edit wins; never an email.
+    final userName = ref.watch(displayNameProvider('دفتر دار'));
 
     final roleService = ref.watch(roleServiceProvider);
     final roleKeys = ref.watch(activeRoleKeysProvider);

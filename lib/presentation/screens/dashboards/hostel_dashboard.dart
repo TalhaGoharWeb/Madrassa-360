@@ -29,8 +29,8 @@ class HostelDashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(currentUserProvider);
-    final userName = user?.name ?? 'وارڈن';
+    // Display name contract: local profile edit wins; never an email.
+    final userName = ref.watch(displayNameProvider('وارڈن'));
 
     final roleService = ref.watch(roleServiceProvider);
     final roleKeys = ref.watch(activeRoleKeysProvider);
