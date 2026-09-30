@@ -52,6 +52,12 @@ class FakeAuthRepository extends AuthRepository {
   Future<void> sendPasswordReset({required String email}) async {}
 
   void dispose() => _events.close();
+
+  /// Push an error into the auth-state stream, mirroring what gotrue does
+  /// when a background token refresh fails (e.g. DNS down at launch):
+  /// it calls `notifyException`, which is `Stream.addError` on its
+  /// broadcast auth-state stream.
+  void emitError(Object error) => _events.addError(error);
 }
 
 /// A signed-in teacher user for tests that need [currentUserProvider].

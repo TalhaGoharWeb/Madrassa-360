@@ -174,26 +174,47 @@ class AuthNotifier extends StateNotifier<AuthState> {
   /// Listen to Supabase auth state.
   /// Handles: cold-start session restore (SIGNED_IN fires on restore),
   /// token refresh, and session expiry (failed refresh → SIGNED_OUT).
+  ///
+  /// The stream can also carry ERRORS: gotrue reports a failed background
+  /// token refresh (e.g. no DNS / no internet at launch) via
+  /// [Stream.addError] on its broadcast auth-state stream. Without an
+  /// [onError] handler such an error becomes an unhandled async error and
+  /// crashes the app to the CrashScreen — even though the persisted
+  /// session is still perfectly usable offline. The handler below logs
+  /// the failure and keeps the existing state; a truly dead session
+  /// still arrives as a SIGNED_OUT event.
   void _init() {
-    _authSub = _repo.authStateChanges.listen((event) async {
-      switch (event.event) {
-        case sb.AuthChangeEvent.signedIn:
-          // Full post-login wiring (idempotent — safe if login() also ran it).
-          await _handleSignedIn();
-          break;
-        case sb.AuthChangeEvent.tokenRefreshed:
-        case sb.AuthChangeEvent.userUpdated:
-          // Session still valid — just refresh the user/permissions.
-          await _refreshSessionUser();
-          break;
-        case sb.AuthChangeEvent.signedOut:
-          // Includes expired/revoked refresh tokens.
-          await _handleSignedOut();
-          break;
-        default:
-          break;
-      }
-    });
+    _authSub = _repo.authStateChanges.listen(
+      (event) async {
+        switch (event.event) {
+          case sb.AuthChangeEvent.signedIn:
+            // Full post-login wiring (idempotent — safe if login() also ran it).
+            await _handleSignedIn();
+            break;
+          case sb.AuthChangeEvent.tokenRefreshed:
+          case sb.AuthChangeEvent.userUpdated:
+            // Session still valid — just refresh the user/permissions.
+            await _refreshSessionUser();
+            break;
+          case sb.AuthChangeEvent.signedOut:
+            // Includes expired/revoked refresh tokens.
+            await _handleSignedOut();
+            break;
+          default:
+            break;
+        }
+      },
+      onError: (Object error, StackTrace stackTrace) {
+        // Transient auth-infrastructure failure (DNS down, captive portal,
+        // failed background token refresh). Must not sign the user out and
+        // must not crash: the SDK retries the refresh on its next tick.
+        ErrorBoundary.handleErrorSimple(
+          error,
+          stackTrace,
+          tag: 'auth/state-stream',
+        );
+      },
+    );
   }
 
   // ── Cold-start session restore ───────────────────────────────
