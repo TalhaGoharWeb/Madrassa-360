@@ -16,6 +16,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 import '../core/services/supabase_service.dart';
 import '../core/services/tenant_context.dart';
+import '../core/utils/network_timeout.dart';
 import '../core/sync/sync_engine.dart';
 import '../core/sync/sync_providers.dart';
 import '../data/models/announcement.dart';
@@ -62,7 +63,9 @@ class AnnouncementNotifier extends StateNotifier<AnnouncementState> {
     try {
       final q = _client.from('announcements').select().eq('tenant_id', tenantId)
           as dynamic;
-      final rows = await q.order('created_at', ascending: false);
+      final rows =
+          await (q.order('created_at', ascending: false) as Future)
+              .withNetworkTimeout();
       state = state.copyWith(
         isLoading: false,
         announcements:

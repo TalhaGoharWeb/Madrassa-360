@@ -11,6 +11,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/services/supabase_service.dart';
 import '../core/services/tenant_context.dart';
+import '../core/utils/network_timeout.dart';
 import '../data/models/attendance_status.dart';
 import '../data/models/student.dart';
 import 'attendance_provider.dart';
@@ -91,12 +92,12 @@ final teacherAssignmentsProvider =
   if (userId == null || tenantId == null) return <TeacherClassAssignment>[];
 
   try {
-    final rows = await SupabaseService.client
+    final rows = await (SupabaseService.client
         .from('teacher_class_assignments')
         .select('*, classes(name)')
         .eq('teacher_user_id', userId)
         .eq('tenant_id', tenantId)
-        .eq('is_active', true);
+        .eq('is_active', true)).withNetworkTimeout();
     return (rows as List)
         .map((r) => TeacherClassAssignment.fromJson(r as Map<String, dynamic>))
         .toList();
@@ -120,12 +121,12 @@ final teacherAssignedClassesProvider =
   if (tenantId == null || classIds.isEmpty) return <AssignedClass>[];
 
   try {
-    final rows = await SupabaseService.client
+    final rows = await (SupabaseService.client
         .from('classes')
         .select('id, name, darja_id')
         .eq('tenant_id', tenantId)
         .inFilter('id', classIds)
-        .order('name');
+        .order('name')).withNetworkTimeout();
     return (rows as List)
         .map((r) => AssignedClass.fromJson(r as Map<String, dynamic>))
         .toList();
@@ -148,13 +149,13 @@ final teacherClassStudentsProvider =
   if (tenantId == null || !assigned.contains(classId)) return <Student>[];
 
   try {
-    final rows = await SupabaseService.client
+    final rows = await (SupabaseService.client
         .from('students')
         .select()
         .eq('tenant_id', tenantId)
         .eq('class_id', classId)
         .eq('is_active', true)
-        .order('roll_no');
+        .order('roll_no')).withNetworkTimeout();
     return (rows as List)
         .map((r) => Student.fromJson(r as Map<String, dynamic>))
         .toList();

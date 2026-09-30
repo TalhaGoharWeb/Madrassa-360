@@ -17,6 +17,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 import '../core/services/supabase_service.dart';
 import '../core/services/tenant_context.dart';
+import '../core/utils/network_timeout.dart';
 import '../core/sync/sync_engine.dart';
 import '../core/sync/sync_providers.dart';
 import '../data/models/darja.dart';
@@ -67,14 +68,16 @@ class DarjaNotifier extends StateNotifier<DarjaState> {
     try {
       final q =
           _client.from('darjas').select().eq('tenant_id', tenantId) as dynamic;
-      final rows = await q.order('order_index');
+      final rows =
+          await (q.order('order_index') as Future).withNetworkTimeout();
       final darjas = rows.map<Darja>((r) => Darja.fromJson(r)).toList();
 
       final sq = _client
           .from('darja_sections')
           .select()
           .eq('tenant_id', tenantId) as dynamic;
-      final srows = await sq.order('name_urdu');
+      final srows =
+          await (sq.order('name_urdu') as Future).withNetworkTimeout();
       final sections =
           srows.map<DarjaSection>((r) => DarjaSection.fromJson(r)).toList();
 

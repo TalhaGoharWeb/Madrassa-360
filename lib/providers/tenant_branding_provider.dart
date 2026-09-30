@@ -21,6 +21,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/services/supabase_service.dart';
 import '../core/services/tenant_context.dart';
+import '../core/utils/network_timeout.dart';
 
 // ─────────────────────────────────────────────
 // Model
@@ -169,7 +170,7 @@ final tenantBrandingProvider = FutureProvider<TenantBranding>((ref) async {
             'language, primary_color, secondary_color, accent_color, font, dark_mode_enabled')
         .eq('tenant_id', tenantId)
         .maybeSingle(),
-  ]);
+  ]).withNetworkTimeout();
 
   final tenantRow = results[0];
   if (tenantRow == null) return TenantBranding.fallback();

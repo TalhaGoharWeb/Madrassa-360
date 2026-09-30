@@ -14,6 +14,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/errors/app_exceptions.dart';
 import '../core/services/tenant_context.dart';
+import '../core/utils/network_timeout.dart';
 import '../data/repositories/transport_repository.dart';
 
 /// Loading lifecycle for the transport module.
@@ -111,7 +112,7 @@ class TransportNotifier extends StateNotifier<TransportState> {
         _repo.routes(tenantId),
         _repo.assignments(tenantId),
         _repo.summary(tenantId),
-      ]);
+      ]).withNetworkTimeout();
       state = state.copyWith(
         status: TransportLoadStatus.ready,
         vehicles: results[0] as List<TransportVehicle>,

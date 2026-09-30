@@ -15,6 +15,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import '../core/services/supabase_service.dart';
 import '../core/services/tenant_context.dart';
+import '../core/utils/network_timeout.dart';
 import '../core/sync/sync_engine.dart';
 import '../core/sync/sync_providers.dart';
 import '../data/models/library.dart';
@@ -63,11 +64,13 @@ class LibraryNotifier extends StateNotifier<LibraryState> {
     try {
       final bq = _c.from('library_books').select().eq('tenant_id', tenantId)
           as dynamic;
-      final brows = await bq.order('title');
+      final brows =
+          await (bq.order('title') as Future).withNetworkTimeout();
 
       final iq =
           _c.from('book_issues').select().eq('tenant_id', tenantId) as dynamic;
-      final irows = await iq.order('issued_at', ascending: false);
+      final irows = await (iq.order('issued_at', ascending: false) as Future)
+          .withNetworkTimeout();
 
       state = state.copyWith(
         isLoading: false,

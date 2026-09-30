@@ -5,6 +5,7 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/services/tenant_context.dart';
+import '../core/utils/network_timeout.dart';
 import '../data/models/finance.dart';
 import '../data/repositories/finance_repository.dart';
 import '../core/sync/sync_providers.dart';
@@ -93,7 +94,7 @@ class FinanceNotifier extends StateNotifier<FinanceState> {
         _repo.getInvoices(tenantId: tenantId),
         _repo.getPayments(tenantId: tenantId),
         _repo.getExpenses(tenantId: tenantId),
-      ]);
+      ]).withNetworkTimeout();
       state = state.copyWith(
         isLoading: false,
         ledger: results[0] as List<LedgerTransaction>,

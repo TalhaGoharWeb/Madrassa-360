@@ -12,6 +12,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/observability/app_logger.dart';
 import '../core/services/supabase_service.dart';
+import '../core/utils/network_timeout.dart';
 import '../data/models/app_role.dart';
 import '../data/models/user_account.dart';
 
@@ -67,7 +68,10 @@ class UserManagementNotifier extends StateNotifier<UserManagementState> {
   Future<void> loadAll() async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      await Future.wait([_loadAccounts(), _loadRoles()]);
+      await Future.wait([
+        _loadAccounts(),
+        _loadRoles(),
+      ]).withNetworkTimeout();
     } catch (e) {
       state = state.copyWith(
         isLoading: false,

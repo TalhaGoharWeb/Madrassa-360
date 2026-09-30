@@ -14,6 +14,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/errors/app_exceptions.dart';
 import '../core/services/tenant_context.dart';
+import '../core/utils/network_timeout.dart';
 import '../data/repositories/hostel_repository.dart';
 
 /// Loading lifecycle for the hostel module.
@@ -98,7 +99,7 @@ class HostelNotifier extends StateNotifier<HostelState> {
         _repo.beds(tenantId),
         _repo.allocations(tenantId),
         _repo.summary(tenantId),
-      ]);
+      ]).withNetworkTimeout();
       state = state.copyWith(
         status: HostelLoadStatus.ready,
         buildings: results[0] as List<HostelBuilding>,

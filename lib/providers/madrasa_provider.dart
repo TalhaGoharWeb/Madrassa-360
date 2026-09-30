@@ -4,6 +4,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/services/supabase_service.dart';
+import '../core/utils/network_timeout.dart';
 import '../data/models/madrasa.dart';
 
 class MadrasaState {
@@ -42,7 +43,8 @@ class MadrasaNotifier extends StateNotifier<MadrasaState> {
   Future<void> loadAll() async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      final rows = await _client.from('madrasas').select().order('name_urdu');
+      final rows = await (_client.from('madrasas').select().order('name_urdu'))
+          .withNetworkTimeout();
       state = state.copyWith(
         isLoading: false,
         madrasas: rows.map((r) => Madrasa.fromJson(r)).toList(),

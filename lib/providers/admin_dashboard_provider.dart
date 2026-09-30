@@ -17,6 +17,7 @@
 ///   crashing. Numbers shown are always real or zero — never invented.
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../core/utils/network_timeout.dart';
 
 import '../core/services/supabase_service.dart';
 import '../core/services/tenant_context.dart';
@@ -147,7 +148,7 @@ final dashboardStatsProvider = FutureProvider<DashboardStats>((ref) async {
           .eq('tenant_id', tenantId)
           .order('created_at', ascending: false)
           .limit(3),
-    ]);
+    ]).withNetworkTimeout();
 
     final studentRows = results[0] as List;
     final staffRows = results[1] as List;
