@@ -14,6 +14,8 @@
 /// ([cacheReportBranding]), and anywhere [TenantLogo] is used. When the
 /// toggle is off (or no logo is set) documents draw the neutral emblem.
 
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -49,6 +51,59 @@ class _MadrassaLogoScreenState extends ConsumerState<MadrassaLogoScreen> {
       imageQuality: 90,
     );
     if (picked == null) return;
+
+    // Preview before upload — let the user confirm the image looks right.
+    if (!mounted) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('لوگو کی تصدیق', style: AppTypography.titleMedium),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 180,
+              height: 180,
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: AppColors.divider),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: Image.file(
+                // ignore: avoid_unsafe_file_constructors
+                File(picked.path),
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => const Icon(
+                  Icons.broken_image_outlined,
+                  size: 48,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'کیا یہ لوگو اپ لوڈ کریں؟',
+              style: AppTypography.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('منسوخ کریں'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('اپ لوڈ کریں'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
     setState(() => _busy = true);
     try {
       await _service.uploadLogo(tenantId, picked);
