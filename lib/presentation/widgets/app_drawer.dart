@@ -89,6 +89,42 @@ class AppDrawer extends ConsumerWidget {
               },
             ),
           ),
+          _buildProductFooter(),
+        ],
+      ),
+    );
+  }
+
+  /// Product footer: the Madrassa-360 brand mark. The header strip above
+  /// carries the *tenant's* identity; this footer carries the *product*
+  /// identity so the app brand is present on every dashboard sidebar.
+  Widget _buildProductFooter() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(color: AppColors.divider.withValues(alpha: 0.6)),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Image.asset(
+            'assets/images/app_logo.png',
+            width: 28,
+            height: 28,
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stackTrace) =>
+                const SizedBox(width: 28, height: 28),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            'مدرسہ 360',
+            style: AppTypography.labelNastaliq.copyWith(
+              color: AppColors.textSecondary,
+              fontSize: 14,
+            ),
+          ),
         ],
       ),
     );

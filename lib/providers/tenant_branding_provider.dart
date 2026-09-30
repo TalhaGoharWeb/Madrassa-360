@@ -43,6 +43,11 @@ class TenantBranding {
   final bool darkModeEnabled;
   final String language;
 
+  /// Per-madrassa toggle (migration 024): draw the uploaded logo on
+  /// generated reports, certificates, papers and other documents.
+  /// Defaults to true — an uploaded logo appears on documents at once.
+  final bool useLogoOnReports;
+
   const TenantBranding({
     required this.name,
     this.nameUrdu,
@@ -58,6 +63,7 @@ class TenantBranding {
     required this.fontFamily,
     required this.darkModeEnabled,
     required this.language,
+    this.useLogoOnReports = true,
   });
 
   /// Neutral product defaults used when logged out or when the tenant row
@@ -102,6 +108,7 @@ class TenantBranding {
           : 'JameelNooriNastaleeq',
       darkModeEnabled: s['dark_mode_enabled'] as bool? ?? false,
       language: (s['language'] as String?) ?? 'ur',
+      useLogoOnReports: (tenant['use_logo_on_reports'] as bool?) ?? true,
     );
   }
 
@@ -152,8 +159,8 @@ final tenantBrandingProvider = FutureProvider<TenantBranding>((ref) async {
   final results = await Future.wait([
     client
         .from('tenants')
-        .select(
-            'name, name_urdu, logo_url, phone, email, website, address, city')
+        .select('name, name_urdu, logo_url, use_logo_on_reports, phone, '
+            'email, website, address, city')
         .eq('id', tenantId)
         .maybeSingle(),
     client

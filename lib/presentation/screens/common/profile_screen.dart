@@ -15,6 +15,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_permissions.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/design/m360.dart';
@@ -25,6 +26,7 @@ import '../../shell/shell_page_body.dart';
 import '../auth/login_screen.dart';
 import '../settings/user_management_hub.dart';
 import '../settings/delegation_screen.dart';
+import '../settings/madrassa_logo_screen.dart';
 import 'about_screen.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -144,8 +146,24 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           builder: (_) => const UserManagementHubScreen(),
                         ),
                       ),
-                      isLast: !canDelegate,
+                      isLast: !canDelegate &&
+                          !ref.watch(hasPermissionProvider(
+                              AppPermissions.manageSettings)),
                     ),
+                    if (ref.watch(
+                        hasPermissionProvider(AppPermissions.manageSettings)))
+                      _SettingsTile(
+                        icon: Icons.image_outlined,
+                        label: 'مدرسے کا لوگو',
+                        subtitle: 'لوگو لگائیں، دستاویزات پر دکھائیں',
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const MadrassaLogoScreen(),
+                          ),
+                        ),
+                        isLast: !canDelegate,
+                      ),
                     if (canDelegate)
                       _SettingsTile(
                         icon: Icons.handshake_outlined,

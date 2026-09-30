@@ -18,6 +18,7 @@ import 'core/widgets/master_admin_guard.dart';
 import 'data/local/app_database.dart';
 import 'presentation/screens/crash_screen.dart';
 import 'providers/tenant_branding_provider.dart';
+import 'providers/tenant_branding_cache.dart';
 import 'providers/auth_provider.dart';
 import 'presentation/screens/auth/auth_gate.dart';
 import 'presentation/screens/master_admin/master_admin_shell.dart';
@@ -222,6 +223,11 @@ class Madrasa360App extends StatelessWidget {
         // (didChangeAppLifecycleState → resumed) to
         // ref.read(syncEngineProvider)?.notifyAppResumed().
         ref.watch(syncEngineProvider);
+        // Keep the offline report cache warm: whenever tenant branding
+        // resolves from the network, persist it (+ logo bytes) so
+        // certificates, receipts, papers and other documents generate
+        // fully offline with the madrassa's name and logo.
+        ref.watch(tenantBrandingCacheSyncProvider);
         final branding = ref.watch(tenantBrandingProvider).valueOrNull;
         final theme = branding == null
             ? AppTheme.lightTheme

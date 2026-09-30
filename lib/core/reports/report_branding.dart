@@ -124,7 +124,10 @@ Future<ReportBranding> loadReportBranding(
             tenantRaw is Map ? tenantRaw.cast<String, dynamic>() : decoded;
         final settings = (decoded['settings'] as Map?)?.cast<String, dynamic>();
         final branding = TenantBranding.fromRows(tenant, settings);
-        final logo = await _loadCachedLogo(tenantId);
+        // The per-madrassa "use logo on reports" toggle (migration 024):
+        // off → draw the neutral emblem even when a logo is cached.
+        final useLogo = (tenant['use_logo_on_reports'] as bool?) ?? true;
+        final logo = useLogo ? await _loadCachedLogo(tenantId) : null;
         return ReportBranding.fromTenantBranding(branding, logoBytes: logo);
       }
     }
@@ -139,11 +142,99 @@ Future<ReportBranding> loadReportBranding(
 /// The path is tenant-scoped (`branding/<tenantId>/logo.png`) so one
 /// tenant's logo can never leak into another tenant's reports.
 /// Null when absent or unreadable — the header then draws a vector emblem.
+/// Reads the offline-cached logo file, if a previous sync cached it.
+///
+/// The path is tenant-scoped (`branding/<tenantId>/logo.png`) so one
+/// tenant's logo can never leak into another tenant's reports.
+/// Null when absent or unreadable — the header then draws a vector emblem.
+///
+/// This is the single definition of the cache path — the writer
+/// ([TenantLogoService]) and the sync layer must use this, never a
+/// hard-coded duplicate.
+Future<File> tenantLogoCacheFile(String tenantId) async {
+  final support = await getApplicationSupportDirectory();
+  return File(
+      p.join(support.path, 'Madrassa360', 'branding', tenantId, 'logo.png'));
+}
+
+/// Writes the tenant's branding + logo into the offline cache.
+///
+/// Called whenever branding resolves from the network (see
+/// [tenantBrandingCacheSyncProvider]) so that later offline report
+/// generation still draws the madrassa's name and logo. Fire-and-forget
+/// safe: every failure is swallowed — a stale or missing cache only means
+/// neutral branding, never a crash.
+///
+/// The payload uses the `{tenant, settings}` envelope documented above;
+/// the tenant map carries `use_logo_on_reports` so [loadReportBranding]
+/// can honour the toggle offline.
+Future<void> cacheReportBranding(
+  AppDatabase db,
+  String tenantId,
+  TenantBranding branding,
+) async {
+  try {
+    String? hexOf(Color c) =>
+        '#${c.toARGB32().toRadixString(16).padLeft(8, '0').substring(2)}';
+    final payload = jsonEncode({
+      'tenant': {
+        'name': branding.name,
+        'name_urdu': branding.nameUrdu,
+        'logo_url': branding.logoUrl,
+        'use_logo_on_reports': branding.useLogoOnReports,
+        'phone': branding.phone,
+        'email': branding.email,
+        'address': branding.address,
+        'city': branding.city,
+      },
+      'settings': {
+        'primary_color': hexOf(branding.primaryColor),
+        'secondary_color': hexOf(branding.secondaryColor),
+        'accent_color': hexOf(branding.accentColor),
+        'font': branding.fontFamily,
+      },
+    });
+    await db.customStatement(
+      'INSERT INTO tenant_settings_cache (tenant_id, payload, cached_at) '
+      'VALUES (?, ?, ?) '
+      'ON CONFLICT (tenant_id) DO UPDATE SET '
+      'payload = excluded.payload, cached_at = excluded.cached_at',
+      [
+        tenantId,
+        payload,
+        DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      ],
+    );
+
+    // Logo bytes: only when the tenant wants the logo on reports.
+    final logoUrl = branding.logoUrl?.trim();
+    final file = await tenantLogoCacheFile(tenantId);
+    if (!branding.useLogoOnReports || logoUrl == null || logoUrl.isEmpty) {
+      if (await file.exists()) await file.delete();
+      return;
+    }
+    try {
+      final request = await HttpClient().getUrl(Uri.parse(logoUrl));
+      final response = await request.close();
+      if (response.statusCode == 200) {
+        final bytes = await response
+            .fold<List<int>>([], (list, chunk) => list..addAll(chunk));
+        if (bytes.isNotEmpty) {
+          await file.parent.create(recursive: true);
+          await file.writeAsBytes(bytes, flush: true);
+        }
+      }
+    } catch (_) {
+      // Offline / bad URL: keep whatever was cached before.
+    }
+  } catch (_) {
+    // Cache is best-effort — never break the UI over it.
+  }
+}
+
 Future<Uint8List?> _loadCachedLogo(String tenantId) async {
   try {
-    final support = await getApplicationSupportDirectory();
-    final file = File(
-        p.join(support.path, 'Madrassa360', 'branding', tenantId, 'logo.png'));
+    final file = await tenantLogoCacheFile(tenantId);
     if (await file.exists()) return await file.readAsBytes();
   } catch (_) {
     // ignore — emblem fallback
