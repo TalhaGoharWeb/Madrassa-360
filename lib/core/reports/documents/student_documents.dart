@@ -155,14 +155,27 @@ class StudentDocuments {
           ),
           pw.Spacer(),
           pw.Container(
-            padding: const pw.EdgeInsets.symmetric(vertical: 3),
+            padding: const pw.EdgeInsets.symmetric(vertical: 3, horizontal: 4),
             decoration: pw.BoxDecoration(color: s.primary),
-            child: pw.Center(
-              child: s.e(
-                ctx.branding.contactLine?.replaceAll('فون: ', 'Ph: ') ?? '',
-                size: 7,
-                color: PdfColors.white,
-              ),
+            child: pw.Column(
+              mainAxisSize: pw.MainAxisSize.min,
+              children: [
+                if (ctx.branding.addressLine != null)
+                  pw.Center(
+                    child: await s.u(
+                      ctx.branding.addressLine!,
+                      size: 6,
+                      color: const Color(0xFFFFFFFF),
+                    ),
+                  ),
+                pw.Center(
+                  child: s.e(
+                    ctx.branding.contactLine?.replaceAll('فون: ', 'Ph: ') ?? '',
+                    size: 7,
+                    color: PdfColors.white,
+                  ),
+                ),
+              ],
             ),
           ),
         ];
