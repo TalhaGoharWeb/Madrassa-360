@@ -2,7 +2,8 @@
 /// Master Admin Guard — gates the /master route behind platform_admins.
 ///
 /// A user is granted access iff a row exists in `public.platform_admins`
-/// for their auth uid (role ∈ platform_owner | platform_support).
+/// for their auth uid (role ∈ platform_owner | platform_support), or a row
+/// exists in `public.super_admins` (super admins count as platform_owner).
 ///
 /// RLS NOTE (checked 2026-09-25 against supabase/migrations/004_memberships.sql):
 /// platform_admins has ONE policy, "platform admins only" (FOR ALL USING
@@ -24,6 +25,8 @@ import 'loading_widget.dart';
 
 /// Returns the caller's platform role ('platform_owner' | 'platform_support')
 /// or null when the caller is not a platform admin. Fails closed on error.
+/// Super admins (public.super_admins, migration 023) count as
+/// 'platform_owner' even without a platform_admins row.
 Future<String?> fetchPlatformAdminRole() async {
   try {
     final client = Supabase.instance.client;
@@ -40,6 +43,12 @@ Future<String?> fetchPlatformAdminRole() async {
     if (role == 'platform_owner' || role == 'platform_support') {
       return role;
     }
+    final superRow = await client
+        .from('super_admins')
+        .select('user_id')
+        .eq('user_id', uid)
+        .maybeSingle();
+    if (superRow != null) return 'platform_owner';
     return null;
   } catch (_) {
     // Fail closed: any RLS/network/parse error means "not a platform admin".

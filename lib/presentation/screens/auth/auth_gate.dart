@@ -3,18 +3,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../providers/auth_provider.dart';
-import '../../shell/app_shell.dart';
+import 'auth_routing.dart';
 import 'login_screen.dart';
-import 'no_access_screen.dart';
-import 'tenant_picker_screen.dart';
 
 /// Auth gate — the app's cold-start entry point.
 ///
 /// On launch it asks the auth provider to restore any persisted Supabase
 /// session (honoring the "remember me" choice), showing a branded splash
 /// meanwhile. Once the restore settles it renders the same destination the
-/// login screen would navigate to:
+/// login screen would navigate to ([postAuthDestination]):
 ///
+///   platform admin     → platform console ([MasterAdminShell], guarded)
 ///   authenticated + home         → [AppShell]
 ///   authenticated + tenantPicker → [TenantPickerScreen]
 ///   authenticated + noAccess     → [NoAccessScreen]
@@ -50,16 +49,9 @@ class _AuthGateState extends ConsumerState<AuthGate> {
 
     final auth = ref.watch(authProvider);
     if (!auth.isAuthenticated) return const LoginScreen();
-    switch (auth.route) {
-      case AuthRoute.home:
-        return const AppShell();
-      case AuthRoute.tenantPicker:
-        return const TenantPickerScreen();
-      case AuthRoute.noAccess:
-        return const NoAccessScreen();
-      case AuthRoute.login:
-        return const LoginScreen();
-    }
+    // Single routing decision shared with the login screen: platform
+    // admins go directly to the platform console.
+    return postAuthDestination(auth) ?? const LoginScreen();
   }
 }
 

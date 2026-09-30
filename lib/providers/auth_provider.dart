@@ -84,7 +84,7 @@ class AuthState {
   /// Where the UI should navigate after the auth state settles.
   final AuthRoute route;
 
-  /// True when the user has a row in `platform_admins`.
+  /// True when the user has a row in `platform_admins` or `super_admins`.
   /// Platform admins with zero tenant memberships still get [AuthRoute.home]
   /// (master admin area) instead of [AuthRoute.noAccess].
   final bool isPlatformAdmin;
@@ -496,16 +496,25 @@ class AuthNotifier extends StateNotifier<AuthState> {
     return AuthRoute.tenantPicker;
   }
 
-  /// True when the user has a row in `platform_admins`.
+  /// True when the user has a row in `platform_admins` or `super_admins`.
   /// Any failure (incl. RLS denial) is treated as "not a platform admin".
   Future<bool> _checkPlatformAdmin(String userId) async {
     try {
-      final row = await SupabaseService.client
+      final adminRow = await SupabaseService.client
           .from('platform_admins')
           .select('role')
           .eq('user_id', userId)
           .maybeSingle();
-      return row != null;
+      if (adminRow != null) return true;
+      // Super admins (public.super_admins, migration 023) are platform
+      // admins even without a platform_admins row — the old query missed
+      // them, so a super admin silently landed on a tenant dashboard.
+      final superRow = await SupabaseService.client
+          .from('super_admins')
+          .select('user_id')
+          .eq('user_id', userId)
+          .maybeSingle();
+      return superRow != null;
     } catch (e, st) {
       ErrorBoundary.handleErrorSimple(e, st, tag: 'auth/platform-admin-check');
       return false;

@@ -143,6 +143,8 @@ class _AppNavRailState extends ConsumerState<AppNavRail> {
               onSelect: widget.onSelect,
               onCloseDrawer: widget.onCloseDrawer,
             ),
+            const Divider(height: 1, color: Colors.white24),
+            const _ProductFooter(),
           ],
         ),
       ),
@@ -550,6 +552,45 @@ class _UserFooter extends ConsumerWidget {
               onSelect('profile');
               onCloseDrawer?.call();
             },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Product footer ──────────────────────────────────────────────────────────
+
+/// Product identity footer: the Madrassa-360 brand mark. The branding header
+/// above carries the *tenant's* identity (their logo, or the ۳۶۰ mark when
+/// none is configured); this footer carries the *product* identity so the
+/// app brand is present at the bottom of every dashboard sidebar, in drawer
+/// and desktop-rail modes alike.
+class _ProductFooter extends StatelessWidget {
+  const _ProductFooter();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Image.asset(
+            'assets/images/app_logo.png',
+            width: 26,
+            height: 26,
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stackTrace) =>
+                const SizedBox(width: 26, height: 26),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            'مدرسہ 360',
+            style: AppTypography.labelNastaliq.copyWith(
+              color: Colors.white.withValues(alpha: 0.85),
+              fontSize: 14,
+            ),
           ),
         ],
       ),

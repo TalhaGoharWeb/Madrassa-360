@@ -4,7 +4,8 @@
 /// There is deliberately NO self-registration here: user accounts are created
 /// by institution provisioning / invitation only. New users are directed to
 /// contact their institution administrator. Post-login navigation follows
-/// [AuthRoute] from the auth provider (home / tenantPicker / noAccess).
+/// [postAuthDestination] (platform admins go directly to the platform
+/// console; everyone else follows [AuthRoute] from the auth provider).
 ///
 /// VISUAL ONLY: the m360 input/button language and [showM360SnackBar]
 /// feedback. Auth logic, routing conditions and provider calls are
@@ -22,10 +23,8 @@ import '../../../core/services/storage_service.dart';
 import '../../../core/utils/validators.dart';
 import '../../../core/widgets/loading_widget.dart';
 import '../../../providers/auth_provider.dart';
-import '../../shell/app_shell.dart';
+import 'auth_routing.dart';
 import 'forgot_password_screen.dart';
-import 'no_access_screen.dart';
-import 'tenant_picker_screen.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -114,27 +113,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       await StorageService.remove(kRememberedEmailKey);
     }
 
-    // Route per the provider's post-login decision.
-    final route = ref.read(authProvider).route;
-    Widget? destination;
-    switch (route) {
-      case AuthRoute.home:
-        destination = const AppShell();
-        break;
-      case AuthRoute.tenantPicker:
-        destination = const TenantPickerScreen();
-        break;
-      case AuthRoute.noAccess:
-        destination = const NoAccessScreen();
-        break;
-      case AuthRoute.login:
-        destination = null; // shouldn't happen after a successful login
-        break;
-    }
+    // Route per the provider's post-login decision, shared with AuthGate:
+    // platform admins go directly to the platform console.
+    final destination = postAuthDestination(ref.read(authProvider));
     if (destination == null || !mounted) return;
 
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => destination!),
+      MaterialPageRoute(builder: (_) => destination),
     );
   }
 
