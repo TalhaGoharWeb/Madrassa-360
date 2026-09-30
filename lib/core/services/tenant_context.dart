@@ -56,9 +56,21 @@ class TenantMembership {
 
 /// All active tenant memberships for the current user.
 /// Returns [] (not an error) when logged out, so watchers never crash.
+///
+/// The uid is read from the live Supabase session — NOT from
+/// [currentUserProvider]. During `AuthNotifier._handleSignedIn` the Riverpod
+/// auth state still carries no user (it is only set after the route is
+/// decided), so sourcing the uid from the provider returned [] here and that
+/// empty list was cached: every tenant user was routed to NoAccessScreen
+/// even with a valid, active membership row. The Supabase session is already
+/// established whenever this provider is read post-sign-in, so it is the
+/// correct source of truth.
 final tenantMembershipsProvider =
     FutureProvider<List<TenantMembership>>((ref) async {
-  final userId = ref.watch(currentUserProvider)?.id;
+  // Rebuild trigger: re-run when the Riverpod auth user changes
+  // (sign-in/out); the uid itself comes from the session below.
+  ref.watch(currentUserProvider);
+  final userId = SupabaseService.client.auth.currentUser?.id;
   if (userId == null) return <TenantMembership>[];
   final rows = await SupabaseService.client
       .from('tenant_memberships')

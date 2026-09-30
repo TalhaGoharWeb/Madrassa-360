@@ -332,6 +332,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
       bool isPlatformAdmin = false;
       bool tenantLoadOk = true;
       try {
+        // Drop any cached membership list (e.g. the empty list cached while
+        // signed out) so the reads below use the just-established session.
+        // Without this, a stale [] survived into the routing decision and
+        // every tenant user landed on NoAccessScreen.
+        _ref.invalidate(tenantMembershipsProvider);
         await _ref.read(activeTenantIdProvider.notifier).init();
         memberships = await _ref.read(tenantMembershipsProvider.future);
         isPlatformAdmin = await _checkPlatformAdmin(user.id);
