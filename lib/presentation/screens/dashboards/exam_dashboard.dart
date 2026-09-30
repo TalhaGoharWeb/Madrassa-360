@@ -77,9 +77,7 @@ class _ExamStats extends ConsumerWidget {
     final summary =
         ref.watch(examSummaryProvider).valueOrNull ?? const ExamSummary.zero();
 
-    void go(Widget screen) => Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => screen),
-        );
+    void go(Widget screen) => pushM360Page(context, screen);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -157,9 +155,7 @@ class _ExamAlerts extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    void go(Widget screen) => Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => screen),
-        );
+    void go(Widget screen) => pushM360Page(context, screen);
 
     final summary = ref.watch(examSummaryProvider).valueOrNull;
     if (summary == null || summary.pendingMarks == 0) {
@@ -189,9 +185,7 @@ class _ExamQuickActions extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    void go(Widget screen) => Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => screen),
-        );
+    void go(Widget screen) => pushM360Page(context, screen);
 
     final items = [
       if (can(AppPermissions.createExams))

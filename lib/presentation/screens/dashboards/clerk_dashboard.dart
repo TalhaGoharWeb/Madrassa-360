@@ -100,9 +100,7 @@ class _ClerkStats extends ConsumerWidget {
         (can(AppPermissions.viewFees) || can(AppPermissions.collectFees)) &&
             moduleOk('fees');
 
-    void go(Widget screen) => Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => screen),
-        );
+    void go(Widget screen) => pushM360Page(context, screen);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -176,9 +174,7 @@ class _ClerkAlerts extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final alerts = <Widget>[];
 
-    void go(Widget screen) => Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => screen),
-        );
+    void go(Widget screen) => pushM360Page(context, screen);
 
     if ((can(AppPermissions.viewFees) || can(AppPermissions.collectFees)) &&
         moduleOk('fees')) {
@@ -222,9 +218,7 @@ class _ClerkQuickActions extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    void go(Widget screen) => Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => screen),
-        );
+    void go(Widget screen) => pushM360Page(context, screen);
 
     final items = [
       if (can(AppPermissions.createStudents))
@@ -276,9 +270,7 @@ class _ClerkTasks extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    void go(Widget screen) => Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => screen),
-        );
+    void go(Widget screen) => pushM360Page(context, screen);
 
     final admissions = ref.watch(newAdmissionsProvider).valueOrNull ?? const [];
 

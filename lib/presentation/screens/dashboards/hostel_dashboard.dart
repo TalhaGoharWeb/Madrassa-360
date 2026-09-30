@@ -152,9 +152,7 @@ class _HostelQuickActions extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    void go(Widget screen) => Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => screen),
-        );
+    void go(Widget screen) => pushM360Page(context, screen);
 
     final items = [
       if (can(AppPermissions.viewAttendance) ||

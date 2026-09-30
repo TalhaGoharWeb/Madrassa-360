@@ -110,13 +110,7 @@ class StudentDocuments {
             decoration: pw.BoxDecoration(color: s.primary),
             child: pw.Row(
               children: [
-                if (ctx.branding.hasLogo)
-                  pw.Image(
-                    pw.MemoryImage(ctx.branding.logoBytes!),
-                    width: 26,
-                    height: 26,
-                    fit: pw.BoxFit.contain,
-                  ),
+                s.logoOrEmblem(size: 26),
                 pw.SizedBox(width: 6),
                 pw.Expanded(
                   child: await s.u(

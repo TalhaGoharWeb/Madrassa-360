@@ -78,9 +78,7 @@ class _LibraryStats extends ConsumerWidget {
     final overview = ref.watch(libraryOverviewProvider).valueOrNull ??
         const LibraryOverview.zero();
 
-    void go(Widget screen) => Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => screen),
-        );
+    void go(Widget screen) => pushM360Page(context, screen);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -150,9 +148,7 @@ class _LibraryAlerts extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    void go(Widget screen) => Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => screen),
-        );
+    void go(Widget screen) => pushM360Page(context, screen);
 
     final overview = ref.watch(libraryOverviewProvider).valueOrNull;
     if (overview == null || overview.overdue == 0) {
@@ -187,9 +183,7 @@ class _LibraryQuickActions extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    void go(Widget screen) => Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => screen),
-        );
+    void go(Widget screen) => pushM360Page(context, screen);
 
     final canManage = can(AppPermissions.manageLibrary);
 

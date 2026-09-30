@@ -17,6 +17,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
+import '../../core/design/m360_navigation.dart';
 import '../../data/models/fee.dart';
 import '../../providers/dashboard_data_provider.dart';
 import '../../providers/fee_provider.dart';
@@ -196,9 +197,7 @@ class _SearchResults extends ConsumerWidget {
       );
     }
 
-    void go(Widget screen) => Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => screen),
-        );
+    void go(Widget screen) => pushM360Page(context, screen);
 
     return ListView(
       padding: const EdgeInsets.all(16),

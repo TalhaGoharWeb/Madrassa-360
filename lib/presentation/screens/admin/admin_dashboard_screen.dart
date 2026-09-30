@@ -464,8 +464,7 @@ class AdminDashboardScreen extends StatelessWidget {
                   subtitle: m.subtitle,
                   icon: m.icon,
                   color: m.color,
-                  onTap: () => Navigator.push(
-                      context, MaterialPageRoute(builder: (_) => m.screen)),
+                  onTap: () => pushM360Page(context, m.screen),
                 );
               },
             );
@@ -614,10 +613,7 @@ class AdminDashboardScreen extends StatelessWidget {
 
   Widget _buildUserManagementCard(BuildContext context) {
     return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const UserManagementScreen()),
-      ),
+      onTap: () => pushM360Page(context, const UserManagementScreen()),
       child: Container(
         margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
         padding: const EdgeInsets.all(18),

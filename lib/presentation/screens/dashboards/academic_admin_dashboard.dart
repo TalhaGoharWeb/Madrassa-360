@@ -89,9 +89,7 @@ class _AcademicStats extends ConsumerWidget {
     final canSeeResults =
         can(AppPermissions.viewResults) || can(AppPermissions.enterResults);
 
-    void go(Widget screen) => Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => screen),
-        );
+    void go(Widget screen) => pushM360Page(context, screen);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -194,9 +192,7 @@ class _AcademicAlerts extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final alerts = <Widget>[];
 
-    void go(Widget screen) => Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => screen),
-        );
+    void go(Widget screen) => pushM360Page(context, screen);
 
     final overview = ref.watch(academicOverviewProvider).valueOrNull;
 
@@ -240,9 +236,7 @@ class _AcademicQuickActions extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    void go(Widget screen) => Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => screen),
-        );
+    void go(Widget screen) => pushM360Page(context, screen);
 
     final items = [
       if (can(AppPermissions.createTeachers))

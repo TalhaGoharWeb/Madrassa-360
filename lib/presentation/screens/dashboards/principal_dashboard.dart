@@ -150,9 +150,7 @@ class _KeyMetrics extends ConsumerWidget {
     final canSeeDarjas =
         can(AppPermissions.viewDarjas) && moduleOk('academics');
 
-    void go(Widget screen) => Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => screen),
-        );
+    void go(Widget screen) => pushM360Page(context, screen);
 
     final marked = stats.todayPresent + stats.todayAbsent + stats.todayLeave;
     final attendancePct =
@@ -334,9 +332,7 @@ class _TodayTasks extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final tasks = <Widget>[];
 
-    void go(Widget screen) => Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => screen),
-        );
+    void go(Widget screen) => pushM360Page(context, screen);
 
     // 1 — حاضری مکمل کریں (remaining = enrolled − marked today).
     if (can(AppPermissions.viewAttendance) ||
@@ -1016,9 +1012,7 @@ class _DepartmentsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    void go(Widget screen) => Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => screen),
-        );
+    void go(Widget screen) => pushM360Page(context, screen);
 
     final tiles = [
       if (can(AppPermissions.viewStudents))

@@ -13,6 +13,7 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart' show Color;
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
@@ -43,6 +44,7 @@ class PdfBuildScope {
 
   // Pre-rendered header pieces (header callback must stay sync).
   final pw.Widget _nameUr;
+  final pw.Widget _nameWidget;
   final pw.Widget? _addrUr;
   final pw.Widget? _contactUr;
   final pw.Widget? _logo;
@@ -52,6 +54,25 @@ class PdfBuildScope {
   final String? _subtitleEn;
   final bool _bare;
 
+  /// Logo widget with product fallback (for `bare: true` documents that
+  /// build their own header). Never null — falls back to the vector emblem
+  /// if the product logo asset is unavailable.
+  ///
+  /// The logo is wrapped in a fixed-size box; use [size] to match the
+  /// document's layout (default 48, the standard header size).
+  pw.Widget logoOrEmblem({double size = 48}) => pw.SizedBox(
+        width: size,
+        height: size,
+        child: pw.FittedBox(
+          fit: pw.BoxFit.contain,
+          child: pw.SizedBox(
+            width: 48,
+            height: 48,
+            child: _logo ?? _emblem(),
+          ),
+        ),
+      );
+
   PdfBuildScope._({
     required this.branding,
     required this.urdu,
@@ -59,6 +80,7 @@ class PdfBuildScope {
     required this.secondary,
     required this.accent,
     required pw.Widget nameUr,
+    required pw.Widget nameWidget,
     required pw.Widget? addrUr,
     required pw.Widget? contactUr,
     required pw.Widget? logo,
@@ -68,6 +90,7 @@ class PdfBuildScope {
     required String? subtitleEn,
     required bool bare,
   })  : _nameUr = nameUr,
+        _nameWidget = nameWidget,
         _addrUr = addrUr,
         _contactUr = contactUr,
         _logo = logo,
@@ -89,6 +112,42 @@ class PdfBuildScope {
     final uiInk = _ui(const Color(0xFF212121));
     final uiMuted = _ui(const Color(0xFF616161));
     final uiPrimary = _ui(branding.primary);
+    // Product logo fallback: when the tenant has no logo uploaded, use the
+    // real Madrassa-360 brand mark (not the vector crescent).
+    pw.Widget? logoWidget;
+    if (branding.hasLogo) {
+      logoWidget = pw.Image(
+        pw.MemoryImage(branding.logoBytes!),
+        width: 48,
+        height: 48,
+        fit: pw.BoxFit.contain,
+      );
+    } else {
+      try {
+        final bytes = await rootBundle.load('assets/images/app_logo.png');
+        logoWidget = pw.Image(
+          pw.MemoryImage(bytes.buffer.asUint8List()),
+          width: 48,
+          height: 48,
+          fit: pw.BoxFit.contain,
+        );
+      } catch (_) {
+        logoWidget = null; // buildHeader falls back to _emblem()
+      }
+    }
+    // Institution name: route by script so Urdu names don't render as tofu
+    // with the default Helvetica font.
+    final nameWidget = UrduPdf.isUrdu(branding.name)
+        ? await urdu.text(
+            branding.name,
+            fontSize: 9,
+            color: uiMuted,
+            align: ui.TextAlign.left,
+          )
+        : pw.Text(
+            branding.name,
+            style: pw.TextStyle(fontSize: 9, color: PdfBuildScope.muted),
+          );
     return PdfBuildScope._(
       branding: branding,
       urdu: urdu,
@@ -102,6 +161,7 @@ class PdfBuildScope {
         color: uiInk,
         align: ui.TextAlign.left,
       ),
+      nameWidget: nameWidget,
       addrUr: branding.addressLine == null
           ? null
           : await urdu.text(
@@ -118,14 +178,7 @@ class PdfBuildScope {
               color: uiMuted,
               align: ui.TextAlign.left,
             ),
-      logo: branding.hasLogo
-          ? pw.Image(
-              pw.MemoryImage(branding.logoBytes!),
-              width: 48,
-              height: 48,
-              fit: pw.BoxFit.contain,
-            )
-          : null,
+      logo: logoWidget,
       titleUr: await urdu.text(
         titleUr,
         fontSize: 15,
@@ -200,10 +253,7 @@ class PdfBuildScope {
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
                 children: [
                   _nameUr,
-                  pw.Text(
-                    branding.name,
-                    style: pw.TextStyle(fontSize: 9, color: muted),
-                  ),
+                  _nameWidget,
                   if (_addrUr != null) _addrUr,
                   if (_contactUr != null) _contactUr,
                 ],
