@@ -237,17 +237,25 @@ ON CONFLICT (id) DO NOTHING;
 
 
 -- Invoices (انوائسز) for 10 students + line items.
-INSERT INTO public.invoices (id, tenant_id, student_id, fee_structure_id, billing_month, issue_date, due_date, subtotal, status) VALUES
-  ('411d66a8-bb5c-4ee8-9642-ab351d137159', 'c54de9d9-eaf4-4f4f-bed5-a3f05acd9924', '9bf2ea72-a633-4608-81df-46e4b8187f5f', '1cbaae91-7796-43b3-848e-ce653beea5a0', to_char(CURRENT_DATE,'YYYY-MM'), CURRENT_DATE - 5, CURRENT_DATE + 10, 500, 'issued'),
-  ('dc210b95-6959-4c7b-91b6-996a4bff5057', 'c54de9d9-eaf4-4f4f-bed5-a3f05acd9924', 'fff2ae76-5347-431d-a587-c4dea9de5956', '1cbaae91-7796-43b3-848e-ce653beea5a0', to_char(CURRENT_DATE,'YYYY-MM'), CURRENT_DATE - 5, CURRENT_DATE + 10, 500, 'issued'),
-  ('1011b44c-a6e5-4223-8021-762617e9e56b', 'c54de9d9-eaf4-4f4f-bed5-a3f05acd9924', 'f4a82dfa-5e6d-4a66-b9ec-8f6a8f4c3082', '1cbaae91-7796-43b3-848e-ce653beea5a0', to_char(CURRENT_DATE,'YYYY-MM'), CURRENT_DATE - 5, CURRENT_DATE + 10, 500, 'issued'),
-  ('cb261f1d-77a4-4648-944f-63b4fd43f0ac', 'c54de9d9-eaf4-4f4f-bed5-a3f05acd9924', 'f26333cc-cfff-43ed-b5ea-af14de18c443', '1cbaae91-7796-43b3-848e-ce653beea5a0', to_char(CURRENT_DATE,'YYYY-MM'), CURRENT_DATE - 5, CURRENT_DATE + 10, 500, 'issued'),
-  ('36c12081-923d-4694-8eb0-d07485876f90', 'c54de9d9-eaf4-4f4f-bed5-a3f05acd9924', '1ef306bf-43db-4eff-8475-dfafe8a281ae', '1cbaae91-7796-43b3-848e-ce653beea5a0', to_char(CURRENT_DATE,'YYYY-MM'), CURRENT_DATE - 5, CURRENT_DATE + 10, 500, 'issued'),
-  ('23dee24d-93d7-47b6-8ee3-fd074cc38b7e', 'c54de9d9-eaf4-4f4f-bed5-a3f05acd9924', '25b09983-f650-42c9-b495-56c56499fb9c', '1cbaae91-7796-43b3-848e-ce653beea5a0', to_char(CURRENT_DATE,'YYYY-MM'), CURRENT_DATE - 5, CURRENT_DATE + 10, 500, 'issued'),
-  ('7fa8bcb3-559f-4a84-b383-d4b9993048c8', 'c54de9d9-eaf4-4f4f-bed5-a3f05acd9924', 'e2ff00ab-fdd8-41ab-b115-7c894aa50916', '1cbaae91-7796-43b3-848e-ce653beea5a0', to_char(CURRENT_DATE,'YYYY-MM'), CURRENT_DATE - 5, CURRENT_DATE + 10, 500, 'issued'),
-  ('e000b28f-d868-4f80-bfe2-68ef7d5d51ea', 'c54de9d9-eaf4-4f4f-bed5-a3f05acd9924', 'dc42603f-d063-4cec-b6eb-a0d5fba2d6d9', '1cbaae91-7796-43b3-848e-ce653beea5a0', to_char(CURRENT_DATE,'YYYY-MM'), CURRENT_DATE - 5, CURRENT_DATE + 10, 500, 'issued'),
-  ('550ad3bd-1abc-42a2-86e8-6005cbd5dc40', 'c54de9d9-eaf4-4f4f-bed5-a3f05acd9924', '6670f2b3-4d43-42e3-b342-af65e0259e58', 'bf1f1f63-55f6-4dd0-aaf3-5e0628485b88', to_char(CURRENT_DATE,'YYYY-MM'), CURRENT_DATE - 5, CURRENT_DATE + 10, 1000, 'issued'),
-  ('2a6f987d-b113-40c0-a83b-b4bc8c3f588f', 'c54de9d9-eaf4-4f4f-bed5-a3f05acd9924', '91c418bb-c3ed-440a-80f3-58a39fd73801', 'bf1f1f63-55f6-4dd0-aaf3-5e0628485b88', to_char(CURRENT_DATE,'YYYY-MM'), CURRENT_DATE - 5, CURRENT_DATE + 10, 1000, 'issued')
+-- NOTE 2026-09-30: finance_fill_doc_numbers() is intermittently broken on live
+-- (42703 on NEW.invoice_number even though the column exists; a CREATE OR REPLACE
+-- fixes it only for some connections). The three doc-number triggers are dropped
+-- here and re-created below so the seed does not depend on the flaky trigger.
+-- Invoice numbers are supplied explicitly (INV-DEMO-001..010).
+DROP TRIGGER IF EXISTS trg_invoices_fill_doc_numbers ON public.invoices;
+DROP TRIGGER IF EXISTS trg_payments_fill_doc_numbers ON public.payments;
+DROP TRIGGER IF EXISTS trg_income_fill_doc_numbers ON public.income;
+INSERT INTO public.invoices (id, invoice_number, tenant_id, student_id, fee_structure_id, billing_month, issue_date, due_date, subtotal, status) VALUES
+  ('411d66a8-bb5c-4ee8-9642-ab351d137159', 'INV-DEMO-001', 'c54de9d9-eaf4-4f4f-bed5-a3f05acd9924', '9bf2ea72-a633-4608-81df-46e4b8187f5f', '1cbaae91-7796-43b3-848e-ce653beea5a0', to_char(CURRENT_DATE,'YYYY-MM'), CURRENT_DATE - 5, CURRENT_DATE + 10, 500, 'issued'),
+  ('dc210b95-6959-4c7b-91b6-996a4bff5057', 'INV-DEMO-002', 'c54de9d9-eaf4-4f4f-bed5-a3f05acd9924', 'fff2ae76-5347-431d-a587-c4dea9de5956', '1cbaae91-7796-43b3-848e-ce653beea5a0', to_char(CURRENT_DATE,'YYYY-MM'), CURRENT_DATE - 5, CURRENT_DATE + 10, 500, 'issued'),
+  ('1011b44c-a6e5-4223-8021-762617e9e56b', 'INV-DEMO-003', 'c54de9d9-eaf4-4f4f-bed5-a3f05acd9924', 'f4a82dfa-5e6d-4a66-b9ec-8f6a8f4c3082', '1cbaae91-7796-43b3-848e-ce653beea5a0', to_char(CURRENT_DATE,'YYYY-MM'), CURRENT_DATE - 5, CURRENT_DATE + 10, 500, 'issued'),
+  ('cb261f1d-77a4-4648-944f-63b4fd43f0ac', 'INV-DEMO-004', 'c54de9d9-eaf4-4f4f-bed5-a3f05acd9924', 'f26333cc-cfff-43ed-b5ea-af14de18c443', '1cbaae91-7796-43b3-848e-ce653beea5a0', to_char(CURRENT_DATE,'YYYY-MM'), CURRENT_DATE - 5, CURRENT_DATE + 10, 500, 'issued'),
+  ('36c12081-923d-4694-8eb0-d07485876f90', 'INV-DEMO-005', 'c54de9d9-eaf4-4f4f-bed5-a3f05acd9924', '1ef306bf-43db-4eff-8475-dfafe8a281ae', '1cbaae91-7796-43b3-848e-ce653beea5a0', to_char(CURRENT_DATE,'YYYY-MM'), CURRENT_DATE - 5, CURRENT_DATE + 10, 500, 'issued'),
+  ('23dee24d-93d7-47b6-8ee3-fd074cc38b7e', 'INV-DEMO-006', 'c54de9d9-eaf4-4f4f-bed5-a3f05acd9924', '25b09983-f650-42c9-b495-56c56499fb9c', '1cbaae91-7796-43b3-848e-ce653beea5a0', to_char(CURRENT_DATE,'YYYY-MM'), CURRENT_DATE - 5, CURRENT_DATE + 10, 500, 'issued'),
+  ('7fa8bcb3-559f-4a84-b383-d4b9993048c8', 'INV-DEMO-007', 'c54de9d9-eaf4-4f4f-bed5-a3f05acd9924', 'e2ff00ab-fdd8-41ab-b115-7c894aa50916', '1cbaae91-7796-43b3-848e-ce653beea5a0', to_char(CURRENT_DATE,'YYYY-MM'), CURRENT_DATE - 5, CURRENT_DATE + 10, 500, 'issued'),
+  ('e000b28f-d868-4f80-bfe2-68ef7d5d51ea', 'INV-DEMO-008', 'c54de9d9-eaf4-4f4f-bed5-a3f05acd9924', 'dc42603f-d063-4cec-b6eb-a0d5fba2d6d9', '1cbaae91-7796-43b3-848e-ce653beea5a0', to_char(CURRENT_DATE,'YYYY-MM'), CURRENT_DATE - 5, CURRENT_DATE + 10, 500, 'issued'),
+  ('550ad3bd-1abc-42a2-86e8-6005cbd5dc40', 'INV-DEMO-009', 'c54de9d9-eaf4-4f4f-bed5-a3f05acd9924', '6670f2b3-4d43-42e3-b342-af65e0259e58', 'bf1f1f63-55f6-4dd0-aaf3-5e0628485b88', to_char(CURRENT_DATE,'YYYY-MM'), CURRENT_DATE - 5, CURRENT_DATE + 10, 1000, 'issued'),
+  ('2a6f987d-b113-40c0-a83b-b4bc8c3f588f', 'INV-DEMO-010', 'c54de9d9-eaf4-4f4f-bed5-a3f05acd9924', '91c418bb-c3ed-440a-80f3-58a39fd73801', 'bf1f1f63-55f6-4dd0-aaf3-5e0628485b88', to_char(CURRENT_DATE,'YYYY-MM'), CURRENT_DATE - 5, CURRENT_DATE + 10, 1000, 'issued')
 ON CONFLICT (id) DO NOTHING;
 INSERT INTO public.invoice_items (id, tenant_id, invoice_id, fee_item_id, description, quantity, unit_amount) VALUES
   ('1012036d-b8f2-455d-8f14-1fda69b2b1fd', 'c54de9d9-eaf4-4f4f-bed5-a3f05acd9924', '411d66a8-bb5c-4ee8-9642-ab351d137159', 'b6e8a2c9-5010-4a8f-992c-549b435c8c76', 'ٹیوشن فیس', 1, 500),
@@ -300,6 +308,18 @@ INSERT INTO public.income (id, tenant_id, source_type, donor_name, amount, accou
   ('65ae7555-38bb-4147-813d-c79612d93117', 'c54de9d9-eaf4-4f4f-bed5-a3f05acd9924', 'zakat', 'اللہ رکھا', 50000, '85984c22-90c4-406c-9ae2-5e508d9fbf6a', CURRENT_DATE - 6, 'DN-DEMO-002', 'زکٰوۃ — مستحق طلبہ', 'draft')
 ON CONFLICT (id) DO NOTHING;
 UPDATE public.income SET status = 'posted' WHERE status = 'draft' AND id IN ('33917e63-d950-4564-ab3b-c02dc5586ba1', '65ae7555-38bb-4147-813d-c79612d93117');
+
+-- Restore the doc-number triggers exactly as migration 014 defined them.
+-- (The intermittent 42703 fault itself is still open — see note above.)
+CREATE TRIGGER trg_invoices_fill_doc_numbers
+  BEFORE INSERT ON public.invoices
+  FOR EACH ROW EXECUTE FUNCTION public.finance_fill_doc_numbers();
+CREATE TRIGGER trg_payments_fill_doc_numbers
+  BEFORE INSERT ON public.payments
+  FOR EACH ROW EXECUTE FUNCTION public.finance_fill_doc_numbers();
+CREATE TRIGGER trg_income_fill_doc_numbers
+  BEFORE INSERT ON public.income
+  FOR EACH ROW EXECUTE FUNCTION public.finance_fill_doc_numbers();
 
 -- Notifications (tenant-wide).
 INSERT INTO public.notifications (id, tenant_id, type, title, title_urdu, body, body_urdu, channel) VALUES
