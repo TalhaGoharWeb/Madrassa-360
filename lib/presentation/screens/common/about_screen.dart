@@ -75,7 +75,7 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
   // ── Developer credit (shown at the product owner's request) ─────
 
   static const _developerName = 'محمد طلحہ بن فرید الفاروقی';
-  static const _developerPhone = '0317008311';
+  static const _developerPhone = '03170008311';
 
   // ── Helpers ───────────────────────────────────────────────
 
