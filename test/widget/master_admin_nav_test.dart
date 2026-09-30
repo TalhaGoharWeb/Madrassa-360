@@ -113,7 +113,8 @@ void main() {
 
     testWidgets('profile button calls onOpenProfile', (tester) async {
       var profilePressed = false;
-      await tester.pumpWidget(_pumpable(onOpenProfile: () => profilePressed = true));
+      await tester
+          .pumpWidget(_pumpable(onOpenProfile: () => profilePressed = true));
 
       await tester.tap(find.text('پروفائل'));
       expect(profilePressed, isTrue);

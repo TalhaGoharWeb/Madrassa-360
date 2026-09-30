@@ -75,8 +75,7 @@ class _ConsoleProfileScreenState extends ConsumerState<ConsoleProfileScreen> {
     });
   }
 
-  String get _roleLabel =>
-      widget.role == 'platform_owner' ? 'مالک' : 'منتظم';
+  String get _roleLabel => widget.role == 'platform_owner' ? 'مالک' : 'منتظم';
 
   @override
   Widget build(BuildContext context) {
@@ -119,8 +118,7 @@ class _ConsoleProfileScreenState extends ConsumerState<ConsoleProfileScreen> {
                                 height: 96,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  color:
-                                      Colors.white.withValues(alpha: 0.2),
+                                  color: Colors.white.withValues(alpha: 0.2),
                                   border: Border.all(
                                       color: Colors.white54, width: 3),
                                 ),
@@ -140,13 +138,11 @@ class _ConsoleProfileScreenState extends ConsumerState<ConsoleProfileScreen> {
                                               ),
                                             )
                                           : const Icon(Icons.person,
-                                              size: 48,
-                                              color: Colors.white),
+                                              size: 48, color: Colors.white),
                                 ),
                               ),
                               Positioned.directional(
-                                textDirection:
-                                    Directionality.of(context),
+                                textDirection: Directionality.of(context),
                                 end: 2,
                                 bottom: 2,
                                 child: Container(
@@ -166,9 +162,7 @@ class _ConsoleProfileScreenState extends ConsumerState<ConsoleProfileScreen> {
                         Text(
                           displayName,
                           style: AppTypography.titleLarge.copyWith(
-                            color: hasRealName
-                                ? Colors.white
-                                : Colors.white60,
+                            color: hasRealName ? Colors.white : Colors.white60,
                             fontWeight: FontWeight.bold,
                           ),
                           textAlign: TextAlign.center,
@@ -191,8 +185,7 @@ class _ConsoleProfileScreenState extends ConsumerState<ConsoleProfileScreen> {
                           ),
                         ),
                         const SizedBox(height: 12),
-                        if (displayPhone.isNotEmpty ||
-                            email.isNotEmpty)
+                        if (displayPhone.isNotEmpty || email.isNotEmpty)
                           Wrap(
                             spacing: 10,
                             runSpacing: 6,
@@ -204,8 +197,7 @@ class _ConsoleProfileScreenState extends ConsumerState<ConsoleProfileScreen> {
                                     label: displayPhone),
                               if (email.isNotEmpty)
                                 _ContactPill(
-                                    icon: Icons.email_outlined,
-                                    label: email),
+                                    icon: Icons.email_outlined, label: email),
                             ],
                           ),
                       ],
@@ -251,10 +243,9 @@ class _ConsoleProfileScreenState extends ConsumerState<ConsoleProfileScreen> {
   void _showEditSheet(BuildContext context) {
     final user = ref.read(currentUserProvider);
     final currentDisplayName = ref.read(displayNameProvider(''));
-    final nameCtrl =
-        TextEditingController(text: currentDisplayName);
-    final phoneCtrl = TextEditingController(
-        text: _phone.isNotEmpty ? _phone : user?.phone);
+    final nameCtrl = TextEditingController(text: currentDisplayName);
+    final phoneCtrl =
+        TextEditingController(text: _phone.isNotEmpty ? _phone : user?.phone);
     String? tempPhotoPath = _photoPath;
 
     showModalBottomSheet(
@@ -267,8 +258,7 @@ class _ConsoleProfileScreenState extends ConsumerState<ConsoleProfileScreen> {
       builder: (sheetContext) => StatefulBuilder(
         builder: (sheetContext, setSheetState) => Padding(
           padding: EdgeInsets.only(
-            bottom:
-                MediaQuery.of(sheetContext).viewInsets.bottom + 16,
+            bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 16,
             left: 24,
             right: 24,
             top: 24,
@@ -301,8 +291,7 @@ class _ConsoleProfileScreenState extends ConsumerState<ConsoleProfileScreen> {
                       final picked = await ImagePicker().pickImage(
                           source: ImageSource.gallery, imageQuality: 70);
                       if (picked != null) {
-                        setSheetState(
-                            () => tempPhotoPath = picked.path);
+                        setSheetState(() => tempPhotoPath = picked.path);
                       }
                     },
                     child: Stack(
@@ -310,23 +299,20 @@ class _ConsoleProfileScreenState extends ConsumerState<ConsoleProfileScreen> {
                       children: [
                         CircleAvatar(
                           radius: 50,
-                          backgroundColor: AppColors.primary
-                              .withValues(alpha: 0.1),
+                          backgroundColor:
+                              AppColors.primary.withValues(alpha: 0.1),
                           backgroundImage: tempPhotoPath != null
-                              ? FileImage(File(tempPhotoPath!))
-                                  as ImageProvider
+                              ? FileImage(File(tempPhotoPath!)) as ImageProvider
                               : null,
                           child: tempPhotoPath == null
                               ? const Icon(Icons.person,
-                                  size: 45,
-                                  color: AppColors.primary)
+                                  size: 45, color: AppColors.primary)
                               : null,
                         ),
                         Container(
                           padding: const EdgeInsets.all(6),
                           decoration: const BoxDecoration(
-                              color: AppColors.primary,
-                              shape: BoxShape.circle),
+                              color: AppColors.primary, shape: BoxShape.circle),
                           child: const Icon(Icons.camera_alt,
                               color: Colors.white, size: 16),
                         ),
@@ -360,8 +346,7 @@ class _ConsoleProfileScreenState extends ConsumerState<ConsoleProfileScreen> {
                     Navigator.pop(sheetContext);
                     await _saveProfile(name, phone, tempPhotoPath);
                     if (!context.mounted) return;
-                    showM360SnackBar(
-                        context, 'پروفائل محفوظ کر دیا گیا');
+                    showM360SnackBar(context, 'پروفائل محفوظ کر دیا گیا');
                   },
                 ),
                 const SizedBox(height: 8),
@@ -382,8 +367,7 @@ class _ContactPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding:
-          const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(20),
@@ -397,8 +381,8 @@ class _ContactPill extends StatelessWidget {
           Flexible(
             child: Text(
               label,
-              style: AppTypography.labelSmall.copyWith(
-                  fontSize: 15, color: Colors.white70),
+              style: AppTypography.labelSmall
+                  .copyWith(fontSize: 15, color: Colors.white70),
               overflow: TextOverflow.ellipsis,
             ),
           ),
@@ -427,8 +411,7 @@ class _FactRow extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Padding(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: Row(
             children: [
               Container(
@@ -436,11 +419,9 @@ class _FactRow extends StatelessWidget {
                 height: 40,
                 decoration: BoxDecoration(
                   color: AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius:
-                      BorderRadius.circular(M360Radius.md),
+                  borderRadius: BorderRadius.circular(M360Radius.md),
                 ),
-                child: Icon(icon,
-                    color: AppColors.primary, size: 20),
+                child: Icon(icon, color: AppColors.primary, size: 20),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -457,9 +438,8 @@ class _FactRow extends StatelessWidget {
                     Text(
                       value,
                       style: AppTypography.bodyMedium,
-                      textDirection: label == 'ای میل'
-                          ? TextDirection.ltr
-                          : null,
+                      textDirection:
+                          label == 'ای میل' ? TextDirection.ltr : null,
                     ),
                   ],
                 ),
