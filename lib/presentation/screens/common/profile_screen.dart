@@ -432,107 +432,109 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             right: 24,
             top: 24,
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Drag handle
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: AppColors.divider,
-                    borderRadius: BorderRadius.circular(2),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Drag handle
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.divider,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'پروفائل ترتیبات',
-                style: AppTypography.titleLarge,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 20),
+                const SizedBox(height: 16),
+                Text(
+                  'پروفائل ترتیبات',
+                  style: AppTypography.titleLarge,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 20),
 
-              // Photo picker
-              Center(
-                child: GestureDetector(
-                  onTap: () async {
-                    final picked = await ImagePicker().pickImage(
-                        source: ImageSource.gallery, imageQuality: 70);
-                    if (picked != null) {
-                      setSheetState(() => tempPhotoPath = picked.path);
-                    }
+                // Photo picker
+                Center(
+                  child: GestureDetector(
+                    onTap: () async {
+                      final picked = await ImagePicker().pickImage(
+                          source: ImageSource.gallery, imageQuality: 70);
+                      if (picked != null) {
+                        setSheetState(() => tempPhotoPath = picked.path);
+                      }
+                    },
+                    child: Stack(
+                      alignment: Alignment.bottomRight,
+                      children: [
+                        CircleAvatar(
+                          radius: 50,
+                          backgroundColor:
+                              AppColors.primary.withValues(alpha: 0.1),
+                          backgroundImage: tempPhotoPath != null
+                              ? FileImage(File(tempPhotoPath!)) as ImageProvider
+                              : null,
+                          child: tempPhotoPath == null
+                              ? const Icon(Icons.person,
+                                  size: 45, color: AppColors.primary)
+                              : null,
+                        ),
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: const BoxDecoration(
+                              color: AppColors.primary, shape: BoxShape.circle),
+                          child: const Icon(Icons.camera_alt,
+                              color: Colors.white, size: 16),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                M360TextField(
+                  label: 'نام',
+                  hint: 'اپنا نام لکھیں',
+                  controller: nameCtrl,
+                  prefixIcon: Icons.person_outline,
+                ),
+                const SizedBox(height: 12),
+                M360TextField(
+                  label: 'فون نمبر',
+                  hint: '03xx-xxxxxxx',
+                  controller: phoneCtrl,
+                  keyboardType: TextInputType.phone,
+                  prefixIcon: Icons.phone_outlined,
+                ),
+                const SizedBox(height: 12),
+                M360TextField(
+                  label: 'ای میل',
+                  hint: 'example@mail.com',
+                  controller: emailCtrl,
+                  keyboardType: TextInputType.emailAddress,
+                  prefixIcon: Icons.email_outlined,
+                ),
+                const SizedBox(height: 24),
+
+                M360PrimaryButton(
+                  label: 'محفوظ کریں',
+                  icon: Icons.check,
+                  fullWidth: true,
+                  onPressed: () async {
+                    final name = nameCtrl.text.trim();
+                    final phone = phoneCtrl.text.trim();
+                    final email = emailCtrl.text.trim();
+                    Navigator.pop(sheetContext);
+                    await _saveProfile(name, phone, email, tempPhotoPath);
+                    if (!context.mounted) return;
+                    showM360SnackBar(context, 'پروفائل محفوظ کر دیا گیا');
                   },
-                  child: Stack(
-                    alignment: Alignment.bottomRight,
-                    children: [
-                      CircleAvatar(
-                        radius: 50,
-                        backgroundColor:
-                            AppColors.primary.withValues(alpha: 0.1),
-                        backgroundImage: tempPhotoPath != null
-                            ? FileImage(File(tempPhotoPath!)) as ImageProvider
-                            : null,
-                        child: tempPhotoPath == null
-                            ? const Icon(Icons.person,
-                                size: 45, color: AppColors.primary)
-                            : null,
-                      ),
-                      Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: const BoxDecoration(
-                            color: AppColors.primary, shape: BoxShape.circle),
-                        child: const Icon(Icons.camera_alt,
-                            color: Colors.white, size: 16),
-                      ),
-                    ],
-                  ),
                 ),
-              ),
-              const SizedBox(height: 20),
-
-              M360TextField(
-                label: 'نام',
-                hint: 'اپنا نام لکھیں',
-                controller: nameCtrl,
-                prefixIcon: Icons.person_outline,
-              ),
-              const SizedBox(height: 12),
-              M360TextField(
-                label: 'فون نمبر',
-                hint: '03xx-xxxxxxx',
-                controller: phoneCtrl,
-                keyboardType: TextInputType.phone,
-                prefixIcon: Icons.phone_outlined,
-              ),
-              const SizedBox(height: 12),
-              M360TextField(
-                label: 'ای میل',
-                hint: 'example@mail.com',
-                controller: emailCtrl,
-                keyboardType: TextInputType.emailAddress,
-                prefixIcon: Icons.email_outlined,
-              ),
-              const SizedBox(height: 24),
-
-              M360PrimaryButton(
-                label: 'محفوظ کریں',
-                icon: Icons.check,
-                fullWidth: true,
-                onPressed: () async {
-                  final name = nameCtrl.text.trim();
-                  final phone = phoneCtrl.text.trim();
-                  final email = emailCtrl.text.trim();
-                  Navigator.pop(sheetContext);
-                  await _saveProfile(name, phone, email, tempPhotoPath);
-                  if (!context.mounted) return;
-                  showM360SnackBar(context, 'پروفائل محفوظ کر دیا گیا');
-                },
-              ),
-              const SizedBox(height: 8),
-            ],
+                const SizedBox(height: 8),
+              ],
+            ),
           ),
         ),
       ),
@@ -777,7 +779,13 @@ class _SettingsTile extends StatelessWidget {
           ),
         ),
         if (!isLast)
-          const Divider(height: 1, indent: 70, color: AppColors.divider),
+          const Padding(
+            // Inset the divider to align with the text column (below the
+            // 40px icon + 14px gap + 16px outer padding). Direction-aware
+            // so it stays aligned in RTL.
+            padding: EdgeInsetsDirectional.only(start: 70),
+            child: Divider(height: 1, color: AppColors.divider),
+          ),
       ],
     );
   }

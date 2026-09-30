@@ -573,11 +573,13 @@ class _AttendanceSummarySection extends ConsumerWidget {
                     count: stats.todayPresent,
                     color: AppColors.present,
                   ),
+                  const SizedBox(width: 6),
                   _MiniCount(
                     label: 'غیر حاضر',
                     count: stats.todayAbsent,
                     color: AppColors.error,
                   ),
+                  const SizedBox(width: 6),
                   _MiniCount(
                     label: 'چھٹی',
                     count: stats.todayLeave,
@@ -628,8 +630,9 @@ class _MiniCount extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Expanded(
+      // No outer margin: inter-tile spacing is provided by the parent Row,
+      // so the tiles align flush with full-width elements above/below.
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 3),
         padding: const EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.1),

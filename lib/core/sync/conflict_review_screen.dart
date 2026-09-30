@@ -162,7 +162,8 @@ class _ConflictCardState extends ConsumerState<_ConflictCard> {
               onPressed: () => setState(() => _expanded = !_expanded),
               icon: Icon(_expanded ? Icons.expand_less : Icons.expand_more),
               label: Text(
-                  _expanded ? 'تفصیل چھپائیں' : 'مقامی بمقابلہ سرور دیکھیں'),
+                  _expanded ? 'تفصیل چھپائیں' : 'مقامی بمقابلہ سرور دیکھیں',
+                  style: AppTypography.labelNastaliq),
             ),
             if (_expanded) _buildComparison(),
             const SizedBox(height: 8),
@@ -255,7 +256,7 @@ class _ConflictCardState extends ConsumerState<_ConflictCard> {
           child: OutlinedButton.icon(
             onPressed: () => _resolve(context, keepServer: true),
             icon: const Icon(Icons.cloud_download),
-            label: const Text('سرور رکھیں'),
+            label: Text('سرور رکھیں', style: AppTypography.labelNastaliq),
           ),
         ),
         const SizedBox(width: 8),
@@ -263,7 +264,8 @@ class _ConflictCardState extends ConsumerState<_ConflictCard> {
           child: ElevatedButton.icon(
             onPressed: () => _resolve(context, keepServer: false),
             icon: const Icon(Icons.cloud_upload),
-            label: const Text('مقامی دوبارہ بھیجیں'),
+            label:
+                Text('مقامی دوبارہ بھیجیں', style: AppTypography.labelNastaliq),
           ),
         ),
       ],
@@ -307,7 +309,8 @@ class _ConflictCardState extends ConsumerState<_ConflictCard> {
                 child: OutlinedButton.icon(
                   onPressed: () => _resolve(context, keepServer: true),
                   icon: const Icon(Icons.cloud_download),
-                  label: const Text('سرور رکھیں (مقامی حذف کریں)'),
+                  label: Text('سرور رکھیں (مقامی حذف کریں)',
+                      style: AppTypography.labelNastaliq),
                 ),
               ),
               const SizedBox(width: 8),
@@ -322,7 +325,8 @@ class _ConflictCardState extends ConsumerState<_ConflictCard> {
                     );
                   },
                   icon: const Icon(Icons.account_balance),
-                  label: const Text('فنانس کھولیں'),
+                  label:
+                      Text('فنانس کھولیں', style: AppTypography.labelNastaliq),
                 ),
               ),
             ],

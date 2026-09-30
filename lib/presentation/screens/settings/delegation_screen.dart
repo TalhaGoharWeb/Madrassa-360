@@ -56,7 +56,8 @@ class DelegationScreen extends ConsumerWidget {
           }
         },
         icon: const Icon(Icons.handshake_outlined),
-        label: const Text('اختیار سونپیں'),
+        label: Text('اختیار سونپیں',
+            style: AppTypography.labelNastaliq.copyWith(color: Colors.white)),
       ),
     );
   }

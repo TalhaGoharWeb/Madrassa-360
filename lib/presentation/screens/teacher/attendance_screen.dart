@@ -436,9 +436,11 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
               ),
               if (_edits.isNotEmpty) ...[
                 const SizedBox(width: 8),
-                M360TertiaryButton(
-                  label: AppStrings.clearEdits,
-                  onPressed: _clearEdits,
+                Expanded(
+                  child: M360TertiaryButton(
+                    label: AppStrings.clearEdits,
+                    onPressed: _clearEdits,
+                  ),
                 ),
               ],
             ],

@@ -35,55 +35,74 @@ class NoAccessScreen extends ConsumerWidget {
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Center(
-                child: Container(
-                  width: 96,
-                  height: 96,
-                  decoration: BoxDecoration(
-                    color: AppColors.error.withValues(alpha: 0.12),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.no_accounts_outlined,
-                    size: 48,
-                    color: AppColors.error,
-                  ),
+          // Scrollable so the content never overflows on short/landscape
+          // screens or at large text scales; stays centered otherwise.
+          // The outer Column receives the viewport minHeight directly (no
+          // IntrinsicHeight: its intrinsic measurement disagrees with real
+          // layout for wrapping Nastaleeq text and reports a false overflow).
+          child: LayoutBuilder(
+            builder: (context, constraints) => SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    M360ConstrainedWidth(
+                      maxWidth: 480,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Center(
+                            child: Container(
+                              width: 96,
+                              height: 96,
+                              decoration: BoxDecoration(
+                                color: AppColors.error.withValues(alpha: 0.12),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.no_accounts_outlined,
+                                size: 48,
+                                color: AppColors.error,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          Text(
+                            'رسائی دستیاب نہیں',
+                            style: AppTypography.headingSmall,
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'آپ کے اکاؤنٹ کو کسی ادارے تک رسائی حاصل نہیں ہے۔ براہ کرم اپنے ادارے کے منتظم سے رابطہ کریں۔',
+                            style: AppTypography.bodyLarge,
+                            textAlign: TextAlign.center,
+                          ),
+                          if (email != null && email.isNotEmpty) ...[
+                            const SizedBox(height: 12),
+                            M360Email(
+                              email,
+                              textAlign: TextAlign.center,
+                              style: AppTypography.bodyMedium.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 40),
+                          M360PrimaryButton(
+                            label: 'لاگ آؤٹ',
+                            icon: Icons.logout,
+                            fullWidth: true,
+                            onPressed: () => _signOut(context, ref),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 24),
-              Text(
-                'رسائی دستیاب نہیں',
-                style: AppTypography.headingSmall,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'آپ کے اکاؤنٹ کو کسی ادارے تک رسائی حاصل نہیں ہے۔ براہ کرم اپنے ادارے کے منتظم سے رابطہ کریں۔',
-                style: AppTypography.bodyLarge,
-                textAlign: TextAlign.center,
-              ),
-              if (email != null && email.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                M360Email(
-                  email,
-                  textAlign: TextAlign.center,
-                  style: AppTypography.bodyMedium.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
-              const SizedBox(height: 40),
-              M360PrimaryButton(
-                label: 'لاگ آؤٹ',
-                icon: Icons.logout,
-                fullWidth: true,
-                onPressed: () => _signOut(context, ref),
-              ),
-            ],
+            ),
           ),
         ),
       ),

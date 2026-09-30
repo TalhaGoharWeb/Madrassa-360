@@ -12,6 +12,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_permissions.dart';
+import '../../../core/constants/app_typography.dart';
 import '../../../core/design/m360.dart';
 import '../../../core/utils/date_utils.dart' as app_date;
 import '../../../core/utils/money_format.dart';
@@ -298,10 +299,18 @@ class _FinancePaymentsTabState extends ConsumerState<FinancePaymentsTab> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(k, style: const TextStyle(color: AppColors.textSecondary)),
-          Text(v,
-              textDirection: TextDirection.rtl,
-              style: const TextStyle(fontWeight: FontWeight.w600)),
+          Text(k,
+              style: AppTypography.labelNastaliq
+                  .copyWith(color: AppColors.textSecondary)),
+          Flexible(
+            child: Text(v,
+                textDirection: TextDirection.rtl,
+                textAlign: TextAlign.end,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: AppTypography.titleSmall
+                    .copyWith(fontWeight: FontWeight.w600)),
+          ),
         ],
       ),
     );

@@ -932,7 +932,7 @@ class _AccountCard extends StatelessWidget {
                   leading: const Icon(Icons.delete_outline,
                       color: AppColors.error, size: 18),
                   title: Text('حذف کریں',
-                      style: AppTypography.bodyMedium.copyWith(
+                      style: AppTypography.labelNastaliq.copyWith(
                         color: AppColors.error,
                       )),
                 ),

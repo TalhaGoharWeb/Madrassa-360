@@ -70,7 +70,8 @@ class ScopeManagerScreen extends ConsumerWidget {
           }
         },
         icon: const Icon(Icons.add),
-        label: const Text('دائرہ کار مقرر کریں'),
+        label: Text('دائرہ کار مقرر کریں',
+            style: AppTypography.labelNastaliq.copyWith(color: Colors.white)),
       ),
     );
   }

@@ -312,17 +312,25 @@ class _FeeManagementScreenState extends ConsumerState<FeeManagementScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          'ادا شدہ: ${view.amountPaidLabel}',
-                          style: AppTypography.labelSmall
-                              .copyWith(color: AppColors.success),
+                        Flexible(
+                          child: Text(
+                            'ادا شدہ: ${view.amountPaidLabel}',
+                            style: AppTypography.labelSmall
+                                .copyWith(color: AppColors.success),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                         if (record.remaining > 0)
-                          Text(
-                            'بقایا: ${view.remainingLabel} روپے',
-                            style: AppTypography.labelSmall.copyWith(
-                              color: AppColors.error,
-                              fontWeight: FontWeight.bold,
+                          Flexible(
+                            child: Text(
+                              'بقایا: ${view.remainingLabel} روپے',
+                              style: AppTypography.labelSmall.copyWith(
+                                color: AppColors.error,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                       ],

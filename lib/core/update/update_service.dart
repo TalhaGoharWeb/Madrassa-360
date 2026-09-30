@@ -22,6 +22,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../services/supabase_service.dart';
 import 'app_version.dart';
+import '../constants/app_typography.dart';
 
 // ─────────────────────────────────────────────
 // Model
@@ -276,7 +277,7 @@ class _OptionalUpdateDialog extends ConsumerWidget {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: AlertDialog(
-        title: const Text('نئی اپ ڈیٹ دستیاب ہے'),
+        title: Text('نئی اپ ڈیٹ دستیاب ہے', style: AppTypography.titleSmall),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -296,7 +297,7 @@ class _OptionalUpdateDialog extends ConsumerWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('بعد میں / Later'),
+            child: Text('بعد میں / Later', style: AppTypography.labelNastaliq),
           ),
           FilledButton(
             onPressed: () async {
@@ -315,7 +316,8 @@ class _OptionalUpdateDialog extends ConsumerWidget {
                 Navigator.of(context).pop();
               }
             },
-            child: const Text('اپ ڈیٹ کریں / Update'),
+            child: Text('اپ ڈیٹ کریں / Update',
+                style: AppTypography.labelNastaliq),
           ),
         ],
       ),
@@ -396,8 +398,8 @@ class ForcedUpdateScreen extends ConsumerWidget {
                       const SizedBox(height: 24),
                       FilledButton.icon(
                         icon: const Icon(Icons.download),
-                        label: const Text(
-                            'اپ ڈیٹ ڈاؤن لوڈ کریں / Download update'),
+                        label: Text('اپ ڈیٹ ڈاؤن لوڈ کریں / Download update',
+                            style: AppTypography.labelNastaliq),
                         onPressed: () async {
                           final ok = await ref
                               .read(updateServiceProvider)

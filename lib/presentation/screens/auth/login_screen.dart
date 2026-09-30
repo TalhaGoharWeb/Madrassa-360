@@ -179,8 +179,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                           // Logo & App Name
                           _buildHeader(),
                           const SizedBox(height: 48),
-                          // Login Card
-                          _buildLoginCard(),
+                          // Login Card — constrained so it doesn't stretch
+                          // edge-to-edge on wide desktops.
+                          M360ConstrainedWidth(
+                            maxWidth: 480,
+                            child: _buildLoginCard(),
+                          ),
                           const SizedBox(height: 24),
                           // Footer
                           _buildFooter(),

@@ -47,12 +47,12 @@ class NetworkService {
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('انٹرنیٹ دستیاب نہیں'),
+          title: Text('انٹرنیٹ دستیاب نہیں', style: AppTypography.titleSmall),
           content: const Text('براہ کرم اپنا انٹرنیٹ کنیکشن چیک کریں'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('ٹھیک ہے'),
+              child: Text('ٹھیک ہے', style: AppTypography.labelNastaliq),
             ),
           ],
         ),

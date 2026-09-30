@@ -145,30 +145,32 @@ class _ParentDashboardScreenState extends ConsumerState<ParentDashboardScreen> {
 
   /// Chips to switch between the parent's own children.
   Widget _buildChildSelector(List<Student> children, Student selected) {
-    return Container(
-      height: 52,
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: children.length,
-        itemBuilder: (context, index) {
-          final child = children[index];
-          final isSelected = child.id == selected.id;
-          return Padding(
-            padding: const EdgeInsets.only(left: 8),
-            child: FilterChip(
-              label: Text(child.name),
-              selected: isSelected,
-              onSelected: (_) => setState(() => _selectedChildId = child.id),
-              selectedColor: AppColors.primary.withValues(alpha: 0.2),
-              checkmarkColor: AppColors.primary,
-              labelStyle: AppTypography.labelMedium.copyWith(
-                color: isSelected ? AppColors.primary : AppColors.textSecondary,
-              ),
-            ),
-          );
-        },
+    // Horizontal scroll + Row (instead of a fixed-height ListView) so the
+    // strip grows naturally with large text scales instead of clipping.
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: [
+          for (int index = 0; index < children.length; index++) ...[
+            if (index > 0) const SizedBox(width: 8),
+            Builder(builder: (context) {
+              final child = children[index];
+              final isSelected = child.id == selected.id;
+              return FilterChip(
+                label: Text(child.name),
+                selected: isSelected,
+                onSelected: (_) => setState(() => _selectedChildId = child.id),
+                selectedColor: AppColors.primary.withValues(alpha: 0.2),
+                checkmarkColor: AppColors.primary,
+                labelStyle: AppTypography.labelMedium.copyWith(
+                  color:
+                      isSelected ? AppColors.primary : AppColors.textSecondary,
+                ),
+              );
+            }),
+          ],
+        ],
       ),
     );
   }
@@ -245,14 +247,21 @@ class _ParentDashboardScreenState extends ConsumerState<ParentDashboardScreen> {
                     style: AppTypography.labelMedium.copyWith(
                       color: Colors.white,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    _buildChildStat(Icons.calendar_today, attendanceLabel),
+                    Expanded(
+                      child: _buildChildStat(
+                          Icons.calendar_today, attendanceLabel),
+                    ),
                     const SizedBox(width: 16),
-                    _buildChildStat(Icons.star, resultLabel),
+                    Expanded(
+                      child: _buildChildStat(Icons.star, resultLabel),
+                    ),
                   ],
                 ),
               ],
@@ -276,10 +285,14 @@ class _ParentDashboardScreenState extends ConsumerState<ParentDashboardScreen> {
       children: [
         Icon(icon, color: Colors.white70, size: 14),
         const SizedBox(width: 4),
-        Text(
-          text,
-          style: AppTypography.labelSmall.copyWith(
-            color: Colors.white70,
+        Flexible(
+          child: Text(
+            text,
+            style: AppTypography.labelSmall.copyWith(
+              color: Colors.white70,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ],
@@ -468,7 +481,7 @@ class _ParentDashboardScreenState extends ConsumerState<ParentDashboardScreen> {
             ListTile(
               leading:
                   const Icon(Icons.receipt_long_outlined, color: Colors.green),
-              title: Text('فیس کی ہسٹری', style: AppTypography.bodyLarge),
+              title: Text('فیس کی ہسٹری', style: AppTypography.titleSmall),
               onTap: () {
                 Navigator.pop(context);
                 Navigator.of(context).push(
@@ -480,7 +493,7 @@ class _ParentDashboardScreenState extends ConsumerState<ParentDashboardScreen> {
             ),
             ListTile(
               leading: const Icon(Icons.campaign_outlined, color: Colors.blue),
-              title: Text('اعلانات', style: AppTypography.bodyLarge),
+              title: Text('اعلانات', style: AppTypography.titleSmall),
               onTap: () {
                 Navigator.pop(context);
                 Navigator.of(context).push(

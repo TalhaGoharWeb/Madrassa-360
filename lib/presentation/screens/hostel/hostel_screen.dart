@@ -17,6 +17,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_permissions.dart';
+import '../../../core/constants/app_typography.dart';
 import '../../../core/design/m360.dart';
 import '../../../data/repositories/hostel_repository.dart';
 import '../../../providers/auth_provider.dart';
@@ -167,7 +168,8 @@ class _HostelScreenState extends ConsumerState<HostelScreen>
       backgroundColor: AppColors.accentDark,
       foregroundColor: Colors.white,
       icon: const Icon(Icons.add),
-      label: Text(label),
+      label: Text(label,
+          style: AppTypography.labelNastaliq.copyWith(color: Colors.white)),
       onPressed: () {
         action();
         // Refresh the tab index listener so the FAB label follows tabs.
@@ -263,7 +265,8 @@ class _BuildingsTab extends ConsumerWidget {
                     Text(
                       b.name,
                       textDirection: TextDirection.rtl,
-                      style: const TextStyle(fontWeight: FontWeight.w600),
+                      style: AppTypography.titleSmall
+                          .copyWith(fontWeight: FontWeight.w600),
                     ),
                     Text(
                       b.wardenName == null
@@ -383,7 +386,8 @@ class _RoomsTab extends ConsumerWidget {
                     Text(
                       'کمرہ ${r.roomNo}',
                       textDirection: TextDirection.rtl,
-                      style: const TextStyle(fontWeight: FontWeight.w600),
+                      style: AppTypography.titleSmall
+                          .copyWith(fontWeight: FontWeight.w600),
                     ),
                     Text(
                       '${building?.name ?? ''} — $bedCount بستر',
@@ -477,7 +481,10 @@ class _BedsTabState extends State<_BedsTab> {
         }
         return Column(
           children: [
-            Padding(
+            // Horizontal scroll so the 4 filter chips never overflow
+            // a 360px phone, even at large text scales.
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 children: [
@@ -540,7 +547,7 @@ class _BedsTabState extends State<_BedsTab> {
                                     Text(
                                       'بستر ${bed.bedNo}',
                                       textDirection: TextDirection.rtl,
-                                      style: const TextStyle(
+                                      style: AppTypography.titleSmall.copyWith(
                                           fontWeight: FontWeight.w600),
                                     ),
                                     Text(
@@ -632,7 +639,7 @@ class _FilterChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChoiceChip(
-      label: Text(label),
+      label: Text(label, style: AppTypography.labelNastaliq),
       selected: selected,
       onSelected: (_) => onTap(),
       selectedColor: AppColors.primary.withValues(alpha: 0.15),
@@ -693,7 +700,8 @@ class _AllocationsTab extends ConsumerWidget {
                     Text(
                       a.studentName,
                       textDirection: TextDirection.rtl,
-                      style: const TextStyle(fontWeight: FontWeight.w600),
+                      style: AppTypography.titleSmall
+                          .copyWith(fontWeight: FontWeight.w600),
                     ),
                     Text(
                       bed == null ? '' : 'بستر ${bed.bedNo}',
@@ -731,7 +739,7 @@ class _AllocationsTab extends ConsumerWidget {
                       isError: !done,
                     );
                   },
-                  child: const Text('ختم کریں'),
+                  child: Text('ختم کریں', style: AppTypography.labelNastaliq),
                 ),
             ],
           ),

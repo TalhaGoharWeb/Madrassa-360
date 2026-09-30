@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
+import '../constants/app_typography.dart';
 
 /// خالی حالت
 /// Empty State Widgets
@@ -122,7 +123,8 @@ class ErrorStateWidget extends StatelessWidget {
               ElevatedButton.icon(
                 onPressed: onRetry,
                 icon: const Icon(Icons.refresh),
-                label: const Text('دوبارہ کوشش کریں'),
+                label: Text('دوبارہ کوشش کریں',
+                    style: AppTypography.labelNastaliq),
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 24,

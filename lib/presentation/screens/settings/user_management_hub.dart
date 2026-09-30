@@ -107,7 +107,9 @@ class _UserManagementHubScreenState
                   }
                 },
                 icon: const Icon(Icons.person_add_alt),
-                label: const Text('نیا صارف'),
+                label: Text('نیا صارف',
+                    style: AppTypography.labelNastaliq
+                        .copyWith(color: Colors.white)),
               )
             : const SizedBox.shrink(),
       ),
@@ -306,19 +308,34 @@ class _UsersTabState extends ConsumerState<_UsersTab> {
         top: false,
         child: Row(
           children: [
-            Text('${_selected.length} منتخب', style: AppTypography.titleSmall),
+            Flexible(
+              child: Text(
+                '${_selected.length} منتخب',
+                style: AppTypography.titleSmall,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
             const Spacer(),
-            M360TertiaryButton(
-              label: 'ذمہ داری تبدیل کریں',
-              onPressed: () => _bulkRoleChange(),
+            Flexible(
+              child: M360TertiaryButton(
+                label: 'ذمہ داری تبدیل کریں',
+                onPressed: () => _bulkRoleChange(),
+              ),
             ),
             PopupMenuButton<bool>(
               icon: const Icon(Icons.power_settings_new),
               tooltip: 'فعال / غیر فعال',
               onSelected: (active) => _bulkSetActive(active),
-              itemBuilder: (ctx) => const [
-                PopupMenuItem(value: true, child: Text('فعال کریں')),
-                PopupMenuItem(value: false, child: Text('غیر فعال کریں')),
+              itemBuilder: (ctx) => [
+                PopupMenuItem(
+                    value: true,
+                    child:
+                        Text('فعال کریں', style: AppTypography.labelNastaliq)),
+                PopupMenuItem(
+                    value: false,
+                    child: Text('غیر فعال کریں',
+                        style: AppTypography.labelNastaliq)),
               ],
             ),
           ],

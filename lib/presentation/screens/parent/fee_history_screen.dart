@@ -147,19 +147,20 @@ class FeeHistoryScreen extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildFeeStat('کل فیس', '${totalDue.toInt()}'),
+                Expanded(child: _buildFeeStat('کل فیس', '${totalDue.toInt()}')),
                 Container(
                   width: 1,
                   height: 40,
                   color: Colors.white24,
                 ),
-                _buildFeeStat('ادا شدہ', '${totalPaid.toInt()}'),
+                Expanded(
+                    child: _buildFeeStat('ادا شدہ', '${totalPaid.toInt()}')),
                 Container(
                   width: 1,
                   height: 40,
                   color: Colors.white24,
                 ),
-                _buildFeeStat('باقی', '${remaining.toInt()}'),
+                Expanded(child: _buildFeeStat('باقی', '${remaining.toInt()}')),
               ],
             ),
           ),
@@ -170,18 +171,23 @@ class FeeHistoryScreen extends StatelessWidget {
 
   Widget _buildFeeStat(String label, String value) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Text(
           value,
           style: AppTypography.titleLarge.copyWith(
             color: Colors.white,
           ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
         Text(
           label,
           style: AppTypography.labelSmall.copyWith(
             color: Colors.white70,
           ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
       ],
     );
@@ -240,16 +246,24 @@ class FeeHistoryScreen extends StatelessWidget {
                 ),
                 Row(
                   children: [
-                    Text(
-                      'دستیابی: ${fee.dueDate}',
-                      style: AppTypography.labelSmall,
+                    Flexible(
+                      child: Text(
+                        'دستیابی: ${fee.dueDate}',
+                        style: AppTypography.labelSmall,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                     if (fee.paidDate != null) ...[
                       const SizedBox(width: 8),
-                      Text(
-                        'ادائیگی: ${fee.paidDate}',
-                        style: AppTypography.labelSmall.copyWith(
-                          color: AppColors.textSecondary,
+                      Flexible(
+                        child: Text(
+                          'ادائیگی: ${fee.paidDate}',
+                          style: AppTypography.labelSmall.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
@@ -306,63 +320,74 @@ class FeeHistoryScreen extends StatelessWidget {
     ];
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) => Padding(
         padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.divider,
-                  borderRadius: BorderRadius.circular(2),
+        // Scrollable so 9 detail rows + button never overflow on short
+        // screens or at large text scales.
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.divider,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'فیس کی تفصیل',
-              style: AppTypography.titleMedium
-                  .copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            for (final row in rows)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        row.$1,
-                        style: AppTypography.bodyMedium.copyWith(
-                          color: AppColors.textSecondary,
+              const SizedBox(height: 16),
+              Text(
+                'فیس کی تفصیل',
+                style: AppTypography.titleMedium
+                    .copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              for (final row in rows)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          row.$1,
+                          style: AppTypography.bodyMedium.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
                         ),
                       ),
-                    ),
-                    Text(
-                      row.$2,
-                      style: AppTypography.bodyMedium
-                          .copyWith(fontWeight: FontWeight.w600),
-                      textAlign: TextAlign.end,
-                    ),
-                  ],
+                      Flexible(
+                        child: Text(
+                          row.$2,
+                          style: AppTypography.bodyMedium
+                              .copyWith(fontWeight: FontWeight.w600),
+                          textAlign: TextAlign.end,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text('بند کریں',
+                      style: AppTypography.labelNastaliq
+                          .copyWith(color: AppColors.primary)),
                 ),
               ),
-            const SizedBox(height: 8),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('بند کریں'),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

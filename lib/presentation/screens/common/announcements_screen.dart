@@ -53,7 +53,9 @@ class _AnnouncementsScreenState extends ConsumerState<AnnouncementsScreen> {
               backgroundColor: AppColors.accentDark,
               foregroundColor: Colors.white,
               icon: const Icon(Icons.add),
-              label: const Text('نیا اعلان'),
+              label: Text('نیا اعلان',
+                  style: AppTypography.labelNastaliq
+                      .copyWith(color: Colors.white)),
               onPressed: () => _showCreateDialog(context, user),
             )
           : null,

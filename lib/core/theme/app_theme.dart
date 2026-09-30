@@ -57,6 +57,19 @@ class AppTheme {
         unselectedLabelStyle: AppTypography.navLabel,
       ),
 
+      // M3 Navigation Bar Theme — same Nastaleeq labels as the legacy bar.
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: AppColors.surface,
+        indicatorColor: AppColors.primary.withValues(alpha: 0.12),
+        labelTextStyle: WidgetStateProperty.resolveWith((states) {
+          final selected = states.contains(WidgetState.selected);
+          return AppTypography.navLabel.copyWith(
+            color: selected ? AppColors.primary : AppColors.textSecondary,
+            fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+          );
+        }),
+      ),
+
       // Card Theme
       cardTheme: CardThemeData(
         color: AppColors.surface,
@@ -69,6 +82,8 @@ class AppTheme {
 
       // Elevated Button Theme — Warm Action Orange for primary CTAs (10%).
       // accentDark keeps white label text at readable contrast (~3:1).
+      // Labels use buttonNastaliq so every Urdu button renders in
+      // Jameel Noori Nastaleeq (the M360 button language).
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.accentDark,
@@ -78,8 +93,32 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          textStyle: AppTypography.buttonText,
+          textStyle: AppTypography.buttonNastaliq,
         ),
+      ),
+
+      // Text Button Theme — Nastaleeq labels in the primary colour,
+      // matching the M360 tertiary button language.
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: AppColors.primary,
+          textStyle:
+              AppTypography.labelNastaliq.copyWith(color: AppColors.primary),
+        ),
+      ),
+
+      // Outlined Button Theme — same Nastaleeq label language.
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppColors.primary,
+          textStyle:
+              AppTypography.labelNastaliq.copyWith(color: AppColors.primary),
+        ),
+      ),
+
+      // Chip Theme — short Urdu chip labels in Jameel Noori Nastaleeq.
+      chipTheme: ChipThemeData(
+        labelStyle: AppTypography.labelNastaliq,
       ),
 
       // Floating Action Button Theme — Warm Action Orange.

@@ -129,7 +129,10 @@ class _AppShellState extends ConsumerState<AppShell> {
       // Failsafe: never a blank shell (mirrors role_home's "never blank"
       // contract). This path is unreachable in practice because the
       // dashboard destination has no permission requirements.
-      return const Scaffold(body: Center(child: Text('رسائی دستیاب نہیں')));
+      return Scaffold(
+          body: Center(
+              child:
+                  Text('رسائی دستیاب نہیں', style: AppTypography.titleSmall)));
     }
 
     final active = visible.any((d) => d.id == _selectedId)

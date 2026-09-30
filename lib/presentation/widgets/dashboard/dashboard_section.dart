@@ -89,49 +89,65 @@ class DashboardSection extends StatelessWidget {
               ),
             ),
             children: [
-              GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  mainAxisSpacing: 8,
-                  crossAxisSpacing: 8,
-                  // Tall enough for two Nastaliq label lines (15sp, height 2.0).
-                  mainAxisExtent: 104,
-                ),
-                itemCount: tiles.length,
-                itemBuilder: (context, index) {
-                  final tile = tiles[index];
-                  return InkWell(
-                    onTap: tile.onTap,
-                    borderRadius: BorderRadius.circular(10),
-                    // Ink (not Container): the tile background paints onto the
-                    // Material above, so the ink splash renders above it.
-                    child: Ink(
-                      decoration: BoxDecoration(
-                        color: AppColors.background,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(tile.icon, color: tile.color, size: 26),
-                          const SizedBox(height: 6),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 4),
-                            child: Text(
-                              tile.label,
-                              style: AppTypography.labelNastaliq.copyWith(
-                                fontSize: 15,
-                              ),
-                              textAlign: TextAlign.center,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  // Breakpoint columns keep tiles a sane width on desktop;
+                  // the extent grows with the text scale so two Nastaliq
+                  // lines never clip.
+                  final width = constraints.maxWidth;
+                  final cols = width >= 1100
+                      ? 5
+                      : width >= 720
+                          ? 4
+                          : 3;
+                  final scale =
+                      MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 2.0);
+                  return GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: cols,
+                      mainAxisSpacing: 8,
+                      crossAxisSpacing: 8,
+                      // Tall enough for two Nastaliq label lines (15sp, height 2.0).
+                      mainAxisExtent: 104 + 44 * (scale - 1),
                     ),
+                    itemCount: tiles.length,
+                    itemBuilder: (context, index) {
+                      final tile = tiles[index];
+                      return InkWell(
+                        onTap: tile.onTap,
+                        borderRadius: BorderRadius.circular(10),
+                        // Ink (not Container): the tile background paints onto the
+                        // Material above, so the ink splash renders above it.
+                        child: Ink(
+                          decoration: BoxDecoration(
+                            color: AppColors.background,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(tile.icon, color: tile.color, size: 26),
+                              const SizedBox(height: 6),
+                              Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 4),
+                                child: Text(
+                                  tile.label,
+                                  style: AppTypography.labelNastaliq.copyWith(
+                                    fontSize: 15,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
                   );
                 },
               ),

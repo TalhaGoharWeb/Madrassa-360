@@ -766,9 +766,13 @@ class _CreateMadrasaWizardState extends State<CreateMadrasaWizard> {
           Text(label,
               style: AppTypography.bodyMedium
                   .copyWith(color: AppColors.textSecondary)),
-          SelectableText(value,
-              style: AppTypography.titleMedium
-                  .copyWith(fontWeight: FontWeight.bold)),
+          const SizedBox(width: 12),
+          Flexible(
+            child: SelectableText(value,
+                textAlign: TextAlign.end,
+                style: AppTypography.titleMedium
+                    .copyWith(fontWeight: FontWeight.bold)),
+          ),
         ],
       ),
     );

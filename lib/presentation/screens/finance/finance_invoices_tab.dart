@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_permissions.dart';
+import '../../../core/constants/app_typography.dart';
 import '../../../core/design/m360.dart';
 import '../../../core/services/tenant_context.dart';
 import '../../../core/utils/date_utils.dart' as app_date;
@@ -120,7 +121,8 @@ class _FinanceInvoicesTabState extends ConsumerState<FinanceInvoicesTab> {
         children: [
           for (final s in options) ...[
             FilterChip(
-              label: Text(s == null ? 'سب' : s.urduLabel),
+              label: Text(s == null ? 'سب' : s.urduLabel,
+                  style: AppTypography.labelNastaliq),
               selected: _statusFilter == s,
               onSelected: (_) => setState(() => _statusFilter = s),
               selectedColor: AppColors.primary.withValues(alpha: 0.15),
@@ -199,20 +201,28 @@ class _FinanceInvoicesTabState extends ConsumerState<FinanceInvoicesTab> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          'کل: ${view.totalLabel}',
-                          style: Theme.of(context).textTheme.labelSmall,
+                        Flexible(
+                          child: Text(
+                            'کل: ${view.totalLabel}',
+                            style: Theme.of(context).textTheme.labelSmall,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                         if (invoice.balanceDue > 0)
-                          Text(
-                            'بقایا: ${view.balanceLabel}',
-                            style: Theme.of(context)
-                                .textTheme
-                                .labelSmall
-                                ?.copyWith(
-                                  color: AppColors.error,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                          Flexible(
+                            child: Text(
+                              'بقایا: ${view.balanceLabel}',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelSmall
+                                  ?.copyWith(
+                                    color: AppColors.error,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                       ],
                     ),
@@ -289,10 +299,18 @@ class _FinanceInvoicesTabState extends ConsumerState<FinanceInvoicesTab> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(k, style: const TextStyle(color: AppColors.textSecondary)),
-          Text(v,
-              textDirection: TextDirection.rtl,
-              style: const TextStyle(fontWeight: FontWeight.w600)),
+          Text(k,
+              style: AppTypography.labelNastaliq
+                  .copyWith(color: AppColors.textSecondary)),
+          Flexible(
+            child: Text(v,
+                textDirection: TextDirection.rtl,
+                textAlign: TextAlign.end,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: AppTypography.titleSmall
+                    .copyWith(fontWeight: FontWeight.w600)),
+          ),
         ],
       ),
     );
@@ -438,9 +456,10 @@ class _InvoiceFormState extends ConsumerState<_InvoiceForm> {
             ],
           ),
           const SizedBox(height: 12),
-          const Text('مدات',
+          Text('مدات',
               textDirection: TextDirection.rtl,
-              style: TextStyle(fontWeight: FontWeight.bold)),
+              style: AppTypography.titleSmall
+                  .copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           for (var i = 0; i < _items.length; i++)
             Padding(
@@ -536,7 +555,12 @@ class _InvoiceFormState extends ConsumerState<_InvoiceForm> {
           children: [
             Text(label,
                 style: const TextStyle(
-                    fontSize: 11, color: AppColors.textSecondary)),
+                    fontSize: 11,
+                    color: AppColors.textSecondary,
+                    fontFamily: AppTypography.nastaliqFamily,
+                    fontFamilyFallback: [AppTypography.naskhFamily],
+                    fontWeight: FontWeight.w500,
+                    height: 2.0)),
             Text(app_date.DateUtils.formatDateUrdu(value),
                 textDirection: TextDirection.rtl,
                 style: const TextStyle(fontWeight: FontWeight.w600)),

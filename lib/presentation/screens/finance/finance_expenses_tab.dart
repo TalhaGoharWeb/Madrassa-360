@@ -12,6 +12,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_permissions.dart';
+import '../../../core/constants/app_typography.dart';
 import '../../../core/design/m360.dart';
 import '../../../core/utils/date_utils.dart' as app_date;
 import '../../../core/utils/money_format.dart';
@@ -114,7 +115,8 @@ class _FinanceExpensesTabState extends ConsumerState<FinanceExpensesTab> {
         children: [
           for (final s in options) ...[
             FilterChip(
-              label: Text(s == null ? 'سب' : s.urduLabel),
+              label: Text(s == null ? 'سب' : s.urduLabel,
+                  style: AppTypography.labelNastaliq),
               selected: _statusFilter == s,
               onSelected: (_) => setState(() => _statusFilter = s),
               selectedColor: AppColors.primary.withValues(alpha: 0.15),
@@ -305,12 +307,15 @@ class _FinanceExpensesTabState extends ConsumerState<FinanceExpensesTab> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(k, style: const TextStyle(color: AppColors.textSecondary)),
+          Text(k,
+              style: AppTypography.labelNastaliq
+                  .copyWith(color: AppColors.textSecondary)),
           Flexible(
             child: Text(v,
                 textDirection: TextDirection.rtl,
                 textAlign: TextAlign.left,
-                style: const TextStyle(fontWeight: FontWeight.w600)),
+                style: AppTypography.titleSmall
+                    .copyWith(fontWeight: FontWeight.w600)),
           ),
         ],
       ),

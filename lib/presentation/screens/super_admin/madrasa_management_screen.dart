@@ -135,19 +135,41 @@ class _MadrasaManagementScreenState extends State<MadrasaManagementScreen> {
         const Divider(height: 1),
         const SizedBox(height: 10),
         Row(children: [
-          Icon(Icons.location_on_outlined,
-              size: 16, color: AppColors.textSecondary),
-          const SizedBox(width: 4),
-          Text(m.cityUrdu,
-              style: AppTypography.labelMedium
-                  .copyWith(color: AppColors.textSecondary)),
+          Flexible(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.location_on_outlined,
+                    size: 16, color: AppColors.textSecondary),
+                const SizedBox(width: 4),
+                Flexible(
+                  child: Text(m.cityUrdu,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.labelMedium
+                          .copyWith(color: AppColors.textSecondary)),
+                ),
+              ],
+            ),
+          ),
           const SizedBox(width: 16),
-          Icon(Icons.tag, size: 16, color: AppColors.textSecondary),
-          const SizedBox(width: 4),
-          M360LatinText(
-            m.branchCode ?? '',
-            style: AppTypography.labelMedium
-                .copyWith(color: AppColors.textSecondary),
+          Flexible(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.tag, size: 16, color: AppColors.textSecondary),
+                const SizedBox(width: 4),
+                Flexible(
+                  child: M360LatinText(
+                    m.branchCode ?? '',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.labelMedium
+                        .copyWith(color: AppColors.textSecondary),
+                  ),
+                ),
+              ],
+            ),
           ),
         ]),
         const SizedBox(height: 10),
@@ -160,7 +182,7 @@ class _MadrasaManagementScreenState extends State<MadrasaManagementScreen> {
                 ref.read(madrasaProvider.notifier).toggleStatus(m),
           ),
           Text(m.isActive ? 'فعال' : 'غیرفعال',
-              style: AppTypography.labelMedium.copyWith(
+              style: AppTypography.labelNastaliq.copyWith(
                   color: m.isActive ? AppColors.success : AppColors.error)),
           const Spacer(),
           M360IconButton(

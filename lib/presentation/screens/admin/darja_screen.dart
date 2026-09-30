@@ -186,7 +186,7 @@ class _DarjaCard extends ConsumerWidget {
         ),
         title: Text(
           darja.nameUrdu,
-          style: AppTypography.bodyLarge.copyWith(fontWeight: FontWeight.w600),
+          style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.w600),
         ),
         subtitle: Text(
           '${darja.nameEnglish} • گنجائش: ${darja.capacity}',
@@ -216,7 +216,7 @@ class _DarjaCard extends ConsumerWidget {
                     dense: true,
                     contentPadding: EdgeInsets.zero,
                     leading: Icon(Icons.group_outlined, color: color, size: 20),
-                    title: Text(sec.nameUrdu, style: AppTypography.bodyMedium),
+                    title: Text(sec.nameUrdu, style: AppTypography.titleSmall),
                     trailing: M360IconButton(
                       icon: Icons.remove_circle_outline,
                       tooltip: 'سیکشن حذف کریں',

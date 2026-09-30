@@ -119,29 +119,32 @@ class _StaffListScreenState extends ConsumerState<StaffListScreen> {
       ('انتظامیہ', 'انتظامیہ'),
       ('مالیات', 'مالیات'),
     ];
-    return SizedBox(
-      height: 50,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        itemCount: departments.length,
-        itemBuilder: (context, index) {
-          final (id, label) = departments[index];
-          final isSelected = _selectedDepartment == id;
-          return Padding(
-            padding: const EdgeInsets.only(left: 8),
-            child: FilterChip(
-              label: Text(label),
-              selected: isSelected,
-              onSelected: (_) => setState(() => _selectedDepartment = id),
-              selectedColor: AppColors.primary.withValues(alpha: 0.2),
-              checkmarkColor: AppColors.primary,
-              labelStyle: AppTypography.labelMedium.copyWith(
-                color: isSelected ? AppColors.primary : AppColors.textSecondary,
-              ),
-            ),
-          );
-        },
+    // Horizontal scroll + Row (instead of a fixed-height ListView) so the
+    // strip grows naturally with large text scales instead of clipping.
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: [
+          for (int index = 0; index < departments.length; index++) ...[
+            if (index > 0) const SizedBox(width: 8),
+            Builder(builder: (context) {
+              final (id, label) = departments[index];
+              final isSelected = _selectedDepartment == id;
+              return FilterChip(
+                label: Text(label),
+                selected: isSelected,
+                onSelected: (_) => setState(() => _selectedDepartment = id),
+                selectedColor: AppColors.primary.withValues(alpha: 0.2),
+                checkmarkColor: AppColors.primary,
+                labelStyle: AppTypography.labelMedium.copyWith(
+                  color:
+                      isSelected ? AppColors.primary : AppColors.textSecondary,
+                ),
+              );
+            }),
+          ],
+        ],
       ),
     );
   }
@@ -240,9 +243,13 @@ class _StaffListScreenState extends ConsumerState<StaffListScreen> {
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    _infoChip(Icons.apartment, staff.department ?? ''),
+                    Flexible(
+                      child: _infoChip(Icons.apartment, staff.department ?? ''),
+                    ),
                     const SizedBox(width: 8),
-                    _infoChip(Icons.calendar_today, staff.joiningDate),
+                    Flexible(
+                      child: _infoChip(Icons.calendar_today, staff.joiningDate),
+                    ),
                   ],
                 ),
               ],
@@ -275,7 +282,14 @@ class _StaffListScreenState extends ConsumerState<StaffListScreen> {
       children: [
         Icon(icon, size: 12, color: AppColors.textSecondary),
         const SizedBox(width: 4),
-        Text(text, style: AppTypography.labelSmall),
+        Flexible(
+          child: Text(
+            text,
+            style: AppTypography.labelSmall,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
       ],
     );
   }

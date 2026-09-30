@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_typography.dart';
 import '../../../core/design/m360.dart';
 import '../../../core/utils/date_utils.dart';
 import '../../../core/utils/money_format.dart';
@@ -105,6 +106,9 @@ class FinanceDashboardTab extends ConsumerWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final cols = constraints.maxWidth > 720 ? 3 : 2;
+        // Grow the fixed cell height with the text scale so the 28sp stat
+        // value never wraps into clipping at large text sizes.
+        final scale = MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 2.0);
         return GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -112,7 +116,7 @@ class FinanceDashboardTab extends ConsumerWidget {
             crossAxisCount: cols,
             mainAxisSpacing: 12,
             crossAxisSpacing: 12,
-            mainAxisExtent: 132,
+            mainAxisExtent: 132 + 48 * (scale - 1),
           ),
           itemCount: cards.length,
           itemBuilder: (context, i) {
@@ -131,7 +135,7 @@ class FinanceDashboardTab extends ConsumerWidget {
 
   Widget _topDuesCard(WidgetRef ref, FinanceHubOverview o) {
     if (o.topDues.isEmpty) {
-      return const M360Card(
+      return M360Card(
         child: Row(
           children: [
             Icon(Icons.check_circle_outline, color: AppColors.success),
@@ -140,6 +144,7 @@ class FinanceDashboardTab extends ConsumerWidget {
               child: Text(
                 'کوئی بقایا نہیں — تمام فیس وصول ہو چکی ہے۔',
                 textDirection: TextDirection.rtl,
+                style: AppTypography.titleSmall,
               ),
             ),
           ],
@@ -176,7 +181,8 @@ class FinanceDashboardTab extends ConsumerWidget {
                           Text(
                             o.topDues[i].studentName,
                             textDirection: TextDirection.rtl,
-                            style: const TextStyle(fontWeight: FontWeight.w600),
+                            style: AppTypography.titleSmall
+                                .copyWith(fontWeight: FontWeight.w600),
                           ),
                           Text(
                             '${o.topDues[i].monthCount} ریکارڈ بقایا',
@@ -209,7 +215,7 @@ class FinanceDashboardTab extends ConsumerWidget {
 
   Widget _recentPaymentsCard(WidgetRef ref, FinanceHubOverview o) {
     if (o.recentPayments.isEmpty) {
-      return const M360Card(
+      return M360Card(
         child: Row(
           children: [
             Icon(Icons.info_outline, color: AppColors.textSecondary),
@@ -218,6 +224,7 @@ class FinanceDashboardTab extends ConsumerWidget {
               child: Text(
                 'مالیاتی نظام میں ابھی کوئی ادائیگی درج نہیں۔',
                 textDirection: TextDirection.rtl,
+                style: AppTypography.titleSmall,
               ),
             ),
           ],
@@ -256,8 +263,8 @@ class FinanceDashboardTab extends ConsumerWidget {
                             Text(
                               p.studentLabel,
                               textDirection: TextDirection.rtl,
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.w600),
+                              style: AppTypography.titleSmall
+                                  .copyWith(fontWeight: FontWeight.w600),
                             ),
                             Text(
                               '${p.receiptLabel} • ${urduTimeAgo(p.payment.paymentDate)}',

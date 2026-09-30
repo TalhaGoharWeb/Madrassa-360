@@ -143,7 +143,8 @@ class _CrashScreenState extends State<CrashScreen> {
                             _busy
                                 ? 'شروع ہو رہا ہے…'
                                 : 'دوبارہ شروع کریں  •  Restart',
-                            style: AppTypography.labelLarge,
+                            style: AppTypography.labelNastaliq
+                                .copyWith(color: Colors.white),
                           ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: emerald,

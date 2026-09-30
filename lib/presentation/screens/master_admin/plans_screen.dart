@@ -187,14 +187,19 @@ class _PlansScreenState extends State<PlansScreen> {
                           if (v == 'delete') _delete(p);
                         },
                         itemBuilder: (_) => [
-                          const PopupMenuItem(
-                              value: 'edit', child: Text('ترمیم')),
+                          PopupMenuItem(
+                              value: 'edit',
+                              child: Text('ترمیم',
+                                  style: AppTypography.labelNastaliq)),
                           PopupMenuItem(
                               value: 'toggle',
-                              child:
-                                  Text(active ? 'غیر فعال کریں' : 'فعال کریں')),
-                          const PopupMenuItem(
-                              value: 'delete', child: Text('حذف کریں')),
+                              child: Text(
+                                  active ? 'غیر فعال کریں' : 'فعال کریں',
+                                  style: AppTypography.labelNastaliq)),
+                          PopupMenuItem(
+                              value: 'delete',
+                              child: Text('حذف کریں',
+                                  style: AppTypography.labelNastaliq)),
                         ],
                       ),
                       onTap: () => _openEditor(plan: p),
@@ -369,7 +374,7 @@ class _PlanEditorDialogState extends State<_PlanEditorDialog> {
             SwitchListTile(
               value: _isActive,
               onChanged: (v) => setState(() => _isActive = v),
-              title: const Text('فعال / Active'),
+              title: Text('فعال / Active', style: AppTypography.titleSmall),
               dense: true,
             ),
           ],

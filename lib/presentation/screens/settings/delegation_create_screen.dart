@@ -124,7 +124,7 @@ class _DelegationCreateScreenState
                                 _codes.remove(p.code);
                               }
                             }),
-                    title: Text(p.labelUrdu, style: AppTypography.bodyMedium),
+                    title: Text(p.labelUrdu, style: AppTypography.titleSmall),
                     controlAffinity: ListTileControlAffinity.leading,
                     contentPadding: EdgeInsets.zero,
                     dense: true,

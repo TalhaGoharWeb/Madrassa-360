@@ -297,35 +297,45 @@ class _UserWizardScreenState extends ConsumerState<UserWizardScreen> {
           final n = i ~/ 2;
           final done = n < _step;
           final current = n == _step;
-          return Column(
-            children: [
-              Container(
-                width: 28,
-                height: 28,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: done
-                      ? AppColors.success
-                      : current
-                          ? AppColors.primary
-                          : AppColors.divider,
+          // Expanded so the five steps share the width evenly instead of
+          // overflowing at large text scales.
+          return Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 28,
+                  height: 28,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: done
+                        ? AppColors.success
+                        : current
+                            ? AppColors.primary
+                            : AppColors.divider,
+                  ),
+                  child: done
+                      ? const Icon(Icons.check, size: 16, color: Colors.white)
+                      : Text('${n + 1}',
+                          style: AppTypography.labelSmall.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold)),
                 ),
-                child: done
-                    ? const Icon(Icons.check, size: 16, color: Colors.white)
-                    : Text('${n + 1}',
-                        style: AppTypography.labelSmall.copyWith(
-                            color: Colors.white, fontWeight: FontWeight.bold)),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                _stepTitles[n],
-                style: AppTypography.labelSmall.copyWith(
-                    color:
-                        current ? AppColors.primary : AppColors.textSecondary,
-                    fontWeight: current ? FontWeight.bold : FontWeight.normal),
-              ),
-            ],
+                const SizedBox(height: 2),
+                Text(
+                  _stepTitles[n],
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.labelSmall.copyWith(
+                      color:
+                          current ? AppColors.primary : AppColors.textSecondary,
+                      fontWeight:
+                          current ? FontWeight.bold : FontWeight.normal),
+                ),
+              ],
+            ),
           );
         }),
       ),

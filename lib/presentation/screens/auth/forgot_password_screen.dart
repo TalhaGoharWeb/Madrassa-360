@@ -81,88 +81,96 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
   }
 
   Widget _buildForm() {
-    return Form(
-      key: _formKey,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const SizedBox(height: 24),
-          const Icon(Icons.lock_reset, size: 72, color: AppColors.primary),
-          const SizedBox(height: 24),
-          Text(
-            'اپنا رجسٹرڈ ای میل درج کریں — ہم آپ کو پاس ورڈ ری سیٹ کرنے کا لنک بھیجیں گے۔',
-            style: AppTypography.bodyLarge,
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 32),
-          // m360 field language (Nastaleeq label + hint, teal focus ring)
-          // while keeping keyboard type, direction and validator identical.
-          TextFormField(
-            controller: _emailController,
-            keyboardType: TextInputType.emailAddress,
-            textAlign: TextAlign.right,
-            textDirection: TextDirection.rtl,
-            autocorrect: false,
-            style: AppTypography.bodyLarge,
-            decoration: m360FieldDecoration(
-              label: 'ای میل',
-              hint: 'اپنا ای میل درج کریں',
-              prefixIcon:
-                  const Icon(Icons.email_outlined, color: AppColors.primary),
+    return M360ConstrainedWidth(
+      maxWidth: 480,
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const SizedBox(height: 24),
+            const Icon(Icons.lock_reset, size: 72, color: AppColors.primary),
+            const SizedBox(height: 24),
+            Text(
+              'اپنا رجسٹرڈ ای میل درج کریں — ہم آپ کو پاس ورڈ ری سیٹ کرنے کا لنک بھیجیں گے۔',
+              style: AppTypography.bodyLarge,
+              textAlign: TextAlign.center,
             ),
-            validator: Validators.email,
-          ),
-          const SizedBox(height: 32),
-          M360PrimaryButton(
-            label: 'ری سیٹ لنک بھیجیں',
-            icon: Icons.mark_email_read_outlined,
-            fullWidth: true,
-            isLoading: _isLoading,
-            onPressed: _isLoading ? null : _sendResetLink,
-          ),
-        ],
+            const SizedBox(height: 32),
+            // m360 field language (Nastaleeq label + hint, teal focus ring)
+            // while keeping keyboard type, direction and validator identical.
+            TextFormField(
+              controller: _emailController,
+              keyboardType: TextInputType.emailAddress,
+              textAlign: TextAlign.right,
+              textDirection: TextDirection.rtl,
+              autocorrect: false,
+              style: AppTypography.bodyLarge,
+              decoration: m360FieldDecoration(
+                label: 'ای میل',
+                hint: 'اپنا ای میل درج کریں',
+                prefixIcon:
+                    const Icon(Icons.email_outlined, color: AppColors.primary),
+              ),
+              validator: Validators.email,
+            ),
+            const SizedBox(height: 32),
+            M360PrimaryButton(
+              label: 'ری سیٹ لنک بھیجیں',
+              icon: Icons.mark_email_read_outlined,
+              fullWidth: true,
+              isLoading: _isLoading,
+              onPressed: _isLoading ? null : _sendResetLink,
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildSuccess() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const SizedBox(height: 48),
-        Container(
-          width: 96,
-          height: 96,
-          decoration: BoxDecoration(
-            color: AppColors.success.withValues(alpha: 0.12),
-            shape: BoxShape.circle,
+    return M360ConstrainedWidth(
+      maxWidth: 480,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const SizedBox(height: 48),
+          Center(
+            child: Container(
+              width: 96,
+              height: 96,
+              decoration: BoxDecoration(
+                color: AppColors.success.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.mark_email_read,
+                size: 48,
+                color: AppColors.success,
+              ),
+            ),
           ),
-          child: const Icon(
-            Icons.mark_email_read,
-            size: 48,
-            color: AppColors.success,
+          const SizedBox(height: 24),
+          Text(
+            'ری سیٹ لنک بھیج دیا گیا',
+            style: AppTypography.headingSmall,
+            textAlign: TextAlign.center,
           ),
-        ),
-        const SizedBox(height: 24),
-        Text(
-          'ری سیٹ لنک بھیج دیا گیا',
-          style: AppTypography.headingSmall,
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 12),
-        Text(
-          'اگر یہ ای میل ہمارے ریکارڈ میں موجود ہے تو آپ کو جلد ہی پاس ورڈ ری سیٹ کا لنک موصول ہو جائے گا۔ براہ کرم اپنا ان باکس (اور اسپام فولڈر) چیک کریں۔',
-          style: AppTypography.bodyMedium,
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 32),
-        M360SecondaryButton(
-          label: 'لاگ ان پر واپس جائیں',
-          icon: Icons.arrow_forward,
-          fullWidth: true,
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-      ],
+          const SizedBox(height: 12),
+          Text(
+            'اگر یہ ای میل ہمارے ریکارڈ میں موجود ہے تو آپ کو جلد ہی پاس ورڈ ری سیٹ کا لنک موصول ہو جائے گا۔ براہ کرم اپنا ان باکس (اور اسپام فولڈر) چیک کریں۔',
+            style: AppTypography.bodyMedium,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 32),
+          M360SecondaryButton(
+            label: 'لاگ ان پر واپس جائیں',
+            icon: Icons.arrow_forward,
+            fullWidth: true,
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ],
+      ),
     );
   }
 }

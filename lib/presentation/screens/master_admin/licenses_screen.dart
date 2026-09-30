@@ -99,26 +99,31 @@ class _LicensesScreenState extends State<LicensesScreen> {
             onChanged: (v) => setState(() => _query = v),
           ),
         ),
-        SizedBox(
-          height: 52,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            itemCount: licenseStatusFilters.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 8),
-            itemBuilder: (context, i) {
-              final s = licenseStatusFilters[i];
-              final selected = s == _status;
-              return ChoiceChip(
-                label: Text(s == 'all' ? 'تمام' : licenseStatusUrdu(s)),
-                selected: selected,
-                selectedColor: AppColors.primary.withValues(alpha: 0.15),
-                onSelected: (_) {
-                  setState(() => _status = s);
-                  _load();
-                },
-              );
-            },
+        // Horizontal scroll + Row (instead of a fixed-height ListView) so
+        // the strip grows naturally with large text scales.
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: [
+              for (int i = 0; i < licenseStatusFilters.length; i++) ...[
+                if (i > 0) const SizedBox(width: 8),
+                Builder(builder: (context) {
+                  final s = licenseStatusFilters[i];
+                  final selected = s == _status;
+                  return ChoiceChip(
+                    label: Text(s == 'all' ? 'تمام' : licenseStatusUrdu(s),
+                        style: AppTypography.labelNastaliq),
+                    selected: selected,
+                    selectedColor: AppColors.primary.withValues(alpha: 0.15),
+                    onSelected: (_) {
+                      setState(() => _status = s);
+                      _load();
+                    },
+                  );
+                }),
+              ],
+            ],
           ),
         ),
         Expanded(child: _buildBody()),

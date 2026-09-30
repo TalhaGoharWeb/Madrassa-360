@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_permissions.dart';
+import '../../../core/constants/app_typography.dart';
 import '../../../core/design/m360.dart';
 import '../../../core/utils/money_format.dart';
 import '../../../data/models/fee.dart';
@@ -164,8 +165,13 @@ class _FinanceDuesTabState extends ConsumerState<FinanceDuesTab> {
                   ),
                   const Text(
                     'روپے بقایا',
-                    style:
-                        TextStyle(color: AppColors.textSecondary, fontSize: 11),
+                    style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 11,
+                        fontFamily: AppTypography.nastaliqFamily,
+                        fontFamilyFallback: [AppTypography.naskhFamily],
+                        fontWeight: FontWeight.w500,
+                        height: 2.0),
                   ),
                 ],
               ),
@@ -213,7 +219,8 @@ class _FinanceDuesTabState extends ConsumerState<FinanceDuesTab> {
               children: [
                 Text(
                   view.monthLabel,
-                  style: const TextStyle(fontWeight: FontWeight.w600),
+                  style: AppTypography.titleSmall
+                      .copyWith(fontWeight: FontWeight.w600),
                   textDirection: TextDirection.rtl,
                 ),
                 Text(

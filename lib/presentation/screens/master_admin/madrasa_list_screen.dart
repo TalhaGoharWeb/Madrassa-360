@@ -161,26 +161,30 @@ class _MadrasaListScreenState extends State<MadrasaListScreen> {
               hint: 'نام، کوڈ یا شہر سے تلاش کریں…',
             ),
           ),
-          SizedBox(
-            height: 44,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: _statusFilters.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
-              itemBuilder: (context, i) {
-                final s = _statusFilters[i];
-                final selected = s == _status;
-                return ChoiceChip(
-                  label: Text(s == 'all' ? 'All' : s),
-                  selected: selected,
-                  selectedColor: AppColors.primary.withValues(alpha: 0.15),
-                  onSelected: (_) {
-                    setState(() => _status = s);
-                    _refresh();
-                  },
-                );
-              },
+          // Horizontal scroll + Row (instead of a fixed-height ListView) so
+          // the strip grows naturally with large text scales.
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: Row(
+              children: [
+                for (int i = 0; i < _statusFilters.length; i++) ...[
+                  if (i > 0) const SizedBox(width: 8),
+                  Builder(builder: (context) {
+                    final s = _statusFilters[i];
+                    final selected = s == _status;
+                    return ChoiceChip(
+                      label: Text(s == 'all' ? 'All' : s),
+                      selected: selected,
+                      selectedColor: AppColors.primary.withValues(alpha: 0.15),
+                      onSelected: (_) {
+                        setState(() => _status = s);
+                        _refresh();
+                      },
+                    );
+                  }),
+                ],
+              ],
             ),
           ),
           const SizedBox(height: 8),

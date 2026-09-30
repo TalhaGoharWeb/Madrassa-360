@@ -17,6 +17,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_permissions.dart';
+import '../../../core/constants/app_typography.dart';
 import '../../../core/design/m360.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/transport_provider.dart';
@@ -165,7 +166,8 @@ class _TransportScreenState extends ConsumerState<TransportScreen>
       backgroundColor: AppColors.accentDark,
       foregroundColor: Colors.white,
       icon: const Icon(Icons.add),
-      label: Text(label),
+      label: Text(label,
+          style: AppTypography.labelNastaliq.copyWith(color: Colors.white)),
       onPressed: () {
         action();
         setState(() {});
@@ -374,7 +376,8 @@ class _DriversTab extends ConsumerWidget {
                     Text(
                       d.name,
                       textDirection: TextDirection.rtl,
-                      style: const TextStyle(fontWeight: FontWeight.w600),
+                      style: AppTypography.titleSmall
+                          .copyWith(fontWeight: FontWeight.w600),
                     ),
                     if (d.phone != null) M360LatinText(d.phone!),
                     if (d.licenseNumber != null)
@@ -478,7 +481,8 @@ class _RoutesTab extends ConsumerWidget {
                     Text(
                       r.name,
                       textDirection: TextDirection.rtl,
-                      style: const TextStyle(fontWeight: FontWeight.w600),
+                      style: AppTypography.titleSmall
+                          .copyWith(fontWeight: FontWeight.w600),
                     ),
                     Text(
                       [
@@ -597,7 +601,8 @@ class _AssignmentsTab extends ConsumerWidget {
                     Text(
                       route?.name ?? '—',
                       textDirection: TextDirection.rtl,
-                      style: const TextStyle(fontWeight: FontWeight.w600),
+                      style: AppTypography.titleSmall
+                          .copyWith(fontWeight: FontWeight.w600),
                     ),
                     if (vehicle != null) M360LatinText(vehicle.plateNumber),
                     if (driver != null)

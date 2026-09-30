@@ -207,35 +207,39 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen>
   /// Class filter chips — built from the teacher's assignments only.
   /// Tapping the active chip again resets to "all assigned".
   Widget _buildClassFilter(List<AssignedClass> classes, String selected) {
-    return SizedBox(
-      height: 50,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        itemCount: classes.length + 1,
-        itemBuilder: (context, index) {
-          final isAll = index == 0;
-          final classId = isAll ? '' : classes[index - 1].id;
-          final className = isAll ? 'تمام جماعتیں' : classes[index - 1].name;
-          final isSelected = selected == classId;
-          return Padding(
-            padding: const EdgeInsets.only(left: 8),
-            child: FilterChip(
-              label: Text(className),
-              selected: isSelected,
-              onSelected: (_) {
-                // Selection state → filtered query: the results list
-                // rebuilds from `studentClassIds` against the new id.
-                setState(() => _selectedClassId = isSelected ? '' : classId);
-              },
-              selectedColor: AppColors.primary.withValues(alpha: 0.2),
-              checkmarkColor: AppColors.primary,
-              labelStyle: AppTypography.labelMedium.copyWith(
-                color: isSelected ? AppColors.primary : AppColors.textSecondary,
-              ),
-            ),
-          );
-        },
+    // Horizontal scroll + Row (instead of a fixed-height ListView) so the
+    // strip grows naturally with large text scales instead of clipping.
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: [
+          for (int index = 0; index < classes.length + 1; index++) ...[
+            if (index > 0) const SizedBox(width: 8),
+            Builder(builder: (context) {
+              final isAll = index == 0;
+              final classId = isAll ? '' : classes[index - 1].id;
+              final className =
+                  isAll ? 'تمام جماعتیں' : classes[index - 1].name;
+              final isSelected = selected == classId;
+              return FilterChip(
+                label: Text(className),
+                selected: isSelected,
+                onSelected: (_) {
+                  // Selection state → filtered query: the results list
+                  // rebuilds from `studentClassIds` against the new id.
+                  setState(() => _selectedClassId = isSelected ? '' : classId);
+                },
+                selectedColor: AppColors.primary.withValues(alpha: 0.2),
+                checkmarkColor: AppColors.primary,
+                labelStyle: AppTypography.labelMedium.copyWith(
+                  color:
+                      isSelected ? AppColors.primary : AppColors.textSecondary,
+                ),
+              );
+            }),
+          ],
+        ],
       ),
     );
   }
@@ -335,11 +339,10 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen>
           ),
         ),
         const SizedBox(width: 8),
-        SizedBox(
-          width: 64,
-          child: M360LatinText(
-            '${subject.marksObtained.toInt()}/${subject.totalMarks.toInt()}',
-          ),
+        // No fixed width: the marks text sizes itself so it never clips
+        // or wraps mid-number at large text scales.
+        M360LatinText(
+          '${subject.marksObtained.toInt()}/${subject.totalMarks.toInt()}',
         ),
       ],
     );

@@ -72,66 +72,80 @@ class _ModulesScreenState extends State<ModulesScreen> {
     }
     return RefreshIndicator(
       onRefresh: _load,
-      child: GridView.builder(
-        padding: const EdgeInsets.all(16),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          childAspectRatio: 1.25,
-          crossAxisSpacing: 10,
-          mainAxisSpacing: 10,
-        ),
-        itemCount: _modules.length,
-        itemBuilder: (context, i) {
-          final m = _modules[i];
-          final nameUrdu = (m['name_urdu'] as String?) ?? '';
-          return M360Card(
-            margin: EdgeInsets.zero,
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.extension,
-                        color: AppColors.primary, size: 22),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        (m['name'] as String?) ?? (m['module'] as String),
-                        style: AppTypography.titleSmall
-                            .copyWith(fontWeight: FontWeight.bold),
+      // Constrained width keeps cards a sane size on desktop; the column
+      // count adapts to the available width.
+      child: M360ConstrainedWidth(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final width = constraints.maxWidth;
+            final cols = width >= 1100
+                ? 4
+                : width >= 720
+                    ? 3
+                    : 2;
+            return GridView.builder(
+              padding: const EdgeInsets.all(16),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: cols,
+                childAspectRatio: 1.25,
+                crossAxisSpacing: 10,
+                mainAxisSpacing: 10,
+              ),
+              itemCount: _modules.length,
+              itemBuilder: (context, i) {
+                final m = _modules[i];
+                final nameUrdu = (m['name_urdu'] as String?) ?? '';
+                return M360Card(
+                  margin: EdgeInsets.zero,
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.extension,
+                              color: AppColors.primary, size: 22),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              (m['name'] as String?) ?? (m['module'] as String),
+                              style: AppTypography.titleSmall
+                                  .copyWith(fontWeight: FontWeight.bold),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (nameUrdu.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(nameUrdu,
+                              style: AppTypography.bodyMedium,
+                              textDirection: TextDirection.rtl),
+                        ),
+                      const Spacer(),
+                      Text(
+                        (m['description'] as String?) ?? '',
+                        style: AppTypography.bodySmall
+                            .copyWith(color: AppColors.textSecondary),
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                  ],
-                ),
-                if (nameUrdu.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(nameUrdu,
-                        style: AppTypography.bodyMedium,
-                        textDirection: TextDirection.rtl),
+                      const SizedBox(height: 4),
+                      Text(
+                        m['module'] as String,
+                        style: AppTypography.labelSmall.copyWith(
+                          color: AppColors.textSecondary,
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                    ],
                   ),
-                const Spacer(),
-                Text(
-                  (m['description'] as String?) ?? '',
-                  style: AppTypography.bodySmall
-                      .copyWith(color: AppColors.textSecondary),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  m['module'] as String,
-                  style: AppTypography.labelSmall.copyWith(
-                    color: AppColors.textSecondary,
-                    fontFamily: 'monospace',
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
+                );
+              },
+            );
+          },
+        ),
       ),
     );
   }

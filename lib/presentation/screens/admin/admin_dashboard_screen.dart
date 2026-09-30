@@ -433,23 +433,42 @@ class AdminDashboardScreen extends StatelessWidget {
           padding: const EdgeInsets.only(bottom: 10),
           child: Text('ماڈیولز', style: AppTypography.titleMedium),
         ),
-        GridView.count(
-          crossAxisCount: 2,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: 12,
-          crossAxisSpacing: 12,
-          childAspectRatio: 1.5,
-          children: visible
-              .map((m) => _moduleCard(
-                    label: m.label,
-                    subtitle: m.subtitle,
-                    icon: m.icon,
-                    color: m.color,
-                    onTap: () => Navigator.push(
-                        context, MaterialPageRoute(builder: (_) => m.screen)),
-                  ))
-              .toList(),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            // Breakpoint columns keep cards a sane width on desktop; the
+            // extent grows with the text scale so label + subtitle never
+            // clip inside the fixed cell.
+            final width = constraints.maxWidth;
+            final cols = width >= 1100
+                ? 4
+                : width >= 720
+                    ? 3
+                    : 2;
+            final scale =
+                MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 2.0);
+            return GridView.builder(
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: cols,
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
+                mainAxisExtent: 132 + 48 * (scale - 1),
+              ),
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: visible.length,
+              itemBuilder: (context, i) {
+                final m = visible[i];
+                return _moduleCard(
+                  label: m.label,
+                  subtitle: m.subtitle,
+                  icon: m.icon,
+                  color: m.color,
+                  onTap: () => Navigator.push(
+                      context, MaterialPageRoute(builder: (_) => m.screen)),
+                );
+              },
+            );
+          },
         ),
       ]),
     );
@@ -478,10 +497,14 @@ class AdminDashboardScreen extends StatelessWidget {
           const Spacer(),
           Text(label,
               textDirection: TextDirection.rtl,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: AppTypography.bodyLarge
                   .copyWith(fontWeight: FontWeight.w600)),
           Text(subtitle,
               textDirection: TextDirection.rtl,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: AppTypography.labelSmall
                   .copyWith(color: AppColors.textSecondary)),
         ]),
@@ -560,20 +583,26 @@ class AdminDashboardScreen extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildFeeStatItem(
-                'وصول شدہ',
-                formatPK(stats.collectedThisMonth),
-                AppColors.success,
+              Expanded(
+                child: _buildFeeStatItem(
+                  'وصول شدہ',
+                  formatPK(stats.collectedThisMonth),
+                  AppColors.success,
+                ),
               ),
-              _buildFeeStatItem(
-                'واجب الادا',
-                formatPK(stats.pendingFees),
-                AppColors.error,
+              Expanded(
+                child: _buildFeeStatItem(
+                  'واجب الادا',
+                  formatPK(stats.pendingFees),
+                  AppColors.error,
+                ),
               ),
-              _buildFeeStatItem(
-                'ہدف',
-                formatPK(stats.monthlyTarget),
-                AppColors.primary,
+              Expanded(
+                child: _buildFeeStatItem(
+                  'ہدف',
+                  formatPK(stats.monthlyTarget),
+                  AppColors.primary,
+                ),
               ),
             ],
           ),
@@ -647,6 +676,7 @@ class AdminDashboardScreen extends StatelessWidget {
 
   Widget _buildFeeStatItem(String label, String value, Color color) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Text(
           value,
@@ -654,11 +684,15 @@ class AdminDashboardScreen extends StatelessWidget {
             color: color,
             fontWeight: FontWeight.bold,
           ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
         Text(
           label,
           textDirection: TextDirection.rtl,
           style: AppTypography.labelSmall,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
       ],
     );

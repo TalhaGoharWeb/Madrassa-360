@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_permissions.dart';
+import '../../../core/constants/app_typography.dart';
 import '../../../core/design/m360.dart';
 import '../../../data/repositories/transport_repository.dart';
 import '../../../providers/auth_provider.dart';
@@ -63,7 +64,9 @@ class _TransportRouteDetailScreenState
               backgroundColor: AppColors.accentDark,
               foregroundColor: Colors.white,
               icon: const Icon(Icons.add),
-              label: const Text('نیا اسٹاپ'),
+              label: Text('نیا اسٹاپ',
+                  style: AppTypography.labelNastaliq
+                      .copyWith(color: Colors.white)),
               onPressed: () => showTransportStopForm(
                 context,
                 ref,
@@ -180,7 +183,8 @@ class _TransportRouteDetailScreenState
             child: Text(
               stop.name,
               textDirection: TextDirection.rtl,
-              style: const TextStyle(fontWeight: FontWeight.w600),
+              style: AppTypography.titleSmall
+                  .copyWith(fontWeight: FontWeight.w600),
             ),
           ),
           if (canManage)

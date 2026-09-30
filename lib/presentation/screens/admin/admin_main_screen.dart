@@ -102,11 +102,12 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
       child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          // Expanded per tab so up to 5 tabs share the width instead of
+          // overflowing on a 360px phone.
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: List.generate(
               _tabs.length,
-              (i) => _buildNavItem(i, safeIndex),
+              (i) => Expanded(child: _buildNavItem(i, safeIndex)),
             ),
           ),
         ),
@@ -142,6 +143,8 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
             Text(
               tab.label,
               textDirection: TextDirection.rtl,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: AppTypography.navLabel.copyWith(
                 color: isSelected ? AppColors.primary : AppColors.textSecondary,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,

@@ -175,7 +175,7 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
                         ),
                       ),
                     ),
-                    title: Text(m.nameUrdu, style: AppTypography.bodyLarge),
+                    title: Text(m.nameUrdu, style: AppTypography.titleSmall),
                     subtitle: Text(
                       '${m.cityUrdu} • ${m.planLabel}',
                       style: AppTypography.labelSmall

@@ -17,6 +17,7 @@ void main() {
       'titleMedium': AppTypography.titleMedium,
       'titleSmall': AppTypography.titleSmall,
       'appBarTitle': AppTypography.appBarTitle,
+      'buttonNastaliq': AppTypography.buttonNastaliq,
     };
 
     for (final entry in display.entries) {

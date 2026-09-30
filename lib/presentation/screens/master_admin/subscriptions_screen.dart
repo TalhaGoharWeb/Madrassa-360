@@ -70,26 +70,30 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        SizedBox(
-          height: 52,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            itemCount: _subStatuses.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 8),
-            itemBuilder: (context, i) {
-              final s = _subStatuses[i];
-              final selected = s == _status;
-              return ChoiceChip(
-                label: Text(s == 'all' ? 'All' : s),
-                selected: selected,
-                selectedColor: AppColors.primary.withValues(alpha: 0.15),
-                onSelected: (_) {
-                  setState(() => _status = s);
-                  _load();
-                },
-              );
-            },
+        // Horizontal scroll + Row (instead of a fixed-height ListView) so
+        // the strip grows naturally with large text scales.
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: [
+              for (int i = 0; i < _subStatuses.length; i++) ...[
+                if (i > 0) const SizedBox(width: 8),
+                Builder(builder: (context) {
+                  final s = _subStatuses[i];
+                  final selected = s == _status;
+                  return ChoiceChip(
+                    label: Text(s == 'all' ? 'All' : s),
+                    selected: selected,
+                    selectedColor: AppColors.primary.withValues(alpha: 0.15),
+                    onSelected: (_) {
+                      setState(() => _status = s);
+                      _load();
+                    },
+                  );
+                }),
+              ],
+            ],
           ),
         ),
         Expanded(child: _buildBody()),

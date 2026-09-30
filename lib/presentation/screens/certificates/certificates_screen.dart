@@ -25,6 +25,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_permissions.dart';
+import '../../../core/constants/app_typography.dart';
 import '../../../core/design/m360.dart';
 import '../../../core/reports/data/report_data.dart';
 import '../../../core/reports/data/report_models.dart';
@@ -366,7 +367,8 @@ class _IssueTabState extends ConsumerState<_IssueTab> {
                       Text(
                         _student!.name,
                         textDirection: TextDirection.rtl,
-                        style: const TextStyle(fontWeight: FontWeight.w600),
+                        style: AppTypography.titleSmall
+                            .copyWith(fontWeight: FontWeight.w600),
                       ),
                       if (_student!.rollNo != null)
                         M360LatinText(_student!.rollNo!),
@@ -375,7 +377,7 @@ class _IssueTabState extends ConsumerState<_IssueTab> {
                 ),
                 TextButton(
                   onPressed: () => setState(() => _student = null),
-                  child: const Text('تبدیل کریں'),
+                  child: Text('تبدیل کریں', style: AppTypography.labelNastaliq),
                 ),
               ],
             ),
@@ -488,7 +490,8 @@ class _TypeCard extends StatelessWidget {
                 Text(
                   type.labelUr,
                   textDirection: TextDirection.rtl,
-                  style: const TextStyle(fontWeight: FontWeight.w600),
+                  style: AppTypography.titleSmall
+                      .copyWith(fontWeight: FontWeight.w600),
                 ),
                 Text(
                   def.descriptionUr,
@@ -575,7 +578,8 @@ class _HistoryTab extends ConsumerWidget {
                     Text(
                       h.studentName,
                       textDirection: TextDirection.rtl,
-                      style: const TextStyle(fontWeight: FontWeight.w600),
+                      style: AppTypography.titleSmall
+                          .copyWith(fontWeight: FontWeight.w600),
                     ),
                     Text(
                       '${h.type.labelUr}${h.serialNumber == null ? '' : ' — نمبر: ${h.serialNumber}'}',

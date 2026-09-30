@@ -15,6 +15,7 @@ import 'package:flutter/material.dart';
 
 import 'package:madrasa_360/core/errors/app_exceptions.dart';
 import 'package:madrasa_360/core/observability/app_logger.dart';
+import 'package:madrasa_360/core/constants/app_typography.dart';
 
 export 'package:madrasa_360/core/errors/app_exceptions.dart';
 
@@ -43,12 +44,12 @@ class ErrorHandler {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(title ?? 'خرابی'),
+        title: Text(title ?? 'خرابی', style: AppTypography.titleSmall),
         content: Text(message),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('ٹھیک ہے'),
+            child: Text('ٹھیک ہے', style: AppTypography.labelNastaliq),
           ),
         ],
       ),
@@ -135,7 +136,8 @@ class ErrorDisplayWidget extends StatelessWidget {
               ElevatedButton.icon(
                 onPressed: onRetry,
                 icon: const Icon(Icons.refresh),
-                label: const Text('دوبارہ کوشش کریں'),
+                label: Text('دوبارہ کوشش کریں',
+                    style: AppTypography.labelNastaliq),
               ),
             ],
           ],

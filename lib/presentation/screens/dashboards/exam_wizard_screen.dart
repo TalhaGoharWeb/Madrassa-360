@@ -356,10 +356,13 @@ class _ExamWizardScreenState extends ConsumerState<ExamWizardScreen> {
         const SizedBox(height: 16),
         TextField(
           controller: _nameCtrl,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             labelText: 'امتحان کا نام',
+            labelStyle: AppTypography.labelNastaliq,
             hintText: 'مثلاً: سہ ماہی امتحان',
-            border: OutlineInputBorder(),
+            hintStyle: AppTypography.labelNastaliq
+                .copyWith(color: AppColors.textSecondary),
+            border: const OutlineInputBorder(),
           ),
         ),
         const SizedBox(height: 12),
@@ -374,9 +377,10 @@ class _ExamWizardScreenState extends ConsumerState<ExamWizardScreen> {
             if (picked != null) setState(() => _date = picked);
           },
           child: InputDecorator(
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: 'امتحان کی تاریخ',
-              border: OutlineInputBorder(),
+              labelStyle: AppTypography.labelNastaliq,
+              border: const OutlineInputBorder(),
             ),
             child: Row(
               children: [
@@ -391,9 +395,10 @@ class _ExamWizardScreenState extends ConsumerState<ExamWizardScreen> {
         darjasAsync.when(
           data: (darjas) => DropdownButtonFormField<String?>(
             initialValue: _classId,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: 'درجہ / جماعت (اختیاری)',
-              border: OutlineInputBorder(),
+              labelStyle: AppTypography.labelNastaliq,
+              border: const OutlineInputBorder(),
             ),
             items: [
               const DropdownMenuItem<String?>(
@@ -415,9 +420,10 @@ class _ExamWizardScreenState extends ConsumerState<ExamWizardScreen> {
         TextField(
           controller: _totalMarksCtrl,
           keyboardType: TextInputType.number,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             labelText: 'کل نمبر',
-            border: OutlineInputBorder(),
+            labelStyle: AppTypography.labelNastaliq,
+            border: const OutlineInputBorder(),
           ),
         ),
       ],
@@ -446,6 +452,7 @@ class _ExamWizardScreenState extends ConsumerState<ExamWizardScreen> {
                     controller: row.name,
                     decoration: InputDecoration(
                       labelText: 'مضمون ${i + 1}',
+                      labelStyle: AppTypography.labelNastaliq,
                       border: const OutlineInputBorder(),
                     ),
                   ),
@@ -456,9 +463,10 @@ class _ExamWizardScreenState extends ConsumerState<ExamWizardScreen> {
                   child: TextField(
                     controller: row.marks,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'کل نمبر',
-                      border: OutlineInputBorder(),
+                      labelStyle: AppTypography.labelNastaliq,
+                      border: const OutlineInputBorder(),
                     ),
                   ),
                 ),
@@ -587,7 +595,8 @@ class _ExamWizardScreenState extends ConsumerState<ExamWizardScreen> {
             final i = e.key;
             final saved = _savedSubjects.contains(e.value.name);
             return ChoiceChip(
-              label: Text('${e.value.name}${saved ? ' ✓' : ''}'),
+              label: Text('${e.value.name}${saved ? ' ✓' : ''}',
+                  style: AppTypography.labelNastaliq),
               selected: i == _subjectIndex,
               onSelected: (_) => setState(() => _subjectIndex = i),
             );
@@ -622,9 +631,10 @@ class _ExamWizardScreenState extends ConsumerState<ExamWizardScreen> {
                         : current.toStringAsFixed(current % 1 == 0 ? 0 : 1),
                     keyboardType:
                         const TextInputType.numberWithOptions(decimal: true),
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'نمبر',
-                      border: OutlineInputBorder(),
+                      labelStyle: AppTypography.labelNastaliq,
+                      border: const OutlineInputBorder(),
                     ),
                     onChanged: (v) {
                       final parsed = double.tryParse(v.trim());
@@ -650,7 +660,8 @@ class _ExamWizardScreenState extends ConsumerState<ExamWizardScreen> {
           child: ElevatedButton.icon(
             onPressed: _busy ? null : _saveSubjectMarks,
             icon: const Icon(Icons.save_outlined),
-            label: Text('«${subject.name}» کے نمبر محفوظ کریں'),
+            label: Text('«${subject.name}» کے نمبر محفوظ کریں',
+                style: AppTypography.labelNastaliq),
           ),
         ),
       ],

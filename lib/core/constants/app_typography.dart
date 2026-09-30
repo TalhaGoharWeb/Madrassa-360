@@ -192,6 +192,19 @@ class AppTypography {
         height: 1.8,
       );
 
+  /// Primary button label in Jameel Noori Nastaleeq (18sp, semibold, white).
+  ///
+  /// This is the themed default for filled buttons ([app_theme.dart]
+  /// wires it into [elevatedButtonTheme]) so every Urdu button label in
+  /// the app renders in Nastaleeq. [buttonText] (Naskh) is kept for
+  /// explicit opt-in only.
+  static TextStyle get buttonNastaliq => _displayBase.copyWith(
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+        color: Colors.white,
+        height: 2.0,
+      );
+
   static TextStyle get appBarTitle => _displayBase.copyWith(
         fontSize: 24,
         fontWeight: FontWeight.bold,
