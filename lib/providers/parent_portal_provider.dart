@@ -54,11 +54,12 @@ final parentChildIdsProvider = FutureProvider<List<String>>((ref) async {
   if (userId == null || tenantId == null) return <String>[];
 
   try {
-    final rows = await (SupabaseService.client
+    final query = SupabaseService.client
         .from('student_guardians')
         .select('student_id')
         .eq('guardian_user_id', userId)
-        .eq('tenant_id', tenantId)).withNetworkTimeout();
+        .eq('tenant_id', tenantId);
+    final rows = await query.withNetworkTimeout();
     return (rows as List)
         .map((r) => (r as Map<String, dynamic>)['student_id'] as String)
         .toList();
@@ -74,12 +75,13 @@ final parentChildrenProvider = FutureProvider<List<Student>>((ref) async {
   if (tenantId == null || childIds.isEmpty) return <Student>[];
 
   try {
-    final rows = await (SupabaseService.client
+    final query = SupabaseService.client
         .from('students')
         .select()
         .eq('tenant_id', tenantId)
         .inFilter('id', childIds)
-        .order('roll_no')).withNetworkTimeout();
+        .order('roll_no');
+    final rows = await query.withNetworkTimeout();
     return (rows as List)
         .map((r) => Student.fromJson(r as Map<String, dynamic>))
         .toList();
@@ -99,12 +101,13 @@ final parentFeesProvider = FutureProvider<List<Fee>>((ref) async {
   if (tenantId == null || childIds.isEmpty) return <Fee>[];
 
   try {
-    final rows = await (SupabaseService.client
+    final query = SupabaseService.client
         .from('fees')
         .select()
         .eq('tenant_id', tenantId)
         .inFilter('student_id', childIds)
-        .order('month', ascending: false)).withNetworkTimeout();
+        .order('month', ascending: false);
+    final rows = await query.withNetworkTimeout();
     return (rows as List)
         .map((r) => Fee.fromJson(r as Map<String, dynamic>))
         .toList();
@@ -120,11 +123,12 @@ final parentResultsProvider = FutureProvider<List<SubjectResult>>((ref) async {
   if (tenantId == null || childIds.isEmpty) return <SubjectResult>[];
 
   try {
-    final rows = await (SupabaseService.client
+    final query = SupabaseService.client
         .from('results')
         .select()
         .eq('tenant_id', tenantId)
-        .inFilter('student_id', childIds)).withNetworkTimeout();
+        .inFilter('student_id', childIds);
+    final rows = await query.withNetworkTimeout();
     return (rows as List)
         .map((r) => SubjectResult.fromJson(r as Map<String, dynamic>))
         .toList();
@@ -148,13 +152,14 @@ final parentAttendanceProvider =
   try {
     final since = DateTime.now().subtract(Duration(days: args.days));
     final from = since.toIso8601String().substring(0, 10);
-    final rows = await (SupabaseService.client
+    final query = SupabaseService.client
         .from('attendance')
         .select()
         .eq('tenant_id', tenantId)
         .eq('student_id', args.studentId)
         .gte('date', from)
-        .order('date', ascending: false)).withNetworkTimeout();
+        .order('date', ascending: false);
+    final rows = await query.withNetworkTimeout();
     return (rows as List).map((r) {
       final m = r as Map<String, dynamic>;
       return AttendanceRecord(
@@ -198,11 +203,12 @@ final parentAnnouncementsProvider =
   if (tenantId == null) return <Announcement>[];
 
   try {
-    final rows = await (SupabaseService.client
+    final query = SupabaseService.client
         .from('announcements')
         .select()
         .eq('tenant_id', tenantId)
-        .order('created_at', ascending: false)).withNetworkTimeout();
+        .order('created_at', ascending: false);
+    final rows = await query.withNetworkTimeout();
     return (rows as List)
         .map((r) => Announcement.fromJson(r as Map<String, dynamic>))
         .where((a) =>

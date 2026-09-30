@@ -63,9 +63,8 @@ class AnnouncementNotifier extends StateNotifier<AnnouncementState> {
     try {
       final q = _client.from('announcements').select().eq('tenant_id', tenantId)
           as dynamic;
-      final rows =
-          await (q.order('created_at', ascending: false) as Future)
-              .withNetworkTimeout();
+      final query = q.order('created_at', ascending: false) as Future;
+      final rows = await query.withNetworkTimeout();
       state = state.copyWith(
         isLoading: false,
         announcements:

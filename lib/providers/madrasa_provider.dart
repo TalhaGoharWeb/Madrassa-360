@@ -43,8 +43,8 @@ class MadrasaNotifier extends StateNotifier<MadrasaState> {
   Future<void> loadAll() async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      final rows = await (_client.from('madrasas').select().order('name_urdu'))
-          .withNetworkTimeout();
+      final query = _client.from('madrasas').select().order('name_urdu');
+      final rows = await query.withNetworkTimeout();
       state = state.copyWith(
         isLoading: false,
         madrasas: rows.map((r) => Madrasa.fromJson(r)).toList(),

@@ -64,13 +64,13 @@ class LibraryNotifier extends StateNotifier<LibraryState> {
     try {
       final bq = _c.from('library_books').select().eq('tenant_id', tenantId)
           as dynamic;
-      final brows =
-          await (bq.order('title') as Future).withNetworkTimeout();
+      final bquery = bq.order('title') as Future;
+      final brows = await bquery.withNetworkTimeout();
 
       final iq =
           _c.from('book_issues').select().eq('tenant_id', tenantId) as dynamic;
-      final irows = await (iq.order('issued_at', ascending: false) as Future)
-          .withNetworkTimeout();
+      final iquery = iq.order('issued_at', ascending: false) as Future;
+      final irows = await iquery.withNetworkTimeout();
 
       state = state.copyWith(
         isLoading: false,

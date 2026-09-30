@@ -68,16 +68,16 @@ class DarjaNotifier extends StateNotifier<DarjaState> {
     try {
       final q =
           _client.from('darjas').select().eq('tenant_id', tenantId) as dynamic;
-      final rows =
-          await (q.order('order_index') as Future).withNetworkTimeout();
+      final query = q.order('order_index') as Future;
+      final rows = await query.withNetworkTimeout();
       final darjas = rows.map<Darja>((r) => Darja.fromJson(r)).toList();
 
       final sq = _client
           .from('darja_sections')
           .select()
           .eq('tenant_id', tenantId) as dynamic;
-      final srows =
-          await (sq.order('name_urdu') as Future).withNetworkTimeout();
+      final squery = sq.order('name_urdu') as Future;
+      final srows = await squery.withNetworkTimeout();
       final sections =
           srows.map<DarjaSection>((r) => DarjaSection.fromJson(r)).toList();
 
