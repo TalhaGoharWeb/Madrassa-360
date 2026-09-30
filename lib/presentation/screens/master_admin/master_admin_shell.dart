@@ -15,6 +15,7 @@ import '../../../core/widgets/master_admin_guard.dart';
 import '../../shell/app_shell.dart' show AppShell, kDesktopBreakpoint;
 import '../common/dashboard_guide_screen.dart';
 import 'audit_logs_screen.dart';
+import 'console_profile_screen.dart';
 import 'create_madrasa_wizard.dart';
 import 'licenses_screen.dart';
 import 'madrasa_detail_screen.dart';
@@ -104,6 +105,15 @@ class _MasterAdminShellState extends State<MasterAdminShell> {
     );
   }
 
+  /// Opens the operator's editable profile.
+  void _openProfile() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ConsoleProfileScreen(role: _role),
+      ),
+    );
+  }
+
   /// Leaves the platform console and returns to the normal app shell.
   /// A plain pop() is enough when the console was pushed on top of the app,
   /// but if the console is the only route in the stack (deep link, restored
@@ -133,7 +143,7 @@ class _MasterAdminShellState extends State<MasterAdminShell> {
       onSelect: _handleSelect,
       role: _role,
       operatorEmail: _operatorEmail,
-      onBackToApp: _backToApp,
+      onOpenProfile: _openProfile,
     );
 
     return Scaffold(
@@ -145,8 +155,8 @@ class _MasterAdminShellState extends State<MasterAdminShell> {
         showBack: false,
         actions: [
           const DashboardGuideButton(roleKey: 'master'),
-          // Always-visible exit: the rail footer also has "Back to app",
-          // but an operator should never have to hunt for the way out.
+          // Always-visible exit back to the tenant app — the rail footer
+          // now holds the profile button, so this is the way out.
           M360IconButton(
             icon: Icons.home_outlined,
             tooltip: 'Back to app',
@@ -168,9 +178,9 @@ class _MasterAdminShellState extends State<MasterAdminShell> {
                   onCloseDrawer: () => Navigator.of(drawerContext).pop(),
                   role: _role,
                   operatorEmail: _operatorEmail,
-                  onBackToApp: () {
+                  onOpenProfile: () {
                     Navigator.of(drawerContext).pop();
-                    _backToApp();
+                    _openProfile();
                   },
                 ),
               ),

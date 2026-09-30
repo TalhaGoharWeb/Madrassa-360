@@ -16,7 +16,7 @@ Widget _pumpable({
   ValueChanged<String>? onSelect,
   String? role,
   String? operatorEmail,
-  VoidCallback? onBackToApp,
+  VoidCallback? onOpenProfile,
   bool inDrawer = false,
 }) {
   return MaterialApp(
@@ -27,7 +27,7 @@ Widget _pumpable({
         inDrawer: inDrawer,
         role: role,
         operatorEmail: operatorEmail,
-        onBackToApp: onBackToApp,
+        onOpenProfile: onOpenProfile,
       ),
     ),
   );
@@ -111,12 +111,12 @@ void main() {
       expect(selected, 'create-madrasa');
     });
 
-    testWidgets('back-to-app button calls onBackToApp', (tester) async {
-      var backPressed = false;
-      await tester.pumpWidget(_pumpable(onBackToApp: () => backPressed = true));
+    testWidgets('profile button calls onOpenProfile', (tester) async {
+      var profilePressed = false;
+      await tester.pumpWidget(_pumpable(onOpenProfile: () => profilePressed = true));
 
-      await tester.tap(find.text('واپس ایپ پر'));
-      expect(backPressed, isTrue);
+      await tester.tap(find.text('پروفائل'));
+      expect(profilePressed, isTrue);
     });
 
     testWidgets('drawer mode shows a close affordance', (tester) async {

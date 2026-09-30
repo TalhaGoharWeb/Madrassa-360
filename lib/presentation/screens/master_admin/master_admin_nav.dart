@@ -148,7 +148,7 @@ class MasterAdminNavRail extends StatelessWidget {
     this.onCloseDrawer,
     this.role,
     this.operatorEmail,
-    this.onBackToApp,
+    this.onOpenProfile,
   });
 
   /// Currently active destination id.
@@ -169,8 +169,8 @@ class MasterAdminNavRail extends StatelessWidget {
   /// Signed-in operator's email, shown in the footer.
   final String? operatorEmail;
 
-  /// Leaves the console for the normal app shell.
-  final VoidCallback? onBackToApp;
+  /// Opens the operator's profile (pushed route).
+  final VoidCallback? onOpenProfile;
 
   @override
   Widget build(BuildContext context) {
@@ -211,7 +211,7 @@ class MasterAdminNavRail extends StatelessWidget {
             _OperatorFooter(
               email: operatorEmail,
               role: role,
-              onBackToApp: onBackToApp,
+              onOpenProfile: onOpenProfile,
             ),
           ],
         ),
@@ -409,11 +409,11 @@ class _NavTile extends StatelessWidget {
 }
 
 class _OperatorFooter extends StatelessWidget {
-  const _OperatorFooter({this.email, this.role, this.onBackToApp});
+  const _OperatorFooter({this.email, this.role, this.onOpenProfile});
 
   final String? email;
   final String? role;
-  final VoidCallback? onBackToApp;
+  final VoidCallback? onOpenProfile;
 
   @override
   Widget build(BuildContext context) {
@@ -464,13 +464,13 @@ class _OperatorFooter extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 8),
-            // Exit back to the tenant app.
+            // Operator profile — opens the editable profile screen.
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
-                onPressed: onBackToApp,
-                icon: const Icon(Icons.home_outlined, size: 18),
-                label: const Text('واپس ایپ پر'),
+                onPressed: onOpenProfile,
+                icon: const Icon(Icons.person_outline, size: 18),
+                label: const Text('پروفائل'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: Colors.white,
                   side: const BorderSide(color: Colors.white54),
