@@ -263,15 +263,16 @@ class _FallbackMark extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Text(
-        '۳۶۰',
-        style: TextStyle(
-          fontFamily: 'JameelNooriNastaleeq',
-          fontSize: 20,
-          color: Color(0xFF009688),
-          height: 2.0,
-        ),
+    // No tenant logo set: show the actual Madrassa-360 product logo, never a
+    // stale text mark.
+    return Center(
+      child: Image.asset(
+        'assets/images/app_logo.png',
+        width: 38,
+        height: 38,
+        fit: BoxFit.contain,
+        errorBuilder: (context, error, stackTrace) =>
+            const SizedBox(width: 38, height: 38),
       ),
     );
   }

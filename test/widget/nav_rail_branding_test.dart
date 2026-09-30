@@ -55,9 +55,10 @@ void main() {
     ));
     await tester.pump();
 
-    // Exactly one product logo: the footer. The tenant header shows the
-    // tenant's own logo slot (۳۶۰ fallback mark here), never this asset.
-    expect(_productLogoFinder(), findsOneWidget);
+    // The product logo appears twice: once in the tenant logo slot (no
+    // tenant logo is set, so the slot falls back to the product logo) and
+    // once in the footer.
+    expect(_productLogoFinder(), findsNWidgets(2));
     // Footer label next to the logo.
     expect(find.text('مدرسہ 360'), findsWidgets);
   });
@@ -83,6 +84,9 @@ void main() {
     ));
     await tester.pump();
 
-    expect(_productLogoFinder(), findsOneWidget);
+    // The product logo appears twice: once in the tenant logo slot (no
+    // tenant logo is set, so the slot falls back to the product logo) and
+    // once in the footer.
+    expect(_productLogoFinder(), findsNWidgets(2));
   });
 }
