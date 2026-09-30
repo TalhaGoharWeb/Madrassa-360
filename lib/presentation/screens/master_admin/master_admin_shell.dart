@@ -1,20 +1,25 @@
 /// پلیٹ فارم ایڈمن شیل
-/// Master Admin shell — drawer navigation for all platform-operator sections.
+/// Master Admin shell — responsive platform-console navigation.
+///
+/// Desktop (width ≥ 1100px): persistent RIGHT-side [MasterAdminNavRail]
+/// (same pattern as the tenant [AppNavRail] — ONE NAVIGATION SYSTEM).
+/// Smaller screens: the same rail inside a drawer.
 /// Mounted behind MasterAdminGuard on the '/master' route.
 
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:madrasa_360/core/design/m360.dart';
 
-import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_typography.dart';
 import '../../../core/widgets/master_admin_guard.dart';
+import '../../shell/app_shell.dart' show AppShell, kDesktopBreakpoint;
 import '../common/dashboard_guide_screen.dart';
-import '../../shell/app_shell.dart';
 import 'audit_logs_screen.dart';
+import 'create_madrasa_wizard.dart';
 import 'licenses_screen.dart';
 import 'madrasa_detail_screen.dart';
 import 'madrasa_list_screen.dart';
+import 'master_admin_nav.dart';
 import 'master_dashboard_screen.dart';
 import 'modules_screen.dart';
 import 'plans_screen.dart';
@@ -29,7 +34,7 @@ class MasterAdminShell extends StatefulWidget {
 }
 
 class _MasterAdminShellState extends State<MasterAdminShell> {
-  int _index = 0;
+  String _selectedId = 'dashboard';
   String? _role;
 
   @override
@@ -40,40 +45,53 @@ class _MasterAdminShellState extends State<MasterAdminShell> {
     });
   }
 
-  static const _items = [
-    _MaNavItem('Dashboard', Icons.dashboard_outlined),
-    _MaNavItem('Madrasas', Icons.account_balance_outlined),
-    _MaNavItem('Plans', Icons.card_membership_outlined),
-    _MaNavItem('Subscriptions', Icons.autorenew_outlined),
-    _MaNavItem('Licenses', Icons.verified_outlined),
-    _MaNavItem('Modules', Icons.extension_outlined),
-    _MaNavItem('Audit Logs', Icons.receipt_long_outlined),
-    _MaNavItem('Platform Users', Icons.admin_panel_settings_outlined),
-  ];
+  MaNavDestination get _currentDestination {
+    for (final group in kConsoleNavGroups) {
+      for (final dest in group.destinations) {
+        if (dest.id == _selectedId) return dest;
+      }
+    }
+    return kConsoleNavGroups.first.destinations.first;
+  }
+
+  String? get _operatorEmail =>
+      Supabase.instance.client.auth.currentUser?.email;
 
   Widget get _screen {
-    switch (_index) {
-      case 0:
+    switch (_selectedId) {
+      case 'dashboard':
         return const MasterDashboardScreen();
-      case 1:
+      case 'madrasas':
         return MadrasaListScreen(
           onOpenDetail: (tenantId) => _openDetail(tenantId),
         );
-      case 2:
+      case 'plans':
         return const PlansScreen();
-      case 3:
+      case 'subscriptions':
         return const SubscriptionsScreen();
-      case 4:
+      case 'licenses':
         return const LicensesScreen();
-      case 5:
+      case 'modules':
         return const ModulesScreen();
-      case 6:
+      case 'audit-logs':
         return const AuditLogsScreen();
-      case 7:
+      case 'platform-users':
         return const PlatformUsersScreen();
       default:
         return const MasterDashboardScreen();
     }
+  }
+
+  /// Handles a rail selection. Action destinations push a route instead of
+  /// swapping the inline screen; the selection stays where it was.
+  void _handleSelect(String id) {
+    if (id == 'create-madrasa') {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const CreateMadrasaWizard()),
+      );
+      return;
+    }
+    setState(() => _selectedId = id);
   }
 
   void _openDetail(String tenantId) {
@@ -108,119 +126,65 @@ class _MasterAdminShellState extends State<MasterAdminShell> {
     // Root console shell: the single Scaffold for the '/master' route.
     // Retained by design — the destinations inside use PageContainer /
     // PageHeader and must not add their own Scaffolds.
+    final isDesktop = MediaQuery.sizeOf(context).width >= kDesktopBreakpoint;
+
+    final rail = MasterAdminNavRail(
+      selectedId: _selectedId,
+      onSelect: _handleSelect,
+      role: _role,
+      operatorEmail: _operatorEmail,
+      onBackToApp: _backToApp,
+    );
+
     return Scaffold(
       appBar: M360AppBar(
-        title: _role == 'platform_owner'
-            ? 'Platform Owner Console'
-            : 'Platform Admin Console',
-        // The drawer owns navigation here; a back arrow would wrongly
+        // Section-aware title: the operator always knows where they are.
+        title: _currentDestination.urduLabel,
+        // The rail owns navigation here; a back arrow would wrongly
         // imply this console is a pushed deep screen.
         showBack: false,
         actions: [
           const DashboardGuideButton(roleKey: 'master'),
-          // Always-visible exit: the drawer also has "Back to app", but an
-          // operator should never have to hunt for the way out.
+          // Always-visible exit: the rail footer also has "Back to app",
+          // but an operator should never have to hunt for the way out.
           M360IconButton(
             icon: Icons.home_outlined,
             tooltip: 'Back to app',
             onPressed: _backToApp,
           ),
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: M360Badge.custom(
-                label: _role ?? '…',
-                color: AppColors.primary,
-              ),
-            ),
-          ),
         ],
       ),
-      drawer: Drawer(
-        child: SafeArea(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(20),
-                color: AppColors.primary,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(Icons.shield_outlined,
-                        color: Colors.white, size: 40),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Madrassa-360',
-                      style: AppTypography.titleLarge.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      'پلیٹ فارم انتظامیہ',
-                      style: AppTypography.bodySmall.copyWith(
-                        color: Colors.white70,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: _items.length,
-                  itemBuilder: (context, i) {
-                    final item = _items[i];
-                    final selected = i == _index;
-                    return ListTile(
-                      leading: Icon(
-                        item.icon,
-                        color: selected
-                            ? AppColors.primary
-                            : AppColors.textSecondary,
-                      ),
-                      title: Text(
-                        item.label,
-                        style: AppTypography.bodyMedium.copyWith(
-                          fontWeight:
-                              selected ? FontWeight.bold : FontWeight.normal,
-                          color: selected
-                              ? AppColors.primary
-                              : AppColors.textPrimary,
-                        ),
-                      ),
-                      selected: selected,
-                      selectedTileColor:
-                          AppColors.primary.withValues(alpha: 0.08),
-                      onTap: () {
-                        setState(() => _index = i);
-                        Navigator.of(context).pop();
-                      },
-                    );
+      drawer: isDesktop
+          ? null
+          : Drawer(
+              child: Builder(
+                builder: (drawerContext) => MasterAdminNavRail(
+                  selectedId: _selectedId,
+                  onSelect: (id) {
+                    Navigator.of(drawerContext).pop();
+                    _handleSelect(id);
+                  },
+                  inDrawer: true,
+                  onCloseDrawer: () => Navigator.of(drawerContext).pop(),
+                  role: _role,
+                  operatorEmail: _operatorEmail,
+                  onBackToApp: () {
+                    Navigator.of(drawerContext).pop();
+                    _backToApp();
                   },
                 ),
               ),
-              const Divider(),
-              ListTile(
-                leading: const Icon(Icons.arrow_back,
-                    color: AppColors.textSecondary),
-                title: const Text('Back to app'),
-                onTap: () {
-                  Navigator.of(context).pop(); // close the drawer first
-                  _backToApp();
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-      body: _screen,
+            ),
+      body: isDesktop
+          ? Row(
+              children: [
+                // First child in forced-RTL renders on the RIGHT.
+                rail,
+                const VerticalDivider(width: 1),
+                Expanded(child: _screen),
+              ],
+            )
+          : _screen,
     );
   }
-}
-
-class _MaNavItem {
-  final String label;
-  final IconData icon;
-  const _MaNavItem(this.label, this.icon);
 }
