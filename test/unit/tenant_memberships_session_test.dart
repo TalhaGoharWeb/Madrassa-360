@@ -19,7 +19,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:madrasa_360/core/services/tenant_context.dart';
-import 'package:madrasa_360/data/repositories/auth_repository.dart';
 import 'package:madrasa_360/providers/auth_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
