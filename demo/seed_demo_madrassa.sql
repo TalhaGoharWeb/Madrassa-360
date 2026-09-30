@@ -60,13 +60,16 @@ SELECT public.provision_role_templates('c54de9d9-eaf4-4f4f-bed5-a3f05acd9924'::u
 
 
 -- Darjas (درجات).
-INSERT INTO public.darjas (id, tenant_id, name, name_en, order_num, is_active) VALUES
-  ('5499008e-18d6-400d-8903-e88c91840b2a', 'c54de9d9-eaf4-4f4f-bed5-a3f05acd9924', 'ناظرہ قرآن', 'Nazra Quran', 1, true),
-  ('217fa880-fe41-4d7e-b44e-226c800eca6e', 'c54de9d9-eaf4-4f4f-bed5-a3f05acd9924', 'حفظ قرآن', 'Hifz-e-Quran', 2, true),
-  ('3db1694c-6fd4-4b45-991a-9233b7c121e1', 'c54de9d9-eaf4-4f4f-bed5-a3f05acd9924', 'درجہ اول', 'Grade 1', 3, true),
-  ('d2ea0c57-6b91-4cf2-ac2c-dfc48515ff7e', 'c54de9d9-eaf4-4f4f-bed5-a3f05acd9924', 'درجہ دوم', 'Grade 2', 4, true),
-  ('77cafc64-65c3-40a4-b727-d9d5c13a2ab0', 'c54de9d9-eaf4-4f4f-bed5-a3f05acd9924', 'درجہ سوم', 'Grade 3', 5, true),
-  ('28667aa4-a199-41c9-a804-428848d35c9a', 'c54de9d9-eaf4-4f4f-bed5-a3f05acd9924', 'درجہ چہارم', 'Grade 4', 6, true)
+-- NOTE: the live schema keeps the legacy (name, name_en) columns AND the
+-- current (name_urdu, name_english) pair; name_urdu is NOT NULL and the app
+-- reads name_urdu/name_english, so the seed must populate all four.
+INSERT INTO public.darjas (id, tenant_id, name, name_urdu, name_en, name_english, order_num, is_active) VALUES
+  ('5499008e-18d6-400d-8903-e88c91840b2a', 'c54de9d9-eaf4-4f4f-bed5-a3f05acd9924', 'ناظرہ قرآن', 'ناظرہ قرآن', 'Nazra Quran', 'Nazra Quran', 1, true),
+  ('217fa880-fe41-4d7e-b44e-226c800eca6e', 'c54de9d9-eaf4-4f4f-bed5-a3f05acd9924', 'حفظ قرآن', 'حفظ قرآن', 'Hifz-e-Quran', 'Hifz-e-Quran', 2, true),
+  ('3db1694c-6fd4-4b45-991a-9233b7c121e1', 'c54de9d9-eaf4-4f4f-bed5-a3f05acd9924', 'درجہ اول', 'درجہ اول', 'Grade 1', 'Grade 1', 3, true),
+  ('d2ea0c57-6b91-4cf2-ac2c-dfc48515ff7e', 'c54de9d9-eaf4-4f4f-bed5-a3f05acd9924', 'درجہ دوم', 'درجہ دوم', 'Grade 2', 'Grade 2', 4, true),
+  ('77cafc64-65c3-40a4-b727-d9d5c13a2ab0', 'c54de9d9-eaf4-4f4f-bed5-a3f05acd9924', 'درجہ سوم', 'درجہ سوم', 'Grade 3', 'Grade 3', 5, true),
+  ('28667aa4-a199-41c9-a804-428848d35c9a', 'c54de9d9-eaf4-4f4f-bed5-a3f05acd9924', 'درجہ چہارم', 'درجہ چہارم', 'Grade 4', 'Grade 4', 6, true)
 ON CONFLICT (id) DO NOTHING;
 
 -- Classes (جماعتیں). teacher_id linked in PART B.

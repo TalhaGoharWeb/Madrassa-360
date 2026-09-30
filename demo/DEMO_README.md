@@ -120,6 +120,7 @@ Review finished? One script wipes the demo tenant completely:
 | Verification shows 0 students | The tenant insert failed — check the first error in the SQL editor output |
 | Seed run twice shows same counts | Expected — the script is idempotent |
 | `remaining_demo_tenants = 1` after removal | A delete failed — read the error; most likely a trigger was left disabled by an interrupted run; re-run the whole remove script |
+| `null value in column "name_urdu" ... violates not-null constraint` | Schema drift — pull the latest seed (it now populates both the legacy and current name columns) and re-run; the script is idempotent |
 
 ---
 
