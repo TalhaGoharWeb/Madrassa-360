@@ -19,6 +19,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/constants/app_colors.dart';
 import '../core/services/supabase_service.dart';
 import '../core/services/tenant_context.dart';
 import '../core/utils/network_timeout.dart';
@@ -72,9 +73,9 @@ class TenantBranding {
   factory TenantBranding.fallback() => const TenantBranding(
         name: 'مدرسہ 360',
         nameUrdu: 'مدرسہ 360',
-        primaryColor: Color(0xFF0E7C5B),
-        secondaryColor: Color(0xFF14532D),
-        accentColor: Color(0xFFF59E0B),
+        primaryColor: AppColors.primary,
+        secondaryColor: AppColors.primaryDark,
+        accentColor: AppColors.warning,
         fontFamily: 'JameelNooriNastaleeq',
         darkModeEnabled: false,
         language: 'ur',
@@ -99,11 +100,10 @@ class TenantBranding {
       address: tenant['address'] as String?,
       city: tenant['city'] as String?,
       primaryColor:
-          _parseColor(s['primary_color'] as String?, const Color(0xFF0E7C5B)),
+          _parseColor(s['primary_color'] as String?, AppColors.primary),
       secondaryColor:
-          _parseColor(s['secondary_color'] as String?, const Color(0xFF14532D)),
-      accentColor:
-          _parseColor(s['accent_color'] as String?, const Color(0xFFF59E0B)),
+          _parseColor(s['secondary_color'] as String?, AppColors.primaryDark),
+      accentColor: _parseColor(s['accent_color'] as String?, AppColors.warning),
       fontFamily: (s['font'] as String?)?.trim().isNotEmpty == true
           ? s['font'] as String
           : 'JameelNooriNastaleeq',

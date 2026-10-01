@@ -8,15 +8,13 @@
 --
 -- ═══ STEP 0 — DEMO LOGINS (create in Supabase Auth BEFORE running) ═══
 --   Dashboard → Authentication → Users → Add user → Create new user
---   (tick "Auto Confirm User"). Same password for all five:
---
---     Email                              Role               Password
---     ─────────────────────────────────  ─────────────────  ──────────
---     demo.admin@madrassa360.pk          Admin (owner)      Demo@1234
---     demo.principal@madrassa360.pk      Principal          Demo@1234
---     demo.teacher@madrassa360.pk        Teacher            Demo@1234
---     demo.accountant@madrassa360.pk     Accountant         Demo@1234
---     demo.parent@madrassa360.pk         Parent             Demo@1234
+--   (tick "Auto Confirm User"). Create these five users:
+--     demo.admin@madrassa360.pk       (Admin / owner)
+--     demo.principal@madrassa360.pk   (Principal)
+--     demo.teacher@madrassa360.pk     (Teacher)
+--     demo.accountant@madrassa360.pk  (Accountant)
+--     demo.parent@madrassa360.pk      (Parent)
+--   Passwords: see demo/DEMO_README.md — kept out of this script.
 --
 --   The same Supabase backend serves the SaaS/web dashboard AND the Flutter
 --   app, so these logins work in both.
@@ -242,6 +240,10 @@ ON CONFLICT (id) DO NOTHING;
 -- fixes it only for some connections). The three doc-number triggers are dropped
 -- here and re-created below so the seed does not depend on the flaky trigger.
 -- Invoice numbers are supplied explicitly (INV-DEMO-001..010).
+-- ── Atomic finance block: trigger drop → inserts → trigger restore run in
+--    ONE transaction, so a failure anywhere rolls everything back instead
+--    of leaving the triggers dropped.
+BEGIN;
 DROP TRIGGER IF EXISTS trg_invoices_fill_doc_numbers ON public.invoices;
 DROP TRIGGER IF EXISTS trg_payments_fill_doc_numbers ON public.payments;
 DROP TRIGGER IF EXISTS trg_income_fill_doc_numbers ON public.income;
@@ -309,17 +311,41 @@ INSERT INTO public.income (id, tenant_id, source_type, donor_name, amount, accou
 ON CONFLICT (id) DO NOTHING;
 UPDATE public.income SET status = 'posted' WHERE status = 'draft' AND id IN ('33917e63-d950-4564-ab3b-c02dc5586ba1', '65ae7555-38bb-4147-813d-c79612d93117');
 
--- Restore the doc-number triggers exactly as migration 014 defined them.
--- (The intermittent 42703 fault itself is still open — see note above.)
-CREATE TRIGGER trg_invoices_fill_doc_numbers
-  BEFORE INSERT ON public.invoices
-  FOR EACH ROW EXECUTE FUNCTION public.finance_fill_doc_numbers();
-CREATE TRIGGER trg_payments_fill_doc_numbers
-  BEFORE INSERT ON public.payments
-  FOR EACH ROW EXECUTE FUNCTION public.finance_fill_doc_numbers();
-CREATE TRIGGER trg_income_fill_doc_numbers
-  BEFORE INSERT ON public.income
-  FOR EACH ROW EXECUTE FUNCTION public.finance_fill_doc_numbers();
+-- Restore the doc-number triggers (dropped at the top of this transaction).
+-- Migration 028 replaced the shared finance_fill_doc_numbers() with per-table
+-- functions; re-create whichever generation exists on this database, so the
+-- seed keeps working both before and after 028 is applied.
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public' AND p.proname = 'finance_fill_invoice_number'
+  ) THEN
+    CREATE TRIGGER trg_invoices_fill_doc_numbers
+      BEFORE INSERT ON public.invoices
+      FOR EACH ROW EXECUTE FUNCTION public.finance_fill_invoice_number();
+    CREATE TRIGGER trg_payments_fill_doc_numbers
+      BEFORE INSERT ON public.payments
+      FOR EACH ROW EXECUTE FUNCTION public.finance_fill_receipt_number();
+    CREATE TRIGGER trg_income_fill_doc_numbers
+      BEFORE INSERT ON public.income
+      FOR EACH ROW EXECUTE FUNCTION public.finance_fill_income_doc_number();
+  ELSE
+    CREATE TRIGGER trg_invoices_fill_doc_numbers
+      BEFORE INSERT ON public.invoices
+      FOR EACH ROW EXECUTE FUNCTION public.finance_fill_doc_numbers();
+    CREATE TRIGGER trg_payments_fill_doc_numbers
+      BEFORE INSERT ON public.payments
+      FOR EACH ROW EXECUTE FUNCTION public.finance_fill_doc_numbers();
+    CREATE TRIGGER trg_income_fill_doc_numbers
+      BEFORE INSERT ON public.income
+      FOR EACH ROW EXECUTE FUNCTION public.finance_fill_doc_numbers();
+  END IF;
+END
+$$;
+
+COMMIT;  -- end of the atomic finance block
 
 -- Notifications (tenant-wide).
 INSERT INTO public.notifications (id, tenant_id, type, title, title_urdu, body, body_urdu, channel) VALUES

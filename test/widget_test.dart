@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:madrasa_360/core/config/role_config.dart';
+import 'package:madrasa_360/core/constants/app_colors.dart';
 import 'package:madrasa_360/core/constants/app_permissions.dart';
 import 'package:madrasa_360/core/utils/date_utils.dart';
 import 'package:madrasa_360/core/utils/money_format.dart';
@@ -65,8 +66,8 @@ void main() {
       final b = _testBranding();
       expect(b.primaryColor, const Color(0xFF123456));
       // null secondary → default, invalid accent → default
-      expect(b.secondaryColor, const Color(0xFF14532D));
-      expect(b.accentColor, const Color(0xFFF59E0B));
+      expect(b.secondaryColor, AppColors.primaryDark);
+      expect(b.accentColor, AppColors.warning);
     });
 
     test('displayName falls back to name when Urdu name missing', () {

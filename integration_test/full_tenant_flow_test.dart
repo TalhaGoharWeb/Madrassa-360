@@ -68,7 +68,7 @@ import 'package:madrasa_360/data/models/student.dart';
 import 'package:madrasa_360/data/repositories/auth_repository.dart';
 import 'package:madrasa_360/presentation/screens/auth/login_screen.dart';
 import 'package:madrasa_360/presentation/screens/auth/tenant_picker_screen.dart';
-import 'package:madrasa_360/presentation/screens/main_screen.dart';
+import 'package:madrasa_360/presentation/shell/app_shell.dart';
 import 'package:madrasa_360/providers/attendance_provider.dart';
 import 'package:madrasa_360/providers/auth_provider.dart';
 import 'package:madrasa_360/providers/fee_provider.dart';
@@ -274,7 +274,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(container.read(activeTenantIdProvider), 'tenant-1');
-    expect(find.byType(MainScreen), findsOneWidget);
+    expect(find.byType(AppShell), findsOneWidget);
     final tenantId = container.read(currentTenantIdProvider);
     expect(tenantId, 'tenant-1');
 

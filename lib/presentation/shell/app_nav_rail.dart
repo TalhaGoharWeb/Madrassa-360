@@ -26,9 +26,6 @@ import 'nav_destinations.dart';
 /// Width of the desktop rail.
 const double kNavRailWidth = 264;
 
-/// Gold accent used with the teal brand.
-const Color _kGold = Color(0xFFC9A227);
-
 /// Normalise a watched badge value to an int? (see [NavBadges]).
 int? _badgeValueOf(Object? watched) {
   if (watched == null) return null;
@@ -195,7 +192,7 @@ class _BrandingHeader extends StatelessWidget {
                       width: 28,
                       height: 2,
                       decoration: BoxDecoration(
-                        color: _kGold,
+                        color: AppColors.gold,
                         borderRadius: BorderRadius.circular(1),
                       ),
                     ),
@@ -243,13 +240,14 @@ class _LogoTile extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _kGold, width: 1.5),
+        border: Border.all(color: AppColors.gold, width: 1.5),
       ),
       clipBehavior: Clip.antiAlias,
       child: hasLogo
           ? Image.network(
               branding!.logoUrl!,
               fit: BoxFit.cover,
+              semanticLabel: 'مدرسے کا لوگو',
               // Offline / broken logo must never break the shell.
               errorBuilder: (_, __, ___) => const _FallbackMark(),
             )
@@ -271,6 +269,7 @@ class _FallbackMark extends StatelessWidget {
         width: 38,
         height: 38,
         fit: BoxFit.contain,
+        semanticLabel: 'مدرسہ 360 لوگو',
         errorBuilder: (context, error, stackTrace) =>
             const SizedBox(width: 38, height: 38),
       ),
@@ -435,7 +434,7 @@ class _NavItemState extends ConsumerState<_NavItem> {
                     width: 3,
                     height: 22,
                     decoration: BoxDecoration(
-                      color: _kGold,
+                      color: AppColors.gold,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -582,6 +581,7 @@ class _ProductFooter extends StatelessWidget {
             width: 26,
             height: 26,
             fit: BoxFit.contain,
+            semanticLabel: 'مدرسہ 360 لوگو',
             errorBuilder: (context, error, stackTrace) =>
                 const SizedBox(width: 26, height: 26),
           ),

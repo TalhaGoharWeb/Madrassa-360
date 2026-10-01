@@ -134,6 +134,7 @@ class _TenantPickerScreenState extends ConsumerState<TenantPickerScreen> {
                                 width: 48,
                                 height: 48,
                                 fit: BoxFit.cover,
+                                semanticLabel: 'مدرسہ 360 لوگو',
                                 errorBuilder: (context, error, stackTrace) =>
                                     const Icon(Icons.mosque,
                                         color: AppColors.primary),

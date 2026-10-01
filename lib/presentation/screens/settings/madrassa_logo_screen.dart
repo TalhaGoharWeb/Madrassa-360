@@ -74,6 +74,7 @@ class _MadrassaLogoScreenState extends ConsumerState<MadrassaLogoScreen> {
                 // ignore: avoid_unsafe_file_constructors
                 File(picked.path),
                 fit: BoxFit.contain,
+                semanticLabel: 'مدرسے کا لوگو',
                 errorBuilder: (_, __, ___) => const Icon(
                   Icons.broken_image_outlined,
                   size: 48,

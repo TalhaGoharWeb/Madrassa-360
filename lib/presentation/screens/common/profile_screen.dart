@@ -317,7 +317,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       ),
                       child: ClipOval(
                         child: _photoPath != null
-                            ? Image.file(File(_photoPath!), fit: BoxFit.cover)
+                            ? Image.file(File(_photoPath!),
+                                fit: BoxFit.cover,
+                                semanticLabel: 'پروفائل تصویر')
                             : initial.isNotEmpty
                                 ? Center(
                                     child: Text(

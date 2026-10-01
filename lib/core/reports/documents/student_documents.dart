@@ -14,6 +14,7 @@ import 'package:pdf/widgets.dart' as pw;
 import '../data/report_models.dart';
 import '../pdf_kit.dart';
 import '../report_context.dart';
+import '../urdu_pdf.dart';
 import 'document_helpers.dart';
 
 class StudentDocuments {
@@ -113,9 +114,11 @@ class StudentDocuments {
                 s.logoOrEmblem(size: 26),
                 pw.SizedBox(width: 6),
                 pw.Expanded(
-                  child: await s.u(
+                  child: await _fitUrdu(
+                    s,
                     ctx.branding.nameUrdu ?? ctx.branding.name,
                     size: 12,
+                    maxWidth: 65,
                     bold: true,
                     color: white,
                     align: ui.TextAlign.left,
@@ -153,7 +156,11 @@ class StudentDocuments {
               ),
             ],
           ),
-          pw.Spacer(),
+          // Fixed gap, not a Spacer: Spacer is a Flex-only widget and a
+          // no-op as a direct MultiPage child. (The card content already
+          // fills the CR80 page, so there is no free space to absorb —
+          // a Column+Spacer restructure would overflow and throw.)
+          pw.SizedBox(height: 8),
           pw.Container(
             padding: const pw.EdgeInsets.symmetric(vertical: 3, horizontal: 4),
             decoration: pw.BoxDecoration(color: s.primary),
@@ -169,10 +176,12 @@ class StudentDocuments {
                     ),
                   ),
                 pw.Center(
-                  child: s.e(
+                  // Route through auto(): Urdu-digit phone numbers must
+                  // be rasterised, not set in Latin-only Helvetica.
+                  child: await s.auto(
                     ctx.branding.contactLine?.replaceAll('فون: ', 'Ph: ') ?? '',
                     size: 7,
-                    color: PdfColors.white,
+                    color: white,
                   ),
                 ),
               ],
@@ -301,6 +310,39 @@ class StudentDocuments {
 
   // ── helpers ────────────────────────────────────────────────────
 
+  /// Urdu text constrained to [maxWidth] on the CR80 card.
+  ///
+  /// A rasterised line keeps its natural width, so a long name would
+  /// overflow the card (or trip the Flex debug assert) — shrink the
+  /// font until it fits; wrap only when even [minSize] is too wide.
+  /// (pw.FittedBox can't be used here: inside an Expanded it inherits
+  /// a tight page-height and blows up vertically.)
+  static Future<pw.Widget> _fitUrdu(
+    PdfBuildScope s,
+    String text, {
+    required double size,
+    required double maxWidth,
+    double minSize = 7,
+    Color? color,
+    bool bold = false,
+    ui.TextAlign align = ui.TextAlign.right,
+  }) async {
+    final wide = await s.urdu.render(text, fontSize: size, bold: bold);
+    if (wide.widthPt <= maxWidth) {
+      return s.u(text, size: size, color: color, bold: bold, align: align);
+    }
+    final shrunk = (size * maxWidth / wide.widthPt).clamp(minSize, size);
+    return s.u(
+      text,
+      size: shrunk,
+      // Still too wide at minSize → wrap instead of overflowing.
+      maxWidth: shrunk <= minSize ? maxWidth : null,
+      color: color,
+      bold: bold,
+      align: align,
+    );
+  }
+
   static Future<Uint8List> _missingStudent(
       ReportContext ctx, String titleUr, String titleEn) {
     return PdfKit.build(
@@ -328,7 +370,11 @@ class StudentDocuments {
             child: await s.u('$labelUr :',
                 size: 9, bold: true, color: const Color(0xFF616161)),
           ),
-          pw.Expanded(child: await s.auto(value, size: 9)),
+          pw.Expanded(
+            child: UrduPdf.isUrdu(value)
+                ? await _fitUrdu(s, value, size: 10, maxWidth: 95)
+                : await s.auto(value, size: 9),
+          ),
         ],
       ),
     );

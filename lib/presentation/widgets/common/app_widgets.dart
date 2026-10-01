@@ -401,10 +401,13 @@ class SectionHeader extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            title,
-            style: AppTypography.titleMedium.copyWith(
-              fontWeight: FontWeight.bold,
+          Expanded(
+            child: Text(
+              title,
+              style: AppTypography.titleMedium.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
           if (actionText != null || onActionTap != null)
@@ -487,58 +490,6 @@ class InfoTile extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-/// لوڈنگ انڈیکیٹر
-/// Loading Overlay Widget
-class LoadingOverlay extends StatelessWidget {
-  final bool isLoading;
-  final Widget child;
-  final String? message;
-
-  const LoadingOverlay({
-    super.key,
-    required this.isLoading,
-    required this.child,
-    this.message,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        child,
-        if (isLoading)
-          Container(
-            color: Colors.black.withValues(alpha: 0.3),
-            child: Center(
-              child: Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const CircularProgressIndicator(
-                      color: AppColors.primary,
-                    ),
-                    if (message != null) ...[
-                      const SizedBox(height: 16),
-                      Text(
-                        message!,
-                        style: AppTypography.labelNastaliq,
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-          ),
-      ],
     );
   }
 }

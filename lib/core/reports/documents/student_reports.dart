@@ -243,6 +243,8 @@ class StudentReports {
             size: 9,
             color: const Color(0xFF9E9E9E),
           ),
+          pw.SizedBox(height: 24),
+          await s.signatureRow(['دستخط کلاس انچارج', 'دستخط پرنسپل']),
         ];
       },
     );
@@ -315,6 +317,9 @@ class StudentReports {
           w.add(await s.dataTable(
               headers: payTable.headers, rows: payTable.rows));
         }
+        w.add(pw.SizedBox(height: 24));
+        w.add(
+            await s.signatureRow(['دستخط وصول کنندہ', 'دستخط پرنسپل مع مہر']));
         return w;
       },
     );

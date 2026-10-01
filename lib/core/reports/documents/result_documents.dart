@@ -38,25 +38,37 @@ class ResultDocuments {
               sub.grade,
             ],
         ];
-        return <pw.Widget>[
+        final w = <pw.Widget>[
           await s.sectionTitle('کوائفِ طالب علم', 'Student particulars'),
           await fieldRow(s, 'نام', result.studentName),
           await fieldRow(s, 'جماعت', result.className),
           await fieldRow(s, 'امتحان', result.examName),
           pw.SizedBox(height: 8),
-          await s.sectionTitle('مضامین کی تفصیل', 'Subject results'),
-          await s.dataTable(
+        ];
+        if (rows.isEmpty) {
+          // Honest empty state — never a headers-only table, and no
+          // zeros-as-data totals when nothing was recorded.
+          w.add(await s.emptyNotice(
+            'اس نتیجے میں مضامین کی تفصیل درج نہیں ہے۔',
+            'No subject details were recorded for this result.',
+          ));
+        } else {
+          w.add(await s.sectionTitle('مضامین کی تفصیل', 'Subject results'));
+          w.add(await s.dataTable(
             headers: const ['مضمون', 'حاصل نمبر', 'کل نمبر', 'گریڈ'],
             rows: rows,
-          ),
-          pw.SizedBox(height: 10),
-          await fieldRow(s, 'کل حاصل', '${result.totalObtained.toInt()}'),
-          await fieldRow(s, 'کل نمبر', '${result.totalMarks.toInt()}'),
-          await fieldRow(s, 'فیصد', '${result.percentage.toStringAsFixed(1)}٪'),
-          await fieldRow(s, 'گریڈ', result.grade),
-          pw.SizedBox(height: 28),
-          await s.signatureRow(['دستخط استاد', 'دستخط پرنسپل مع مہر']),
-        ];
+          ));
+          w.add(pw.SizedBox(height: 10));
+          w.add(
+              await fieldRow(s, 'کل حاصل', '${result.totalObtained.toInt()}'));
+          w.add(await fieldRow(s, 'کل نمبر', '${result.totalMarks.toInt()}'));
+          w.add(await fieldRow(
+              s, 'فیصد', '${result.percentage.toStringAsFixed(1)}٪'));
+          w.add(await fieldRow(s, 'گریڈ', result.grade));
+        }
+        w.add(pw.SizedBox(height: 28));
+        w.add(await s.signatureRow(['دستخط استاد', 'دستخط پرنسپل مع مہر']));
+        return w;
       },
     );
   }

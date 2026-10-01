@@ -14,6 +14,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
+import '../core/observability/app_logger.dart';
 import '../core/services/supabase_service.dart';
 import '../core/services/tenant_context.dart';
 import '../core/utils/network_timeout.dart';
@@ -126,7 +127,14 @@ class AnnouncementNotifier extends StateNotifier<AnnouncementState> {
           title: a.title,
           body: a.body,
         );
-      } catch (_) {}
+      } catch (e) {
+        // Best-effort only — the announcement is already saved locally;
+        // the missed notification should be visible in logs, not silent.
+        AppLogger().warning(
+          '[Announcements] posted notification failed',
+          error: e,
+        );
+      }
 
       state = state.copyWith(
         isLoading: false,

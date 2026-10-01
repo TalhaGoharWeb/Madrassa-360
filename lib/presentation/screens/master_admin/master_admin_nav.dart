@@ -248,6 +248,7 @@ class _ConsoleBrandHeader extends StatelessWidget {
               child: Image.asset(
                 'assets/images/app_logo.png',
                 fit: BoxFit.cover,
+                semanticLabel: 'مدرسہ 360 لوگو',
                 errorBuilder: (_, __, ___) => const Icon(
                   Icons.shield_outlined,
                   color: AppColors.primary,
@@ -265,7 +266,7 @@ class _ConsoleBrandHeader extends StatelessWidget {
                     style: AppTypography.labelNastaliq.copyWith(
                       color: Colors.white,
                       fontSize: 19,
-                      height: 1.6,
+                      height: 2.0,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -490,6 +491,7 @@ class _OperatorFooter extends StatelessWidget {
                   height: 20,
                   child: Image.asset(
                     'assets/images/app_logo.png',
+                    semanticLabel: 'مدرسہ 360 لوگو',
                     errorBuilder: (_, __, ___) => const SizedBox.shrink(),
                   ),
                 ),

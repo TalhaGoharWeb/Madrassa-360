@@ -8,6 +8,7 @@
 
 import 'package:flutter/material.dart';
 
+import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
 
 class CrashScreen extends StatefulWidget {
@@ -42,14 +43,14 @@ class _CrashScreenState extends State<CrashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const emerald = Color(0xFF0B6E4F);
-    const gold = Color(0xFFD4AF37);
+    const emerald = AppColors.primary;
+    const gold = AppColors.gold;
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       home: Directionality(
         textDirection: TextDirection.rtl,
         child: Scaffold(
-          backgroundColor: const Color(0xFFF6F8F7),
+          backgroundColor: AppColors.background,
           body: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 420),

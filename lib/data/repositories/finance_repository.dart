@@ -46,6 +46,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../data/local/app_database.dart' hide SyncQueue;
 import '../../core/notifications/notification_triggers.dart';
+import '../../core/observability/app_logger.dart';
 import '../../core/sync/sync_engine.dart';
 import '../models/finance.dart';
 import '../../core/services/supabase_service.dart';
@@ -558,7 +559,14 @@ class LocalFinanceRepository implements IFinanceRepository {
         studentId: inv.studentId,
         amount: invoice.total,
       );
-    } catch (_) {}
+    } catch (e) {
+      // Best-effort only — the financial write already succeeded, but the
+      // missed notification should be visible in logs, not silent.
+      AppLogger().warning(
+        '[Finance] invoice-created notification failed',
+        error: e,
+      );
+    }
     return invoice;
   }
 
@@ -640,7 +648,14 @@ class LocalFinanceRepository implements IFinanceRepository {
         studentName: p.studentName,
         amount: p.amount,
       );
-    } catch (_) {}
+    } catch (e) {
+      // Best-effort only — the financial write already succeeded, but the
+      // missed notification should be visible in logs, not silent.
+      AppLogger().warning(
+        '[Finance] payment-posted notification failed',
+        error: e,
+      );
+    }
     return Payment.fromJson(posted);
   }
 

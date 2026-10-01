@@ -36,9 +36,13 @@ class MadrasaState {
 }
 
 class MadrasaNotifier extends StateNotifier<MadrasaState> {
-  MadrasaNotifier() : super(const MadrasaState());
+  /// [client] is an optional seam for tests; production code uses the
+  /// shared [SupabaseService.client].
+  MadrasaNotifier({SupabaseClient? client})
+      : _client = client ?? SupabaseService.client,
+        super(const MadrasaState());
 
-  final _client = SupabaseService.client;
+  final SupabaseClient _client;
 
   Future<void> loadAll() async {
     state = state.copyWith(isLoading: true, clearError: true);
@@ -94,7 +98,13 @@ class MadrasaNotifier extends StateNotifier<MadrasaState> {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
       await _client.from('madrasas').update(m.toJson()).eq('id', m.id!);
-    } catch (_) {}
+    } catch (e) {
+      // Surface the failure and keep the prior state untouched: applying
+      // the optimistic change here would show a failed write as succeeded.
+      final message = e.toString();
+      state = state.copyWith(isLoading: false, error: message);
+      return message;
+    }
     state = state.copyWith(
       isLoading: false,
       madrasas: state.madrasas.map((x) => x.id == m.id ? m : x).toList(),
@@ -110,7 +120,13 @@ class MadrasaNotifier extends StateNotifier<MadrasaState> {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
       await _client.from('madrasas').delete().eq('id', id);
-    } catch (_) {}
+    } catch (e) {
+      // Surface the failure and keep the prior state untouched: dropping
+      // the row locally here would show a failed delete as succeeded.
+      final message = e.toString();
+      state = state.copyWith(isLoading: false, error: message);
+      return message;
+    }
     state = state.copyWith(
       isLoading: false,
       madrasas: state.madrasas.where((x) => x.id != id).toList(),

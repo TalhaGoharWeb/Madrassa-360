@@ -15,6 +15,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:madrasa_360/core/constants/app_permissions.dart';
 import 'package:madrasa_360/core/services/role_service.dart';
+import 'package:madrasa_360/core/utils/date_utils.dart' as date_utils;
 import 'package:madrasa_360/presentation/screens/dashboards/role_home.dart';
 import 'package:madrasa_360/presentation/widgets/dashboard/alert_card.dart';
 import 'package:madrasa_360/presentation/widgets/dashboard/dashboard_scaffold.dart';
@@ -189,8 +190,13 @@ void main() {
       );
       expect(find.text('السلام علیکم ورحمۃ اللہ'), findsOneWidget);
       expect(find.text('ٹیسٹ صارف'), findsOneWidget);
-      // Urdu date line carries a month name like 'ستمبر'.
-      expect(find.textContaining('ستمبر'), findsWidgets);
+      // Urdu date line carries the current month name in Urdu
+      // (date-dependent: resolves via the same formatter the app uses).
+      expect(
+        find.textContaining(
+            date_utils.DateUtils.formatMonthName(DateTime.now())),
+        findsWidgets,
+      );
     });
   });
 

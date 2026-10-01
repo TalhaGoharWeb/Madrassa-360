@@ -329,7 +329,13 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                 children: [
                   const Icon(Icons.class_, color: AppColors.primary, size: 20),
                   const SizedBox(width: 8),
-                  Text(classes.first.name, style: AppTypography.titleMedium),
+                  Expanded(
+                    child: Text(
+                      classes.first.name,
+                      style: AppTypography.titleMedium,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
                 ],
               ),
             );

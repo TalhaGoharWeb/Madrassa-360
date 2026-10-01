@@ -125,7 +125,8 @@ class _ConsoleProfileScreenState extends ConsumerState<ConsoleProfileScreen> {
                                 child: ClipOval(
                                   child: _photoPath != null
                                       ? Image.file(File(_photoPath!),
-                                          fit: BoxFit.cover)
+                                          fit: BoxFit.cover,
+                                          semanticLabel: 'پروفائل تصویر')
                                       : initial.isNotEmpty
                                           ? Center(
                                               child: Text(

@@ -215,6 +215,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
               width: 112,
               height: 112,
               fit: BoxFit.cover,
+              semanticLabel: 'مدرسہ 360 لوگو',
               // A missing or unbundled asset must never break the login
               // screen: fall back to a branded mark (teal tile with 360 in
               // Nastaleeq) — never a generic mosque icon.

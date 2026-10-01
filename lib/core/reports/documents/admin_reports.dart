@@ -80,6 +80,9 @@ class AdminReports {
           w.add(pw.SizedBox(height: 12));
           w.addAll(await extra(s, nonEmpty));
         }
+        w.add(pw.SizedBox(height: 24));
+        w.add(
+            await s.signatureRow(['دستخط تیار کنندہ', 'دستخط پرنسپل مع مہر']));
         return w;
       },
     );
@@ -245,7 +248,10 @@ class AdminReports {
           ]),
           pw.SizedBox(height: 12),
         ];
-        Future<pw.Widget> section(
+        // Sections stay FLAT: the dataTable must be a direct MultiPage
+        // child so it can span pages (a pw.Column wrapper cannot split
+        // and throws once the table overflows a page — R-1).
+        Future<List<pw.Widget>> section(
             String titleUr, String titleEn, List<MoneyEntry> list) async {
           final w2 = <pw.Widget>[
             await s.sectionTitle(titleUr, titleEn),
@@ -267,12 +273,12 @@ class AdminReports {
               ],
             ));
           }
-          return pw.Column(children: w2);
+          return w2;
         }
 
-        w.add(await section('آمدن', 'Income', inPriced));
+        w.addAll(await section('آمدن', 'Income', inPriced));
         w.add(pw.SizedBox(height: 12));
-        w.add(await section('اخراجات', 'Expenses', exPriced));
+        w.addAll(await section('اخراجات', 'Expenses', exPriced));
         final unpriced = (income.length - inPriced.length) +
             (expense.length - exPriced.length);
         if (unpriced > 0) {
@@ -284,6 +290,9 @@ class AdminReports {
             maxWidth: 480,
           ));
         }
+        w.add(pw.SizedBox(height: 24));
+        w.add(
+            await s.signatureRow(['دستخط تیار کنندہ', 'دستخط پرنسپل مع مہر']));
         return w;
       },
     );
