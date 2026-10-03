@@ -804,10 +804,10 @@ class _UserWizardScreenState extends ConsumerState<UserWizardScreen> {
               children: [
                 const UxSectionTitle('اہم وضاحتیں', icon: Icons.info_outline),
                 const SizedBox(height: 6),
-                for (final e in exclusions)
+                for (final sentence in exclusions)
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 2),
-                    child: Text('• $e', style: AppTypography.bodySmall),
+                    child: Text('• $sentence', style: AppTypography.bodySmall),
                   ),
               ],
             ),

@@ -57,6 +57,14 @@ class FakeAttendanceRepository implements IAttendanceRepository {
     required String tenantId,
   }) =>
       const Stream.empty();
+
+  @override
+  Future<Set<String>> getMarkedClassIds({
+    required List<String> classIds,
+    required DateTime date,
+    required String tenantId,
+  }) async =>
+      {};
 }
 
 void main() {

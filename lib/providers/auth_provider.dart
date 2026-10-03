@@ -6,6 +6,7 @@ import '../data/repositories/auth_repository.dart';
 import '../data/delegation_repository.dart';
 import '../core/errors/app_exceptions.dart';
 import '../core/errors/error_boundary.dart';
+import '../core/security/secure_wipe.dart';
 import '../core/services/authorization_service.dart';
 import '../core/services/permission_service.dart';
 import '../core/services/role_service.dart';
@@ -37,6 +38,14 @@ const kRememberMeKey = 'auth_remember_me';
 
 /// E-mail to pre-fill on the login form (saved only when remembered).
 const kRememberedEmailKey = 'auth_remembered_email';
+
+/// Last signed-in user id — used to detect an account switch without a
+/// clean sign-out first (SEC-H12 backstop: wipe before wiring the new user).
+const kLastUserIdKey = 'auth_last_user_id';
+
+/// Consecutive failed login attempts (progressive client-side backoff).
+const kLoginFailCountKey = 'auth_login_fail_count';
+const kLoginFailAtKey = 'auth_login_fail_at_ms';
 
 /// تصدیق کی حالت کا انتظام
 /// Authentication State Management (Supabase) — Phase 3
@@ -191,6 +200,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
             // Full post-login wiring (idempotent — safe if login() also ran it).
             await _handleSignedIn();
             break;
+          case sb.AuthChangeEvent.passwordRecovery:
+            // Recovery link opened: the SDK established a recovery session.
+            // Show the set-new-password screen instead of normal post-login
+            // routing (SEC-H13).
+            _ref.read(passwordRecoveryModeProvider.notifier).state = true;
+            break;
           case sb.AuthChangeEvent.tokenRefreshed:
           case sb.AuthChangeEvent.userUpdated:
             // Session still valid — just refresh the user/permissions.
@@ -249,27 +264,86 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   /// Sign in with [email] + [password].
   /// On success wires the tenant context and computes [AuthState.route].
+  ///
+  /// Progressive client-side backoff (SEC-H8): after consecutive failures
+  /// the attempt is delayed locally (2s, 4s, 8s … capped at 30s) to slow
+  /// credential-stuffing without punishing legitimate typos.
   Future<bool> login({
     required String email,
     required String password,
   }) async {
     try {
       state = AuthState.loading();
+      final wait = await _loginBackoffDelay();
+      if (wait > Duration.zero) {
+        state = AuthState.error(
+          'بہت زیادہ ناکام کوششیں — براہ کرم ${wait.inSeconds} سیکنڈ بعد دوبارہ کوشش کریں',
+        );
+        return false;
+      }
       await _repo.signIn(email: email, password: password);
+      await _recordLoginSuccess();
       // The SIGNED_IN event will also fire; _handleSignedIn is idempotent.
       await _handleSignedIn();
       return state.isAuthenticated;
     } on AppException catch (e, st) {
       // Phase 7: classify (already typed) + log + health counter via the
       // error boundary; the returned message is the same safe Urdu string.
+      await _recordLoginFailure();
       final message = ErrorBoundary.handleErrorSimple(e, st, tag: 'auth/login');
       state = AuthState.error(message);
       return false;
     } catch (e, st) {
+      await _recordLoginFailure();
       final message = ErrorBoundary.handleErrorSimple(e, st, tag: 'auth/login');
       state = AuthState.error(message);
       return false;
     }
+  }
+
+  /// Seconds to wait before the next login attempt given [failures]
+  /// consecutive failures. Pure function — unit-tested.
+  /// 0-1 failures → no delay; then 2, 4, 8, 16, capped at 30.
+  static int backoffSecondsForFailures(int failures) {
+    if (failures < 2) return 0;
+    // Cap the exponent before shifting: 2^5 = 32 already exceeds the cap,
+    // and shifting by >= 64 is undefined/0 on 64-bit ints.
+    if (failures > 6) return 30;
+    var delay = 1 << (failures - 1); // 2, 4, 8, 16, 32
+    if (delay > 30) delay = 30;
+    return delay;
+  }
+
+  /// Returns the remaining wait before another attempt is allowed, or
+  /// [Duration.zero] when the user may try immediately.
+  Future<Duration> _loginBackoffDelay() async {
+    try {
+      final failures = StorageService.getInt(kLoginFailCountKey) ?? 0;
+      final delaySecs = backoffSecondsForFailures(failures);
+      if (delaySecs <= 0) return Duration.zero;
+      final lastAt = StorageService.getInt(kLoginFailAtKey) ?? 0;
+      final elapsed = DateTime.now().millisecondsSinceEpoch - lastAt;
+      final remaining = delaySecs * 1000 - elapsed;
+      return remaining > 0 ? Duration(milliseconds: remaining) : Duration.zero;
+    } catch (_) {
+      return Duration.zero;
+    }
+  }
+
+  Future<void> _recordLoginFailure() async {
+    try {
+      final failures = (StorageService.getInt(kLoginFailCountKey) ?? 0) + 1;
+      await StorageService.saveInt(kLoginFailCountKey, failures);
+      await StorageService.saveInt(
+          kLoginFailAtKey, DateTime.now().millisecondsSinceEpoch);
+    } catch (_) {/* best effort */}
+  }
+
+  Future<void> _recordLoginSuccess() async {
+    try {
+      await StorageService.remove(kLoginFailCountKey);
+      await StorageService.remove(kLoginFailAtKey);
+    } catch (_) {/* best effort */}
   }
 
   // ── Sign out ─────────────────────────────────────────────────
@@ -345,6 +419,34 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final user = await _repo.getSessionUser();
       if (user == null) {
         await _handleSignedOut();
+        return;
+      }
+
+      // SEC-H12 backstop: if a *different* user signed in without a clean
+      // sign-out first (app killed, session expired), wipe the previous
+      // tenant's offline data before wiring the new session.
+      final lastUserId = StorageService.getString(kLastUserIdKey);
+      if (lastUserId != null && lastUserId != user.id) {
+        await SecureWipe.wipeOnSignOut(_ref);
+      }
+      await StorageService.saveString(kLastUserIdKey, user.id);
+
+      // SEC-M26: proactively refuse deactivated accounts on session
+      // establish (restore or fresh login). Best-effort: on network/RLS
+      // failure we keep the session (offline tolerance) — a server-side
+      // ban still kills the session at the next token refresh.
+      final active = await _checkAccountActive(user.id);
+      if (active == false) {
+        // Local-only sign-out: the server session is already dead for
+        // banned users (or dies at the next refresh). Going through the
+        // SDK's signOut() would emit SIGNED_OUT asynchronously and race
+        // the error message below, so the persisted session is removed
+        // directly and _handleSignedOut() runs exactly once here.
+        await SupabaseService.authStorage?.removePersistedSession();
+        await _handleSignedOut();
+        state = AuthState.error(
+          'آپ کا اکاؤنٹ غیر فعال کر دیا گیا ہے — براہ کرم منتظم سے رابطہ کریں',
+        );
         return;
       }
 
@@ -431,6 +533,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   /// Lightweight refresh on TOKEN_REFRESHED / USER_UPDATED:
   /// update user + permissions, keep the current route.
+  ///
+  /// SEC-L34: platform-admin status is re-verified here (not just at
+  /// sign-in) so a revoked admin loses console access at the next refresh.
+  /// The check is tri-state: on network/RLS failure the previous value is
+  /// kept (offline tolerance) — only a definitive "not admin" demotes.
   Future<void> _refreshSessionUser() async {
     try {
       final user = await _repo.getSessionUser();
@@ -438,12 +545,14 @@ class AuthNotifier extends StateNotifier<AuthState> {
         await _handleSignedOut();
         return;
       }
+      final adminStatus = await _checkPlatformAdminTriState(user.id);
       // AuthorizationService serves the in-memory set when the tenant has
       // not changed, so this stays cheap on every token refresh.
       await refreshPermissions();
       state = state.copyWith(
         user: user.copyWith(permissions: state.permissions),
         isAuthenticated: true,
+        isPlatformAdmin: adminStatus ?? state.isPlatformAdmin,
       );
     } catch (e, st) {
       ErrorBoundary.handleErrorSimple(e, st, tag: 'auth/session-refresh');
@@ -470,6 +579,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
       await _ref.read(activeTenantIdProvider.notifier).clear();
     } catch (e, st) {
       ErrorBoundary.handleErrorSimple(e, st, tag: 'auth/signout-cleanup');
+    }
+    // SEC-H12: the offline database holds the tenant's full synced dataset —
+    // close it, delete the file (+ WAL/SHM), clear caches and preferences so
+    // the next device user inherits nothing. Never blocks the sign-out.
+    try {
+      await SecureWipe.wipeOnSignOut(_ref);
+      await StorageService.remove(kLastUserIdKey);
+    } catch (e, st) {
+      ErrorBoundary.handleErrorSimple(e, st, tag: 'auth/signout-wipe');
     }
     state = AuthState.unauthenticated();
   }
@@ -499,6 +617,13 @@ class AuthNotifier extends StateNotifier<AuthState> {
   /// True when the user has a row in `platform_admins` or `super_admins`.
   /// Any failure (incl. RLS denial) is treated as "not a platform admin".
   Future<bool> _checkPlatformAdmin(String userId) async {
+    return (await _checkPlatformAdminTriState(userId)) ?? false;
+  }
+
+  /// Tri-state platform-admin check: true/false on a definitive answer,
+  /// null when the check itself failed (network/RLS) so callers can keep
+  /// the previous value instead of demoting offline users (SEC-L34).
+  Future<bool?> _checkPlatformAdminTriState(String userId) async {
     try {
       final adminRow = await SupabaseService.client
           .from('platform_admins')
@@ -517,8 +642,33 @@ class AuthNotifier extends StateNotifier<AuthState> {
       return superRow != null;
     } catch (e, st) {
       ErrorBoundary.handleErrorSimple(e, st, tag: 'auth/platform-admin-check');
-      return false;
+      return null;
     }
+  }
+
+  /// SEC-M26: is this account still active? Reads `user_accounts.is_active`
+  /// (the row the `set_active` Edge Function action maintains). Returns
+  /// null when the check cannot be performed (offline/RLS) — callers keep
+  /// the session in that case; only a definitive `false` signs out.
+  Future<bool?> _checkAccountActive(String userId) async {
+    try {
+      final row = await SupabaseService.client
+          .from('user_accounts')
+          .select('is_active')
+          .eq('id', userId)
+          .maybeSingle();
+      if (row == null) return null; // no row yet — not our call to judge
+      return (row['is_active'] as bool?) ?? true;
+    } catch (e, st) {
+      ErrorBoundary.handleErrorSimple(e, st, tag: 'auth/account-active-check');
+      return null;
+    }
+  }
+
+  /// Leaves password-recovery mode (after the new password is set or the
+  /// flow is abandoned) so the auth gate returns to normal routing.
+  void completePasswordRecovery() {
+    _ref.read(passwordRecoveryModeProvider.notifier).state = false;
   }
 }
 
@@ -535,6 +685,11 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
 final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
   return AuthNotifier(ref);
 });
+
+/// True while the app is in password-recovery mode: the user arrived via a
+/// recovery link (PASSWORD_RECOVERY event) and must set a new password
+/// before normal routing resumes (SEC-H13).
+final passwordRecoveryModeProvider = StateProvider<bool>((ref) => false);
 
 /// The post-login routing decision (login / noAccess / tenantPicker / home).
 final authRouteProvider = Provider<AuthRoute>((ref) {

@@ -117,6 +117,14 @@ class _FakeAttendance implements IAttendanceRepository {
     required String tenantId,
   }) =>
       const Stream.empty();
+
+  @override
+  Future<Set<String>> getMarkedClassIds({
+    required List<String> classIds,
+    required DateTime date,
+    required String tenantId,
+  }) async =>
+      {};
 }
 
 void main() {
@@ -207,15 +215,17 @@ void main() {
         overrides: [
           ...baseOverrides(),
           financeHubOverviewProvider.overrideWith(
-            (ref) async => const FinanceHubOverview(
-              totalOutstanding: 0,
-              monthCollected: 0,
-              pendingRecords: 0,
-              overdueRecords: 0,
-              postedIncome: 0,
-              postedExpense: 0,
-              topDues: [],
-              recentPayments: [],
+            (ref) => const AsyncValue.data(
+              FinanceHubOverview(
+                totalOutstanding: 0,
+                monthCollected: 0,
+                pendingRecords: 0,
+                overdueRecords: 0,
+                postedIncome: 0,
+                postedExpense: 0,
+                topDues: [],
+                recentPayments: [],
+              ),
             ),
           ),
         ],
@@ -453,15 +463,17 @@ void main() {
         overrides: [
           ...baseOverrides(),
           financeHubOverviewProvider.overrideWith(
-            (ref) async => const FinanceHubOverview(
-              totalOutstanding: 0,
-              monthCollected: 0,
-              pendingRecords: 0,
-              overdueRecords: 0,
-              postedIncome: 0,
-              postedExpense: 0,
-              topDues: [],
-              recentPayments: [],
+            (ref) => const AsyncValue.data(
+              FinanceHubOverview(
+                totalOutstanding: 0,
+                monthCollected: 0,
+                pendingRecords: 0,
+                overdueRecords: 0,
+                postedIncome: 0,
+                postedExpense: 0,
+                topDues: [],
+                recentPayments: [],
+              ),
             ),
           ),
         ],

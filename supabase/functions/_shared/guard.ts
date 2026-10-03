@@ -186,19 +186,76 @@ export function newTenantCode(): string {
       .toUpperCase();
 }
 
-/** Reads and parses a JSON body; returns { ok:false } on malformed JSON. */
+/** Reads and parses a JSON body; returns { ok:false } on malformed JSON.
+ *
+ * Byte cap: bodies larger than [maxBytes] (default 1 MiB) are rejected with
+ * `reason: "too_large"` BEFORE parsing — callers should map that to HTTP
+ * 413. The cap is enforced twice: first via the declared Content-Length
+ * (cheap reject), then while streaming the body so a lying header cannot
+ * force unbounded memory allocation (SEC-M11).
+ */
 export async function readJsonBody(
   req: Request,
-): Promise<{ ok: true; body: Record<string, unknown> } | { ok: false }> {
+  maxBytes = 1_048_576,
+): Promise<
+  | { ok: true; body: Record<string, unknown> }
+  | { ok: false; reason: "too_large" | "invalid" }
+> {
+  const declared = req.headers.get("content-length");
+  if (declared !== null) {
+    const n = Number(declared);
+    if (Number.isFinite(n) && n > maxBytes) {
+      return { ok: false, reason: "too_large" };
+    }
+  }
   try {
-    const body = await req.json();
+    const stream = req.body;
+    if (!stream) {
+      return { ok: false, reason: "invalid" };
+    }
+    const reader = stream.getReader();
+    const chunks: Uint8Array[] = [];
+    let total = 0;
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > maxBytes) {
+        await reader.cancel().catch(() => {});
+        return { ok: false, reason: "too_large" };
+      }
+      chunks.push(value);
+    }
+    const merged = new Uint8Array(total);
+    let off = 0;
+    for (const c of chunks) {
+      merged.set(c, off);
+      off += c.byteLength;
+    }
+    const body = JSON.parse(new TextDecoder().decode(merged));
     if (body === null || typeof body !== "object" || Array.isArray(body)) {
-      return { ok: false };
+      return { ok: false, reason: "invalid" };
     }
     return { ok: true, body: body as Record<string, unknown> };
   } catch {
-    return { ok: false };
+    return { ok: false, reason: "invalid" };
   }
+}
+
+/** Maps a readJsonBody failure to the right HTTP response (413 vs 400). */
+export function badBodyResponse(
+  parsed: { ok: false; reason: "too_large" | "invalid" },
+): Response {
+  if (parsed.reason === "too_large") {
+    return json(
+      { error: "payload_too_large", message: "Request body exceeds the size limit." },
+      413,
+    );
+  }
+  return json(
+    { error: "invalid_json", message: "Request body must be a JSON object." },
+    400,
+  );
 }
 
 /**
@@ -225,4 +282,278 @@ export function parseWebsite(v: unknown): {
   } catch {
     return { present: true, invalid: true };
   }
+}
+
+// ── centralized request validation (SEC-M12 / Phase 4.2) ──────────────────
+
+/** Per-field validation rule for validateBody(). */
+export interface FieldRule {
+  required?: boolean;
+  allowNull?: boolean;
+  type?: "string" | "number" | "boolean" | "uuid" | "email" | "object" | "array";
+  minLength?: number; // strings
+  maxLength?: number; // strings
+  minItems?: number; // arrays
+  maxItems?: number; // arrays
+  maxBytes?: number; // JSON-encoded size for objects
+}
+
+/**
+ * Validates a parsed JSON body against a per-field schema.
+ * - Rejects UNKNOWN keys with 400-worthy problems (mass-assignment defense:
+ *   callers must allow-list every accepted key per action).
+ * - Type-checks known keys; length/item/byte caps stop oversized payloads.
+ * Returns { ok:true } or { ok:false, problems } — the caller maps problems
+ * to a 400 response. Problem strings name only the offending FIELD, never
+ * internal schema details.
+ */
+export function validateBody(
+  body: Record<string, unknown>,
+  schema: Record<string, FieldRule>,
+): { ok: true } | { ok: false; problems: string[] } {
+  const problems: string[] = [];
+  for (const key of Object.keys(body)) {
+    if (!Object.prototype.hasOwnProperty.call(schema, key)) {
+      problems.push(`unknown field: ${key}`);
+    }
+  }
+  for (const [key, rule] of Object.entries(schema)) {
+    const v = body[key];
+    if (v === undefined || v === null) {
+      if (rule.required && !(v === null && rule.allowNull)) {
+        problems.push(`missing required field: ${key}`);
+      }
+      continue;
+    }
+    const t = rule.type;
+    if (t === "uuid" && !isUuid(v)) problems.push(`${key}: must be a UUID`);
+    else if (t === "email" && !isEmail(v)) {
+      problems.push(`${key}: must be a valid email`);
+    } else if (t === "string" && typeof v !== "string") {
+      problems.push(`${key}: must be a string`);
+    } else if (t === "number" && typeof v !== "number") {
+      problems.push(`${key}: must be a number`);
+    } else if (t === "boolean" && typeof v !== "boolean") {
+      problems.push(`${key}: must be a boolean`);
+    } else if (t === "array" && !Array.isArray(v)) {
+      problems.push(`${key}: must be an array`);
+    } else if (
+      t === "object" &&
+      (typeof v !== "object" || Array.isArray(v))
+    ) {
+      problems.push(`${key}: must be an object`);
+    }
+    if (
+      typeof v === "string" && rule.minLength !== undefined &&
+      v.length < rule.minLength
+    ) {
+      problems.push(`${key}: must be at least ${rule.minLength} characters`);
+    }
+    if (
+      typeof v === "string" && rule.maxLength !== undefined &&
+      v.length > rule.maxLength
+    ) {
+      problems.push(`${key}: exceeds max length of ${rule.maxLength}`);
+    }
+    if (
+      Array.isArray(v) && rule.minItems !== undefined &&
+      v.length < rule.minItems
+    ) {
+      problems.push(`${key}: needs at least ${rule.minItems} items`);
+    }
+    if (
+      Array.isArray(v) && rule.maxItems !== undefined &&
+      v.length > rule.maxItems
+    ) {
+      problems.push(`${key}: exceeds max of ${rule.maxItems} items`);
+    }
+    if (t === "object" && rule.maxBytes !== undefined) {
+      const n = JSON.stringify(v).length;
+      if (n > rule.maxBytes) {
+        problems.push(`${key}: exceeds max size of ${rule.maxBytes} bytes`);
+      }
+    }
+  }
+  return problems.length === 0 ? { ok: true } : { ok: false, problems };
+}
+
+/** 400 response for validateBody() failures. */
+export function invalidBodyResponse(problems: string[]): Response {
+  return json(
+    {
+      error: "invalid_input",
+      message: "Request validation failed.",
+      details: problems.slice(0, 10),
+    },
+    400,
+  );
+}
+
+// ── error hygiene (SEC-H14) ────────────────────────────────────────────────
+
+/** Short random id tying a client-visible error to its server-side log line. */
+export function newCorrelationId(): string {
+  return crypto.randomUUID().replace(/-/g, "").slice(0, 12);
+}
+
+/**
+ * Server-side error log. Driver/SQL details go HERE (console) — never into
+ * the HTTP response. Pair with `ref: cid` in the client response.
+ */
+export function logServerError(
+  fn: string,
+  cid: string,
+  where: string,
+  err: unknown,
+): void {
+  const msg = err instanceof Error ? err.message : String(err);
+  console.error(`[${fn}] cid=${cid} ${where}: ${msg}`);
+}
+
+// ── shared authz helpers ───────────────────────────────────────────────────
+
+/**
+ * Resolves the caller from the Authorization Bearer JWT via auth.getUser().
+ * 401 on missing/invalid/expired token. Does NOT check any role — the
+ * caller authorizes after this.
+ */
+export async function resolveJwtUser(
+  req: Request,
+  supabase: SupabaseClient,
+): Promise<{ ok: true; userId: string } | { ok: false; response: Response }> {
+  const authz = req.headers.get("Authorization");
+  const jwt = authz?.toLowerCase().startsWith("bearer ")
+    ? authz.slice(7).trim()
+    : "";
+  if (!jwt) {
+    return {
+      ok: false,
+      response: json(
+        { error: "unauthorized", message: "Missing bearer token." },
+        401,
+      ),
+    };
+  }
+  const { data: userData, error: userErr } = await supabase.auth.getUser(jwt);
+  const caller = userData?.user;
+  if (userErr || !caller) {
+    return {
+      ok: false,
+      response: json(
+        { error: "unauthorized", message: "Invalid or expired token." },
+        401,
+      ),
+    };
+  }
+  return { ok: true, userId: caller.id };
+}
+
+/**
+ * Effective-permission check via the 020 `user_effective_permission` RPC
+ * (service role). Returns false on any error (fail closed). Consults only
+ * server-side tables — never client-supplied role claims.
+ */
+export async function hasEffectivePermission(
+  supabase: SupabaseClient,
+  tenantId: string,
+  userId: string,
+  code: string,
+): Promise<boolean> {
+  const { data, error } = await supabase.rpc("user_effective_permission", {
+    p_tenant_id: tenantId,
+    p_user_id: userId,
+    p_code: code,
+  });
+  if (error) return false;
+  return data === true;
+}
+
+// ── rate limiting (SEC-H8 / Phase 4.4) ─────────────────────────────────────
+//
+// Backed by a Postgres event log so limits hold across Deno isolates
+// (in-memory buckets alone are insufficient on Deno Deploy). Inserts are
+// atomic; the count is a fixed-window snapshot — races make it slightly
+// permissive, which is acceptable for abuse throttling.
+//
+// Backing table: migration 045_edge_rate_limits
+//   CREATE TABLE public.edge_rate_limits (
+//     id         BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+//     bucket_key TEXT NOT NULL,
+//     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+//   );
+//   CREATE INDEX ix_edge_rate_limits_key_time
+//     ON public.edge_rate_limits (bucket_key, created_at);
+//   -- RLS enabled, no policies: service-role only.
+
+/** Result of a rate-limit check. */
+export interface RateLimitResult {
+  allowed: boolean;
+  /** Seconds the caller should wait before retrying (for Retry-After). */
+  retryAfterSec: number;
+}
+
+/**
+ * Fixed-window rate limiter. Records one event per allowed call in
+ * `edge_rate_limits` and denies when [maxEvents] were already recorded
+ * inside the trailing [windowSec] seconds.
+ *
+ * Fail-open on infrastructure errors (missing table, DB down): abuse
+ * throttling must never turn into a self-inflicted outage. The failure is
+ * logged server-side.
+ */
+export async function rateLimit(
+  supabase: SupabaseClient,
+  bucketKey: string,
+  maxEvents: number,
+  windowSec: number,
+): Promise<RateLimitResult> {
+  const windowStart = new Date(Date.now() - windowSec * 1000).toISOString();
+  try {
+    const { count, error } = await supabase
+      .from("edge_rate_limits")
+      .select("id", { count: "exact", head: true })
+      .eq("bucket_key", bucketKey)
+      .gt("created_at", windowStart);
+    if (error) throw error;
+    if ((count ?? 0) >= maxEvents) {
+      return { allowed: false, retryAfterSec: windowSec };
+    }
+    const { error: insErr } = await supabase
+      .from("edge_rate_limits")
+      .insert({ bucket_key: bucketKey });
+    if (insErr) throw insErr;
+    // Opportunistic cleanup of expired rows (~5% of calls).
+    if (Math.random() < 0.05) {
+      const cutoff = new Date(Date.now() - 2 * windowSec * 1000).toISOString();
+      await supabase.from("edge_rate_limits").delete().lt(
+        "created_at",
+        cutoff,
+      );
+    }
+    return { allowed: true, retryAfterSec: 0 };
+  } catch (e) {
+    console.error(
+      "[guard] rateLimit infra failure (failing open):",
+      e instanceof Error ? e.message : String(e),
+    );
+    return { allowed: true, retryAfterSec: 0 };
+  }
+}
+
+/** 429 response with a Retry-After header. */
+export function tooManyRequests(retryAfterSec: number): Response {
+  return new Response(
+    JSON.stringify({
+      error: "rate_limited",
+      message: "Too many requests. Please slow down and retry.",
+    }),
+    {
+      status: 429,
+      headers: {
+        ...CORS_HEADERS,
+        "Content-Type": "application/json",
+        "Retry-After": String(Math.max(1, Math.ceil(retryAfterSec))),
+      },
+    },
+  );
 }

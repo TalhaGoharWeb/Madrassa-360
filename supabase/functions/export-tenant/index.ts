@@ -24,11 +24,16 @@
 // Success:  200 { tenant_id, bucket, storage_path, manifest }
 
 import {
+  badBodyResponse,
   isUuid,
   json,
+  logServerError,
+  newCorrelationId,
   preflight,
+  rateLimit,
   readJsonBody,
   requirePlatformAdmin,
+  tooManyRequests,
 } from "../_shared/guard.ts";
 
 // Tenant-scoped server tables, mirroring the local Drift schema
@@ -81,12 +86,16 @@ Deno.serve(async (req: Request): Promise<Response> => {
   if (!guard.ok) return guard.response;
   const { supabase, callerId } = guard;
 
+  // RED-TEAM RT-03: a full-tenant dump is the most expensive read this
+  // API serves (21 table scans held in isolate memory) — throttle hard
+  // so a compromised platform-admin session cannot be used for bulk
+  // exfiltration at speed.
+  const rl = await rateLimit(supabase, `export-tenant:${callerId}`, 5, 3600);
+  if (!rl.allowed) return tooManyRequests(rl.retryAfterSec);
+
   const parsed = await readJsonBody(req);
   if (!parsed.ok) {
-    return json(
-      { error: "invalid_json", message: "Request body must be a JSON object." },
-      400,
-    );
+    return badBodyResponse(parsed);
   }
   const { tenant_id } = parsed.body;
   if (!isUuid(tenant_id)) {
@@ -103,8 +112,10 @@ Deno.serve(async (req: Request): Promise<Response> => {
     .eq("id", tenant_id)
     .maybeSingle();
   if (tenantErr) {
+    const cid = newCorrelationId();
+    logServerError("export-tenant", cid, "load_tenant", tenantErr);
     return json(
-      { error: "load_failed", message: `Could not load tenant: ${tenantErr.message}` },
+      { error: "load_failed", message: "Could not load the tenant.", ref: cid },
       500,
     );
   }
@@ -129,10 +140,13 @@ Deno.serve(async (req: Request): Promise<Response> => {
         .order("id", { ascending: true })
         .range(from, from + PAGE_SIZE - 1);
       if (error) {
+        const cid = newCorrelationId();
+        logServerError("export-tenant", cid, `read_table:${table}`, error);
         return json(
           {
             error: "export_failed",
-            message: `Could not read ${table}: ${error.message}`,
+            message: `Could not read table ${table}.`,
+            ref: cid,
           },
           500,
         );
@@ -180,10 +194,13 @@ Deno.serve(async (req: Request): Promise<Response> => {
       upsert: true,
     });
   if (uploadErr) {
+    const cid = newCorrelationId();
+    logServerError("export-tenant", cid, "storage_upload", uploadErr);
     return json(
       {
         error: "upload_failed",
-        message: `Could not write export file: ${uploadErr.message}`,
+        message: "Could not write the export file.",
+        ref: cid,
       },
       500,
     );
@@ -206,6 +223,9 @@ Deno.serve(async (req: Request): Promise<Response> => {
   if (auditErr) {
     // Export succeeded; audit write failed. Report both — the file is in
     // storage, the caller just needs to know the audit trail is missing.
+    // The driver detail stays server-side (SEC-H14).
+    const cid = newCorrelationId();
+    logServerError("export-tenant", cid, "audit_write", auditErr);
     return json(
       {
         tenant_id,
@@ -213,7 +233,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         storage_path: storagePath,
         manifest: { ...manifest, tables: counts },
         warning: "audit_write_failed",
-        warning_detail: auditErr.message,
+        ref: cid,
       },
       200,
     );

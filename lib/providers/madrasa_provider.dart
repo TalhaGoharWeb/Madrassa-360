@@ -3,6 +3,7 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../core/errors/error_boundary.dart';
 import '../core/services/supabase_service.dart';
 import '../core/utils/network_timeout.dart';
 import '../data/models/madrasa.dart';
@@ -53,10 +54,14 @@ class MadrasaNotifier extends StateNotifier<MadrasaState> {
         isLoading: false,
         madrasas: rows.map((r) => Madrasa.fromJson(r)).toList(),
       );
-    } on PostgrestException catch (e) {
-      state = state.copyWith(isLoading: false, error: e.message);
-    } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+    } on PostgrestException catch (e, st) {
+      state = state.copyWith(
+          isLoading: false,
+          error: ErrorBoundary.handleErrorSimple(e, st, tag: 'madrasa/load'));
+    } catch (e, st) {
+      state = state.copyWith(
+          isLoading: false,
+          error: ErrorBoundary.handleErrorSimple(e, st, tag: 'madrasa/load'));
     }
   }
 
@@ -98,10 +103,13 @@ class MadrasaNotifier extends StateNotifier<MadrasaState> {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
       await _client.from('madrasas').update(m.toJson()).eq('id', m.id!);
-    } catch (e) {
+    } catch (e, st) {
       // Surface the failure and keep the prior state untouched: applying
       // the optimistic change here would show a failed write as succeeded.
-      final message = e.toString();
+      // The message is classified via ErrorBoundary so no DB/driver detail
+      // leaks into displayable state.
+      final message =
+          ErrorBoundary.handleErrorSimple(e, st, tag: 'madrasa/update');
       state = state.copyWith(isLoading: false, error: message);
       return message;
     }
@@ -120,10 +128,13 @@ class MadrasaNotifier extends StateNotifier<MadrasaState> {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
       await _client.from('madrasas').delete().eq('id', id);
-    } catch (e) {
+    } catch (e, st) {
       // Surface the failure and keep the prior state untouched: dropping
       // the row locally here would show a failed delete as succeeded.
-      final message = e.toString();
+      // The message is classified via ErrorBoundary so no DB/driver detail
+      // leaks into displayable state.
+      final message =
+          ErrorBoundary.handleErrorSimple(e, st, tag: 'madrasa/delete');
       state = state.copyWith(isLoading: false, error: message);
       return message;
     }

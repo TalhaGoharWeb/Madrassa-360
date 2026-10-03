@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:madrasa_360/core/design/m360.dart';
+import 'package:madrasa_360/core/errors/error_boundary.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -67,9 +68,9 @@ class _PlansScreenState extends State<PlansScreen> {
           .update({'is_active': !(plan['is_active'] as bool? ?? true)}).eq(
               'id', plan['id']);
       _load();
-    } catch (e) {
+    } catch (e, st) {
       if (mounted) {
-        showM360SnackBar(context, 'Update failed: $e', isError: true);
+        ErrorBoundary.showErrorSnackBar(context, e, stackTrace: st);
       }
     }
   }
@@ -89,9 +90,9 @@ class _PlansScreenState extends State<PlansScreen> {
     try {
       await _client.from('license_plans').delete().eq('id', plan['id']);
       _load();
-    } catch (e) {
+    } catch (e, st) {
       if (mounted) {
-        showM360SnackBar(context, 'Delete failed: $e', isError: true);
+        ErrorBoundary.showErrorSnackBar(context, e, stackTrace: st);
       }
     }
   }
@@ -300,9 +301,9 @@ class _PlanEditorDialogState extends State<_PlanEditorDialog> {
             .eq('id', widget.plan!['id']);
       }
       if (mounted) Navigator.of(context).pop(true);
-    } catch (e) {
+    } catch (e, st) {
       if (mounted) {
-        showM360SnackBar(context, 'Save failed: $e', isError: true);
+        ErrorBoundary.showErrorSnackBar(context, e, stackTrace: st);
       }
       setState(() => _saving = false);
     }

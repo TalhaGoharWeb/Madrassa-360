@@ -49,9 +49,6 @@ import 'presentation/screens/master_admin/master_admin_shell.dart';
 // lives in version.json; mirrored here for the session-start log marker).
 const String kAppVersion = '1.0.0+1';
 
-/// The shared local Drift database, opened once in [_bootstrap].
-AppDatabase? _db;
-
 void main() {
   runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
@@ -79,7 +76,7 @@ void main() {
     };
 
     try {
-      _db = await _bootstrap();
+      await _bootstrap();
     } catch (e, st) {
       await AppLogger().logCrash('bootstrap', e, st);
       runApp(CrashScreen(
@@ -147,11 +144,10 @@ Future<void> restartApp() async {
   } catch (e) {
     AppLogger().warning('closeDatabase during restart failed', error: e);
   }
-  _db = null;
   // Session boundary marker so the log shows the restart clearly.
   AppLogger().info('── soft restart: new session ──');
   try {
-    _db = await _bootstrap();
+    await _bootstrap();
   } catch (e, st) {
     await AppLogger().logCrash('bootstrap-restart', e, st);
     runApp(CrashScreen(
@@ -169,7 +165,10 @@ void _runMainApp() {
     // injected here so every repository / the sync engine shares it.
     ProviderScope(
       overrides: [
-        appDatabaseProvider.overrideWithValue(_db!),
+        // NOTE: appDatabaseProvider reads the module singleton from
+        // database_provider.dart directly (SEC-H12: the logout wipe replaces
+        // the instance, and invalidation picks the fresh one up) — no
+        // override needed here. Tests override it with an in-memory DB.
         // Seed the local profile display name synchronously from
         // SharedPreferences (StorageService.init ran in _bootstrap).
         // The profile screen keeps this provider in sync on save.

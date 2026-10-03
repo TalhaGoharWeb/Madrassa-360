@@ -5,6 +5,7 @@
 /// VISUAL ONLY: m360 cards/states/buttons. The membership list, selection
 /// flow and sign-out are unchanged.
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -118,7 +119,10 @@ class _TenantPickerScreenState extends ConsumerState<TenantPickerScreen> {
                     m.logoUrl != null && m.logoUrl!.isNotEmpty
                         ? CircleAvatar(
                             radius: 24,
-                            backgroundImage: NetworkImage(m.logoUrl!),
+                            backgroundImage: CachedNetworkImageProvider(
+                                m.logoUrl!,
+                                maxWidth: 128,
+                                maxHeight: 128),
                             backgroundColor:
                                 AppColors.primary.withValues(alpha: 0.1),
                           )

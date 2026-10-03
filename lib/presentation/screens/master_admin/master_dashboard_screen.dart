@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:madrasa_360/core/design/m360.dart';
+import 'package:madrasa_360/core/errors/error_boundary.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/observability/health_metrics.dart';
@@ -138,8 +139,9 @@ class _MasterDashboardScreenState extends State<MasterDashboardScreen> {
       await _client.from('tenants').select('id').limit(1);
       _health['Database'] =
           const _HealthResult(MaHealth.ok, 'PostgREST reachable');
-    } catch (e) {
-      _health['Database'] = _HealthResult(MaHealth.down, 'Query failed: $e');
+    } catch (e, st) {
+      _health['Database'] = _HealthResult(MaHealth.down,
+          ErrorBoundary.handleErrorSimple(e, st, tag: 'master/health/db'));
     }
 
     // 2. Auth: a live session must exist (we are behind the guard).
@@ -154,9 +156,9 @@ class _MasterDashboardScreenState extends State<MasterDashboardScreen> {
       final buckets = await _client.storage.listBuckets();
       _health['Storage'] =
           _HealthResult(MaHealth.ok, '${buckets.length} bucket(s) reachable');
-    } catch (e) {
-      _health['Storage'] =
-          _HealthResult(MaHealth.down, 'listBuckets failed: $e');
+    } catch (e, st) {
+      _health['Storage'] = _HealthResult(MaHealth.down,
+          ErrorBoundary.handleErrorSimple(e, st, tag: 'master/health/storage'));
     }
 
     // 4. Edge Functions: there is no safe no-op endpoint, so we probe the
@@ -170,7 +172,7 @@ class _MasterDashboardScreenState extends State<MasterDashboardScreen> {
         'provision-tenant responded (HTTP ${res.status}); probe payload '
         'rejected or accepted upstream — treat as "reachable, unverified".',
       );
-    } on FunctionException catch (e) {
+    } on FunctionException catch (e, st) {
       final msg = e.toString().toLowerCase();
       if (msg.contains('404') || msg.contains('not found')) {
         _health['Functions'] = const _HealthResult(
@@ -178,11 +180,12 @@ class _MasterDashboardScreenState extends State<MasterDashboardScreen> {
       } else {
         _health['Functions'] = _HealthResult(
           MaHealth.unknown,
-          'Function exists but probe failed: ${e.reasonPhrase ?? e}',
+          ErrorBoundary.handleErrorSimple(e, st, tag: 'master/health/fn'),
         );
       }
-    } catch (e) {
-      _health['Functions'] = _HealthResult(MaHealth.unknown, 'Uncheckable: $e');
+    } catch (e, st) {
+      _health['Functions'] = _HealthResult(MaHealth.unknown,
+          ErrorBoundary.handleErrorSimple(e, st, tag: 'master/health/fn'));
     }
 
     // 5. API (PostgREST) — already proven by the database check above, but

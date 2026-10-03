@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:madrasa_360/core/design/m360.dart';
 
@@ -29,7 +30,8 @@ class StudentAvatar extends StatelessWidget {
       radius: radius,
       backgroundColor: AppColors.primary.withValues(alpha: 0.12),
       backgroundImage: student.photoUrl != null
-          ? NetworkImage(student.photoUrl!) as ImageProvider
+          ? CachedNetworkImageProvider(student.photoUrl!,
+              maxWidth: 128, maxHeight: 128) as ImageProvider
           : null,
       child: student.photoUrl == null
           ? Text(

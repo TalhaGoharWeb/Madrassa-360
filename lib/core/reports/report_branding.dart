@@ -36,6 +36,7 @@ import 'package:path_provider/path_provider.dart';
 
 import '../../data/local/app_database.dart';
 import '../../providers/tenant_branding_provider.dart';
+import '../security/safe_download.dart';
 
 /// Branding snapshot used by every report header.
 class ReportBranding {
@@ -214,15 +215,12 @@ Future<void> cacheReportBranding(
       return;
     }
     try {
-      final request = await HttpClient().getUrl(Uri.parse(logoUrl));
-      final response = await request.close();
-      if (response.statusCode == 200) {
-        final bytes = await response
-            .fold<List<int>>([], (list, chunk) => list..addAll(chunk));
-        if (bytes.isNotEmpty) {
-          await file.parent.create(recursive: true);
-          await file.writeAsBytes(bytes, flush: true);
-        }
+      // Security: logoUrl is tenant-writable — fetch through SafeDownload
+      // (https only, 5MB cap, no private/loopback hosts).
+      final bytes = await SafeDownload.fetchBytes(logoUrl);
+      if (bytes != null && bytes.isNotEmpty) {
+        await file.parent.create(recursive: true);
+        await file.writeAsBytes(bytes, flush: true);
       }
     } catch (_) {
       // Offline / bad URL: keep whatever was cached before.

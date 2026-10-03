@@ -13,6 +13,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:madrasa_360/core/design/m360.dart';
+import 'package:madrasa_360/core/errors/error_boundary.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -181,9 +182,9 @@ class _MadrasaDetailScreenState extends State<MadrasaDetailScreen> {
       if (mounted) {
         showM360SnackBar(context, 'محفوظ ہو گیا / Saved');
       }
-    } catch (e) {
+    } catch (e, st) {
       if (mounted) {
-        showM360SnackBar(context, 'Save failed: $e', isError: true);
+        ErrorBoundary.showErrorSnackBar(context, e, stackTrace: st);
       }
     }
     if (mounted) setState(() => _saving = false);
@@ -204,11 +205,11 @@ class _MadrasaDetailScreenState extends State<MadrasaDetailScreen> {
         },
         onConflict: 'tenant_id,module',
       );
-    } catch (e) {
+    } catch (e, st) {
       // revert on failure
       setState(() => _moduleState[module] = !enabled);
       if (mounted) {
-        showM360SnackBar(context, 'Module update failed: $e', isError: true);
+        ErrorBoundary.showErrorSnackBar(context, e, stackTrace: st);
       }
     }
     if (mounted) setState(() => _modulesSaving = false);
@@ -242,15 +243,13 @@ class _MadrasaDetailScreenState extends State<MadrasaDetailScreen> {
       if (mounted) {
         showM360SnackBar(context, '$actionLabelUrdu — مکمل');
       }
-    } on FunctionException catch (e) {
+    } on FunctionException catch (e, st) {
       if (mounted) {
-        showM360SnackBar(
-            context, 'Action failed: ${e.reasonPhrase ?? e.toString()}',
-            isError: true);
+        ErrorBoundary.showErrorSnackBar(context, e, stackTrace: st);
       }
-    } catch (e) {
+    } catch (e, st) {
       if (mounted) {
-        showM360SnackBar(context, 'Action failed: $e', isError: true);
+        ErrorBoundary.showErrorSnackBar(context, e, stackTrace: st);
       }
     }
     if (mounted) setState(() => _saving = false);

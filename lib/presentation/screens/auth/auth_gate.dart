@@ -5,6 +5,7 @@ import '../../../core/constants/app_typography.dart';
 import '../../../providers/auth_provider.dart';
 import 'auth_routing.dart';
 import 'login_screen.dart';
+import 'set_new_password_screen.dart';
 
 /// Auth gate — the app's cold-start entry point.
 ///
@@ -47,6 +48,11 @@ class _AuthGateState extends ConsumerState<AuthGate> {
   Widget build(BuildContext context) {
     if (!_restoreDone) return const _Splash();
 
+    // SEC-H13: password-recovery mode takes precedence over every other
+    // route — the user must set a new password before entering the app.
+    if (ref.watch(passwordRecoveryModeProvider)) {
+      return const SetNewPasswordScreen();
+    }
     final auth = ref.watch(authProvider);
     if (!auth.isAuthenticated) return const LoginScreen();
     // Single routing decision shared with the login screen: platform

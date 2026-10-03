@@ -181,7 +181,7 @@ class _StudentTable extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final feeStatusByStudent = _feeStatusByStudent(ref);
+    final feeStatusByStudent = ref.watch(feeStatusByStudentProvider);
     return M360ResponsiveTable<Student>(
       rows: students,
       rowId: (s) => s.id,
@@ -455,10 +455,14 @@ String _feeLabel(FeeStatus s) {
 // Fee status aggregation (derived from existing allFeesProvider)
 // ─────────────────────────────────────────────────────────────
 
-/// Derives one representative fee status per student from the existing
-/// fee records: worst outstanding status wins (واجب الادا > جزوی >
-/// زیر التواء > ادا شدہ). Students with no fee records map to null.
-Map<String, FeeStatus> _feeStatusByStudent(WidgetRef ref) {
+/// Memoized per-student fee status: worst outstanding status wins
+/// (واجب الادا > جزوی > زیر التواء > ادا شدہ). Students with no fee
+/// records map to null.
+///
+/// A plain [Provider] (not a build-time helper) so the O(fees) scan runs
+/// only when [allFeesProvider] emits — not on every keystroke / setState
+/// rebuild of the student list.
+final feeStatusByStudentProvider = Provider<Map<String, FeeStatus>>((ref) {
   final fees = ref.watch(allFeesProvider).valueOrNull ?? const <Fee>[];
   final result = <String, FeeStatus>{};
   for (final fee in fees) {
@@ -466,7 +470,7 @@ Map<String, FeeStatus> _feeStatusByStudent(WidgetRef ref) {
     result[fee.studentId] = _worseStatus(current, fee.status);
   }
   return result;
-}
+});
 
 FeeStatus _worseStatus(FeeStatus? a, FeeStatus b) {
   int rank(FeeStatus s) => switch (s) {

@@ -6,22 +6,27 @@
 /// The public URL is stored in `tenants.logo_url`; the per-madrassa toggle
 /// lives in `tenants.use_logo_on_reports` (migration 024).
 ///
+/// Uploads are routed through the hardened `upload-image` Edge Function
+/// (JWT + membership + magic-byte/dimension validation server-side); the
+/// client never uploads raw bytes to Storage directly.
+///
 /// Offline reports: [report_branding.dart] draws the logo from the local
 /// cache `<app-support>/Madrassa360/branding/<tenantId>/logo.png`. This
 /// service keeps that cache in sync — writing on upload, clearing on
 /// remove or when the toggle is switched off.
 ///
-/// Auth model: RLS is the real enforcement (migration 024 policies —
-/// writes need platform-admin or `settings.update` on the tenant).
+/// Auth model: the Edge Function is the real enforcement for uploads;
+/// storage RLS (migration 024 policies) gates direct reads/removes.
 /// [TenantLogoDenied] is defense-in-depth for the UI layer only.
 
-import 'dart:io';
+import 'dart:convert';
 
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/observability/app_logger.dart';
 import '../core/reports/report_branding.dart';
+import '../core/security/safe_download.dart';
 import '../core/services/supabase_service.dart';
 
 /// Supabase Storage bucket for tenant logos (public read).
@@ -53,9 +58,14 @@ class TenantLogoService {
 
   /// Upload a new logo for [tenantId].
   ///
-  /// Uploads to `tenant-logos/<tenantId>/logo.png` (upsert), stores the
-  /// public URL in `tenants.logo_url`, and refreshes the offline report
-  /// cache. Returns the public URL.
+  /// Routes through the hardened `upload-image` Edge Function, which
+  /// validates the JWT, tenant membership, magic bytes, dimensions and
+  /// size server-side and writes `tenants.logo_url` itself — the client
+  /// never uploads raw bytes to Storage directly. Returns the public URL.
+  ///
+  /// NOTE: requires the `upload-image` function to be deployed; without
+  /// it this throws [TenantLogoDenied] with a clear message (no silent
+  /// fallback to the unvalidated direct-upload path).
   Future<String> uploadLogo(String tenantId, XFile image) async {
     final bytes = await image.readAsBytes();
     if (bytes.isEmpty) {
@@ -65,26 +75,31 @@ class TenantLogoService {
       throw ArgumentError('تصویر 5MB سے چھوٹی ہونی چاہیے');
     }
 
-    // 1. Upload (upsert) to storage.
+    // Route through the hardened Edge Function (server-side validation).
+    final Map<String, dynamic>? data;
     try {
-      await _client.storage.from(kTenantLogosBucket).uploadBinary(
-            _logoPath(tenantId),
-            bytes,
-            fileOptions: const FileOptions(
-              upsert: true,
-              contentType: 'image/png',
-            ),
-          );
-    } on StorageException catch (e) {
+      final res = await _client.functions.invoke(
+        'upload-image',
+        body: {
+          'tenant_id': tenantId,
+          'kind': 'logo',
+          'content_base64': base64Encode(bytes),
+        },
+      );
+      data = res.data as Map<String, dynamic>?;
+    } catch (e) {
       AppLogger().error('Logo upload failed', error: e);
-      throw TenantLogoDenied('لوگو اپ لوڈ ناکام: ${e.message}');
+      throw TenantLogoDenied('لوگو اپ لوڈ ناکام — سرور اپ ڈیٹ درکار ہے');
+    }
+    final url = data?['url'] as String?;
+    if (data?['ok'] != true || url == null || url.isEmpty) {
+      final message = data?['message'] as String?;
+      AppLogger().error('Logo upload rejected', error: message);
+      throw TenantLogoDenied(
+          message?.isNotEmpty == true ? message! : 'لوگو اپ لوڈ ناکام');
     }
 
-    // 2. Persist the public URL on the tenant row.
-    final url = publicLogoUrl(tenantId);
-    await _client.from('tenants').update({'logo_url': url}).eq('id', tenantId);
-
-    // 3. Refresh the offline cache so reports pick it up immediately.
+    // Refresh the offline cache so reports pick it up immediately.
     await _writeLogoCache(tenantId, bytes);
 
     AppLogger().info('Logo uploaded for tenant $tenantId');
@@ -150,16 +165,16 @@ class TenantLogoService {
 
   /// (Re)download the tenant's live logo into the offline report cache.
   /// No-op when the tenant has no logo URL.
+  ///
+  /// Security: the URL comes from the `tenants` row (tenant-writable), so
+  /// the fetch goes through [SafeDownload] — https only, 5MB cap, no
+  /// private/loopback hosts (SSRF/OOM guard).
   Future<void> refreshLogoCache(String tenantId) async {
     final url = await getLogoUrl(tenantId);
     if (url == null) return;
     try {
-      final request = await HttpClient().getUrl(Uri.parse(url));
-      final response = await request.close();
-      if (response.statusCode != 200) return;
-      final bytes = await response
-          .fold<List<int>>([], (list, chunk) => list..addAll(chunk));
-      if (bytes.isNotEmpty) {
+      final bytes = await SafeDownload.fetchBytes(url);
+      if (bytes != null && bytes.isNotEmpty) {
         await _writeLogoCache(tenantId, bytes);
       }
     } catch (e) {

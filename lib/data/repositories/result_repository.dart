@@ -36,6 +36,10 @@ abstract class IResultRepository {
   Future<Exam?> getExamById(String id, {required String tenantId});
   Future<List<StudentResult>> getExamResults(String examId,
       {required String tenantId});
+
+  /// Exams that have zero (non-deleted) result rows — single query.
+  /// Powers the "نتائج باقی" dashboard alert without one query per exam.
+  Future<List<Exam>> getExamsWithoutResults({required String tenantId});
   Future<List<SubjectResult>> getStudentSubjectResults({
     required String studentId,
     required String examId,
@@ -89,6 +93,27 @@ class LocalResultRepository implements IResultRepository {
     final row = await LocalRows.byId(_db, 'exams', tenantId, id);
     if (row == null) return null;
     return Exam.fromJson((row['_data'] as Map<String, dynamic>?) ?? const {});
+  }
+
+  @override
+  Future<List<Exam>> getExamsWithoutResults({required String tenantId}) async {
+    // Single NOT EXISTS query — replaces one getExamResults() per exam.
+    // `exam_date` is not an indexed column — sort inside the data JSON,
+    // mirroring getExams().
+    final rows = await LocalRows.query(
+      _db,
+      'SELECT e.data AS data FROM exams e '
+      'WHERE e.tenant_id = ? AND e.deleted_at IS NULL '
+      'AND NOT EXISTS (SELECT 1 FROM results r '
+      'WHERE r.tenant_id = e.tenant_id AND r.exam_id = e.id '
+      'AND r.deleted_at IS NULL) '
+      "ORDER BY json_extract(e.data, '\$.exam_date') DESC",
+      [Variable.withString(tenantId)],
+    );
+    return rows
+        .map((r) =>
+            Exam.fromJson((r['_data'] as Map<String, dynamic>?) ?? const {}))
+        .toList();
   }
 
   @override

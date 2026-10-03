@@ -110,13 +110,20 @@ jobs:
           echo "assets/.env written (values masked)."
 
       - name: Get dependencies
-        run: flutter pub get
+        run: flutter pub get --enforce-lockfile
 
       - name: Generate code (build_runner)
         run: dart run build_runner build --delete-conflicting-outputs
 
       - name: Build APK
-        run: flutter build apk --${{ steps.build_type.outputs.type }}
+        # Release APKs are split per ABI (~50% smaller direct installs —
+        # PERF-H4b). The AAB below stays universal for Play distribution.
+        run: |
+          if [ "${{ steps.build_type.outputs.type }}" = "release" ]; then
+            flutter build apk --release --split-per-abi
+          else
+            flutter build apk --${{ steps.build_type.outputs.type }}
+          fi
 
       - name: Build app bundle (release only)
         if: steps.build_type.outputs.type == 'release'
@@ -126,7 +133,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: android-apk
-          path: build/app/outputs/flutter-apk/app-${{ steps.build_type.outputs.type }}.apk
+          path: build/app/outputs/flutter-apk/app-*.apk
           if-no-files-found: error
           retention-days: 30
 

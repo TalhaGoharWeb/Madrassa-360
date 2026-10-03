@@ -8,11 +8,16 @@
 // Success: 200 { tenant_id, status, changed }
 
 import {
+  badBodyResponse,
   isUuid,
   json,
+  logServerError,
+  newCorrelationId,
   preflight,
+  rateLimit,
   readJsonBody,
   requirePlatformAdmin,
+  tooManyRequests,
 } from "../_shared/guard.ts";
 
 const ACTIONS = {
@@ -34,12 +39,15 @@ Deno.serve(async (req: Request): Promise<Response> => {
   if (!guard.ok) return guard.response;
   const { supabase, callerId } = guard;
 
+  // RED-TEAM RT-03: suspend/reactivate/archive are tenant-killing
+  // actions — throttle per caller as a backstop against a compromised
+  // platform-admin session being scripted.
+  const rl = await rateLimit(supabase, `manage-tenant:${callerId}`, 30, 3600);
+  if (!rl.allowed) return tooManyRequests(rl.retryAfterSec);
+
   const parsed = await readJsonBody(req);
   if (!parsed.ok) {
-    return json(
-      { error: "invalid_json", message: "Request body must be a JSON object." },
-      400,
-    );
+    return badBodyResponse(parsed);
   }
   const { tenant_id, action, reason } = parsed.body;
 
@@ -81,8 +89,10 @@ Deno.serve(async (req: Request): Promise<Response> => {
     .eq("id", tenant_id)
     .maybeSingle();
   if (loadErr) {
+    const cid = newCorrelationId();
+    logServerError("manage-tenant", cid, "load_tenant", loadErr);
     return json(
-      { error: "load_failed", message: `Could not load tenant: ${loadErr.message}` },
+      { error: "load_failed", message: "Could not load the tenant.", ref: cid },
       500,
     );
   }
@@ -104,10 +114,13 @@ Deno.serve(async (req: Request): Promise<Response> => {
     .update({ status: targetStatus })
     .eq("id", tenant.id);
   if (updErr) {
+    const cid = newCorrelationId();
+    logServerError("manage-tenant", cid, "update_status", updErr);
     return json(
       {
         error: "update_failed",
-        message: `Could not update tenant status: ${updErr.message}`,
+        message: "Could not update the tenant status.",
+        ref: cid,
       },
       500,
     );
@@ -129,13 +142,16 @@ Deno.serve(async (req: Request): Promise<Response> => {
   if (auditErr) {
     // Status change succeeded; the audit write failed. Report both so the
     // caller can re-audit — do not roll back the status change.
+    // The driver detail stays server-side (SEC-H14).
+    const cid = newCorrelationId();
+    logServerError("manage-tenant", cid, "audit_write", auditErr);
     return json(
       {
         tenant_id: tenant.id,
         status: targetStatus,
         changed: true,
         warning: "audit_write_failed",
-        warning_detail: auditErr.message,
+        ref: cid,
       },
       200,
     );

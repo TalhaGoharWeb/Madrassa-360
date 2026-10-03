@@ -75,11 +75,12 @@ class AppUser {
     sb.User user,
     Map<String, dynamic> profile,
   ) {
-    // Prefer app_metadata (set by admin/service key), fall back to profiles table.
+    // SEC-H15: never resolve the role from app_metadata — it is
+    // caller-writable through manage-users and therefore spoofable. The
+    // server-owned `profiles.role` (trigger-locked) is the only source;
+    // server permission checks never consult the client's role anyway.
     // Case-insensitive match so 'superAdmin', 'superadmin', 'SUPERADMIN' all work.
-    final rawRole = (user.appMetadata['role'] as String?)?.trim() ??
-        (profile['role'] as String?)?.trim() ??
-        'teacher';
+    final rawRole = (profile['role'] as String?)?.trim() ?? 'teacher';
 
     final role = UserRole.values.firstWhere(
       (r) => r.name.toLowerCase() == rawRole.toLowerCase(),
@@ -203,16 +204,25 @@ class AuthRepository {
   // ── Password Reset / Account Recovery ────────────────────────
 
   /// Send a password-reset email via Supabase Auth.
-  /// The link in the email lets the user set a new password (account recovery).
+  /// The recovery link redirects to the app's callback scheme
+  /// (`io.supabase.madrasa360://login-callback`); the SDK's deep-link
+  /// observer turns it into a PASSWORD_RECOVERY session, which the auth
+  /// provider routes to the set-new-password screen (SEC-H13).
   /// Throws [ValidationException] for a blank email, [AuthenticationException]
-  /// for rate-limits / unknown accounts, [NetworkException] when offline.
+  /// for rate-limits, [NetworkException] when offline.
+  ///
+  /// NOTE: the message is deliberately identical whether or not the account
+  /// exists — no account-enumeration oracle (login hardening).
   Future<void> sendPasswordReset({required String email}) async {
     final cleanEmail = email.trim();
     if (cleanEmail.isEmpty) {
       throw ValidationException(userMessageUr: 'ای میل ضروری ہے');
     }
     try {
-      await _client.auth.resetPasswordForEmail(cleanEmail);
+      await _client.auth.resetPasswordForEmail(
+        cleanEmail,
+        redirectTo: 'io.supabase.madrasa360://login-callback',
+      );
     } on sb.AuthException catch (e) {
       throw AuthenticationException(userMessageUr: _mapAuthError(e.message));
     } on SocketException {
@@ -224,6 +234,27 @@ class AuthRepository {
       ErrorHandler.logError(e, null);
       throw AuthenticationException(
           userMessageUr: 'پاس ورڈ ری سیٹ لنک بھیجنے میں خرابی');
+    }
+  }
+
+  /// Set a new password for the current recovery session (SEC-H13).
+  /// Throws [ValidationException] for weak/mismatched input (validated by
+  /// the caller too), [AuthenticationException] on failure.
+  Future<void> updatePassword({required String newPassword}) async {
+    if (newPassword.length < 6) {
+      throw ValidationException(
+          userMessageUr: 'پاس ورڈ کم از کم 6 حروف کا ہونا چاہیے');
+    }
+    try {
+      await _client.auth.updateUser(
+        sb.UserAttributes(password: newPassword),
+      );
+    } on sb.AuthException catch (e) {
+      throw AuthenticationException(userMessageUr: _mapAuthError(e.message));
+    } catch (e) {
+      ErrorHandler.logError(e, null);
+      throw AuthenticationException(
+          userMessageUr: 'پاس ورڈ تبدیل کرنے میں خرابی');
     }
   }
 
@@ -284,10 +315,16 @@ class AuthRepository {
   }
 
   /// Convert Supabase error messages to Urdu.
+  ///
+  /// Login hardening: "invalid credentials" and "user not found" collapse
+  /// to ONE generic message — the caller must not learn whether the
+  /// e-mail exists (account-enumeration resistance).
   String _mapAuthError(String message) {
     final lower = message.toLowerCase();
     if (lower.contains('invalid login credentials') ||
-        lower.contains('invalid email or password')) {
+        lower.contains('invalid email or password') ||
+        lower.contains('user not found') ||
+        lower.contains('no user found')) {
       return 'غلط ای میل یا پاس ورڈ';
     }
     if (lower.contains('email not confirmed')) {
@@ -295,9 +332,6 @@ class AuthRepository {
     }
     if (lower.contains('too many requests') || lower.contains('rate limit')) {
       return 'بہت زیادہ کوششیں — کچھ دیر بعد دوبارہ کوشش کریں';
-    }
-    if (lower.contains('user not found') || lower.contains('no user found')) {
-      return 'یہ اکاؤنٹ موجود نہیں';
     }
     if (lower.contains('expired') || lower.contains('invalid refresh')) {
       return 'سیشن ختم ہو گیا — دوبارہ لاگ ان کریں';

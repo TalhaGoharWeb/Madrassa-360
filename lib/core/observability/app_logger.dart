@@ -12,7 +12,8 @@
 /// REDACTION: every logged message / context / error / stack trace passes
 /// through [redact], which masks values for keys matching
 /// password|token|secret|api[_-]?key|authorization|bearer — including inline
-/// `key=value` fragments inside free-form strings. Never log raw
+/// `key=value` fragments inside free-form strings — and scrubs emails and
+/// Pakistani phone numbers from free text. Never log raw
 /// exceptions with stack traces containing tokens.
 library;
 
@@ -48,7 +49,23 @@ class AppLogger {
     caseSensitive: false,
   );
 
+  /// Email addresses — PII that must not persist in plaintext logs
+  /// (e.g. `duplicate key ... (email)=(foo@bar.com)`).
+  static final RegExp _emailPattern = RegExp(
+    r'''[\w.+-]+@[\w-]+(\.[\w-]+)+''',
+    caseSensitive: false,
+  );
+
+  /// Pakistani mobile numbers: 03XX-XXXXXXX with optional 0 / +92 prefix
+  /// and optional dash/space separator. The leading (0|+92) is required so
+  /// random digit runs (amounts, IDs) are never masked.
+  static final RegExp _phonePattern = RegExp(
+    r'''(\+92|0)3\d{2}[-\s]?\d{7}''',
+  );
+
   static const String mask = '***REDACTED***';
+  static const String emailMask = '[EMAIL]';
+  static const String phoneMask = '[PHONE]';
 
   bool _initialized = false;
   bool _initializing = false;
@@ -181,11 +198,13 @@ class AppLogger {
 
   // ── redaction (pure, unit-testable) ──────────────────────────────
 
-  /// Recursively masks values whose keys look like secrets.
+  /// Recursively masks values whose keys look like secrets, and scrubs
+  /// PII (emails, Pakistani phone numbers) from free-form strings.
   ///
   /// Handles nested [Map]s and [Iterable]s; free-form strings are scanned
-  /// for inline `key=value`-style fragments. Everything else passes
-  /// through untouched. Pure function — safe to unit test.
+  /// for inline `key=value`-style fragments, then emails, then phone
+  /// numbers. Everything else passes through untouched. Pure function —
+  /// safe to unit test.
   static Object? redact(Object? value) {
     if (value is Map) {
       return value.map((k, v) =>
@@ -195,9 +214,12 @@ class AppLogger {
       return value.map(redact).toList();
     }
     if (value is String) {
-      return _inlineSecret.hasMatch(value)
+      var out = _inlineSecret.hasMatch(value)
           ? value.replaceAllMapped(_inlineSecret, (m) => '${m.group(1)}=$mask')
           : value;
+      out = out.replaceAll(_emailPattern, emailMask);
+      out = out.replaceAll(_phonePattern, phoneMask);
+      return out;
     }
     return value;
   }

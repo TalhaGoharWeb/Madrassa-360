@@ -26,16 +26,21 @@
 
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.44.4";
 import {
+  badBodyResponse,
   isEmail,
   isNonEmptyString,
   isSlug,
   isUuid,
   json,
+  logServerError,
+  newCorrelationId,
   newTenantCode,
   parseWebsite,
   preflight,
+  rateLimit,
   readJsonBody,
   requirePlatformAdmin,
+  tooManyRequests,
 } from "../_shared/guard.ts";
 
 /** Default module set — mirrors trg_tenants_enable_default_modules() in 003. */
@@ -112,12 +117,15 @@ Deno.serve(async (req: Request): Promise<Response> => {
   if (!guard.ok) return guard.response;
   const { supabase, callerId } = guard;
 
+  // RED-TEAM RT-03: provisioning creates an auth user, license rows and
+  // role templates — throttle so a compromised platform-admin session
+  // cannot be scripted into a tenant-creation flood.
+  const rl = await rateLimit(supabase, `provision-tenant:${callerId}`, 10, 3600);
+  if (!rl.allowed) return tooManyRequests(rl.retryAfterSec);
+
   const parsed = await readJsonBody(req);
   if (!parsed.ok) {
-    return json(
-      { error: "invalid_json", message: "Request body must be a JSON object." },
-      400,
-    );
+    return badBodyResponse(parsed);
   }
   const input = validate(parsed.body);
   if ("error" in input) return json(input, 400);
@@ -404,14 +412,19 @@ Deno.serve(async (req: Request): Promise<Response> => {
     }, 200);
   } catch (e) {
     // Any failure after the tenant insert → best-effort reverse cleanup.
+    // The driver detail stays server-side; the caller gets the failed
+    // step name (operational, not schema) plus a correlation ref (SEC-H14).
     await cleanup(supabase, created, cleanupErrors);
+    const cid = newCorrelationId();
+    logServerError("provision-tenant", cid, "provision", e);
     const s = e as { step?: string; message?: string };
     return json(
       {
         error: "provision_failed",
         step: s.step ?? "unknown",
-        message: s.message ?? String(e),
-        cleanup_errors: cleanupErrors,
+        message: "Tenant provisioning failed; partial changes were rolled back.",
+        ref: cid,
+        cleanup_errors: cleanupErrors.map((c) => ({ step: c.step })),
       },
       500,
     );

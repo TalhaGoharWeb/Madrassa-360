@@ -38,11 +38,16 @@ String _todayStr() {
 /// Total fee amount collected today (Rs), from real fee rows whose
 /// `paid_date` is today. 0 when logged out; query errors propagate as
 /// AsyncError so the UI can distinguish failure from an empty day.
+///
+/// A [FutureProvider] (not `Provider<AsyncValue<…>>`) so downstream async
+/// consumers can `await ref.watch(todayCollectionProvider.future)`.
+/// The fetch is shared with every other [allFeesProvider] watcher, so the
+/// O(fees) fold runs once per fee-data change — not per keystroke.
 final todayCollectionProvider = FutureProvider<double>((ref) async {
   final tenantId = ref.watch(currentTenantIdProvider);
   if (tenantId == null) return 0.0;
-  final fees = await ref.watch(allFeesProvider.future);
   final today = _todayStr();
+  final fees = await ref.watch(allFeesProvider.future);
   return fees
       .where((f) => f.paidDate == today)
       .fold<double>(0.0, (sum, f) => sum + f.amountPaid);
@@ -51,36 +56,35 @@ final todayCollectionProvider = FutureProvider<double>((ref) async {
 /// Exams that have no results entered yet (drives the "نتائج باقی" alert).
 /// Empty when logged out; errors propagate as AsyncError instead of
 /// silently hiding the alert.
+///
+/// Single NOT EXISTS query via [IResultRepository.getExamsWithoutResults] —
+/// no per-exam fan-out.
 final examsWithoutResultsProvider = FutureProvider<List<Exam>>((ref) async {
   final tenantId = ref.watch(currentTenantIdProvider);
   if (tenantId == null) return const [];
-  final exams = await ref.watch(allExamsProvider.future);
-  final pending = <Exam>[];
-  for (final exam in exams) {
-    final results = await ref.watch(examResultsProvider(exam.id).future);
-    if (results.isEmpty) pending.add(exam);
-  }
-  return pending;
+  final repo = ref.watch(resultRepositoryProvider);
+  return repo.getExamsWithoutResults(tenantId: tenantId);
 });
 
 /// How many of the teacher's assigned classes have attendance marked today.
 /// `(done: 0, total: 0)` when logged out or unassigned; errors propagate
 /// as AsyncError instead of silently reporting zero progress.
+///
+/// Single DISTINCT query via [IAttendanceRepository.getMarkedClassIds] —
+/// no per-class full fetch.
 final teacherTodayAttendanceStatusProvider =
     FutureProvider<({int done, int total})>((ref) async {
   final tenantId = ref.watch(currentTenantIdProvider);
   if (tenantId == null) return (done: 0, total: 0);
   final classIds = ref.watch(teacherAssignedClassIdsProvider);
   if (classIds.isEmpty) return (done: 0, total: 0);
-  final now = DateTime.now();
-  var done = 0;
-  for (final classId in classIds) {
-    final records = await ref.watch(classAttendanceProvider(
-      AttendanceParams(classId: classId, date: now),
-    ).future);
-    if (records.isNotEmpty) done++;
-  }
-  return (done: done, total: classIds.length);
+  final repo = ref.watch(attendanceRepositoryProvider);
+  final marked = await repo.getMarkedClassIds(
+    classIds: classIds,
+    date: DateTime.now(),
+    tenantId: tenantId,
+  );
+  return (done: marked.length, total: classIds.length);
 });
 
 // ─────────────────────────────────────────────────────────────

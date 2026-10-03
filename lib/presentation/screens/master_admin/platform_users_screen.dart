@@ -17,6 +17,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:madrasa_360/core/design/m360.dart';
+import 'package:madrasa_360/core/errors/error_boundary.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -149,9 +150,9 @@ class _PlatformUsersScreenState extends State<PlatformUsersScreen> {
         showM360SnackBar(context, 'platform_support شامل ہو گیا');
       }
       _load();
-    } catch (e) {
+    } catch (e, st) {
       if (mounted) {
-        showM360SnackBar(context, 'Insert failed: $e', isError: true);
+        ErrorBoundary.showErrorSnackBar(context, e, stackTrace: st);
       }
     }
   }
@@ -216,9 +217,9 @@ class _PlatformUsersScreenState extends State<PlatformUsersScreen> {
         showM360SnackBar(context, 'ہٹا دیا گیا');
       }
       _load();
-    } catch (e) {
+    } catch (e, st) {
       if (mounted) {
-        showM360SnackBar(context, 'Remove failed: $e', isError: true);
+        ErrorBoundary.showErrorSnackBar(context, e, stackTrace: st);
       }
     }
   }

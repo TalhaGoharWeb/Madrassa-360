@@ -48,6 +48,15 @@ abstract class IAttendanceRepository {
     required String tenantId,
   });
 
+  /// Which of [classIds] have at least one (non-deleted) attendance record
+  /// for [date] — single query. Powers the teacher's "attendance done"
+  /// dashboard card without one full fetch per class.
+  Future<Set<String>> getMarkedClassIds({
+    required List<String> classIds,
+    required DateTime date,
+    required String tenantId,
+  });
+
   /// Upsert attendance records (insert or update on student_id+date conflict).
   /// Records carry their own tenant_id (see [AttendanceRecord.toUpsertJson]).
   Future<void> saveAttendance(List<AttendanceRecord> records);
@@ -148,19 +157,56 @@ class LocalAttendanceRepository implements IAttendanceRepository {
   }
 
   @override
+  Future<Set<String>> getMarkedClassIds({
+    required List<String> classIds,
+    required DateTime date,
+    required String tenantId,
+  }) async {
+    if (classIds.isEmpty) return const {};
+    final dateStr = _dateStr(date);
+    // One query for all classes: distinct class_ids with any record that
+    // day. Placeholders are bound positionally — never interpolated.
+    final placeholders = List.filled(classIds.length, '?').join(', ');
+    final rows = await LocalRows.query(
+      _db,
+      'SELECT DISTINCT class_id AS class_id FROM attendance_records '
+      'WHERE tenant_id = ? AND date = ? AND deleted_at IS NULL '
+      'AND class_id IN ($placeholders)',
+      [
+        Variable.withString(tenantId),
+        Variable.withString(dateStr),
+        for (final id in classIds) Variable.withString(id),
+      ],
+    );
+    return {
+      for (final r in rows)
+        if (r['class_id'] is String) r['class_id'] as String,
+    };
+  }
+
+  @override
   Future<void> saveAttendance(List<AttendanceRecord> records) async {
     if (records.isEmpty) return;
     final nowIso = DateTime.now().toUtc().toIso8601String();
 
+    // Stable ids first — same rule as before (reuse or generate).
+    final ids = <String>[for (final r in records) r.id ?? _uuid.v4()];
+
+    // ONE pre-fetch for the whole batch: existence + local/server revisions.
+    // Replaces per-row rowExists + currentRevision + _localRevisionOf
+    // (~3 selects per student → 1 total).
+    final prev = await _existingRevisions(ids);
+
     await _db.transaction(() async {
-      for (final r in records) {
-        final id = r.id ?? _uuid.v4();
-        final exists = await SyncQueue.rowExists(
-            _db, 'attendance_records', r.tenantId, id);
-        final baseRev = exists
-            ? await SyncQueue.currentRevision(
-                _db, 'attendance_records', r.tenantId, id)
-            : 0;
+      final envelopes = <EnvelopeWrite>[];
+      final queueRows = <QueueWrite>[];
+      for (var i = 0; i < records.length; i++) {
+        final r = records[i];
+        final id = ids[i];
+        final p = prev[id];
+        // Tenant-scoped existence, mirroring SyncQueue.rowExists.
+        final exists = p != null && p.tenantId == r.tenantId;
+        final baseRev = exists ? p.serverRevision : 0;
 
         // Server-shaped payload: id + the model's upsert fields. Kept in
         // the envelope's data JSON AND queued for the RPC.
@@ -169,11 +215,10 @@ class LocalAttendanceRepository implements IAttendanceRepository {
           'id': id,
         };
 
-        // Local write (indexed hints + data JSON; preserves
+        // Local write spec (indexed hints + data JSON; preserves
         // server_revision, refreshes updated_at as epoch millis).
-        await SyncEngine.writeLocalRow(
-          _db,
-          table: 'attendance_records',
+        // localRevision mirrors _localRevisionOf: (revision ?? 0) + 1.
+        envelopes.add(EnvelopeWrite(
           id: id,
           tenantId: r.tenantId,
           indexed: {
@@ -183,24 +228,52 @@ class LocalAttendanceRepository implements IAttendanceRepository {
             'status': r.status.name,
           },
           data: data,
-        );
+          localRevision: (exists ? p.revision : 0) + 1,
+        ));
 
         // Enqueue in the SAME transaction (crash safety).
-        await SyncQueue.enqueue(
-          _db,
+        queueRows.add(QueueWrite(
           tenantId: r.tenantId,
           entity: 'attendance',
           entityId: id,
           operation: exists ? 'update' : 'create',
           payload: {...data, 'updated_at': nowIso},
           baseRevision: baseRev,
-        );
+        ));
       }
+      // Two batched statements for the whole class (was ~2 per student).
+      await SyncEngine.writeLocalRows(
+        _db,
+        table: 'attendance_records',
+        rows: envelopes,
+      );
+      await SyncQueue.enqueueAll(_db, queueRows);
     });
 
     // Opportunistic sync (no-op when offline or engine unavailable).
     _engine?.notifyLocalChange();
     unawaited(_engine?.syncNow() ?? Future.value());
+  }
+
+  /// Batch pre-fetch of local envelope state for [ids]: id → tenant,
+  /// local revision, and last-known server revision. One query total.
+  Future<Map<String, ({String tenantId, int revision, int serverRevision})>>
+      _existingRevisions(List<String> ids) async {
+    final placeholders = List.filled(ids.length, '?').join(', ');
+    final rows = await LocalRows.query(
+      _db,
+      'SELECT id, tenant_id, revision, server_revision FROM attendance_records '
+      'WHERE id IN ($placeholders)',
+      [for (final id in ids) Variable.withString(id)],
+    );
+    return {
+      for (final r in rows)
+        (r['id'] as String): (
+          tenantId: (r['tenant_id'] as String?) ?? '',
+          revision: (r['revision'] as num?)?.toInt() ?? 0,
+          serverRevision: (r['server_revision'] as num?)?.toInt() ?? 0,
+        ),
+    };
   }
 
   @override

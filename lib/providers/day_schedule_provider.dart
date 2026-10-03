@@ -110,7 +110,10 @@ final accountantDayScheduleProvider =
     FutureProvider<List<DayScheduleEvent>>((ref) async {
   final tenantId = ref.watch(currentTenantIdProvider);
   if (tenantId == null) return const [];
-  final collected = await ref.watch(todayCollectionProvider.future);
+  // NOTE (sibling perf-agent refactor, 2026-10-03): todayCollectionProvider
+  // is now Provider<AsyncValue<double>>; read synchronously like the
+  // dashboard call sites do.
+  final collected = ref.watch(todayCollectionProvider).valueOrNull ?? 0.0;
   final summary = await ref.watch(feeSummaryProvider.future);
   final events = <DayScheduleEvent>[
     DayScheduleEvent(

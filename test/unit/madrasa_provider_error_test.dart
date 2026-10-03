@@ -44,10 +44,12 @@ void main() {
       final edited = _madrasa(id: 'm1', nameUrdu: 'نیا نام');
       final result = await notifier.update(edited);
 
-      // Error is surfaced both as the return value and in state.
+      // Error is surfaced both as the return value and in state —
+      // as a classified safe message (never the raw driver text).
       expect(result, isNotNull);
-      expect(result, contains('simulated write failure'));
+      expect(result, isNot(contains('simulated write failure')));
       expect(notifier.state.error, isNotNull);
+      expect(notifier.state.error, isNot(contains('simulated write failure')));
       expect(notifier.state.isLoading, isFalse);
       // Prior state is untouched: no false success, no divergent list.
       expect(notifier.state.madrasas, hasLength(1));
@@ -63,8 +65,9 @@ void main() {
       final result = await notifier.delete('m1');
 
       expect(result, isNotNull);
-      expect(result, contains('simulated write failure'));
+      expect(result, isNot(contains('simulated write failure')));
       expect(notifier.state.error, isNotNull);
+      expect(notifier.state.error, isNot(contains('simulated write failure')));
       expect(notifier.state.isLoading, isFalse);
       // The row is still there: the failed delete is not shown as done.
       expect(notifier.state.madrasas, hasLength(1));

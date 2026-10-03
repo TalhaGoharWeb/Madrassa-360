@@ -28,12 +28,23 @@ class CsvExport {
   }
 
   static String _esc(String v) {
-    if (v.contains(',') ||
-        v.contains('"') ||
-        v.contains('\n') ||
-        v.contains('\r')) {
-      return '"${v.replaceAll('"', '""')}"';
+    var out = v;
+    // RED-TEAM RT-06: formula injection — a hostile value synced into the
+    // DB (e.g. a student name like "=cmd|'/c calc'!A0") would be evaluated
+    // by Excel/LibreOffice on open. Neutralize any cell that starts with
+    // a formula trigger character; the leading apostrophe is Excel's
+    // text-marker and is not displayed.
+    if (out.startsWith(RegExp(r'[=+\-@]')) ||
+        out.startsWith('\t') ||
+        out.startsWith('\r')) {
+      out = "'$out";
     }
-    return v;
+    if (out.contains(',') ||
+        out.contains('"') ||
+        out.contains('\n') ||
+        out.contains('\r')) {
+      return '"${out.replaceAll('"', '""')}"';
+    }
+    return out;
   }
 }

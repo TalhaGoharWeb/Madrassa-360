@@ -348,6 +348,11 @@ class _ColSet {
   final List<String> holders = [];
   final List<Variable> vars = [];
 
+  /// Raw Dart values parallel to [vars], for drift [Batch.customStatement]
+  /// (which takes values, not [Variable]s). `bool` is normalized to
+  /// 0/1 to match SQLite semantics exactly.
+  final List<Object?> rawArgs = [];
+
   void add(String col, Object? v) {
     cols.add(col);
     if (v == null) {
@@ -355,6 +360,7 @@ class _ColSet {
     } else {
       holders.add('?');
       vars.add(_toVariable(v));
+      rawArgs.add(v is bool ? (v ? 1 : 0) : v);
     }
   }
 
@@ -437,6 +443,44 @@ class LocalRows {
 
 /// Static helpers for the `sync_queue` table, used by repositories inside
 /// their own write transactions (local upsert + enqueue are atomic).
+
+/// One envelope upsert for [SyncEngine.writeLocalRows]: the local row
+/// content plus the caller-precomputed local [localRevision].
+class EnvelopeWrite {
+  final String id;
+  final String tenantId;
+  final Map<String, Object?> indexed;
+  final Map<String, Object?> data;
+  final int localRevision;
+
+  const EnvelopeWrite({
+    required this.id,
+    required this.tenantId,
+    required this.indexed,
+    required this.data,
+    required this.localRevision,
+  });
+}
+
+/// One sync-queue row for [SyncQueue.enqueueAll].
+class QueueWrite {
+  final String tenantId;
+  final String entity;
+  final String entityId;
+  final String operation; // create | update | delete
+  final Map<String, dynamic> payload;
+  final int baseRevision;
+
+  const QueueWrite({
+    required this.tenantId,
+    required this.entity,
+    required this.entityId,
+    required this.operation,
+    required this.payload,
+    required this.baseRevision,
+  });
+}
+
 class SyncQueue {
   SyncQueue._();
 
@@ -451,24 +495,47 @@ class SyncQueue {
     required String operation, // create | update | delete
     required Map<String, dynamic> payload,
     required int baseRevision,
-  }) async {
-    await db.customInsert(
-      'INSERT INTO sync_queue '
-      '(operation_id, tenant_id, entity, entity_id, operation, '
-      ' payload_json, base_revision, created_at, sync_status, '
-      ' retry_count, last_error, next_retry_at) '
-      "VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', 0, NULL, NULL)",
-      variables: [
-        Variable.withString(_uuid.v4()),
-        Variable.withString(tenantId),
-        Variable.withString(entity),
-        Variable.withString(entityId),
-        Variable.withString(operation),
-        Variable.withString(jsonEncode(payload)),
-        Variable.withInt(baseRevision),
-        Variable.withInt(_nowMs()),
+  }) {
+    return enqueueAll(
+      db,
+      [
+        QueueWrite(
+          tenantId: tenantId,
+          entity: entity,
+          entityId: entityId,
+          operation: operation,
+          payload: payload,
+          baseRevision: baseRevision,
+        ),
       ],
     );
+  }
+
+  /// Batch variant of [enqueue]: all rows through one drift [Batch].
+  /// Same SQL shape per row; callers must invoke inside the same
+  /// transaction as the local row writes (crash safety).
+  static Future<void> enqueueAll(AppDatabase db, List<QueueWrite> rows) {
+    return db.batch((batch) {
+      for (final r in rows) {
+        batch.customStatement(
+          'INSERT INTO sync_queue '
+          '(operation_id, tenant_id, entity, entity_id, operation, '
+          ' payload_json, base_revision, created_at, sync_status, '
+          ' retry_count, last_error, next_retry_at) '
+          "VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', 0, NULL, NULL)",
+          [
+            _uuid.v4(),
+            r.tenantId,
+            r.entity,
+            r.entityId,
+            r.operation,
+            jsonEncode(r.payload),
+            r.baseRevision,
+            _nowMs(),
+          ],
+        );
+      }
+    });
   }
 
   /// Whether a local envelope row exists (classifies the op create/update).
@@ -707,15 +774,19 @@ class SyncEngine {
   // ── PUSH ───────────────────────────────────────────────────
 
   /// Push all due queue rows for the active tenant, FIFO per entity.
+  ///
+  /// Connectivity is checked once per entity batch (not per row): the
+  /// platform-channel check is expensive, and per-row failures already
+  /// back off through the queue. Row push order is unchanged.
   Future<void> pushOnce() async {
     if (!await _isOnline()) return;
     final entities = await _pendingEntities();
     for (final entity in entities) {
+      if (!await _isOnline()) return; // went offline mid-push
       await _claimBatch(entity);
       final rows = await _claimedRows(entity);
       for (final row in rows) {
         await _pushRow(row);
-        if (!await _isOnline()) return; // went offline mid-push
       }
     }
     if (!_disposed) _events.add(SyncEvent.pushCompleted);
@@ -1478,6 +1549,41 @@ class SyncEngine {
       preserveServerRevision: true,
       includeDeletedAt: false,
     );
+  }
+
+  /// Batched envelope upserts: byte-identical SQL shape to [_writeEnvelope]
+  /// with `preserveServerRevision: true, includeDeletedAt: false`, but the
+  /// local revision is supplied by the caller (pre-fetched in one query)
+  /// and all statements run through a single drift [Batch] — one bridge
+  /// round-trip instead of one per row.
+  static Future<void> writeLocalRows(
+    AppDatabase db, {
+    required String table,
+    required List<EnvelopeWrite> rows,
+  }) {
+    return db.batch((batch) {
+      for (final r in rows) {
+        final cs = _ColSet()
+          ..add('id', r.id)
+          ..add('tenant_id', r.tenantId);
+        for (final e in r.indexed.entries) {
+          cs.add(e.key, e.value);
+        }
+        cs
+          ..add('revision', r.localRevision)
+          ..add('updated_at', _nowMs())
+          ..add('data', jsonEncode(r.data));
+        // Same SET list as _writeEnvelope: every column except id;
+        // server_revision / deleted_at are never touched (preserved).
+        final sets =
+            cs.cols.where((c) => c != 'id').map((c) => '$c = excluded.$c');
+        batch.customStatement(
+          'INSERT INTO $table (${cs.colList}) VALUES (${cs.holderList}) '
+          'ON CONFLICT(id) DO UPDATE SET ${sets.join(', ')}',
+          cs.rawArgs,
+        );
+      }
+    });
   }
 
   static Future<int> _localRevisionOf(

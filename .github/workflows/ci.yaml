@@ -31,7 +31,7 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
-      - run: flutter pub get
+      - run: flutter pub get --enforce-lockfile
       - run: dart run build_runner build --delete-conflicting-outputs
       - run: flutter analyze
 
@@ -49,7 +49,7 @@ jobs:
       # NB: pub get must run before format — without package_config.json,
       # dart format falls back to the latest language version and wants to
       # reformat the whole tree.
-      - run: flutter pub get
+      - run: flutter pub get --enforce-lockfile
       - run: dart format --set-exit-if-changed lib test tool
 
   test:
@@ -63,7 +63,7 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
-      - run: flutter pub get
+      - run: flutter pub get --enforce-lockfile
       - run: dart run build_runner build --delete-conflicting-outputs
       - run: flutter test
 
@@ -79,6 +79,19 @@ jobs:
           channel: stable
           cache: true
       - run: dart tool/no_mock_check.dart
+
+  error-guard:
+    name: no-raw-error guard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - run: dart tool/no_raw_error_check.dart
 
   sql:
     name: validate Supabase migrations (pglast)

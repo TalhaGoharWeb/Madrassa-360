@@ -114,11 +114,18 @@ class TenantContext extends StateNotifier<String?> {
   /// Switch the active tenant, persist the choice, and reload the
   /// effective permission set for the new tenant.
   ///
-  /// Phase 5 fix (audit §C3): permissions are per active tenant, so they
-  /// must be reloaded on every switch — previously the client kept the
-  /// previous tenant's permission set and showed the wrong UI to
-  /// multi-tenant users until the next sign-in.
+  /// SEC-M24: the target is validated against the user's server-derived
+  /// membership list — an unknown/revoked tenant id is refused instead of
+  /// silently adopted (previously any UUID was accepted).
+  ///
+  /// Throws [StateError] when [id] is not one of the user's active
+  /// memberships.
   Future<void> switchTenant(String id) async {
+    final memberships = await _ref.read(tenantMembershipsProvider.future);
+    final valid = memberships.any((m) => m.tenantId == id && m.isActive);
+    if (!valid) {
+      throw StateError('اس ادارے تک رسائی نہیں — براہ کرم دوبارہ لاگ ان کریں');
+    }
     state = id;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(prefsKey, id);

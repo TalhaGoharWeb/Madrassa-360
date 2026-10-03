@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart' hide DateUtils;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -694,7 +695,8 @@ class _PhotoPicker extends StatelessWidget {
     final ImageProvider? image = pickedPhoto != null
         ? FileImage(File(pickedPhoto!.path))
         : (currentPhotoUrl != null
-            ? NetworkImage(currentPhotoUrl!) as ImageProvider
+            ? CachedNetworkImageProvider(currentPhotoUrl!,
+                maxWidth: 256, maxHeight: 256) as ImageProvider
             : null);
     return Center(
       child: GestureDetector(

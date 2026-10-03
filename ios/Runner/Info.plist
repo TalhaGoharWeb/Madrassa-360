@@ -45,5 +45,21 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<!-- Supabase auth callback (password recovery / PKCE). The recovery
+	     email link redirects to io.supabase.madrasa360://login-callback and
+	     the SDK turns it into a PASSWORD_RECOVERY session. -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>io.supabase.madrasa360.login</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>io.supabase.madrasa360</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

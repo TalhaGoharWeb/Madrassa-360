@@ -10,6 +10,7 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../core/errors/error_boundary.dart';
 import '../core/observability/app_logger.dart';
 import '../core/services/supabase_service.dart';
 import '../core/utils/network_timeout.dart';
@@ -122,25 +123,30 @@ class UserManagementNotifier extends StateNotifier<UserManagementState> {
   /// Maps an Edge Function failure to an honest, actionable message.
   /// A 404 / not-found means the server function is not deployed yet —
   /// surfaced as "requires server function" (never silently degraded).
-  String _serverFunctionError(FunctionException e) {
+  /// All other failures go through [ErrorBoundary] so no driver text
+  /// reaches displayable state.
+  String _serverFunctionError(FunctionException e, StackTrace st) {
     final msg = e.toString().toLowerCase();
-    final detail = e.reasonPhrase;
     if (msg.contains('404') || msg.contains('not found')) {
       return 'یہ عمل سرور فنکشن درکار رکھتا ہے — manage-users Edge Function '
           'ابھی deploy نہیں ہوا (requires server function)';
     }
-    if (detail != null && detail.isNotEmpty) return detail;
-    return 'Server function error: $e';
+    return ErrorBoundary.handleErrorSimple(e, st, tag: 'users/manage');
   }
 
   /// Creates a real Supabase Auth user via the `manage-users` Edge Function
   /// (server-side; the service key never touches the client), then stores
   /// metadata in user_accounts.
   ///
+  /// SEC-H15: the requested role is sent as plain *data* (`role` + the
+  /// tenant it applies to) — never inside `app_metadata`, which is
+  /// caller-writable and therefore not a trustable role signal. The server
+  /// derives authority from `tenant_memberships`, not from metadata.
+  ///
   /// Returns null on success, or an error message. If the Edge Function is
   /// not deployed yet, returns a "requires server function" error instead of
   /// attempting any client-side privileged call.
-  Future<String?> createAccount(UserAccount account) async {
+  Future<String?> createAccount(UserAccount account, {String? tenantId}) async {
     if (account.password == null || account.password!.length < 6) {
       return 'پاس ورڈ کم از کم 6 حروف کا ہونا چاہیے';
     }
@@ -157,7 +163,11 @@ class UserManagementNotifier extends StateNotifier<UserManagementState> {
           'email': account.email,
           'password': account.password,
           'user_metadata': {'name': account.name},
-          'app_metadata': {'role': account.roleName},
+          // Role as data (SEC-H15): the function validates it against the
+          // tenant's active role keys and creates the membership. tenant_id
+          // and role must travel together per the function's contract.
+          if (tenantId != null) 'tenant_id': tenantId,
+          if (tenantId != null) 'role': account.roleName,
         },
       );
       final data = res.data;
@@ -171,12 +181,12 @@ class UserManagementNotifier extends StateNotifier<UserManagementState> {
       }
       AppLogger().info('[UserMgmt] Auth user created via manage-users',
           context: {'auth_user_id': authUserId});
-    } on FunctionException catch (e) {
-      final msg = _serverFunctionError(e);
+    } on FunctionException catch (e, st) {
+      final msg = _serverFunctionError(e, st);
       state = state.copyWith(isLoading: false, error: msg);
       return msg;
-    } catch (e) {
-      final msg = 'Auth server error: $e';
+    } catch (e, st) {
+      final msg = ErrorBoundary.handleErrorSimple(e, st, tag: 'users/manage');
       state = state.copyWith(isLoading: false, error: msg);
       return msg;
     }
@@ -227,9 +237,10 @@ class UserManagementNotifier extends StateNotifier<UserManagementState> {
             .toList(),
       );
       return null;
-    } on PostgrestException catch (e) {
-      state = state.copyWith(isLoading: false, error: e.message);
-      return e.message;
+    } on PostgrestException catch (e, st) {
+      final msg = ErrorBoundary.handleErrorSimple(e, st, tag: 'users/manage');
+      state = state.copyWith(isLoading: false, error: msg);
+      return msg;
     } catch (_) {
       // Optimistic update
       state = state.copyWith(
@@ -258,12 +269,12 @@ class UserManagementNotifier extends StateNotifier<UserManagementState> {
         'manage-users',
         body: {'action': 'delete_user', 'user_id': id},
       );
-    } on FunctionException catch (e) {
-      final msg = _serverFunctionError(e);
+    } on FunctionException catch (e, st) {
+      final msg = _serverFunctionError(e, st);
       state = state.copyWith(isLoading: false, error: msg);
       return msg;
-    } catch (e) {
-      final msg = 'Auth server error: $e';
+    } catch (e, st) {
+      final msg = ErrorBoundary.handleErrorSimple(e, st, tag: 'users/manage');
       state = state.copyWith(isLoading: false, error: msg);
       return msg;
     }
@@ -271,9 +282,10 @@ class UserManagementNotifier extends StateNotifier<UserManagementState> {
     // ── Remove from user_accounts table ─────────────────────
     try {
       await _client.from('user_accounts').delete().eq('id', id);
-    } on PostgrestException catch (e) {
-      state = state.copyWith(isLoading: false, error: e.message);
-      return e.message;
+    } on PostgrestException catch (e, st) {
+      final msg = ErrorBoundary.handleErrorSimple(e, st, tag: 'users/manage');
+      state = state.copyWith(isLoading: false, error: msg);
+      return msg;
     } catch (_) {
       // optimistic remove
     }

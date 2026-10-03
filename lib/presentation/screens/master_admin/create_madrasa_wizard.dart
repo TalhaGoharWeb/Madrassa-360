@@ -16,6 +16,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:madrasa_360/core/design/m360.dart';
+import 'package:madrasa_360/core/errors/error_boundary.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -231,17 +232,17 @@ class _CreateMadrasaWizardState extends State<CreateMadrasaWizard> {
         _provisionedCode = code ?? '—';
         _provisionedEmail = _adminEmail.text.trim();
       });
-    } on FunctionException catch (e) {
+    } on FunctionException catch (e, st) {
       setState(() {
         _provisioning = false;
-        _provisionError = e.reasonPhrase?.isNotEmpty == true
-            ? e.reasonPhrase
-            : 'Provisioning function failed: $e';
+        _provisionError =
+            ErrorBoundary.handleErrorSimple(e, st, tag: 'master/provision');
       });
-    } catch (e) {
+    } catch (e, st) {
       setState(() {
         _provisioning = false;
-        _provisionError = 'Unexpected error: $e';
+        _provisionError =
+            ErrorBoundary.handleErrorSimple(e, st, tag: 'master/provision');
       });
     }
   }

@@ -15,6 +15,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../data/models/app_role.dart';
 import '../../../data/models/user_account.dart';
+import '../../../core/services/tenant_context.dart';
 import '../../../providers/user_management_provider.dart';
 
 class UserManagementScreen extends StatefulWidget {
@@ -314,12 +315,17 @@ class _AccountFormState extends ConsumerState<_AccountForm> {
         password: existing == null ? _passwordCtrl.text : null,
       );
       final err = existing == null
-          ? await notifier.createAccount(account)
+          ? await notifier.createAccount(
+              account,
+              tenantId: ref.read(activeTenantIdProvider),
+            )
           : await notifier.updateAccount(account);
       if (!mounted) return;
       if (err != null) {
         setState(() => _saving = false);
-        showM360SnackBar(context, 'خرابی: $err', isError: true);
+        showM360SnackBar(context, 'خرابی: $err',
+            isError:
+                true); // error-guard:allow — err is the String? returned by UserManagementNotifier, which classifies every failure via ErrorBoundary before returning; never raw driver text.
         return;
       }
       Navigator.of(context).pop(_nameCtrl.text.trim());
@@ -717,7 +723,9 @@ class _RolesTabState extends ConsumerState<_RolesTab> {
     if (err == null) {
       showM360SnackBar(context, 'کردار حذف ہو گیا');
     } else {
-      showM360SnackBar(context, 'خرابی: $err', isError: true);
+      showM360SnackBar(context, 'خرابی: $err',
+          isError:
+              true); // error-guard:allow — err is the String? returned by UserManagementNotifier, which classifies every failure via ErrorBoundary before returning; never raw driver text.
     }
   }
 }

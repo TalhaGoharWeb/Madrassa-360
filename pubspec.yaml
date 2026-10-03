@@ -13,13 +13,19 @@ dependencies:
     sdk: flutter
   
   # UI & Typography
-  google_fonts: ^6.1.0
-  
+  # (google_fonts removed 2026-10-03: verified zero imports in lib/ and
+  # test/ — the app ships its own bundled fonts; see SEC-L2.)
+
   # State Management
   flutter_riverpod: ^2.4.9
   
   # Local Storage
   shared_preferences: ^2.2.2
+  # Encrypted storage for auth tokens (SEC-H11): the Supabase session
+  # (access + refresh tokens) is persisted through a flutter_secure_storage-
+  # backed LocalStorage adapter instead of plaintext SharedPreferences.
+  # SDK constraint ^3.5.0 compatible (verified via pub.dev API 2026-10-03).
+  flutter_secure_storage: ^9.2.4
   
   # Network & Connectivity
   connectivity_plus: ^6.1.5
@@ -31,6 +37,7 @@ dependencies:
   supabase_flutter: ^2.5.0        # Supabase client + Auth + Realtime
   flutter_dotenv: ^5.1.0          # Env variable management (.env file)
   cached_network_image: ^3.3.1    # Student/staff photo caching
+  flutter_cache_manager: ^3.4.1   # Direct dep: SecureWipe empties the disk image cache on sign-out (SEC-H12)
   image_picker: ^1.1.2            # Pick photos for upload
   uuid: ^4.4.0                    # Local UUID generation
   url_launcher: ^6.3.0            # Open email / phone / web links

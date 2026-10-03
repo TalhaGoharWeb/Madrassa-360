@@ -8,8 +8,11 @@
 //
 // Authorization: the caller must be authenticated AND either a platform
 // admin (public.platform_admins) or an active member of the target tenant
-// (public.tenant_memberships). The function runs with the service role
-// (bypasses RLS on purpose) and enforces authorization in code.
+// (public.tenant_memberships). Broadcasts — and messages addressed to OTHER
+// users — additionally require the `notifications.send` effective permission
+// or a legacy tenant_owner/tenant_admin rank (SEC-H4). A message to oneself
+// stays membership-gated. Broadcasts are rate-limited (30/hour per tenant),
+// targeted sends 120/hour per caller (SEC-H8).
 //
 // Body:
 //   { tenant_id, notification_id, user_id?, type, title, title_urdu?,
@@ -37,11 +40,23 @@
 //   each channel result: { sent: bool, status: string, delivered?: number,
 //                          total?: number, detail?: string }
 
-import { preflight, json, serviceClient } from "../_shared/guard.ts";
+import {
+  badBodyResponse,
+  hasEffectivePermission,
+  invalidBodyResponse,
+  json,
+  logServerError,
+  newCorrelationId,
+  preflight,
+  rateLimit,
+  readJsonBody,
+  resolveJwtUser,
+  serviceClient,
+  tooManyRequests,
+  validateBody,
+  type FieldRule,
+} from "../_shared/guard.ts";
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.44.4";
-
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const ALLOWED_CHANNELS = new Set(["push", "email"]);
 
@@ -147,71 +162,80 @@ Deno.serve(async (req: Request): Promise<Response> => {
   }
 
   // ── authenticate caller ──────────────────────────────────────
-  const authz = req.headers.get("Authorization");
-  const jwt = authz?.toLowerCase().startsWith("bearer ")
-    ? authz.slice(7).trim()
-    : "";
-  if (!jwt) {
-    return json({ error: "unauthorized", message: "Missing bearer token." }, 401);
-  }
-  const { data: userData, error: userErr } = await supabase.auth.getUser(jwt);
-  const caller = userData?.user;
-  if (userErr || !caller) {
-    return json({ error: "unauthorized", message: "Invalid token." }, 401);
-  }
+  const callerOr = await resolveJwtUser(req, supabase);
+  if (!callerOr.ok) return callerOr.response;
+  const callerId = callerOr.userId;
 
   // ── validate body ────────────────────────────────────────────
-  let body: Record<string, unknown>;
-  try {
-    body = (await req.json()) as Record<string, unknown>;
-  } catch {
-    return json({ error: "bad_request", message: "Invalid JSON body." }, 400);
-  }
-  const tenantId = body["tenant_id"];
-  const notificationId = body["notification_id"];
-  const targetUserId = body["user_id"] ?? null;
-  const type = body["type"];
-  const title = body["title"];
+  const parsed = await readJsonBody(req);
+  if (!parsed.ok) return badBodyResponse(parsed);
+  const body = parsed.body;
+
+  // SEC-M12: per-field allow-list + length caps. Unknown keys → 400.
+  const BODY_SCHEMA: Record<string, FieldRule> = {
+    tenant_id: { required: true, type: "uuid" },
+    notification_id: { required: true, type: "uuid" },
+    user_id: { type: "uuid", allowNull: true },
+    type: { required: true, type: "string", minLength: 1, maxLength: 64 },
+    title: { required: true, type: "string", minLength: 1, maxLength: 200 },
+    title_urdu: { type: "string", maxLength: 200 },
+    body: { type: "string", maxLength: 2000 },
+    body_urdu: { type: "string", maxLength: 2000 },
+    data: { type: "object", maxBytes: 3072 },
+    channels: { required: true, type: "array", minItems: 1, maxItems: 4 },
+  };
+  const valid = validateBody(body, BODY_SCHEMA);
+  if (!valid.ok) return invalidBodyResponse(valid.problems);
+
+  const tenantId = body["tenant_id"] as string;
+  const notificationId = body["notification_id"] as string;
+  const targetUserId = (body["user_id"] as string | null | undefined) ?? null;
+  const type = body["type"] as string;
+  const title = body["title"] as string;
   const titleUrdu = (body["title_urdu"] as string | undefined) ?? null;
   const notifBody = (body["body"] as string | undefined) ?? null;
   const bodyUrdu = (body["body_urdu"] as string | undefined) ?? null;
   const data = (body["data"] as Record<string, unknown> | undefined) ?? {};
-  const channels = body["channels"];
+  const channels = body["channels"] as string[];
 
-  if (
-    typeof tenantId !== "string" || !UUID_RE.test(tenantId) ||
-    typeof notificationId !== "string" || !UUID_RE.test(notificationId) ||
-    (targetUserId !== null &&
-      (typeof targetUserId !== "string" || !UUID_RE.test(targetUserId))) ||
-    typeof type !== "string" || type.length === 0 || type.length > 64 ||
-    typeof title !== "string" || title.length === 0 || title.length > 200 ||
-    !Array.isArray(channels) || channels.length === 0 ||
-    !channels.every((c) => typeof c === "string" && ALLOWED_CHANNELS.has(c)) ||
-    typeof data !== "object" || data === null || Array.isArray(data)
-  ) {
+  if (!channels.every((c) => ALLOWED_CHANNELS.has(c))) {
     return json(
-      {
-        error: "bad_request",
-        message:
-          "Required: tenant_id, notification_id (uuids), type, title, channels subset of ['push','email'].",
-      },
+      { error: "bad_request", message: "channels must be a subset of ['push','email']." },
       400,
     );
   }
-  const wanted = [...new Set(channels as string[])];
+  const dataKeys = Object.keys(data);
+  if (
+    dataKeys.length > 20 ||
+    !dataKeys.every((k) => /^[a-zA-Z0-9_.-]{1,64}$/.test(k))
+  ) {
+    return json(
+      { error: "bad_request", message: "data: too many keys or invalid key format." },
+      400,
+    );
+  }
+  const wanted = [...new Set(channels)];
 
-  // ── authorize: platform admin OR active member of the tenant ──
+  // ── authorize ────────────────────────────────────────────────
+  // Platform admins pass. Otherwise the caller must be an active member
+  // of the tenant. Broadcasts — and messages to OTHER users —
+  // additionally require the `notifications.send` effective permission or
+  // a legacy owner/admin rank (SEC-H4): plain membership must not buy a
+  // tenant-wide phishing cannon. A message to ONESELF stays
+  // membership-gated.
   const { data: adminRow } = await supabase
     .from("platform_admins")
     .select("user_id")
-    .eq("user_id", caller.id)
+    .eq("user_id", callerId)
     .maybeSingle();
+
+  let callerRole: string | null = null;
   if (!adminRow) {
     const { data: membership, error: mErr } = await supabase
       .from("tenant_memberships")
-      .select("user_id")
+      .select("user_id, role")
       .eq("tenant_id", tenantId)
-      .eq("user_id", caller.id)
+      .eq("user_id", callerId)
       .eq("is_active", true)
       .maybeSingle();
     if (mErr || !membership) {
@@ -220,6 +244,46 @@ Deno.serve(async (req: Request): Promise<Response> => {
         403,
       );
     }
+    callerRole = membership.role as string;
+  }
+
+  const isBroadcast = targetUserId === null;
+  const isSelfTarget = targetUserId !== null && targetUserId === callerId;
+  if (!adminRow && (isBroadcast || !isSelfTarget)) {
+    const isLegacyManager =
+      callerRole === "tenant_owner" || callerRole === "tenant_admin";
+    const maySend = isLegacyManager ||
+      await hasEffectivePermission(supabase, tenantId, callerId, "notifications.send");
+    if (!maySend) {
+      return json(
+        {
+          error: "forbidden",
+          message: "Broadcasting notifications requires the notifications.send permission.",
+        },
+        403,
+      );
+    }
+  }
+
+  // ── rate limit (SEC-H8) ──────────────────────────────────────
+  // Broadcasts are the expensive, abusable path: 30/hour per tenant.
+  // Targeted sends: 120/hour per caller.
+  if (isBroadcast) {
+    const rl = await rateLimit(
+      supabase,
+      `send-notification:broadcast:${tenantId}`,
+      30,
+      3600,
+    );
+    if (!rl.allowed) return tooManyRequests(rl.retryAfterSec);
+  } else {
+    const rl = await rateLimit(
+      supabase,
+      `send-notification:targeted:${callerId}`,
+      120,
+      3600,
+    );
+    if (!rl.allowed) return tooManyRequests(rl.retryAfterSec);
   }
 
   // Targeted notifications may only address members of the same tenant
@@ -257,8 +321,10 @@ Deno.serve(async (req: Request): Promise<Response> => {
     { onConflict: "id", ignoreDuplicates: true },
   );
   if (insErr) {
+    const cid = newCorrelationId();
+    logServerError("send-notification", cid, "record_notification", insErr);
     return json(
-      { error: "db_error", message: "Could not record notification.", detail: insErr.message },
+      { error: "db_error", message: "Could not record notification.", ref: cid },
       500,
     );
   }
@@ -361,10 +427,12 @@ Deno.serve(async (req: Request): Promise<Response> => {
               ? { sent: true, status: "sent", delivered, total: tokenList.length }
               : { sent: false, status: "fcm_send_failed", total: tokenList.length };
           } catch (e) {
+            const cid = newCorrelationId();
+            logServerError("send-notification", cid, "fcm", e);
             results["push"] = {
               sent: false,
               status: "fcm_error",
-              detail: e instanceof Error ? e.message : String(e),
+              detail: `ref:${cid}`,
             };
           }
         }
@@ -407,9 +475,13 @@ Deno.serve(async (req: Request): Promise<Response> => {
               Authorization: `Bearer ${resendKey}`,
               "Content-Type": "application/json",
             },
+            // RED-TEAM RT-02: recipients go in BCC — a broadcast must
+            // never expose every parent's email address to every other
+            // parent via the To header.
             body: JSON.stringify({
               from: `Madrassa 360 <${from}>`,
-              to: addresses,
+              to: from,
+              bcc: addresses,
               subject,
               text: textBody,
               html,
@@ -419,10 +491,12 @@ Deno.serve(async (req: Request): Promise<Response> => {
             ? { sent: true, status: "sent", delivered: addresses.length, total: addresses.length }
             : { sent: false, status: "email_send_failed", detail: `resend_${resp.status}` };
         } catch (e) {
+          const cid = newCorrelationId();
+          logServerError("send-notification", cid, "email", e);
           results["email"] = {
             sent: false,
             status: "email_error",
-            detail: e instanceof Error ? e.message : String(e),
+            detail: `ref:${cid}`,
           };
         }
       }
