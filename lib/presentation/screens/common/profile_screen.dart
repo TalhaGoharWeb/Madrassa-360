@@ -25,6 +25,7 @@ import '../../../providers/tenant_branding_provider.dart';
 import '../../shell/shell_page_body.dart';
 import '../auth/login_screen.dart';
 import '../auth/change_password_screen.dart';
+import '../settings/demo_data_screen.dart';
 import '../settings/user_management_hub.dart';
 import '../settings/delegation_screen.dart';
 import '../settings/madrassa_logo_screen.dart';
@@ -173,6 +174,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           context,
                           MaterialPageRoute(
                             builder: (_) => const MadrassaLogoScreen(),
+                          ),
+                        ),
+                        isLast: false,
+                      ),
+                    if (ref.watch(
+                        hasPermissionProvider(AppPermissions.manageSettings)))
+                      _SettingsTile(
+                        icon: Icons.science_outlined,
+                        label: 'ڈیمو ڈیٹا',
+                        subtitle: 'جانچ کے لیے نمونہ ڈیٹا لگائیں یا ہٹائیں',
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const DemoDataScreen(),
                           ),
                         ),
                         isLast: !canDelegate,
