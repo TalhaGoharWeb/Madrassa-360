@@ -541,9 +541,14 @@ void main() {
           screenType: ProfileScreen,
         );
         // The new Phase 8b tile is gated by `roles.assign` — present here.
-        // skipOffstage: the redesigned taller header pushes the admin group
-        // below the fold at phone size; presence (not scroll position) is
-        // what this asserts — overflow is already checked above.
+        // The Account section (now with the Change Password tile) pushes the
+        // admin group below the fold at phone size; scroll to build it.
+        await tester.scrollUntilVisible(
+          find.text('اختیار سونپنا', skipOffstage: false),
+          500,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pumpAndSettle();
         expect(
           find.text('اختیار سونپنا', skipOffstage: false),
           findsOneWidget,
