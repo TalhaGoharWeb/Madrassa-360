@@ -117,8 +117,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                     _obscureNew ? Icons.visibility_off : Icons.visibility,
                     color: AppColors.primary,
                   ),
-                  onPressed: () =>
-                      setState(() => _obscureNew = !_obscureNew),
+                  onPressed: () => setState(() => _obscureNew = !_obscureNew),
                 ),
               ),
               validator: Validators.password,
