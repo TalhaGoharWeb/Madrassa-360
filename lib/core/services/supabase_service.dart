@@ -45,6 +45,12 @@ class SupabaseService {
       // (io.supabase.madrasa360://login-callback) into PASSWORD_RECOVERY
       // events — required for the forgot-password flow.
       detectSessionInUri: true,
+      // Use implicit flow — more reliable for email/password auth on physical
+      // devices (PKCE requires deep-link callback which can fail if app
+      // loses focus). With implicit flow the recovery link carries the
+      // session tokens in the URL fragment, so no code-verifier round-trip
+      // is needed.
+      authFlowType: AuthFlowType.implicit,
     );
   }
 
@@ -60,8 +66,6 @@ class SupabaseService {
       url: url,
       anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
       authOptions: buildAuthOptions(url),
-      // Use implicit flow — more reliable for email/password auth on physical devices
-      // (PKCE requires deep-link callback which can fail if app loses focus)
     );
     // Move any pre-SEC-H11 plaintext session into secure storage (best
     // effort — never blocks startup).

@@ -24,6 +24,7 @@ import '../../../providers/auth_provider.dart';
 import '../../../providers/tenant_branding_provider.dart';
 import '../../shell/shell_page_body.dart';
 import '../auth/login_screen.dart';
+import '../auth/change_password_screen.dart';
 import '../settings/user_management_hub.dart';
 import '../settings/delegation_screen.dart';
 import '../settings/madrassa_logo_screen.dart';
@@ -124,6 +125,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     label: 'زبان',
                     subtitle: 'اردو / English',
                     onTap: () => _showLanguageSettings(context),
+                    isLast: false,
+                  ),
+                  _SettingsTile(
+                    icon: Icons.lock_outline,
+                    label: 'پاس ورڈ تبدیل کریں',
+                    subtitle: 'نیا پاس ورڈ مقرر کریں',
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const ChangePasswordScreen(),
+                      ),
+                    ),
                     isLast: true,
                   ),
                 ]),
