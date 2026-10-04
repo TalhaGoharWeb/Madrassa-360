@@ -57,7 +57,7 @@ BEGIN
       JOIN pg_class cl ON cl.oid = c.conrelid
      WHERE c.contype = 'u'
        AND cl.relname IN ('attendance', 'fees')
-       AND (SELECT array_agg(a.attname ORDER BY u.ord)
+       AND (SELECT array_agg(a.attname::text ORDER BY u.ord)
               FROM unnest(c.conkey) WITH ORDINALITY AS u(attnum, ord)
               JOIN pg_attribute a
                 ON a.attrelid = c.conrelid AND a.attnum = u.attnum)
