@@ -39,8 +39,7 @@ class DemoDataService {
 
   final SupabaseClient _client;
 
-  Future<Map<String, dynamic>> _invoke(
-      String tenantId, String action) async {
+  Future<Map<String, dynamic>> _invoke(String tenantId, String action) async {
     final FunctionResponse res;
     try {
       res = await _client.functions.invoke(
@@ -113,7 +112,8 @@ class DemoDataService {
 
   String _errorMessage(String? code) {
     return switch (code) {
-      'forbidden' => 'آپ کو اس عمل کی اجازت نہیں — صرف منتظم ڈیمو ڈیٹا لگا سکتا ہے',
+      'forbidden' =>
+        'آپ کو اس عمل کی اجازت نہیں — صرف منتظم ڈیمو ڈیٹا لگا سکتا ہے',
       _ => 'سرور میں خرابی — دوبارہ کوشش کریں',
     };
   }

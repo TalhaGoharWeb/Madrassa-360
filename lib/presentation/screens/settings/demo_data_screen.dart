@@ -22,7 +22,7 @@ import '../../../providers/auth_provider.dart';
 import '../../../services/demo_data_service.dart';
 
 /// Provides a [DemoDataService] bound to the Supabase client.
-final demoDataServiceProvider = Provider<DemoDataService>((ref) {
+final demoServiceProvider = Provider<DemoDataService>((ref) {
   return DemoDataService(Supabase.instance.client);
 });
 
@@ -61,8 +61,7 @@ class _DemoDataScreenState extends ConsumerState<DemoDataScreen> {
       _error = null;
     });
     try {
-      final status =
-          await ref.read(demoDataServiceProvider).status(tenantId);
+      final status = await ref.read(demoServiceProvider).status(tenantId);
       if (mounted) {
         setState(() {
           _status = status;
@@ -97,8 +96,7 @@ class _DemoDataScreenState extends ConsumerState<DemoDataScreen> {
     if (!confirmed) return;
     setState(() => _busy = true);
     try {
-      final status =
-          await ref.read(demoDataServiceProvider).install(tenantId);
+      final status = await ref.read(demoServiceProvider).install(tenantId);
       if (mounted) {
         setState(() => _status = status);
         showM360SnackBar(context, 'ڈیمو ڈیٹا لگا دیا گیا');
@@ -125,7 +123,7 @@ class _DemoDataScreenState extends ConsumerState<DemoDataScreen> {
     if (!confirmed) return;
     setState(() => _busy = true);
     try {
-      await ref.read(demoDataServiceProvider).remove(tenantId);
+      await ref.read(demoServiceProvider).remove(tenantId);
       await _refresh();
       if (mounted) showM360SnackBar(context, 'ڈیمو ڈیٹا حذف کر دیا گیا');
     } on DemoDataException catch (e) {
@@ -141,8 +139,8 @@ class _DemoDataScreenState extends ConsumerState<DemoDataScreen> {
     final canManage =
         ref.watch(hasPermissionProvider(AppPermissions.manageSettings));
     if (!canManage) {
-      return const Scaffold(
-        appBar: M360AppBar(title: 'ڈیمو ڈیٹا'),
+      return Scaffold(
+        appBar: const M360AppBar(title: 'ڈیمو ڈیٹا'),
         body: Center(
           child: Text(
             'آپ کو اس صفحے تک رسائی نہیں',
@@ -185,8 +183,8 @@ class _DemoDataScreenState extends ConsumerState<DemoDataScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(_error!, style: AppTypography.bodyMedium,
-                textAlign: TextAlign.center),
+            Text(_error!,
+                style: AppTypography.bodyMedium, textAlign: TextAlign.center),
             const SizedBox(height: 16),
             M360PrimaryButton(label: 'دوبارہ کوشش کریں', onPressed: _refresh),
           ],
@@ -207,7 +205,7 @@ class _DemoDataScreenState extends ConsumerState<DemoDataScreen> {
                 Icon(Icons.science_outlined,
                     color: AppColors.primary, size: 28),
                 const SizedBox(width: 12),
-                const Expanded(
+                Expanded(
                   child: Text(
                     'سافٹ ویئر آزمانے کے لیے نمونہ ڈیٹا',
                     style: AppTypography.titleLarge,
@@ -216,7 +214,7 @@ class _DemoDataScreenState extends ConsumerState<DemoDataScreen> {
               ],
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'ایک کلک پر آپ کے مدرسے میں حقیقت نما ڈیمو ڈیٹا شامل ہوگا '
               'تاکہ آپ تمام ماڈیولز — طلبہ، عملہ، فیس، آمدن و اخراجات — '
               'آزما سکیں۔ ڈیمو ڈیٹا واضح نشان کے ساتھ آئے گا اور جب چاہیں '
@@ -246,7 +244,7 @@ class _DemoDataScreenState extends ConsumerState<DemoDataScreen> {
                     color: AppColors.success.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Text(
+                  child: Text(
                     'ڈیمو ڈیٹا فعال',
                     style: AppTypography.labelNastaliq,
                   ),
@@ -259,7 +257,7 @@ class _DemoDataScreenState extends ConsumerState<DemoDataScreen> {
               ],
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'یہ ڈیٹا صرف جانچ کے لیے ہے۔ حذف کرنے پر صرف ڈیمو '
               'ریکارڈ ختم ہوں گے۔',
               style: AppTypography.labelSmall,
