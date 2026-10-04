@@ -42,8 +42,8 @@ class SupabaseService {
       localStorage: _authStorage,
       pkceAsyncStorage: SecureGotrueAsyncStorage(),
       // The SDK's own deep-link observer turns recovery links
-      // (io.supabase.madrasa360://login-callback) into PASSWORD_RECOVERY
-      // events — required for the forgot-password flow.
+      // (https://madrassa360.com/auth/callback via App Links) into
+      // PASSWORD_RECOVERY events — required for the forgot-password flow.
       detectSessionInUri: true,
     );
   }

@@ -205,7 +205,7 @@ class AuthRepository {
 
   /// Send a password-reset email via Supabase Auth.
   /// The recovery link redirects to the app's callback scheme
-  /// (`io.supabase.madrasa360://login-callback`); the SDK's deep-link
+  /// (`https://madrassa360.com/auth/callback` via App Links); the SDK's deep-link
   /// observer turns it into a PASSWORD_RECOVERY session, which the auth
   /// provider routes to the set-new-password screen (SEC-H13).
   /// Throws [ValidationException] for a blank email, [AuthenticationException]
@@ -221,7 +221,7 @@ class AuthRepository {
     try {
       await _client.auth.resetPasswordForEmail(
         cleanEmail,
-        redirectTo: 'io.supabase.madrasa360://login-callback',
+        redirectTo: 'https://madrassa360.com/auth/callback',
       );
     } on sb.AuthException catch (e) {
       throw AuthenticationException(userMessageUr: _mapAuthError(e.message));
